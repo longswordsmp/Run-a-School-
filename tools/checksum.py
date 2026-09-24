@@ -5,6 +5,7 @@ import sys, pathlib
 
 MAP = {
     "Shared/Config.lua": "ReplicatedStorage.Shared.Config",
+    "Shared/UI.lua": "ReplicatedStorage.Shared.UI",
     "Server/Walkers.lua": "ServerScriptService.Server.Walkers",
     "Server/Remotes.lua": "ServerScriptService.Server.Remotes",
     "Server/DataService.lua": "ServerScriptService.Server.DataService",
@@ -18,6 +19,8 @@ MAP = {
     "Server/Main.server.lua": "ServerScriptService.Server.Main",
     "Client/HUD.client.lua": "StarterPlayer.StarterPlayerScripts.HUD",
     "Client/Menus.client.lua": "StarterPlayer.StarterPlayerScripts.Menus",
+    "Client/Prompts.client.lua": "StarterPlayer.StarterPlayerScripts.Prompts",
+    "Client/Effects.client.lua": "StarterPlayer.StarterPlayerScripts.Effects",
 }
 
 root = pathlib.Path(__file__).resolve().parent.parent / "src"

@@ -2,6 +2,7 @@
 local Players = game:GetService("Players")
 
 local Server = script.Parent
+local Config = require(game:GetService("ReplicatedStorage").Shared.Config)
 local Remotes = require(Server.Remotes)
 local Data = require(Server.DataService)
 local Factory = require(Server.StudentFactory)
@@ -43,8 +44,9 @@ Players.PlayerRemoving:Connect(function(player)
 	Data.release(player)
 end)
 
+local SchoolService = require(Server.SchoolService)
 Remotes.Action.OnServerInvoke = function(player, action, ...)
-	return nil
+	return SchoolService.handle(player, action, ...)
 end
 
 -- Studio-only test commands (see DebugBridge)
@@ -74,6 +76,27 @@ require(Server.DebugBridge).start({
 		model.PrimaryPart.CFrame = CFrame.lookAt(Vector3.new(pos.X, y, pos.Z), Vector3.new(root.Position.X, y, root.Position.Z))
 		Factory.play(model, "idle")
 		return model.Name
+	end,
+	-- every student of a rarity standing in a row along +X from (x, z), facing -Z
+	lineup = function(player, rarity, x, z, spacing)
+		local n = 0
+		for _, def in Config.Students do
+			if def.rarity == rarity then
+				local model = HallService.spawnOne(nil, def.id)
+				Walkers.stop(model)
+				model:SetAttribute("State", "Lineup")
+				local y = model.PrimaryPart.Position.Y
+				local at = Vector3.new(x + n * (spacing or 6), y, z)
+				model.PrimaryPart.CFrame = CFrame.lookAt(at, at - Vector3.zAxis)
+				Factory.play(model, "idle")
+				n += 1
+			end
+		end
+		return n
+	end,
+	clearHall = function()
+		for _, m in workspace.Hall:GetChildren() do m:Destroy() end
+		return true
 	end,
 	tp = function(player, x, y, z, lookX, lookZ)
 		local at = Vector3.new(x, y, z)

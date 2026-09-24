@@ -31,5 +31,6 @@ end
 return {
 	Notify = event("Notify"), -- (text, kind) server -> client toast
 	CashPop = event("CashPop"), -- (amount, worldPos) server -> client
+	Announce = event("Announce"), -- (text, color) big centre text
 	Action = func("Action"), -- client -> server requests (name school, upgrade, rebirth...)
 }

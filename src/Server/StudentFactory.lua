@@ -1,7 +1,6 @@
 -- ServerScriptService.Server.StudentFactory
 -- Builds student rigs (kid-proportioned R15) with the Steal-a-X style billboard.
 local Players = game:GetService("Players")
-local ServerStorage = game:GetService("ServerStorage")
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -23,11 +22,12 @@ Factory.Anims = {
 	sit = "rbxassetid://2506281703",
 }
 
-local templates = ServerStorage:FindFirstChild("StudentTemplates")
+-- templates live in ReplicatedStorage so the client can render them in viewports (Yearbook, shop)
+local templates = ReplicatedStorage:FindFirstChild("StudentTemplates")
 if not templates then
 	templates = Instance.new("Folder")
 	templates.Name = "StudentTemplates"
-	templates.Parent = ServerStorage
+	templates.Parent = ReplicatedStorage
 end
 
 local function makeTemplate(def)
@@ -122,6 +122,21 @@ local function rainbow(t)
 		ColorSequenceKeypoint.new(0.8, Color3.fromRGB(170, 80, 255)),
 		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 60, 60)),
 	})
+	g:SetAttribute("Kind", "rainbow")
+	g.Parent = t
+	CollectionService:AddTag(g, "Rainbow")
+	t.TextColor3 = Color3.new(1, 1, 1)
+end
+
+-- two-colour shimmer for Prodigy and Alumni (animated by the client like the rainbow)
+local function shimmer(t, a, b)
+	local g = Instance.new("UIGradient")
+	g.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, a),
+		ColorSequenceKeypoint.new(0.5, b),
+		ColorSequenceKeypoint.new(1, a),
+	})
+	g:SetAttribute("Kind", "shimmer")
 	g.Parent = t
 	CollectionService:AddTag(g, "Rainbow")
 	t.TextColor3 = Color3.new(1, 1, 1)
@@ -133,7 +148,9 @@ local function buildBillboard(model, def, gradeId)
 	local grade = Config.GradeById[gradeId] or Config.Grades[1]
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "Tag"
-	bb.Size = UDim2.new(9, 0, 5.2, 0)
+	-- rarer students get bigger tags so they read from across the hallway
+	local w = 7.5 + (rarity.order - 1) * 0.7
+	bb.Size = UDim2.new(w, 0, w * 0.58, 0)
 	bb.StudsOffsetWorldSpace = Vector3.new(0, 3.6, 0)
 	bb.MaxDistance = 90
 	bb.LightInfluence = 0
@@ -149,7 +166,11 @@ local function buildBillboard(model, def, gradeId)
 		if grade.rainbow then rainbow(g) end
 	end
 	local r = label(bb, "Rarity", 2, 0.19, rarity.id, rarity.color)
-	if rarity.rainbow then rainbow(r) end
+	if rarity.rainbow then
+		rainbow(r)
+	elseif rarity.gradient then
+		shimmer(r, rarity.gradient[1], rarity.gradient[2])
+	end
 	label(bb, "Name", 3, 0.22, def.name, Color3.new(1, 1, 1))
 	local income = def.income * grade.mult
 	label(bb, "Income", 4, 0.18, Config.formatCash(income) .. "/s", Color3.fromRGB(110, 255, 110))
@@ -196,7 +217,7 @@ end
 -- height of the root part above the floor when standing
 function Factory.standOffset(model)
 	local hum = model:FindFirstChildOfClass("Humanoid")
-	return hum.HipHeight + model.PrimaryPart.Size.Y / 2
+	return hum.HipHeight + model.PrimaryPart.Size.Y / 2 + (model:GetAttribute("Hover") or 0)
 end
 
 function Factory.build(def, gradeId)

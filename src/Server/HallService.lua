@@ -67,6 +67,10 @@ function HallService.enroll(player, model)
 	p.students[slot] = { id = def.id, grade = grade, stored = 0, arriving = true }
 	p.index[def.id .. "|" .. grade] = true
 	Remotes.Notify:FireClient(player, "Enrolled " .. def.name .. "!", "good")
+	local rarity = Config.RarityById[def.rarity]
+	if rarity.order >= 4 then
+		Remotes.Announce:FireClient(player, rarity.id:upper() .. " ENROLLED!", Config.rarityAccent(def.rarity))
+	end
 
 	Factory.setMode(model, "walking", player.DisplayName)
 	Walkers.stop(model)
@@ -94,6 +98,14 @@ function HallService.spawnOne(forceRarity, forceId)
 	model.Parent = hall
 	Factory.play(model, "walk")
 
+	-- the whole server hears about the rare ones
+	local rarity = Config.RarityById[def.rarity]
+	if rarity.order >= 7 then
+		Remotes.Announce:FireAllClients(("A %s STUDENT IS ON THE CARPET!"):format(rarity.id:upper()), Config.rarityAccent(def.rarity))
+	elseif rarity.order == 6 then
+		Remotes.Notify:FireAllClients("A Mythic student just stepped off the bus!", "steal")
+	end
+
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "EnrollPrompt"
 	prompt.ActionText = "Enroll " .. Config.formatCash(def.price)
@@ -101,6 +113,7 @@ function HallService.spawnOne(forceRarity, forceId)
 	prompt.HoldDuration = 0
 	prompt.RequiresLineOfSight = false
 	prompt.MaxActivationDistance = 10
+	prompt:SetAttribute("Color", Config.rarityAccent(def.rarity))
 	prompt.Parent = hrp
 	prompt.Triggered:Connect(function(player)
 		HallService.enroll(player, model)

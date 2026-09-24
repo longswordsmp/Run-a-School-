@@ -139,11 +139,22 @@ Remotes.CashPop.OnClientEvent:Connect(function(amount, pos)
 	task.delay(1, function() anchor:Destroy() end)
 end)
 
--- rainbow gradients (Secret rarity, Straight A+ grade)
+-- animated gradients: rainbow ones (Secret rarity, Straight A+) cycle their hues; two-colour
+-- shimmers (Prodigy, Alumni) slide back and forth. Sliding a rainbow off its end parked it on red.
 RunService.RenderStepped:Connect(function()
-	local off = (os.clock() * 0.35) % 1
+	local t = os.clock()
+	local keys = {}
+	for i = 0, 5 do
+		keys[i + 1] = ColorSequenceKeypoint.new(i / 5, Color3.fromHSV((t * 0.25 + i / 5) % 1, 0.75, 1))
+	end
+	local rainbowSeq = ColorSequence.new(keys)
+	local shimmer = Vector2.new(math.sin(t * 2) * 0.5, 0)
 	for _, gr in CollectionService:GetTagged("Rainbow") do
-		gr.Offset = Vector2.new(off * 2 - 1, 0)
+		if gr:GetAttribute("Kind") == "shimmer" then
+			gr.Offset = shimmer
+		else
+			gr.Color = rainbowSeq
+		end
 	end
 end)
 

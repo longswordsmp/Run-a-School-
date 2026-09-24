@@ -138,6 +138,7 @@ function PlotService.place(player, slot)
 	sell.RequiresLineOfSight = false
 	sell.MaxActivationDistance = 8
 	sell:SetAttribute("OwnerOnly", true)
+	sell:SetAttribute("Color", Color3.fromRGB(255, 159, 26))
 	sell.Parent = model.PrimaryPart
 	sell.Triggered:Connect(function(who)
 		PlotService.sell(who, plot, slot)
@@ -151,6 +152,7 @@ function PlotService.place(player, slot)
 	steal.RequiresLineOfSight = false
 	steal.MaxActivationDistance = 8
 	steal:SetAttribute("OthersOnly", true)
+	steal:SetAttribute("Color", Color3.fromRGB(255, 74, 74))
 	steal.Parent = model.PrimaryPart
 	steal.Triggered:Connect(function(who)
 		if PlotService.onSteal then PlotService.onSteal(who, plot, slot) end

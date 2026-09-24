@@ -1,6 +1,7 @@
 -- Run in Studio (Edit). Same checksum as tools/checksum.py.
 local paths = {
 	"ReplicatedStorage.Shared.Config",
+	"ReplicatedStorage.Shared.UI",
 	"ServerScriptService.Server.Walkers",
 	"ServerScriptService.Server.Remotes",
 	"ServerScriptService.Server.DataService",
@@ -14,6 +15,8 @@ local paths = {
 	"ServerScriptService.Server.Main",
 	"StarterPlayer.StarterPlayerScripts.HUD",
 	"StarterPlayer.StarterPlayerScripts.Menus",
+	"StarterPlayer.StarterPlayerScripts.Prompts",
+	"StarterPlayer.StarterPlayerScripts.Effects",
 }
 local out = {}
 for _, p in paths do

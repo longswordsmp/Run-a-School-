@@ -258,6 +258,18 @@ for side = 1, 2 do
 	end
 end
 
+-- classic studded look: plastic parts, studs on top, inlets underneath (neon, glass and metal stay)
+local KEEP = { [Enum.Material.Neon] = true, [Enum.Material.Glass] = true, [Enum.Material.Metal] = true, [Enum.Material.ForceField] = true }
+for _, root in { map, plots } do
+	for _, p in root:GetDescendants() do
+		if p:IsA("BasePart") and not p:IsA("SpawnLocation") and not KEEP[p.Material] and p.Transparency < 1 then
+			p.Material = Enum.Material.Plastic
+			p.TopSurface = Enum.SurfaceType.Studs
+			p.BottomSurface = Enum.SurfaceType.Inlet
+		end
+	end
+end
+
 -- lighting: bright, saturated afternoon
 Lighting.ClockTime = 14.5
 Lighting.Brightness = 3
