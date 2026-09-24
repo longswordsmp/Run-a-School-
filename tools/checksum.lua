@@ -8,6 +8,7 @@ local paths = {
 	"ServerScriptService.Server.StudentFactory",
 	"ServerScriptService.Server.PlotService",
 	"ServerScriptService.Server.HallService",
+	"ServerScriptService.Server.DebugBridge",
 	"ServerScriptService.Server.StealService",
 	"ServerScriptService.Server.SchoolService",
 	"ServerScriptService.Server.Main",

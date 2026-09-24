@@ -46,3 +46,38 @@ end)
 Remotes.Action.OnServerInvoke = function(player, action, ...)
 	return nil
 end
+
+-- Studio-only test commands (see DebugBridge)
+local Walkers = require(Server.Walkers)
+require(Server.DebugBridge).start({
+	state = function(player)
+		local p = Data.get(player)
+		local students = {}
+		for slot, e in p.students do
+			students[tostring(slot)] = { id = e.id, grade = e.grade, stored = math.floor(e.stored or 0), arriving = e.arriving }
+		end
+		return { cash = p.cash, income = player:GetAttribute("IncomePerSec"), plot = player:GetAttribute("Plot"), students = students }
+	end,
+	cash = function(player, amount)
+		local p = Data.get(player)
+		p.cash = amount
+		Data.sync(player)
+		return p.cash
+	end,
+	-- spawn a student of a rarity, parked in front of the player, facing them
+	spawnNear = function(player, rarity, studentId)
+		local model = HallService.spawnOne(rarity, studentId)
+		Walkers.stop(model)
+		local root = player.Character.HumanoidRootPart
+		local pos = root.Position + root.CFrame.LookVector * 5
+		local y = model.PrimaryPart.Position.Y
+		model.PrimaryPart.CFrame = CFrame.lookAt(Vector3.new(pos.X, y, pos.Z), Vector3.new(root.Position.X, y, root.Position.Z))
+		Factory.play(model, "idle")
+		return model.Name
+	end,
+	tp = function(player, x, y, z, lookX, lookZ)
+		local at = Vector3.new(x, y, z)
+		player.Character:PivotTo(CFrame.lookAt(at, Vector3.new(lookX or x, y, lookZ or z - 1)))
+		return true
+	end,
+})

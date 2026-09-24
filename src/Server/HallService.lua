@@ -29,7 +29,10 @@ local function weighted(list)
 	return list[#list]
 end
 
-function HallService.roll(forceRarity)
+function HallService.roll(forceRarity, forceId)
+	if forceId and Config.StudentById[forceId] then
+		return Config.StudentById[forceId], weighted(Config.Grades).id
+	end
 	local rarity = forceRarity and Config.RarityById[forceRarity] or weighted(Config.Rarities)
 	local pool = {}
 	for _, s in Config.Students do
@@ -77,9 +80,9 @@ function HallService.enroll(player, model)
 	end)
 end
 
-function HallService.spawnOne(forceRarity)
-	if #hall:GetChildren() >= Config.MaxHallStudents then return end
-	local def, grade = HallService.roll(forceRarity)
+function HallService.spawnOne(forceRarity, forceId)
+	if not forceRarity and not forceId and #hall:GetChildren() >= Config.MaxHallStudents then return end
+	local def, grade = HallService.roll(forceRarity, forceId)
 	local model = Factory.build(def, grade)
 	model:SetAttribute("State", "Hall")
 	local hrp = model.PrimaryPart

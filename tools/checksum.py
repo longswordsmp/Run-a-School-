@@ -12,6 +12,7 @@ MAP = {
     "Server/StudentFactory.lua": "ServerScriptService.Server.StudentFactory",
     "Server/PlotService.lua": "ServerScriptService.Server.PlotService",
     "Server/HallService.lua": "ServerScriptService.Server.HallService",
+    "Server/DebugBridge.lua": "ServerScriptService.Server.DebugBridge",
     "Server/StealService.lua": "ServerScriptService.Server.StealService",
     "Server/SchoolService.lua": "ServerScriptService.Server.SchoolService",
     "Server/Main.server.lua": "ServerScriptService.Server.Main",
