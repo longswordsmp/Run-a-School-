@@ -220,15 +220,200 @@ local function tree(x, z, s, leaf)
 end
 local leaves = { rgb(60, 170, 70), rgb(80, 180, 60), rgb(50, 150, 80), rgb(230, 140, 60) }
 local n = 0
-for _, gx in { -190, 0, 190 } do
-	for _, z in { 45, 80, 115, 150, 185 } do
+-- the gaps between schools hold landmarks (below); trees line their back edges
+for _, gx in { -205, -175, -15, 15, 175, 205 } do
+	for _, z in { 165, 190 } do
 		for _, side in { -1, 1 } do
 			n += 1
-			if not (gx == 0 and side == -1 and z == 45) then
-				tree(gx, side * z, 1 + (n % 3) * 0.12, leaves[n % #leaves + 1])
-			end
+			tree(gx, side * z, 1 + (n % 3) * 0.12, leaves[n % #leaves + 1])
 		end
 	end
+end
+
+---------------------------------------------------------------------------
+-- landmarks in the six gaps between schools (docs/DESIGN-v2.md 8.1)
+---------------------------------------------------------------------------
+local lm = Instance.new("Folder"); lm.Name = "Landmarks"; lm.Parent = map
+local function walkway(x0, z0, x1, z1)
+	local len = math.sqrt((x1 - x0) ^ 2 + (z1 - z0) ^ 2)
+	part(lm, "Path", Vector3.new(8, 0.3, len), CFrame.lookAt(Vector3.new((x0 + x1) / 2, 0.45, (z0 + z1) / 2), Vector3.new(x1, 0.45, z1)), C.sidewalk, Enum.Material.Concrete)
+end
+
+-- centre, spawn side: Mr. Wobblesworth's Fountain
+do
+	local f = Instance.new("Model"); f.Name = "HubFountain"; f.Parent = lm
+	local cx, cz = 0, -86
+	walkway(0, -28, 0, -72)
+	part(f, "Plaza", Vector3.new(44, 0.4, 44), CFrame.new(cx, 0.4, cz), rgb(225, 220, 205), Enum.Material.Concrete)
+	part(f, "Basin", Vector3.new(3, 22, 22), CFrame.new(cx, 1.6, cz) * CFrame.Angles(0, 0, math.rad(90)), rgb(200, 200, 210), nil, { Shape = Enum.PartType.Cylinder })
+	part(f, "Water", Vector3.new(3.1, 20, 20), CFrame.new(cx, 1.7, cz) * CFrame.Angles(0, 0, math.rad(90)), rgb(90, 170, 240), Enum.Material.Glass, { Shape = Enum.PartType.Cylinder, Transparency = 0.25 })
+	part(f, "Tier1", Vector3.new(6, 3, 3), CFrame.new(cx, 4.5, cz) * CFrame.Angles(0, 0, math.rad(90)), rgb(210, 210, 220), nil, { Shape = Enum.PartType.Cylinder })
+	part(f, "Bowl1", Vector3.new(1.4, 12, 12), CFrame.new(cx, 7.5, cz) * CFrame.Angles(0, 0, math.rad(90)), rgb(200, 200, 210), nil, { Shape = Enum.PartType.Cylinder })
+	part(f, "Tier2", Vector3.new(4, 2, 2), CFrame.new(cx, 9.9, cz) * CFrame.Angles(0, 0, math.rad(90)), rgb(210, 210, 220), nil, { Shape = Enum.PartType.Cylinder })
+	part(f, "Bowl2", Vector3.new(1.2, 6, 6), CFrame.new(cx, 12.2, cz) * CFrame.Angles(0, 0, math.rad(90)), rgb(200, 200, 210), nil, { Shape = Enum.PartType.Cylinder })
+	-- the founder's pencil on top
+	part(f, "Pencil", Vector3.new(1.4, 6, 1.4), CFrame.new(cx, 15.8, cz), rgb(255, 205, 50))
+	part(f, "Eraser", Vector3.new(1.45, 1, 1.45), CFrame.new(cx, 19.2, cz), rgb(255, 150, 170))
+	local spray = part(f, "Spray", Vector3.new(1, 1, 1), CFrame.new(cx, 13, cz), rgb(255, 255, 255), nil, HIDDEN)
+	local e = Instance.new("ParticleEmitter")
+	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	e.Color = ColorSequence.new(rgb(170, 220, 255))
+	e.Size = NumberSequence.new(0.6, 0.2)
+	e.Speed = NumberRange.new(8, 11)
+	e.SpreadAngle = Vector2.new(25, 25)
+	e.Acceleration = Vector3.new(0, -22, 0)
+	e.Lifetime = NumberRange.new(1, 1.3)
+	e.Rate = 60
+	e.Parent = spray
+	for _, a in { 0, 90, 180, 270 } do
+		local bx, bz = cx + math.sin(math.rad(a)) * 16, cz + math.cos(math.rad(a)) * 16
+		part(f, "Bench", Vector3.new(6, 0.5, 2), CFrame.new(bx, 1.8, bz) * CFrame.Angles(0, math.rad(a), 0), rgb(150, 100, 60), Enum.Material.Wood)
+	end
+	part(f, "NPCSpot", Vector3.new(1, 1, 1), CFrame.new(cx + 8, 0.6, cz + 12) * CFrame.Angles(0, math.rad(200), 0), C.white, nil, HIDDEN)
+end
+
+-- centre, far side: the Teachers' Lounge and the Bell Schedule board
+do
+	local t = Instance.new("Model"); t.Name = "TeachersLounge"; t.Parent = lm
+	local cx, cz = 0, 88
+	walkway(0, 28, 0, 70)
+	local wall, trim = rgb(236, 226, 206), rgb(120, 70, 50)
+	part(t, "Floor", Vector3.new(44, 1, 32), CFrame.new(cx, 0.5, cz), rgb(170, 130, 90), Enum.Material.WoodPlanks)
+	part(t, "Back", Vector3.new(44, 16, 1.5), CFrame.new(cx, 8.5, cz + 15.5), wall)
+	for _, x in { -21.5, 21.5 } do part(t, "Side", Vector3.new(1.5, 16, 32), CFrame.new(cx + x, 8.5, cz), wall) end
+	part(t, "Roof", Vector3.new(46, 1.2, 34), CFrame.new(cx, 17, cz), rgb(150, 60, 50))
+	part(t, "Fascia", Vector3.new(46, 2, 1), CFrame.new(cx, 15.6, cz - 16.5), trim)
+	-- glass front with a door gap
+	for _, x in { -13, 13 } do
+		part(t, "Glass", Vector3.new(14, 12, 0.4), CFrame.new(cx + x, 7.5, cz - 15.5), rgb(190, 225, 255), Enum.Material.Glass, { Transparency = 0.45 })
+	end
+	for _, x in { -20.5, -6, 6, 20.5 } do part(t, "Mullion", Vector3.new(1, 14, 0.8), CFrame.new(cx + x, 8, cz - 15.5), trim) end
+	local sign = part(t, "Sign", Vector3.new(26, 3.4, 0.6), CFrame.new(cx, 19.4, cz - 15), rgb(40, 90, 60))
+	signGui(sign, Enum.NormalId.Front, "TEACHERS' LOUNGE", C.white, rgb(40, 90, 60), Enum.Font.LuckiestGuy)
+	-- inside: couch, coffee, a table of red pens
+	part(t, "Couch", Vector3.new(14, 2.4, 4), CFrame.new(cx - 9, 2.2, cz + 11), rgb(90, 110, 180))
+	part(t, "CouchBack", Vector3.new(14, 3, 1.2), CFrame.new(cx - 9, 4.2, cz + 13), rgb(80, 100, 170))
+	part(t, "Counter", Vector3.new(10, 3.6, 3), CFrame.new(cx + 12, 2.8, cz + 12), rgb(180, 180, 190))
+	part(t, "CoffeeMachine", Vector3.new(2, 2.6, 2), CFrame.new(cx + 14, 5.9, cz + 12), rgb(40, 40, 45), Enum.Material.Metal)
+	part(t, "Mug", Vector3.new(0.7, 0.8, 0.7), CFrame.new(cx + 11, 5, cz + 12), rgb(250, 250, 250))
+	part(t, "Table", Vector3.new(8, 0.6, 5), CFrame.new(cx, 3, cz + 2), rgb(150, 100, 60), Enum.Material.Wood)
+	part(t, "TableLeg", Vector3.new(1, 2.5, 1), CFrame.new(cx, 1.6, cz + 2), rgb(90, 60, 40), Enum.Material.Wood)
+	-- the Bell Schedule (the buses and recess run on the clock, in UTC)
+	for _, x in { -9, 9 } do part(t, "BoardPost", Vector3.new(0.8, 12, 0.8), CFrame.new(cx + x, 6, 48), rgb(60, 60, 70), Enum.Material.Metal) end
+	local board = part(t, "BellSchedule", Vector3.new(20, 9, 0.8), CFrame.new(cx, 9.5, 48), rgb(20, 24, 34))
+	signGui(board, Enum.NormalId.Front, "BELL SCHEDULE (UTC)\nLate Bus  :00 :05 :10 ...\nHonor Roll  :07:30 :22:30 :37:30 :52:30\nField Trip  :12:30 :42:30\nRecess  :00 :15 :30 :45", rgb(255, 220, 120), rgb(20, 24, 34), Enum.Font.Arcade)
+end
+
+-- west, spawn side: Janitor Stan's Confiscation Closet
+do
+	local s = Instance.new("Model"); s.Name = "ConfiscationCloset"; s.Parent = lm
+	local cx, cz = -190, -72
+	walkway(-190, -28, -190, -62)
+	local wood = rgb(140, 100, 70)
+	part(s, "Floor", Vector3.new(22, 1, 18), CFrame.new(cx, 0.5, cz), rgb(120, 120, 125), Enum.Material.Concrete)
+	part(s, "Back", Vector3.new(22, 12, 1), CFrame.new(cx, 6.5, cz - 8.5), wood, Enum.Material.WoodPlanks)
+	for _, x in { -10.5, 10.5 } do part(s, "Side", Vector3.new(1, 12, 18), CFrame.new(cx + x, 6.5, cz), wood, Enum.Material.WoodPlanks) end
+	for _, x in { -7, 7 } do part(s, "Front", Vector3.new(8, 12, 1), CFrame.new(cx + x, 6.5, cz + 8.5), wood, Enum.Material.WoodPlanks) end
+	part(s, "Lintel", Vector3.new(6, 3, 1), CFrame.new(cx, 11, cz + 8.5), wood, Enum.Material.WoodPlanks)
+	part(s, "Roof", Vector3.new(24, 1, 20), CFrame.new(cx, 13, cz) * CFrame.Angles(math.rad(8), 0, 0), rgb(90, 95, 105), Enum.Material.DiamondPlate)
+	local sign = part(s, "Sign", Vector3.new(18, 3, 0.5), CFrame.new(cx, 15.5, cz + 9.5), rgb(255, 120, 190))
+	signGui(sign, Enum.NormalId.Back, "CONFISCATION CLOSET", C.white, rgb(255, 120, 190), Enum.Font.LuckiestGuy)
+	-- confiscated goods piled up inside
+	local candy = { rgb(255, 80, 140), rgb(90, 200, 255), rgb(255, 210, 60), rgb(120, 230, 90) }
+	for i = 1, 18 do
+		part(s, "Candy", Vector3.new(1, 1, 1), CFrame.new(cx - 6 + (i % 6) * 2.2, 1.5 + (i // 6) * 1, cz - 5 + (i % 3)), candy[i % 4 + 1], nil, { Shape = Enum.PartType.Ball })
+	end
+	for i = 0, 2 do
+		part(s, "SlimeJar", Vector3.new(1.4, 2, 1.4), CFrame.new(cx + 5 + i * 1.8, 2, cz - 6), rgb(90, 255, 110), Enum.Material.Neon)
+	end
+	part(s, "Bucket", Vector3.new(2, 2, 2), CFrame.new(cx + 7, 1.6, cz + 5), rgb(255, 215, 40))
+	part(s, "NPCSpot", Vector3.new(1, 1, 1), CFrame.new(cx - 4, 0.6, cz + 12) * CFrame.Angles(0, math.rad(180), 0), C.white, nil, HIDDEN)
+end
+
+-- west, far side: Recess Commons (swings, slide, jungle gym, sandbox)
+do
+	local r = Instance.new("Model"); r.Name = "RecessCommons"; r.Parent = lm
+	local cx, cz = -190, 90
+	walkway(-190, 28, -190, 60)
+	part(r, "Mulch", Vector3.new(60, 0.3, 70), CFrame.new(cx, 0.35, cz), rgb(170, 110, 70), Enum.Material.Sand)
+	-- swings
+	for _, x in { -22, -12 } do part(r, "SwingPost", Vector3.new(0.8, 10, 0.8), CFrame.new(cx + x, 5, cz - 12), rgb(230, 60, 60), Enum.Material.Metal) end
+	part(r, "SwingBar", Vector3.new(11, 0.8, 0.8), CFrame.new(cx - 17, 10, cz - 12), rgb(230, 60, 60), Enum.Material.Metal)
+	for _, x in { -19.5, -14.5 } do
+		part(r, "Chain", Vector3.new(0.2, 7, 0.2), CFrame.new(cx + x, 6.4, cz - 12), rgb(120, 120, 130), Enum.Material.Metal)
+		part(r, "Seat", Vector3.new(2.4, 0.3, 1.2), CFrame.new(cx + x, 2.8, cz - 12), rgb(40, 40, 50))
+	end
+	-- slide
+	part(r, "Tower", Vector3.new(6, 8, 6), CFrame.new(cx + 12, 4, cz - 4), rgb(60, 140, 240))
+	part(r, "TowerRoof", Vector3.new(7, 1, 7), CFrame.new(cx + 12, 12, cz - 4), rgb(255, 210, 50))
+	for _, x in { -2.8, 2.8 } do part(r, "RoofPost", Vector3.new(0.6, 4, 0.6), CFrame.new(cx + 12 + x, 10, cz - 4), rgb(255, 210, 50)) end
+	part(r, "Slide", Vector3.new(4, 0.6, 14), CFrame.new(cx + 12, 4.3, cz + 5.5) * CFrame.Angles(math.rad(-30), 0, 0), rgb(255, 120, 40))
+	-- jungle gym
+	for i = 0, 3 do
+		for j = 0, 1 do
+			part(r, "Bar", Vector3.new(0.5, 7, 0.5), CFrame.new(cx - 18 + i * 4, 3.5, cz + 12 + j * 8), rgb(90, 200, 90), Enum.Material.Metal)
+		end
+		part(r, "TopBar", Vector3.new(0.5, 0.5, 8), CFrame.new(cx - 18 + i * 4, 7, cz + 16), rgb(90, 200, 90), Enum.Material.Metal)
+	end
+	-- sandbox
+	part(r, "SandboxRim", Vector3.new(12, 1, 12), CFrame.new(cx + 14, 0.8, cz + 20), rgb(150, 100, 60), Enum.Material.Wood)
+	part(r, "Sand", Vector3.new(11, 1.05, 11), CFrame.new(cx + 14, 0.85, cz + 20), rgb(240, 220, 150), Enum.Material.Sand)
+	local sign = part(r, "Sign", Vector3.new(14, 3, 0.5), CFrame.new(cx, 5, cz - 32), rgb(60, 180, 90))
+	signGui(sign, Enum.NormalId.Front, "RECESS COMMONS", C.white, rgb(60, 180, 90), Enum.Font.LuckiestGuy)
+	for _, x in { -6.5, 6.5 } do part(r, "SignPost", Vector3.new(0.6, 5, 0.6), CFrame.new(cx + x, 2.5, cz - 32), rgb(90, 60, 40), Enum.Material.Wood) end
+end
+
+-- east, spawn side: the District Office tower
+do
+	local d = Instance.new("Model"); d.Name = "DistrictOffice"; d.Parent = lm
+	local cx, cz = 190, -92
+	walkway(190, -28, 190, -72)
+	local stone, glass = rgb(200, 200, 210), rgb(120, 170, 220)
+	part(d, "Tower", Vector3.new(36, 56, 36), CFrame.new(cx, 28, cz), stone, Enum.Material.Concrete)
+	for floor = 0, 5 do
+		for i = -1, 1 do
+			part(d, "Window", Vector3.new(8, 5, 0.4), CFrame.new(cx + i * 11, 8 + floor * 8.5, cz + 18.05), glass, Enum.Material.Glass, { Transparency = 0.2 })
+		end
+	end
+	part(d, "Door", Vector3.new(8, 9, 0.5), CFrame.new(cx, 4.5, cz + 18.1), rgb(40, 50, 70))
+	part(d, "Canopy", Vector3.new(14, 0.6, 5), CFrame.new(cx, 10, cz + 20.5), rgb(40, 50, 70))
+	local sign = part(d, "Sign", Vector3.new(28, 4, 0.6), CFrame.new(cx, 52, cz + 18.2), rgb(40, 50, 70))
+	signGui(sign, Enum.NormalId.Back, "DISTRICT OFFICE", C.white, rgb(40, 50, 70), Enum.Font.LuckiestGuy)
+	part(d, "RoofTrim", Vector3.new(38, 2, 38), CFrame.new(cx, 57, cz), rgb(40, 50, 70))
+	part(d, "Antenna", Vector3.new(0.6, 14, 0.6), CFrame.new(cx + 10, 64, cz - 8), rgb(160, 160, 170), Enum.Material.Metal)
+	part(d, "Beacon", Vector3.new(1.4, 1.4, 1.4), CFrame.new(cx + 10, 71.5, cz - 8), rgb(255, 60, 60), Enum.Material.Neon, { Shape = Enum.PartType.Ball })
+end
+
+-- east, far side: the boarded-up Sugar Shack and Vex's billboard
+do
+	local s = Instance.new("Model"); s.Name = "SugarShack"; s.Parent = lm
+	local cx, cz = 190, 72
+	local pink = rgb(240, 150, 190)
+	part(s, "Body", Vector3.new(26, 14, 20), CFrame.new(cx, 7, cz), pink)
+	part(s, "Roof", Vector3.new(28, 1.2, 22), CFrame.new(cx, 14.6, cz), rgb(120, 70, 90))
+	-- a torn striped awning
+	for i = -5, 4 do
+		local c = i % 2 == 0 and C.white or rgb(230, 60, 110)
+		part(s, "Awning", Vector3.new(2.4, 0.3, 4 + (i % 3)), CFrame.new(cx + i * 2.4 + 1.2, 10.5, cz - 12) * CFrame.Angles(math.rad(-20 - (i % 3) * 8), 0, 0), c)
+	end
+	-- boarded windows and door
+	for _, x in { -8, 8 } do
+		part(s, "Window", Vector3.new(6, 5, 0.3), CFrame.new(cx + x, 6.5, cz - 10.1), rgb(40, 30, 40))
+		for _, a in { 25, -25 } do
+			part(s, "Board", Vector3.new(7.5, 0.8, 0.3), CFrame.new(cx + x, 6.5, cz - 10.35) * CFrame.Angles(0, 0, math.rad(a)), rgb(150, 105, 60), Enum.Material.Wood)
+		end
+	end
+	part(s, "Door", Vector3.new(5, 8, 0.3), CFrame.new(cx, 4, cz - 10.1), rgb(90, 50, 60))
+	part(s, "DoorBoard", Vector3.new(6.5, 0.8, 0.3), CFrame.new(cx, 5, cz - 10.35), rgb(150, 105, 60), Enum.Material.Wood)
+	local sign = part(s, "Sign", Vector3.new(18, 3.2, 0.5), CFrame.new(cx, 12.6, cz - 10.4) * CFrame.Angles(0, 0, math.rad(-4)), rgb(255, 230, 240))
+	signGui(sign, Enum.NormalId.Front, "SUGAR SHACK", rgb(220, 40, 110), rgb(255, 230, 240), Enum.Font.LuckiestGuy)
+	local neon = part(s, "FlickerSign", Vector3.new(6, 1.2, 0.3), CFrame.new(cx + 8, 12.6, cz - 10.5), rgb(255, 90, 180), Enum.Material.Neon)
+	neon:SetAttribute("Flicker", true)
+	part(s, "NPCSpot", Vector3.new(1, 1, 1), CFrame.new(cx, 15.4, cz + 2) * CFrame.Angles(0, math.rad(180), 0), C.white, nil, HIDDEN)
+	-- Vex's billboard behind it
+	for _, x in { -10, 10 } do part(s, "BillboardLeg", Vector3.new(1, 22, 1), CFrame.new(cx + x, 11, cz + 26), rgb(70, 70, 80), Enum.Material.Metal) end
+	local bb = part(s, "VexBillboard", Vector3.new(30, 12, 1), CFrame.new(cx, 26, cz + 26), rgb(60, 20, 90))
+	signGui(bb, Enum.NormalId.Front, "COMING SOON:\nVEX HOMEWORK FACTORY\n\"Recess is cancelled.\"", rgb(255, 255, 255), rgb(60, 20, 90), Enum.Font.LuckiestGuy)
 end
 for x = -456, 456, 38 do
 	for _, z in { -225, 225 } do
