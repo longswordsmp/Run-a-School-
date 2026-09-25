@@ -145,6 +145,25 @@ local function worldTarget()
 			end
 		end
 		return bestPad and bestPad.Position + Vector3.new(0, 1.5, 0) or nil
+	elseif g == "cheater" or g == "thief" or g == "smuggler" then
+		local plot = myPlot()
+		local students = plot and plot:FindFirstChild("Students")
+		for _, m in students and students:GetChildren() or {} do
+			local head = m:FindFirstChild("Head")
+			local hit = (g == "cheater" and head and head:FindFirstChild("Cheating"))
+				or (g == "thief" and m.Name == "Crumpet")
+				or (g == "smuggler" and (m.Name == "CandyDealer" or m.Name == "SlimeDealer"))
+			if hit and m.PrimaryPart then return m.PrimaryPart.Position + Vector3.new(0, 4, 0) end
+		end
+		return nil
+	elseif g == "bench" then
+		local hall = workspace:FindFirstChild("Hall")
+		for _, m in hall and hall:GetChildren() or {} do
+			if m:GetAttribute("ReservedFor") == player.UserId and m.PrimaryPart then
+				return m.PrimaryPart.Position + Vector3.new(0, 3.5, 0)
+			end
+		end
+		return nil
 	elseif g == "lock" then
 		local plot = myPlot()
 		local lock = plot and plot:FindFirstChild("LockButton")

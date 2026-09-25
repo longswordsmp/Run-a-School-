@@ -1624,6 +1624,35 @@ T.omni = function(model, head, hs, torso, ts)
 	sparkles(part(model, "HumanoidRootPart"), rgb(200, 180, 255), 10)
 end
 
+-- Crumpet, Vex's butler: tailcoat, white gloves, slicked hair, a silver tray and a feather duster
+Props.TeacherLooks.butler = { skin = "light", shirt = Color3.fromRGB(30, 30, 36), pants = Color3.fromRGB(30, 30, 36) }
+T.butler = function(model, head, hs, torso, ts)
+	hairCap(model, head, hs, rgb(25, 22, 20), 0.5)
+	-- white shirt front and a bow tie
+	block(model, torso, Vector3.new(ts.X * 0.32, ts.Y * 0.85, 0.05), CFrame.new(0, 0, -ts.Z * 0.53), rgb(250, 250, 250))
+	for _, x in { -1, 1 } do
+		block(model, torso, Vector3.new(ts.X * 0.12, ts.Y * 0.1, 0.08), CFrame.new(x * ts.X * 0.07, ts.Y * 0.4, -ts.Z * 0.56) * CFrame.Angles(0, 0, math.rad(x * 20)), rgb(20, 20, 20))
+	end
+	-- coat tails
+	local lower = part(model, "LowerTorso")
+	for _, x in { -1, 1 } do
+		block(model, lower, Vector3.new(ts.X * 0.3, ts.Y * 1.1, 0.12), CFrame.new(x * ts.X * 0.18, -ts.Y * 0.6, ts.Z * 0.52) * CFrame.Angles(math.rad(8), 0, 0), rgb(30, 30, 36))
+	end
+	for _, h in { "LeftHand", "RightHand" } do
+		local hand = part(model, h)
+		if hand then hand.Color = rgb(250, 250, 250) end
+	end
+	-- a very thin moustache
+	block(model, head, Vector3.new(hs.X * 0.4, hs.Y * 0.04, 0.05), CFrame.new(0, -hs.Y * 0.14, -hs.Z * 0.51), rgb(25, 22, 20))
+	local left = part(model, "LeftHand")
+	cylY(model, left, 1.6, 0.08, CFrame.new(0, 0.1, -0.5), rgb(200, 205, 215), Enum.Material.Metal)
+	local right = part(model, "RightHand")
+	cylY(model, right, 0.1, 1.2, CFrame.new(0, 0.5, -0.2), rgb(120, 80, 40), Enum.Material.Wood)
+	for i = 0, 4 do
+		blob(model, right, Vector3.new(0.25, 0.8, 0.12), CFrame.new(0, 1.3, -0.2) * CFrame.Angles(0, math.rad(i * 36), math.rad(18)), ({ rgb(255, 120, 180), rgb(255, 200, 80), rgb(120, 200, 255) })[i % 3 + 1])
+	end
+end
+
 function Props.teacher(model, outfit)
 	local build = T[outfit]
 	if not build then return end

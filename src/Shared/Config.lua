@@ -343,16 +343,21 @@ end
 -- the Principal's To-Do: the first-session tutorial chain, then repeating goals
 -- guide: "carpet" | "pad" | "lock" | "shop:<tab>" | "panel:<name>" (what the arrow points at)
 ---------------------------------------------------------------------------
+-- steps with a scripted moment (QuestService fires "questStep" when one starts): catch -> a cheater
+-- appears, bonk -> Crumpet steals a kid, scholarship -> the Rare letter is ready, bust -> a smuggler
 Config.Tutorial = {
-	{ id = "enroll1", text = "Enroll a kid off the red carpet", signal = "enroll", count = 1, reward = 40, guide = "carpet" },
-	{ id = "enroll3", text = "Fill 3 more desks", signal = "enroll", count = 3, reward = 80, guide = "carpet" },
+	{ id = "enroll1", text = "Enroll a kid off the Welcome Bus", signal = "enroll", count = 1, reward = 40, guide = "carpet" },
+	{ id = "enroll4", text = "Fill 3 more desks", signal = "enroll", count = 3, reward = 80, guide = "carpet" },
 	{ id = "collect", text = "Walk over a glowing desk pad to collect tuition", signal = "collect", count = 1, reward = 60, guide = "pad" },
+	{ id = "catch", text = "A kid is CHEATING! Catch them (hold E)", signal = "catchCheater", count = 1, reward = 100, guide = "cheater" },
 	{ id = "pencils", text = "Buy Sharpened Pencils in the Shop", signal = "supply", count = 1, reward = 120, guide = "shop:1" },
-	{ id = "hire", text = "Hire a teacher for Floor 1", signal = "hire", count = 1, reward = 250, guide = "shop:2" },
-	{ id = "name", text = "Give your school a name", signal = "nameSchool", count = 1, reward = 300, guide = "panel:NameSchool" },
+	{ id = "bonk", text = "Crumpet is stealing a kid! Bonk him with your Ruler", signal = "bonkSave", count = 1, reward = 150, guide = "thief" },
 	{ id = "lock", text = "Lock your laser gate (red button by the gate)", signal = "lock", count = 1, reward = 400, guide = "lock" },
+	{ id = "name", text = "Give your school a name", signal = "nameSchool", count = 1, reward = 300, guide = "panel:NameSchool" },
+	{ id = "scholarship", text = "Your Rare letter is here! CALL it, then enroll the kid on your bench", signal = "benchEnroll", count = 1, reward = 200, guide = "bench" },
+	{ id = "hire", text = "Hire a teacher for Floor 1", signal = "hire", count = 1, reward = 250, guide = "shop:2" },
+	{ id = "bust", text = "A Snack Smuggler snuck in! BUST him (hold E or bonk)", signal = "bustDealer", count = 1, reward = 500, guide = "smuggler" },
 	{ id = "build", text = "Build something in the School Builder", signal = "build", count = 1, reward = 600, guide = "shop:3" },
-	{ id = "rare", text = "Enroll a Rare kid (the Late Bus brings them)", signal = "enrollRare", count = 1, reward = 1500, guide = "carpet" },
 	{ id = "upgrade", text = "Buy an upgrade", signal = "upgrade", count = 1, reward = 2500, guide = "panel:Upgrades" },
 	{ id = "board", text = "Impress the School Board", signal = "review", count = 1, reward = 0, guide = "panel:Board" },
 }

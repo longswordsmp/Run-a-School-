@@ -252,6 +252,15 @@ local function pocketMoney()
 end
 
 function LetterService.start()
+	Signals.on("questStep", function(player, id)
+		local p = Data.get(player)
+		if id == "scholarship" and p and not p.scholarshipUsed then
+			letters(p).Rare = 0
+			sync(player, p)
+			Remotes.Notify:FireClient(player, "\u{2709}\u{FE0F} A Scholarship letter arrived! Press CALL on the Rare letter.", "good")
+			Remotes.Sfx:FireClient(player, "Token")
+		end
+	end)
 	Players.PlayerRemoving:Connect(function(player)
 		for _, m in benches[player] or {} do
 			if m.Parent and m:GetAttribute("State") == "Hall" then m:Destroy() end

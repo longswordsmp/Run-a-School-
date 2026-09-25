@@ -47,9 +47,20 @@ function QuestService.push(player)
 	if s then Remotes.Push:FireClient(player, "quest", s) end
 end
 
--- the client asks once its quest card is ready
-Actions.register("quest", function(player)
+-- the client asks once its quest card is ready; a rejoin mid-tutorial replays the step's moment
+local replayed = {}
+Actions.register("quest", function(player, p)
+	if not replayed[player] and p.tutorial and p.tutorial > 1 and Config.Tutorial[p.tutorial] then
+		replayed[player] = true
+		local id = Config.Tutorial[p.tutorial].id
+		task.delay(3, function()
+			if player.Parent then Signals.fire("questStep", player, id) end
+		end)
+	end
 	return QuestService.state(player) or { ok = false }
+end)
+game:GetService("Players").PlayerRemoving:Connect(function(player)
+	replayed[player] = nil
 end)
 
 local function advance(player, p, q, kind)
@@ -57,6 +68,15 @@ local function advance(player, p, q, kind)
 	p.quests.progress = 0
 	if kind == "tutorial" then
 		p.tutorial += 1
+		local nextStep = Config.Tutorial[p.tutorial]
+		if nextStep then
+			-- let scripted moments (the cheater, Crumpet, the letter, the smuggler) start
+			task.delay(2, function()
+				if player.Parent and p.tutorial <= #Config.Tutorial and Config.Tutorial[p.tutorial] == nextStep then
+					Signals.fire("questStep", player, nextStep.id)
+				end
+			end)
+		end
 	else
 		p.quests.chain = (p.quests.chain or 1) + 1
 	end
@@ -107,6 +127,7 @@ function QuestService.start()
 	on("stole")
 	on("bonkSave")
 	on("catchCheater")
+	on("benchEnroll")
 	on("bustDealer")
 	for _, name in { "supply", "hire", "build" } do
 		Signals.on(name, function(player)

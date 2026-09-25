@@ -143,6 +143,7 @@ function HallService.enroll(player, model)
 		Remotes.Announce:FireClient(player, rarity.id:upper() .. " ENROLLED!", Config.rarityAccent(def.rarity))
 	end
 	Signals.fire("enroll", player, def, grade, firstTime)
+	if model:GetAttribute("OnBench") then Signals.fire("benchEnroll", player, def) end
 
 	Factory.setMode(model, "walking", player.DisplayName)
 	Walkers.stop(model)

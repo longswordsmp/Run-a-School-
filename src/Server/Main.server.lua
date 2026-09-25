@@ -178,6 +178,23 @@ require(Server.DebugBridge).start({
 		end
 		return false
 	end,
+	-- jump the tutorial to a step (by id) and play its scripted moment
+	tutorialStep = function(player, id)
+		local p = Data.get(player)
+		for i, q in Config.Tutorial do
+			if q.id == id then
+				p.tutorial = i
+				p.quests.progress = 0
+				require(Server.Signals).fire("questStep", player, id)
+				require(Server.QuestService).push(player)
+				return i
+			end
+		end
+		return false
+	end,
+	bonkCrumpet = function(player)
+		return PatrolService.debugBonkCrumpet(player)
+	end,
 	letterReady = function(player, rarity)
 		return LetterService.debugReady(player, rarity)
 	end,
