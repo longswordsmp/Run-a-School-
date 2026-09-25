@@ -39,7 +39,7 @@ work only lives in the repo.** Everything in Studio was pushed from `src/` and c
 | **Admin panel**: call any bus, start/end events, spawn rare kids, Money Rain, server luck, recess | Panel screenshot; Money Rain dropped 80 bills and paid on touch |
 | **6 cheap starter kids** ($9-$24) with props | Lineup screenshot |
 | **NPC life**: seated kids wave, put a hand up, look around, laugh, nod, doze; hall kids wave/cheer; kids cheer arriving at a desk | 8 gestures counted in 16 s across 12 kids |
-| **100 hours** | `tools/econ_sim.py 150 5`: median 98.1 h to Multiverse University (93-104), with supplies, teachers and builds in the sim. Adding the Principal's Pick dropped it to 89.5 h; tier cash 6-11 recalibrated: **final 5-seed median 103.0 h** (92.9-132.2 h) |
+| **100 hours** | **Corrected later in the night, see "100 hours, corrected" below.** (The first figure, 103 h, left events and letters out of the sim.) |
 
 ### Later in the night
 | Feature | Evidence |
@@ -59,6 +59,28 @@ work only lives in the repo.** Everything in Studio was pushed from `src/` and c
 | **Leaderboards** (this server + all-servers Hall of Fame) | Board screenshot; the Hall of Fame needs a published game |
 | **9 more sound effects** (whistles, bonk, hammer, splash, bark, sad trombone, drum roll) | Every id loaded in Studio; heard in play |
 
+### Last stretch (after the night log above)
+| Feature | Evidence |
+|---|---|
+| **Dr. Vex's limo** drives the street every 15 min (UTC clock) and stops at the poorest school; she stands out of the sunroof, turns to the school and taunts it | Screenshot: limo on the school's side of the street, Vex in the sunroof, bubble "I'll buy it. I'll buy ALL of it." |
+| **Otis drives every bus**: the bus got an open driver's cab (map rebuilt); special buses are clones, so he drives them all and the cab takes the bus colour | Screenshots: Otis (cap, shades, beard, hi-vis) behind the yellow bus windshield and at the wheel of the purple Field Trip bus |
+| **Principal's Requests: 11 story chapters** (Elementary to the first Prestige star). Each has 4 requests (hire, build or stock that tier's items, reach IQ, own a rarity, catch/bust/quiz counts, enroll off a named bus), then Face the Board. Each request pays 1 % of the next Board review plus candy; a finished chapter fills a Rare-to-Prodigy letter. Checklist card under the HUD letters, a title card with the host's line, a toast per request | Real purchases tick requests and pay exactly (cash 1,000,000 -> 1,470,000 after a $150K hire = +$620K). Controls: IQ 140 does not tick "IQ 150", 150 does; a plain enroll does not count as a Late Bus enroll, a Late Bus kid does; an 11 s catch is not Eagle Eye, a 1 s catch is. The real tutorial-ending review opened chapter 1 and its title card. Screenshots of the card and the title card |
+| **Chapter review** (3 reviewers + a verifier each): 10 confirmed findings, all fixed. The serious one: "Hire X" could become impossible once a better teacher held the floor, freezing the chain; it now counts X or better | Re-tested: with Ms. Honeycutt hired, "Hire Mr. Chalk (or better)" ticks and the shop does refuse Chalk |
+| **Daily Requests**: 3 a day (UTC), one free reroll, 25 candy each; all 3 open **Loretta's Lunch Box** (odds shown: 80 candy, or a Rare/Epic/Legendary/Mythic letter). No cash rewards, so pacing is untouched. Red "!" on the Daily button when something is waiting | Real enrolls counted (3/20), a real letter CALL completed one (+25 candy); second reroll and early box refused; box paid 80 candy; second open refused; badge on and off; panel screenshot |
+| **Event Tickets**: during every event, tokens (event colour, icon above, sparkles) pop up around each player; walking into one is a ticket. Shop > Event: letters (15/40/120 tickets), candy, and each event's trophy (40) only during that event. **Trophy case** on the lawn fills 12 slots | Tokens spawned 18-28 studs away and 2 were collected by walking in; trophy bought (102 -> 62), wrong-event and repeat trophies refused, Rare letter filled; screenshots of the tokens, the case (1/12 with ? placeholders) and the Event tab |
+| **Announcements** no longer draw over each other (older ones slide up); the quest DONE toast moved beside the card; "IS NOW AN ELEMENTARY SCHOOL" | Seen in screenshots |
+
+### 100 hours, corrected
+The first figure (103 h) came from a sim that left out events and the Admissions Letters. Adding
+them dropped the median to 73.7 h, so the model was extended with everything that gives kids or
+cash on a schedule: event grades on buses and the event beam, all five letters, chapter letters and
+rewards, the Lunch Box (one per 3 h of play) and ticket letters (30 tickets an event, trophies
+first). Tier cash was then recalibrated. **8-seed check: median 110.9 h to Multiverse University
+(97.5-116.4 h).** With the VIP pass (x2 tuition): median 76.3 h (66.4-88.2 h).
+Not modelled, all of which make a real player faster: steals, smuggler buffs, quizzes, playtime
+gifts, daily-streak tuition, Money Rain, offline pay. The sim plays like a strong, always-online
+player; a typical player is slower.
+
 ## Not verified / known gaps
 - Anything with two players: stealing from another player, Ruler hits on another player, the alarm.
 - Mouse clicks from the test tool don't reach GUI buttons, so panels were opened through the
@@ -66,10 +88,10 @@ work only lives in the repo.** Everything in Studio was pushed from `src/` and c
   them by hand hasn't been checked.
 - Real DataStore saves (Studio uses an in-memory stand-in on an unpublished place). The save/load
   round trip through that stand-in was verified earlier.
-- Monetisation (game passes, products) is not built.
-- docs/DESIGN-v2.md (written by the design workflow tonight) has more: story NPCs (Wobblesworth,
-  Otis, Vex...), the Principal's Pick limo, the Confiscation Closet shop for candy, more events.
-  Its build order is being followed; steps 1-5 are done.
+- Game passes and products are built but have no ids yet (see below), so no real purchase has run.
+- docs/DESIGN-v2.md still has unbuilt parts: the Scrapbook, Graduation as a duplicate sink, per-event
+  activities beyond tokens (snowball war etc.), Nemesis / Most Wanted / Gazette, weeklies.
+- Event tokens on a crowded server: spawning is per player (4 live each), not tested with many players.
 
 ## Things only you can do
 - **File > Save in Studio** (and Publish when you're ready).
@@ -84,3 +106,4 @@ work only lives in the repo.** Everything in Studio was pushed from `src/` and c
 3. Should the 2-hourly Principal's Pick ever carry a Secret?
 4. Smuggler bust reward size (now x2 tuition for 20 s + candy).
 5. Weekly update / admin-abuse time: Saturday 15:00/17:00 UTC OK?
+6. VIP (x2 tuition) takes the sim's median from 110.9 h to 76.3 h. Keep x2, or make VIP x1.5?
