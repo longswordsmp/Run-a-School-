@@ -178,8 +178,62 @@ function TeacherService.refresh(player)
 	end
 end
 
+-- the School Board: five senior staff behind the table in the Board Room
+local BOARD = {
+	{ outfit = "tweed", title = "TRUSTEE" },
+	{ outfit = "honey", title = "SECRETARY" },
+	{ outfit = "dean", title = "CHAIR" },
+	{ outfit = "beaker", title = "INSPECTOR" },
+	{ outfit = "verse", title = "TREASURER" },
+}
+local function seatBoard()
+	local room = workspace:FindFirstChild("BoardRoom")
+	if not room or room:FindFirstChild("Members") then return end
+	local folder = Instance.new("Folder")
+	folder.Name = "Members"
+	folder.Parent = room
+	local seats, plates = {}, {}
+	for _, c in room:GetChildren() do
+		if c.Name == "BoardSeat" then table.insert(seats, c) end
+		if c.Name == "Nameplate" then table.insert(plates, c) end
+	end
+	table.sort(seats, function(a, b) return a.Position.X < b.Position.X end)
+	table.sort(plates, function(a, b) return a.Position.X < b.Position.X end)
+	for i, seat in seats do
+		local spec = BOARD[i]
+		local tdef
+		for _, t in Config.Teachers do
+			if t.outfit == spec.outfit then tdef = t end
+		end
+		if tdef then
+			local model = Factory.buildTeacher(tdef, 1)
+			model.Name = "Board" .. spec.title
+			model.PrimaryPart.CFrame = CFrame.new(seat.Position + Vector3.new(0, 1.35, 0)) * CFrame.Angles(0, math.pi, 0)
+			model.Parent = folder
+			Factory.play(model, "sit")
+		end
+		local plate = plates[i]
+		if plate and not plate:FindFirstChildOfClass("SurfaceGui") then
+			local g = Instance.new("SurfaceGui")
+			g.Face = Enum.NormalId.Back
+			g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+			g.PixelsPerStud = 50
+			g.Parent = plate
+			local t = Instance.new("TextLabel")
+			t.Size = UDim2.fromScale(1, 1)
+			t.BackgroundTransparency = 1
+			t.Font = Enum.Font.LuckiestGuy
+			t.TextScaled = true
+			t.TextColor3 = Color3.fromRGB(60, 40, 20)
+			t.Text = spec.title
+			t.Parent = g
+		end
+	end
+end
+
 function TeacherService.start()
 	Factory.preloadTeachers()
+	task.spawn(seatBoard)
 	table.insert(PlotService.rebuildHooks, function(player)
 		TeacherService.refresh(player)
 	end)
