@@ -71,6 +71,8 @@ work only lives in the repo.** Everything in Studio was pushed from `src/` and c
 | **Announcements** no longer draw over each other (older ones slide up); the quest DONE toast moved beside the card; "IS NOW AN ELEMENTARY SCHOOL" | Seen in screenshots |
 | **Scrapbook** (Yearbook tab): the story so far in 23 pages, the Board Chair's welcome, each Board promotion and each chapter opening, in order, unlocked by tier | Screenshot at tier 4: "7 / 23 pages of the story" |
 | **Graduation**: hold G at one of your kids' desks and they graduate (cap toss) for Diplomas (Common 1 to Secret 2,000, x grade). **Alumni Hall** (Yearbook tab) opens at Ivy League: Diplomas invite the 5 Alumni back; they walk in and you pay their price. The Board panel now says to graduate before a review (it clears the desks) | Prompt reads "Graduate +125" for a Gifted Legendary (50 x 2.5); graduating removes the kid and banks it; the Hall refuses below Ivy League; an invite took 100,000 Diplomas and $60B and Grandpa took desk 1 ($324M/s at Ivy x18); repeat invite refused; Alumni tab screenshot |
+| **Board reviews tell the story**: Kevin (age 10, propeller beanie, milk moustache, cereal bowl) sits on the Board; each promotion plays that tier's beat in the dialog box with the speaker's portrait (Kevin's waterslide and the Board's "No.", the Sugar Baron at the window, Vex's schemes, Stan's blinking statue, Kevin unmasked as the Sugar Baron, Otis's "...Home.") | Screenshot of Kevin at the Board table and of his portrait mid-line; camera sampled in the Board Room (y~407) during the beat |
+| **Graduation Day finale**, once, after the first promotion to Multiverse University: dusk, three shots of your school, the whole cast (Otis explains the bus, Vex's machine backfires and shrinks her, Kevin's last waterslide), end card PRINCIPAL OF THE MULTIVERSE; Tiny Vex then waits on your bench for free | Every speaker played in order with the camera on the plot; Tiny Vex found on the bench (reserved, free); screenshot of the dusk shot with Otis's line |
 | **Review of Daily + Tickets** (2 reviewers + verifiers): 6 confirmed, all fixed: an unopened Lunch Box was lost at midnight (now carried over), one action could pay two requests, a stale panel could waste the reroll, the trophy case stood partly on the public sidewalk with fences through it (moved inside the lot), and the case relied on a join poll that can time out | Re-tested: owed box opened the next day; stale reroll refused and kept; case screenshot inside the fence |
 
 ### 100 hours, corrected
@@ -97,7 +99,9 @@ player; a typical player is slower.
   round trip through that stand-in was verified earlier.
 - Game passes and products are built but have no ids yet (see below), so no real purchase has run.
 - docs/DESIGN-v2.md still has unbuilt parts: per-event activities beyond tokens (snowball war etc.),
-  Nemesis / Most Wanted / Gazette, weeklies, the finale.
+  Nemesis / Most Wanted / Gazette, weeklies, the Yearbook Parade credits.
+- Studio's screenshot tool sometimes renders the player camera instead of a cutscene's scripted
+  camera; where that happened the camera position was sampled on the client instead.
 - Studio's screenshot tool doesn't draw always-on-top billboards, so the custom prompt pills were
   checked by reading them on the client (text and offsets), not by a screenshot.
 - Event tokens on a crowded server: spawning is per player (4 live each), not tested with many players.
