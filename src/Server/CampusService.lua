@@ -87,6 +87,32 @@ Actions.register("buyBuild", function(player, p, id)
 	return { ok = true, rep = CampusService.rep(p) }
 end)
 
+-- Janitor Stan's Confiscation Closet: spend Confiscated Candy on decor and traps
+Actions.register("buyCandy", function(player, p, id)
+	local def = Config.CandyById[id]
+	if not def then return { ok = false, err = "Unknown item" } end
+	if def.kind == "decor" and p.builds[id] then return { ok = false, err = "Already built" } end
+	if (p.candy or 0) < def.candy then
+		Remotes.Sfx:FireClient(player, "Error")
+		return { ok = false, err = "Not enough candy" }
+	end
+	p.candy -= def.candy
+	player:SetAttribute("Candy", p.candy)
+	if def.kind == "trap" then
+		p.traps = (p.traps or 0) + 3
+		player:SetAttribute("Traps", p.traps)
+		Remotes.Announce:FireClient(player, "JAWBREAKER TRAP SET! (3 USES)", Color3.fromRGB(255, 120, 200))
+	else
+		p.builds[id] = true
+		local plot = PlotService.getPlot(player)
+		if plot then SchoolBuilder.setItems(plot, p.builds, id) end
+		Remotes.Announce:FireClient(player, def.name:upper() .. " BUILT!", Color3.fromRGB(255, 120, 200))
+	end
+	Remotes.Sfx:FireClient(player, "Buy")
+	Signals.fire("candyBuy", player, def)
+	return { ok = true, candy = p.candy }
+end)
+
 Actions.register("hireTeacher", function(player, p, floor, id)
 	local def = Config.TeacherById[id]
 	floor = tonumber(floor)
@@ -139,7 +165,11 @@ function CampusService.start()
 	end)
 	table.insert(PlotService.rebuildHooks, function(player)
 		local p = Data.get(player)
-		if p then sync(player, p) end
+		if p then
+			sync(player, p)
+			player:SetAttribute("Candy", p.candy or 0)
+			player:SetAttribute("Traps", p.traps or 0)
+		end
 	end)
 end
 

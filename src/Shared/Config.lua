@@ -384,6 +384,23 @@ Config.Goals = {
 }
 
 ---------------------------------------------------------------------------
+-- Janitor Stan's Confiscation Closet: what Confiscated Candy buys. Decor adds no Reputation (no income
+-- effect); traps protect your school. Candy is never sold for Robux.
+---------------------------------------------------------------------------
+Config.CandyShop = {
+	{ id = "JawbreakerTrap", name = "Jawbreaker Trap (3 uses)", icon = "\u{1F36C}", candy = 60, kind = "trap", desc = "A thief running out of your gate with your kid trips and drops them" },
+	{ id = "LollipopLamps", name = "Lollipop Lamp Posts", icon = "\u{1F36D}", candy = 150, kind = "decor", desc = "Giant swirly lollipops light your front walk" },
+	{ id = "GumballMachine", name = "Gumball Machine", icon = "\u{1F534}", candy = 300, kind = "decor", desc = "A huge gumball machine by the gate" },
+	{ id = "CottonCandyTree", name = "Cotton Candy Tree", icon = "\u{1F338}", candy = 800, kind = "decor", desc = "A fluffy pink tree on your lawn" },
+	{ id = "SlimeFountain", name = "Slime Fountain", icon = "\u{1F7E2}", candy = 1200, kind = "decor", desc = "A bubbling fountain of glowing slime" },
+}
+Config.CandyById = {}
+for i, c in Config.CandyShop do
+	c.order = i
+	Config.CandyById[c.id] = c
+end
+
+---------------------------------------------------------------------------
 -- Robux store (docs/DESIGN-v2.md section 13). Create each pass/product on the Creator Dashboard and
 -- paste its id here; id = 0 shows as "SOON" in the store and can't be bought.
 -- Fairness: nothing is ever prompted automatically; paid random items show their odds.

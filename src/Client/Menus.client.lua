@@ -185,7 +185,7 @@ do
 	panels.Shop = panel
 	local info = UI.label(panel.body, { Name = "Info", Text = "", TextColor3 = UI.C.navy, Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 52), ZIndex = 12, stroke = 0 })
 	local pages = {}
-	for i = 1, 3 do
+	for i = 1, 4 do
 		pages[i] = UI.new("Frame", { Name = "Page" .. i, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -86), Position = UDim2.fromOffset(0, 84), Visible = false, ZIndex = 11, Parent = panel.body })
 	end
 	local profile
@@ -260,6 +260,22 @@ do
 		end)
 	end
 
+	-- candy (Janitor Stan's Confiscation Closet)
+	local candyList = scrollList(pages[4])
+	local candyRows = {}
+	for i, c in Config.CandyShop do
+		candyRows[c.id] = shopRow(candyList, i, {
+			name = c.id, icon = c.icon, title = c.name, desc = c.desc,
+			sub = c.kind == "trap" and "Protects your school" or "Decor for your campus",
+			iconBg = Color3.fromRGB(255, 225, 240),
+		})
+		candyRows[c.id].buy.button.Activated:Connect(function()
+			if not candyRows[c.id].buy.button.Active then return end
+			call("buyCandy", c.id)
+			panel.refresh()
+		end)
+	end
+
 	local function show(row, state, price, lockText)
 		setState(row, state, price, lockText)
 		priced[row] = { state = state, price = price }
@@ -305,6 +321,20 @@ do
 					row.buy.setText("HIRE " .. Config.formatCash(t.price))
 				end
 			end
+		elseif current == 4 then
+			local candy = player:GetAttribute("Candy") or 0
+			local traps = player:GetAttribute("Traps") or 0
+			info.Text = ("\u{1F36C} %d candy  \u{2022}  %d trap uses set  (bust Snack Smugglers for more)"):format(candy, traps)
+			for _, c in Config.CandyShop do
+				local row = candyRows[c.id]
+				if c.kind == "decor" and profile.builds[c.id] then
+					setState(row, "owned")
+				else
+					row.buy.setText("\u{1F36C} " .. c.candy)
+					row.buy.setEnabled(candy >= c.candy)
+					if candy >= c.candy then row.buy.setColor(UI.C.pink) end
+				end
+			end
 		else
 			info.Text = ("Reputation %d  \u{2192}  tuition x%.2f"):format(profile.rep, 1 + profile.rep / 100)
 			for _, b in Config.Builds do
@@ -321,9 +351,10 @@ do
 	end
 
 	local selectTab = tabs(panel.body, {
-		{ "\u{270F}\u{FE0F} Supplies", UI.C.blue },
-		{ "\u{1F9D1}\u{200D}\u{1F3EB} Teachers", UI.C.orange },
-		{ "\u{1F3D7}\u{FE0F} Builder", UI.C.green },
+		{ "\u{270F}\u{FE0F} Supplies", UI.C.blue, 175 },
+		{ "\u{1F9D1}\u{200D}\u{1F3EB} Teachers", UI.C.orange, 175 },
+		{ "\u{1F3D7}\u{FE0F} Builder", UI.C.green, 175 },
+		{ "\u{1F36C} Candy", UI.C.pink, 175 },
 	}, function(i)
 		current = i
 		for j, pg in pages do pg.Visible = j == i end

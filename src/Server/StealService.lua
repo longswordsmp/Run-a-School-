@@ -340,6 +340,20 @@ function StealService.start()
 					end
 				end
 				if root then c.lastPos = root.Position end
+				-- the owner's Jawbreaker Trap: leaving their gate with their kid trips you
+				local op = root and Data.get(c.owner)
+				local entry = c.plot:FindFirstChild("Entry")
+				if op and (op.traps or 0) > 0 and entry and (root.Position - entry.Position).Magnitude < 9 then
+					op.traps -= 1
+					c.owner:SetAttribute("Traps", op.traps)
+					Remotes.Sfx:FireAllClients("GavelBig", root.Position)
+					Remotes.Notify:FireClient(c.owner, ("Your Jawbreaker Trap tripped %s! (%d left)"):format(thief.DisplayName, op.traps), "good")
+					StealService.drop(thief, "You slipped on a JAWBREAKER! They ran home.")
+					stunned[thief] = os.clock() + 1.5
+					setSpeed(thief)
+					task.delay(1.6, function() if thief.Parent then setSpeed(thief) end end)
+					continue
+				end
 				if not root or not home then
 					StealService.drop(thief)
 				elseif PlotService.inside(home, root.Position) then

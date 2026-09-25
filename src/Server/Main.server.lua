@@ -200,6 +200,12 @@ require(Server.DebugBridge).start({
 		return PatrolService.debugBonkCrumpet(player)
 	end,
 	-- the purchase grant paths without Robux (Studio only)
+	candy = function(player, amount)
+		local p = Data.get(player)
+		p.candy = amount
+		player:SetAttribute("Candy", amount)
+		return amount
+	end,
 	skipPlaytime = function(player, minutes)
 		return RewardService.debugSkip(player, minutes)
 	end,

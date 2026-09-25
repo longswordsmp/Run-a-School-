@@ -112,6 +112,13 @@ local function chip(name, color)
 end
 local iqText = chip("IQ", Color3.fromRGB(70, 150, 255))
 local repText = chip("Rep", Color3.fromRGB(255, 140, 60))
+local candyText = chip("Candy", Color3.fromRGB(255, 110, 190))
+chips.Size = UDim2.fromOffset(440, 34)
+local function refreshCandy()
+	candyText.Text = "\u{1F36C} " .. tostring(player:GetAttribute("Candy") or 0)
+end
+player:GetAttributeChangedSignal("Candy"):Connect(refreshCandy)
+refreshCandy()
 local function refreshChips()
 	iqText.Text = "\u{1F9E0} IQ " .. tostring(player:GetAttribute("IQ") or 100)
 	repText.Text = "\u{2B50} Rep " .. tostring(player:GetAttribute("Rep") or 0)

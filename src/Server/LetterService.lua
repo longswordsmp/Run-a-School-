@@ -114,7 +114,7 @@ local function release(player, model)
 	local so = Factory.standOffset(model)
 	local pts = {}
 	if plot then
-		for _, w in PlotService.worldPoints(plot, { Vector3.new(0, 0.5, 64), Vector3.new(0, 0.5, 72) }, so) do table.insert(pts, w) end
+		for _, w in PlotService.worldPoints(plot, { Vector3.new(-12.5, 0.5, 64), Vector3.new(0, 0.5, 66), Vector3.new(0, 0.5, 72) }, so) do table.insert(pts, w) end
 		table.insert(pts, Vector3.new(plot.Entry.Position.X, 0.65 + so, plot.Entry.Position.Z))
 	end
 	local finish = workspace.Map.HallPath.End.Position
@@ -159,7 +159,7 @@ function LetterService.deliver(player, def, free)
 	local spot = benchSpot(plot, seat)
 	local entry = plot.Entry.Position
 	local pts = { Vector3.new(entry.X, 0.65 + so, entry.Z) }
-	for _, w in PlotService.worldPoints(plot, { Vector3.new(0, 0.5, 70), Vector3.new(0, 0.5, 62), Vector3.new(-20.5, 0.5, spot and plot.Origin.CFrame:PointToObjectSpace(spot.Position).Z or 60) }, so) do
+	for _, w in PlotService.worldPoints(plot, { Vector3.new(0, 0.5, 70), Vector3.new(0, 0.5, 62), Vector3.new(-12.5, 0.5, spot and plot.Origin.CFrame:PointToObjectSpace(spot.Position).Z or 56) }, so) do
 		table.insert(pts, w)
 	end
 	model.PrimaryPart.CFrame = CFrame.new(pts[1] + Vector3.new(0, 0, 0))

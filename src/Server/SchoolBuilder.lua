@@ -645,13 +645,13 @@ local function buildYard(school, L, look)
 	local wait = Instance.new("Model")
 	wait.Name = "WaitingBench"
 	wait.Parent = yard
-	part(wait, "Seat", Vector3.new(2.2, 0.5, 10), L(-24, 1.9, 60), look.sign)
-	part(wait, "Back", Vector3.new(0.5, 2.4, 10), L(-25.2, 3.3, 60), look.sign)
-	part(wait, "Legs", Vector3.new(1.8, 1.6, 9.4), L(-24, 0.9, 60), rgb(80, 85, 95), Enum.Material.Metal, { Transparency = 0.4 })
-	local sign = part(wait, "Sign", Vector3.new(0.3, 1.4, 6), L(-25.3, 5.3, 60), WHITE)
+	part(wait, "Seat", Vector3.new(2.2, 0.5, 10), L(-15, 1.9, 56), look.sign)
+	part(wait, "Back", Vector3.new(0.5, 2.4, 10), L(-16.2, 3.3, 56), look.sign)
+	part(wait, "Legs", Vector3.new(1.8, 1.6, 9.4), L(-15, 0.9, 56), rgb(80, 85, 95), Enum.Material.Metal, { Transparency = 0.4 })
+	local sign = part(wait, "Sign", Vector3.new(0.3, 1.4, 6), L(-16.3, 5.3, 56), WHITE)
 	surfaceText(sign, Enum.NormalId.Right, "WAITING BENCH", look.sign, nil, Enum.Font.LuckiestGuy)
-	for i, sz in { 56.8, 60, 63.2 } do
-		local sp = part(wait, "BenchSpot", Vector3.new(1, 1, 1), L(-24, 2.15, sz) * CFrame.Angles(0, math.rad(-90), 0), WHITE, nil, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+	for i, sz in { 52.8, 56, 59.2 } do
+		local sp = part(wait, "BenchSpot", Vector3.new(1, 1, 1), L(-15, 2.15, sz) * CFrame.Angles(0, math.rad(-90), 0), WHITE, nil, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
 		sp:SetAttribute("Seat", i)
 	end
 	-- flagpole
@@ -873,6 +873,66 @@ Items.StainedGlass = function(parent, L, look, roofY, floors)
 			end
 		end
 	end
+end
+
+-- candy decor (bought with Confiscated Candy)
+Items.LollipopLamps = function(parent, L)
+	local colors = { rgb(255, 80, 150), rgb(90, 200, 255), rgb(255, 200, 60), rgb(140, 230, 90) }
+	for i = 0, 3 do
+		for _, side in { -1, 1 } do
+			local z = 26 + i * 12
+			local x = side * 12.5
+			part(parent, "Stick", Vector3.new(0.5, 7, 0.5), L(x, 4, z), WHITE)
+			local c = colors[(i + (side > 0 and 1 or 0)) % #colors + 1]
+			local pop = cyl(parent, "Pop", 3.2, 0.7, L(x, 8.6, z) * CFrame.Angles(0, math.rad(90), 0), c)
+			cyl(parent, "Swirl", 2, 0.75, L(x, 8.6, z) * CFrame.Angles(0, math.rad(90), 0), WHITE)
+			cyl(parent, "Center", 0.9, 0.8, L(x, 8.6, z) * CFrame.Angles(0, math.rad(90), 0), c)
+			light(pop, 10, 0.4, c)
+		end
+	end
+end
+
+Items.GumballMachine = function(parent, L)
+	local x, z = -16, 70
+	part(parent, "Base", Vector3.new(3, 4, 3), L(x, 2.4, z), rgb(210, 40, 50))
+	part(parent, "Chute", Vector3.new(1, 0.8, 0.6), L(x, 1.6, z + 1.7), rgb(200, 200, 210), Enum.Material.Metal)
+	local globe = ball(parent, "Globe", 5, L(x, 6.8, z), rgb(220, 240, 255), Enum.Material.Glass)
+	globe.Transparency = 0.5
+	local colors = { rgb(255, 60, 60), rgb(60, 140, 255), rgb(255, 210, 50), rgb(90, 220, 90), rgb(255, 120, 200), rgb(255, 150, 40) }
+	for i = 1, 22 do
+		local a, r = i * 2.4, 1.3 + (i % 3) * 0.35
+		ball(parent, "Gumball", 0.9, L(x + math.cos(a) * r * 0.9, 5.4 + (i % 5) * 0.45, z + math.sin(a) * r * 0.9), colors[i % #colors + 1])
+	end
+	cyl(parent, "Cap", 2.4, 0.6, L(x, 9.4, z) * CFrame.Angles(0, 0, math.rad(90)), rgb(210, 40, 50))
+end
+
+Items.CottonCandyTree = function(parent, L)
+	local x, z = -52, 48
+	part(parent, "Trunk", Vector3.new(1.6, 9, 1.6), L(x, 4.9, z), rgb(245, 245, 250))
+	local pinks = { rgb(255, 170, 215), rgb(255, 200, 230), rgb(200, 170, 255) }
+	for i, o in { Vector3.new(0, 11, 0), Vector3.new(2.6, 10, 1.2), Vector3.new(-2.4, 10.2, -1), Vector3.new(0.8, 13, -0.8), Vector3.new(-1, 12.4, 2) } do
+		ball(parent, "Fluff", 5.2 - (i % 2) * 0.8, L(x + o.X, o.Y, z + o.Z), pinks[i % #pinks + 1], Enum.Material.SmoothPlastic)
+	end
+end
+
+Items.SlimeFountain = function(parent, L)
+	local x, z = 18, 30
+	cyl(parent, "Basin", 9, 1.6, L(x, 1.2, z) * CFrame.Angles(0, 0, math.rad(90)), rgb(190, 190, 200))
+	cyl(parent, "Slime", 8, 1.7, L(x, 1.3, z) * CFrame.Angles(0, 0, math.rad(90)), rgb(90, 255, 110), Enum.Material.Neon)
+	part(parent, "Pillar", Vector3.new(1.4, 4, 1.4), L(x, 3.6, z), rgb(190, 190, 200))
+	local top = ball(parent, "Blob", 2.6, L(x, 6.2, z), rgb(90, 255, 110), Enum.Material.Neon)
+	light(top, 14, 0.8, rgb(90, 255, 110))
+	local drip = Instance.new("ParticleEmitter")
+	drip.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	drip.Color = ColorSequence.new(rgb(120, 255, 140))
+	drip.Size = NumberSequence.new(0.5, 0.1)
+	drip.Speed = NumberRange.new(4, 7)
+	drip.SpreadAngle = Vector2.new(35, 35)
+	drip.Acceleration = Vector3.new(0, -18, 0)
+	drip.Lifetime = NumberRange.new(0.8, 1.2)
+	drip.Rate = 25
+	drip.LightEmission = 0.8
+	drip.Parent = top
 end
 
 Items.PicketFence = function(parent, L, look) fence(parent, L, "picket", look) end
