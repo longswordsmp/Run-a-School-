@@ -113,7 +113,25 @@ end
 local iqText = chip("IQ", Color3.fromRGB(70, 150, 255))
 local repText = chip("Rep", Color3.fromRGB(255, 140, 60))
 local candyText = chip("Candy", Color3.fromRGB(255, 110, 190))
+local ticketText = chip("Tickets", Color3.fromRGB(255, 165, 40))
 chips.Size = UDim2.fromOffset(440, 34)
+local lastTickets = player:GetAttribute("Tickets") or 0
+local function refreshTickets()
+	local n = player:GetAttribute("Tickets") or 0
+	ticketText.Text = "\u{1F39F}\u{FE0F} " .. tostring(n)
+	local show = n > 0 or workspace:GetAttribute("Event") ~= nil
+	ticketText.Parent.Visible = show
+	chips.Size = UDim2.fromOffset(show and 590 or 440, 34)
+	if n > lastTickets then
+		local sc = ticketText.Parent:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", ticketText.Parent)
+		sc.Scale = 1.2
+		TweenService:Create(sc, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	end
+	lastTickets = n
+end
+player:GetAttributeChangedSignal("Tickets"):Connect(refreshTickets)
+workspace:GetAttributeChangedSignal("Event"):Connect(refreshTickets)
+refreshTickets()
 local function refreshCandy()
 	candyText.Text = "\u{1F36C} " .. tostring(player:GetAttribute("Candy") or 0)
 end

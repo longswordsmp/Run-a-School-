@@ -1499,4 +1499,72 @@ function SchoolBuilder.aisleRoute(slot)
 	return pts
 end
 
+---------------------------------------------------------------------------
+-- the trophy case (open shelves): one trophy per event (bought with Event Tickets), 12 slots,
+-- on the right of the yard between the bleachers and the gate, facing the front walk. Empty
+-- slots show a faint cup and a "?" so the missing ones are obvious.
+---------------------------------------------------------------------------
+local TROPHY_ORDER = { "SnowDay", "FieldDay", "ScienceFair", "PromNight", "PictureDay", "Throwback", "Halloween", "WizardWeek", "CandyCarnival", "SpaceCamp", "HostileTakeover", "Graduation" }
+SchoolBuilder.TROPHY_ORDER = TROPHY_ORDER
+local TROPHY_COLORS = {
+	SnowDay = rgb(170, 220, 255), FieldDay = rgb(255, 205, 60), ScienceFair = rgb(90, 255, 90),
+	PromNight = rgb(255, 120, 220), PictureDay = rgb(245, 245, 250), Throwback = rgb(230, 170, 90),
+	Halloween = rgb(255, 130, 20), WizardWeek = rgb(170, 110, 255), CandyCarnival = rgb(255, 110, 190),
+	SpaceCamp = rgb(140, 90, 255), HostileTakeover = rgb(80, 200, 120), Graduation = rgb(40, 40, 50),
+}
+function SchoolBuilder.trophyCase(plot, owned)
+	local old = plot:FindFirstChild("TrophyCase")
+	if old then old:Destroy() end
+	if not owned then return end
+	local Config = require(game:GetService("ReplicatedStorage").Shared.Config)
+	local model = Instance.new("Model")
+	model.Name = "TrophyCase"
+	-- the case's own frame: +Z runs along the case, the front faces the walk (lot -X)
+	local base = plot.Origin.CFrame * CFrame.new(40, 0, 73) * CFrame.Angles(0, math.rad(90), 0)
+	local function C(x, y, z) return base * CFrame.new(x, y, z) end
+	local wood, dark = rgb(120, 78, 48), rgb(80, 50, 30)
+	local W, D, H = 11, 2.8, 7.4
+	part(model, "Plinth", Vector3.new(W + 0.6, 0.8, D + 0.6), C(0, 0.4, 0), dark, Enum.Material.Wood)
+	part(model, "Back", Vector3.new(W, H, 0.3), C(0, 0.8 + H / 2, D / 2 - 0.15), wood, Enum.Material.Wood)
+	for _, sx in { -1, 1 } do
+		part(model, "Side", Vector3.new(0.3, H, D), C(sx * (W / 2 - 0.15), 0.8 + H / 2, 0), wood, Enum.Material.Wood)
+	end
+	local top = part(model, "Top", Vector3.new(W + 0.6, 0.5, D + 0.6), C(0, 0.8 + H + 0.25, 0), dark, Enum.Material.Wood)
+	light(top, 9, 0.7, rgb(255, 240, 210))
+	local shelves = { 1.3, 4.3 }
+	for _, y in shelves do
+		part(model, "Shelf", Vector3.new(W - 0.6, 0.25, D - 0.3), C(0, 0.8 + y - 0.13, 0.1), rgb(235, 225, 210), Enum.Material.Wood)
+	end
+	-- a sign on top
+	local sign = part(model, "Sign", Vector3.new(W - 1, 1.4, 0.25), C(0, 0.8 + H + 1.2, -D / 2 - 0.05), rgb(255, 214, 51))
+	local n = 0
+	for _ in owned do n += 1 end
+	surfaceText(sign, Enum.NormalId.Front, ("TROPHY CASE  %d/12"):format(n), rgb(60, 40, 20), nil, Enum.Font.LuckiestGuy)
+	for i, id in TROPHY_ORDER do
+		local row = i <= 6 and 2 or 1
+		local col = (i - 1) % 6
+		local x = (col - 2.5) * 1.72
+		local y = 0.8 + shelves[row]
+		local has = owned[id] == true
+		-- empty slots: a dull grey stand-in (opaque; see-through parts don't draw well behind others)
+		local color = has and TROPHY_COLORS[id] or rgb(150, 145, 140)
+		local mat = has and Enum.Material.Metal or Enum.Material.Slate
+		local tr = 0
+		part(model, "TrophyBase", Vector3.new(1, 0.35, 1), C(x, y + 0.18, 0.2), has and rgb(40, 35, 30) or color, nil, { Transparency = tr, TopSurface = Enum.SurfaceType.Smooth })
+		part(model, "TrophyStem", Vector3.new(0.25, 0.55, 0.25), C(x, y + 0.62, 0.2), color, mat, { Transparency = tr })
+		local cup = cyl(model, "TrophyCup", 0.95, 0.9, C(x, y + 1.3, 0.2) * CFrame.Angles(0, 0, math.rad(90)), color, mat)
+		cup.Transparency = tr
+		for _, hx in { -1, 1 } do
+			part(model, "TrophyHandle", Vector3.new(0.18, 0.55, 0.18), C(x + hx * 0.58, y + 1.35, 0.2), color, mat, { Transparency = tr })
+		end
+		-- the event's icon (or a question mark) on a little plaque
+		local plaque = part(model, "Plaque", Vector3.new(1.3, 0.5, 0.05), C(x, y - 0.05, -D / 2 + 0.25), has and rgb(255, 214, 51) or rgb(230, 230, 235), Enum.Material.SmoothPlastic)
+		local info = Config.EventInfo and Config.EventInfo[id]
+		surfaceText(plaque, Enum.NormalId.Front, has and (info and info.icon or "*") or "?", rgb(40, 30, 20))
+		if has then light(cup, 3, 0.5, color) end
+	end
+	model.Parent = plot
+	return model
+end
+
 return SchoolBuilder

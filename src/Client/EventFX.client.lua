@@ -321,9 +321,29 @@ task.spawn(function()
 	end
 end)
 
+-- event tokens (TicketService) spin and bob here; the server only places them
+local CollectionService = game:GetService("CollectionService")
+local tokens = {}
+local function addToken(t)
+	if t:IsA("BasePart") then tokens[t] = { base = t.CFrame, phase = math.random() * 6 } end
+end
+for _, t in CollectionService:GetTagged("EventToken") do addToken(t) end
+CollectionService:GetInstanceAddedSignal("EventToken"):Connect(addToken)
+CollectionService:GetInstanceRemovedSignal("EventToken"):Connect(function(t)
+	tokens[t] = nil
+end)
+
 -- keep the weather over the camera; flash now and then on Picture Day
 local nextFlash = 0
 RunService.RenderStepped:Connect(function(dt)
+	local now = os.clock()
+	for t, s in tokens do
+		if t.Parent then
+			t.CFrame = s.base * CFrame.new(0, math.sin(now * 2 + s.phase) * 0.4, 0) * CFrame.Angles(0, now * 2.2 + s.phase, 0)
+		else
+			tokens[t] = nil
+		end
+	end
 	for _, b in spin do
 		if b.Parent then b.CFrame = b.CFrame * CFrame.Angles(0, dt * 0.8, 0) end
 	end

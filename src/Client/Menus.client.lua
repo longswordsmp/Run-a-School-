@@ -192,7 +192,7 @@ do
 	panels.Shop = panel
 	local info = UI.label(panel.body, { Name = "Info", Text = "", TextColor3 = UI.C.navy, Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 52), ZIndex = 12, stroke = 0 })
 	local pages = {}
-	for i = 1, 4 do
+	for i = 1, 5 do
 		pages[i] = UI.new("Frame", { Name = "Page" .. i, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -86), Position = UDim2.fromOffset(0, 84), Visible = false, ZIndex = 11, Parent = panel.body })
 	end
 	local profile
@@ -283,6 +283,36 @@ do
 		end)
 	end
 
+	-- the Ticket shop (TicketService): letters and candy any time, each event's trophy during it
+	local ticketList = scrollList(pages[5])
+	local ticketRows = {}
+	for i, it in Config.EventShop do
+		ticketRows[it.id] = shopRow(ticketList, 10 + i, {
+			name = it.id, icon = it.icon, title = it.name,
+			desc = it.kind == "letter" and "A guaranteed " .. it.rarity .. " kid you can afford, on your bench" or "For Janitor Stan's Closet",
+			sub = "Collect event tokens during events for tickets",
+			iconBg = Color3.fromRGB(255, 235, 200),
+		})
+	end
+	for i, id in { "SnowDay", "FieldDay", "ScienceFair", "PromNight", "PictureDay", "Throwback", "Halloween", "WizardWeek", "CandyCarnival", "SpaceCamp", "HostileTakeover", "Graduation" } do
+		local info = Config.EventInfo[id]
+		ticketRows["Trophy_" .. id] = shopRow(ticketList, 100 + i, {
+			name = "Trophy_" .. id, icon = info.icon, title = info.name .. " Trophy",
+			desc = "For the trophy case on your lawn",
+			sub = "Only while " .. info.name .. " is on",
+			iconBg = Color3.fromRGB(255, 245, 210),
+		})
+		ticketRows["Trophy_" .. id].frame:SetAttribute("Order", 100 + i)
+	end
+	for id, row in ticketRows do
+		row.buy.button.Activated:Connect(function()
+			if not row.buy.button.Active then return end
+			local res = call("buyTicket", id)
+			if res and res.ok == false then UI.punch(row.frame, 1.04) end
+			panel.refresh()
+		end)
+	end
+
 	local function show(row, state, price, lockText)
 		setState(row, state, price, lockText)
 		priced[row] = { state = state, price = price }
@@ -328,6 +358,34 @@ do
 					row.buy.setText("HIRE " .. Config.formatCash(t.price))
 				end
 			end
+		elseif current == 5 then
+			local st = call("tickets")
+			if not st or st.ok == false then return end
+			local ev = st.event
+			info.Text = ev and ("\u{1F39F}\u{FE0F} %d tickets  \u{2022}  %s is on: grab the tokens around you!"):format(st.tickets, Config.EventInfo[ev].name)
+				or ("\u{1F39F}\u{FE0F} %d tickets  \u{2022}  tokens appear during events"):format(st.tickets)
+			for _, it in Config.EventShop do
+				local row = ticketRows[it.id]
+				setState(row, "buy", 0)
+				row.buy.setText("\u{1F39F}\u{FE0F} " .. it.tickets)
+				row.buy.setEnabled(st.tickets >= it.tickets)
+				if st.tickets >= it.tickets then row.buy.setColor(UI.C.orange) end
+			end
+			for id, info in Config.EventInfo do
+				local row = ticketRows["Trophy_" .. id]
+				-- the running event's trophy goes to the top
+				row.frame.LayoutOrder = id == ev and 0 or row.frame:GetAttribute("Order")
+				if st.trophies[id] then
+					setState(row, "owned")
+				elseif id == ev then
+					setState(row, "buy", 0)
+					row.buy.setText("\u{1F39F}\u{FE0F} " .. Config.TrophyTickets)
+					row.buy.setEnabled(st.tickets >= Config.TrophyTickets)
+					if st.tickets >= Config.TrophyTickets then row.buy.setColor(UI.C.orange) end
+				else
+					setState(row, "locked", nil, info.name)
+				end
+			end
 		elseif current == 4 then
 			local candy = player:GetAttribute("Candy") or 0
 			local traps = player:GetAttribute("Traps") or 0
@@ -358,10 +416,11 @@ do
 	end
 
 	local selectTab = tabs(panel.body, {
-		{ "\u{270F}\u{FE0F} Supplies", UI.C.blue, 175 },
-		{ "\u{1F9D1}\u{200D}\u{1F3EB} Teachers", UI.C.orange, 175 },
-		{ "\u{1F3D7}\u{FE0F} Builder", UI.C.green, 175 },
-		{ "\u{1F36C} Candy", UI.C.pink, 175 },
+		{ "\u{270F}\u{FE0F} Supplies", UI.C.blue, 142 },
+		{ "\u{1F9D1}\u{200D}\u{1F3EB} Teachers", UI.C.orange, 142 },
+		{ "\u{1F3D7}\u{FE0F} Builder", UI.C.green, 142 },
+		{ "\u{1F36C} Candy", UI.C.pink, 142 },
+		{ "\u{1F39F}\u{FE0F} Event", Color3.fromRGB(255, 165, 40), 142 },
 	}, function(i)
 		current = i
 		for j, pg in pages do pg.Visible = j == i end

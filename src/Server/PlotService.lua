@@ -507,6 +507,8 @@ function PlotService.release(player)
 	plot:SetAttribute("CooldownUntil", 0)
 	local pad = plot:FindFirstChild("TuitionOffice")
 	if pad then pad:Destroy() end
+	local case = plot:FindFirstChild("TrophyCase")
+	if case then case:Destroy() end
 	buildEmpty(plot)
 end
 

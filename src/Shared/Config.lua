@@ -528,6 +528,34 @@ Config.LunchBox = {
 }
 
 ---------------------------------------------------------------------------
+-- Event Tickets: during an event, event tokens pop up around every player; each one is a ticket.
+-- Tickets buy letters and candy any time, and each event's trophy only while that event runs
+-- (12 trophies fill the trophy case on your lawn). tools/econ_sim.py models the letters.
+---------------------------------------------------------------------------
+Config.EventInfo = {
+	SnowDay = { name = "Snow Day", icon = "\u{2744}\u{FE0F}" },
+	FieldDay = { name = "Field Day", icon = "\u{1F3C5}" },
+	ScienceFair = { name = "Science Fair", icon = "\u{1F9EA}" },
+	PromNight = { name = "Prom Night", icon = "\u{1F483}" },
+	PictureDay = { name = "Picture Day", icon = "\u{1F4F8}" },
+	Throwback = { name = "Throwback Week", icon = "\u{1F4FC}" },
+	Halloween = { name = "Halloween", icon = "\u{1F383}" },
+	WizardWeek = { name = "Wizard Week", icon = "\u{2728}" },
+	CandyCarnival = { name = "Candy Carnival", icon = "\u{1F36D}" },
+	SpaceCamp = { name = "Space Camp", icon = "\u{1F680}" },
+	HostileTakeover = { name = "Hostile Takeover", icon = "\u{1F4BC}" },
+	Graduation = { name = "Graduation", icon = "\u{1F393}" },
+}
+Config.EventShop = {
+	{ id = "LetterRare", name = "Rare Letter, ready now", icon = "\u{1F4E8}", tickets = 15, kind = "letter", rarity = "Rare" },
+	{ id = "LetterEpic", name = "Epic Letter, ready now", icon = "\u{1F4E8}", tickets = 40, kind = "letter", rarity = "Epic" },
+	{ id = "LetterLegendary", name = "Legendary Letter, ready now", icon = "\u{1F4E8}", tickets = 120, kind = "letter", rarity = "Legendary" },
+	{ id = "Candy50", name = "50 Candy", icon = "\u{1F36C}", tickets = 10, kind = "candy", amount = 50 },
+}
+Config.TrophyTickets = 40
+Config.TicketsPerToken = 1
+
+---------------------------------------------------------------------------
 -- Janitor Stan's Confiscation Closet: what Confiscated Candy buys. Decor adds no Reputation (no income
 -- effect); traps protect your school. Candy is never sold for Robux.
 ---------------------------------------------------------------------------
