@@ -522,8 +522,9 @@ Config.DailyPool = {
 	{ id = "collect30", text = "Collect tuition 30 times", signal = "collect", count = 30 },
 	{ id = "letter1", text = "CALL an Admissions Letter", signal = "letter", count = 1 },
 	{ id = "lock5", text = "Lock your gate 5 times", signal = "lock", count = 5 },
-	{ id = "bus2", text = "Enroll 2 kids off special buses", signal = "busEnroll", count = 2 },
-	{ id = "eagle2", text = "Make 2 EAGLE EYE catches", signal = "eagleEye", count = 2 },
+	-- group: requests credited by the same action (a bus kid is also an enroll) are never dealt together
+	{ id = "bus2", text = "Enroll 2 kids off special buses", signal = "busEnroll", group = "enroll", count = 2 },
+	{ id = "eagle2", text = "Make 2 EAGLE EYE catches", signal = "eagleEye", group = "catchCheater", count = 2 },
 	{ id = "grad3", text = "Graduate 3 kids (hold G at a desk)", signal = "graduate", count = 3 },
 }
 Config.DailyCandy = 25

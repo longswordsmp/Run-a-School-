@@ -25,13 +25,13 @@ local function pickFor(userId, day, avoid)
 	local rng = Random.new(userId * 7 + day * 131 + (avoid and 17 or 0))
 	local pool = {}
 	for _, q in Config.DailyPool do
-		if not (avoid and (avoid[q.id] or avoid[q.signal])) then table.insert(pool, q.id) end
+		if not (avoid and (avoid[q.id] or avoid[q.group or q.signal])) then table.insert(pool, q.id) end
 	end
 	-- one request per signal, so a single catch or enroll never pays two requests
 	local out, used = {}, {}
 	while #out < 3 and #pool > 0 do
 		local id = table.remove(pool, rng:NextInteger(1, #pool))
-		local sig = byId[id].signal
+		local sig = byId[id].group or byId[id].signal
 		if not used[sig] then
 			used[sig] = true
 			table.insert(out, id)
@@ -156,7 +156,7 @@ Actions.register("rerollDaily", function(player, p, index, seenId)
 	local avoid = {}
 	for i, id in r.ids do
 		avoid[id] = true
-		if i ~= index then avoid[byId[id].signal] = true end
+		if i ~= index then avoid[byId[id].group or byId[id].signal] = true end
 	end
 	r.ids[index] = pickFor(player.UserId, r.day, avoid)[1]
 	r.prog[index] = 0

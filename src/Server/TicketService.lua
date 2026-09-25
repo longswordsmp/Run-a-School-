@@ -207,6 +207,14 @@ function TicketService.start()
 	end
 	Players.PlayerAdded:Connect(onJoin)
 	for _, pl in Players:GetPlayers() do task.spawn(onJoin, pl) end
+	-- and whenever the school is (re)built: assigning a plot after a slow load, a Board review
+	table.insert(PlotService.rebuildHooks, function(player)
+		local p = Data.get(player)
+		if p then
+			syncTickets(player, p)
+			refreshCase(player, p)
+		end
+	end)
 	Players.PlayerRemoving:Connect(function(player)
 		for _, t in live[player] or {} do
 			if t.Parent then t:Destroy() end

@@ -1501,7 +1501,7 @@ end
 
 ---------------------------------------------------------------------------
 -- the trophy case (open shelves): one trophy per event (bought with Event Tickets), 12 slots,
--- on the right of the yard between the bleachers and the gate, facing the front walk. Empty
+-- on the right of the yard past the bleachers, inside the lot, facing the front walk. Empty
 -- slots show a faint cup and a "?" so the missing ones are obvious.
 ---------------------------------------------------------------------------
 local TROPHY_ORDER = { "SnowDay", "FieldDay", "ScienceFair", "PromNight", "PictureDay", "Throwback", "Halloween", "WizardWeek", "CandyCarnival", "SpaceCamp", "HostileTakeover", "Graduation" }
@@ -1520,7 +1520,7 @@ function SchoolBuilder.trophyCase(plot, owned)
 	local model = Instance.new("Model")
 	model.Name = "TrophyCase"
 	-- the case's own frame: +Z runs along the case, the front faces the walk (lot -X)
-	local base = plot.Origin.CFrame * CFrame.new(40, 0, 73) * CFrame.Angles(0, math.rad(90), 0)
+	local base = plot.Origin.CFrame * CFrame.new(52, 0, 66) * CFrame.Angles(0, math.rad(90), 0)
 	local function C(x, y, z) return base * CFrame.new(x, y, z) end
 	local wood, dark = rgb(120, 78, 48), rgb(80, 50, 30)
 	local W, D, H = 11, 2.8, 7.4
