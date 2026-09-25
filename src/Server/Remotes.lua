@@ -29,8 +29,11 @@ local function func(name)
 end
 
 return {
-	Notify = event("Notify"), -- (text, kind) server -> client toast
-	CashPop = event("CashPop"), -- (amount, worldPos) server -> client
+	Notify = event("Notify"), -- (text, kind) toast
+	CashPop = event("CashPop"), -- (amount, worldPos) floating +$ text
 	Announce = event("Announce"), -- (text, color) big centre text
-	Action = func("Action"), -- client -> server requests (name school, upgrade, rebirth...)
+	Sfx = event("Sfx"), -- (name, worldPos?) play a sound effect
+	Cutscene = event("Cutscene"), -- (name, data) play a client cutscene
+	Push = event("Push"), -- (kind, data) server-pushed UI state (quests, offline earnings...)
+	Action = func("Action"), -- client -> server requests
 }

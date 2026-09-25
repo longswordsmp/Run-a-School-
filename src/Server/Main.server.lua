@@ -1,16 +1,25 @@
 -- ServerScriptService.Server.Main
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Server = script.Parent
-local Config = require(game:GetService("ReplicatedStorage").Shared.Config)
+local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(Server.Remotes)
 local Data = require(Server.DataService)
 local Factory = require(Server.StudentFactory)
+local Walkers = require(Server.Walkers)
+local Actions = require(Server.Actions)
 local PlotService = require(Server.PlotService)
+local UpgradeService = require(Server.UpgradeService)
+local GateService = require(Server.GateService)
 local HallService = require(Server.HallService)
+require(Server.SchoolService)
+require(Server.BoardService)
 
 Factory.preload()
 PlotService.start()
+UpgradeService.start()
+GateService.start()
 HallService.start()
 
 local function onPlayer(player)
@@ -21,8 +30,13 @@ local function onPlayer(player)
 	cash.Parent = ls
 	ls.Parent = player
 
-	Data.load(player)
+	local p = Data.load(player)
+	if not p then return end
 	PlotService.assign(player)
+	UpgradeService.applyAll(player)
+	if p.offlineEarned and p.offlineEarned > 0 then
+		Remotes.Push:FireClient(player, "offline", { amount = p.offlineEarned, away = p.offlineAway })
+	end
 
 	local function onChar(char)
 		local cf = PlotService.spawnCFrame(player)
@@ -44,13 +58,7 @@ Players.PlayerRemoving:Connect(function(player)
 	Data.release(player)
 end)
 
-local SchoolService = require(Server.SchoolService)
-Remotes.Action.OnServerInvoke = function(player, action, ...)
-	return SchoolService.handle(player, action, ...)
-end
-
 -- Studio-only test commands (see DebugBridge)
-local Walkers = require(Server.Walkers)
 require(Server.DebugBridge).start({
 	state = function(player)
 		local p = Data.get(player)
@@ -58,7 +66,11 @@ require(Server.DebugBridge).start({
 		for slot, e in p.students do
 			students[tostring(slot)] = { id = e.id, grade = e.grade, stored = math.floor(e.stored or 0), arriving = e.arriving }
 		end
-		return { cash = p.cash, income = player:GetAttribute("IncomePerSec"), plot = player:GetAttribute("Plot"), students = students }
+		return {
+			cash = p.cash, income = player:GetAttribute("IncomePerSec"), plot = player:GetAttribute("Plot"),
+			tier = p.tier, stars = p.stars, rows = p.rows, desks = PlotService.deskCount(p), upgrades = p.upgrades,
+			students = students, mock = Data.usingMock,
+		}
 	end,
 	cash = function(player, amount)
 		local p = Data.get(player)
@@ -101,6 +113,46 @@ require(Server.DebugBridge).start({
 	tp = function(player, x, y, z, lookX, lookZ)
 		local at = Vector3.new(x, y, z)
 		player.Character:PivotTo(CFrame.lookAt(at, Vector3.new(lookX or x, y, lookZ or z - 1)))
+		return true
+	end,
+	-- give the player a student straight into a free desk
+	give = function(player, studentId, grade)
+		local p = Data.get(player)
+		local slot = PlotService.freeSlot(player)
+		if not slot then return "full" end
+		p.students[slot] = { id = studentId, grade = grade or "Normal", stored = 0 }
+		p.index[studentId .. "|" .. (grade or "Normal")] = true
+		PlotService.place(player, slot)
+		PlotService.updateIncome(player)
+		return slot
+	end,
+	action = function(player, name, ...)
+		return Actions.invoke(player, name, ...)
+	end,
+	roundTrip = function(player)
+		local before = Data.get(player)
+		local cashBefore, tierBefore, n = before.cash, before.tier, 0
+		for _ in before.students do n += 1 end
+		local after = Data.roundTrip(player)
+		local m = 0
+		for _ in after.students do m += 1 end
+		return { cashBefore = cashBefore, cashAfter = after.cash, tierBefore = tierBefore, tierAfter = after.tier, studentsBefore = n, studentsAfter = m }
+	end,
+	specialBus = function(player, kind)
+		task.spawn(HallService.specialBus, kind)
+		return true
+	end,
+	setTier = function(player, tier, stars)
+		local p = Data.get(player)
+		p.tier = tier
+		p.stars = stars or 0
+		Data.sync(player)
+		PlotService.applyFloors(player)
+		PlotService.updateIncome(player)
+		return { tier = p.tier, floors = PlotService.floorsOf(p), desks = PlotService.deskCount(p) }
+	end,
+	recessNow = function()
+		workspace:SetAttribute("RecessAt", workspace:GetServerTimeNow())
 		return true
 	end,
 })

@@ -60,6 +60,23 @@ local function cylZ(model, to, d, len, offset, color, material)
 	return weld(mk(model, Enum.PartType.Cylinder, Vector3.new(len, d, d), color, material), to, offset * CFrame.Angles(0, math.rad(90), 0))
 end
 
+-- thin wire glasses: round rims built from short segments, a clear lens, a bridge.
+-- (a solid disc behind a lens reads as sunglasses or black eyes from any distance)
+local function wireGlasses(model, head, hs, y, radius, color)
+	local frame = color or Color3.fromRGB(25, 25, 30)
+	local r = hs.X * (radius or 0.15)
+	for _, x in { -0.21, 0.21 } do
+		local c = CFrame.new(hs.X * x, hs.Y * (y or 0.05), -hs.Z * 0.53)
+		for i = 0, 9 do
+			local a = math.rad(i * 36)
+			block(model, head, Vector3.new(r * 0.66, 0.05, 0.05), c * CFrame.Angles(0, 0, a) * CFrame.new(0, r, 0), frame)
+		end
+		local lens = cylZ(model, head, r * 1.9, 0.02, c, Color3.fromRGB(225, 240, 255), Enum.Material.Glass)
+		lens.Transparency = 0.8
+	end
+	block(model, head, Vector3.new(hs.X * 0.12, 0.05, 0.05), CFrame.new(0, hs.Y * (y or 0.05), -hs.Z * 0.54), frame)
+end
+
 local HAIR = {
 	SleepySam = Color3.fromRGB(120, 80, 50),
 	CrayonEater = Color3.fromRGB(230, 170, 80),
@@ -374,25 +391,31 @@ B.ShadesTie = function(model, head, hs)
 end
 
 B.Brain = function(model, head, hs)
-	local pink = Color3.fromRGB(255, 130, 180)
-	local b1 = blob(model, head, Vector3.new(hs.X * 0.62, hs.Y * 0.45, hs.Z * 0.95), CFrame.new(-hs.X * 0.2, hs.Y * 0.45, 0), pink)
-	blob(model, head, Vector3.new(hs.X * 0.62, hs.Y * 0.45, hs.Z * 0.95), CFrame.new(hs.X * 0.2, hs.Y * 0.45, 0), pink)
-	block(model, head, Vector3.new(hs.X * 0.04, hs.Y * 0.3, hs.Z * 0.8), CFrame.new(0, hs.Y * 0.52, 0), Color3.fromRGB(200, 60, 120))
-	-- folds
-	for i = -1, 1 do
-		for _, x in { -0.2, 0.2 } do
-			block(model, head, Vector3.new(hs.X * 0.3, 0.05, 0.05), CFrame.new(hs.X * x, hs.Y * (0.5 + 0.08 * i), -hs.Z * 0.46) * CFrame.Angles(0, 0, math.rad(15 * i)), Color3.fromRGB(210, 80, 140))
+	local pink, fold = Color3.fromRGB(255, 140, 185), Color3.fromRGB(215, 85, 140)
+	-- one dome over the whole top of his head: the skull is open and the brain is showing
+	local dome = Vector3.new(hs.X * 1.14, hs.Y * 0.78, hs.Z * 1.16)
+	local centre = CFrame.new(0, hs.Y * 0.36, hs.Z * 0.02)
+	local b1 = blob(model, head, dome, centre, pink)
+	-- folds: small darker lumps pressed into the dome's surface in two rows per side
+	for _, x in { -1, 1 } do
+		for row = 0, 1 do
+			for i = 0, 3 do
+				local lat = math.rad(25 + row * 30) -- angle down from the top
+				local lon = math.rad(-60 + i * 40) -- front to back
+				local dir = Vector3.new(x * math.sin(lat), math.cos(lat), math.sin(lon) * 0.9)
+				local pos = Vector3.new(dir.X * dome.X / 2, dir.Y * dome.Y / 2, dir.Z * dome.Z / 2) * 0.93
+				blob(model, head, Vector3.new(hs.X * 0.3, hs.Y * 0.12, hs.Z * 0.22), centre * CFrame.lookAt(pos, pos + dir) * CFrame.Angles(math.rad(90), 0, 0), fold)
+			end
 		end
 	end
+	-- the groove down the middle
+	block(model, head, Vector3.new(0.1, hs.Y * 0.12, hs.Z * 1.05), centre * CFrame.new(0, dome.Y / 2 - hs.Y * 0.03, 0), fold)
 	local light = Instance.new("PointLight")
 	light.Color = pink
 	light.Range = 6
-	light.Brightness = 0.6
+	light.Brightness = 0.5
 	light.Parent = b1
-	-- round glasses too, obviously
-	for _, x in { -0.2, 0.2 } do
-		cylZ(model, head, hs.X * 0.3, 0.06, CFrame.new(hs.X * x, hs.Y * 0.0, -hs.Z * 0.52), Color3.fromRGB(30, 30, 30))
-	end
+	wireGlasses(model, head, hs, 0.02, 0.15)
 end
 
 B.Hoodie = function(model, head, hs)
@@ -934,9 +957,7 @@ B.Professor = function(model, head, hs)
 		local a = part(model, s)
 		blob(model, a, Vector3.new(a.Size.X * 0.7, a.Size.Y * 0.4, 0.1), CFrame.new(0, 0, a.Size.Z * 0.5), rgb(90, 60, 40))
 	end
-	for _, x in { -0.2, 0.2 } do
-		cylZ(model, head, hs.X * 0.3, 0.06, CFrame.new(hs.X * x, hs.Y * 0.04, -hs.Z * 0.52), rgb(30, 30, 30))
-	end
+	wireGlasses(model, head, hs, 0.04, 0.14)
 	-- bushy white eyebrows and a bubble pipe
 	for _, x in { -0.2, 0.2 } do
 		blob(model, head, Vector3.new(hs.X * 0.3, hs.Y * 0.1, 0.12), CFrame.new(hs.X * x, hs.Y * 0.2, -hs.Z * 0.52), rgb(245, 245, 245))
@@ -984,9 +1005,7 @@ B.ChessOrbit = function(model, head, hs)
 	local torso = part(model, "UpperTorso")
 	local ts = torso.Size
 	block(model, torso, Vector3.new(ts.X * 1.05, ts.Y * 0.8, ts.Z * 1.06), CFrame.new(0, -ts.Y * 0.1, 0), rgb(60, 60, 140))
-	for _, x in { -0.2, 0.2 } do
-		cylZ(model, head, hs.X * 0.3, 0.06, CFrame.new(hs.X * x, hs.Y * 0.04, -hs.Z * 0.52), rgb(30, 30, 30))
-	end
+	wireGlasses(model, head, hs, 0.04, 0.14)
 end
 
 B.CEO = function(model, head, hs)
@@ -1106,9 +1125,7 @@ B.Grandpa = function(model, head, hs)
 	local hand = part(model, "RightHand")
 	cylY(model, hand, 0.12, 2.4, CFrame.new(0, -0.9, -0.2), rgb(120, 70, 30), Enum.Material.Wood)
 	cylX(model, hand, 0.12, 0.4, CFrame.new(-0.15, 0.3, -0.2), rgb(120, 70, 30), Enum.Material.Wood)
-	for _, x in { -0.2, 0.2 } do
-		cylZ(model, head, hs.X * 0.3, 0.06, CFrame.new(hs.X * x, hs.Y * 0.04, -hs.Z * 0.52), rgb(160, 160, 170))
-	end
+	wireGlasses(model, head, hs, 0.04, 0.14, rgb(170, 170, 180))
 	blob(model, head, Vector3.new(hs.X * 0.6, hs.Y * 0.14, 0.15), CFrame.new(0, -hs.Y * 0.12, -hs.Z * 0.52), rgb(235, 235, 240))
 end
 
@@ -1172,9 +1189,7 @@ B.TinyPrincipal = function(model, head, hs)
 	block(model, left, Vector3.new(0.8, 1.1, 0.08), CFrame.new(0, 0.2, -0.3), rgb(150, 100, 50), Enum.Material.Wood)
 	block(model, left, Vector3.new(0.65, 0.85, 0.09), CFrame.new(0, 0.15, -0.31), rgb(250, 250, 245))
 	block(model, left, Vector3.new(0.3, 0.1, 0.12), CFrame.new(0, 0.72, -0.32), rgb(180, 180, 190), Enum.Material.Metal)
-	for _, x in { -0.21, 0.21 } do
-		cylZ(model, head, hs.X * 0.36, 0.08, CFrame.new(hs.X * x, hs.Y * 0.05, -hs.Z * 0.52), rgb(20, 20, 25))
-	end
+	wireGlasses(model, head, hs, 0.05, 0.17)
 	-- whistle on a lanyard
 	block(model, torso, Vector3.new(0.14, 0.14, 0.3), CFrame.new(-ts.X * 0.15, -ts.Y * 0.05, -ts.Z * 0.62), rgb(200, 200, 210), Enum.Material.Metal)
 end
