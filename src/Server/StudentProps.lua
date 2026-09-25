@@ -1985,6 +1985,50 @@ T.baron = function(model, head, hs, torso, ts)
 	end
 end
 
+-- Dr. Veronica Vex: purple power suit with huge shoulder pads, a sharp silver bob, a monocle, a tablet
+Props.TeacherLooks.vex = { skin = "light", shirt = Color3.fromRGB(110, 40, 150), pants = Color3.fromRGB(60, 20, 90) }
+T.vex = function(model, head, hs, torso, ts)
+	local silver = rgb(210, 215, 225)
+	blob(model, head, Vector3.new(hs.X * 1.12, hs.Y * 0.62, hs.Z * 1.14), CFrame.new(0, hs.Y * 0.24, hs.Z * 0.04), silver)
+	for _, x in { -1, 1 } do
+		block(model, head, Vector3.new(hs.X * 0.18, hs.Y * 0.75, hs.Z * 0.95), CFrame.new(x * hs.X * 0.52, -hs.Y * 0.05, hs.Z * 0.05), silver)
+	end
+	block(model, head, Vector3.new(hs.X * 0.95, hs.Y * 0.14, hs.Z * 0.3), CFrame.new(0, hs.Y * 0.36, -hs.Z * 0.38), silver)
+	-- monocle with a chain
+	local mono = cylZ(model, head, hs.X * 0.3, 0.06, CFrame.new(hs.X * 0.21, hs.Y * 0.06, -hs.Z * 0.54), rgb(230, 240, 255), Enum.Material.Glass)
+	mono.Transparency = 0.4
+	cylZ(model, head, hs.X * 0.33, 0.04, CFrame.new(hs.X * 0.21, hs.Y * 0.06, -hs.Z * 0.53), rgb(255, 205, 60), Enum.Material.Metal)
+	block(model, head, Vector3.new(0.04, hs.Y * 0.5, 0.04), CFrame.new(hs.X * 0.33, -hs.Y * 0.2, -hs.Z * 0.5), rgb(255, 205, 60), Enum.Material.Metal)
+	-- lipstick
+	block(model, head, Vector3.new(hs.X * 0.2, hs.Y * 0.05, 0.05), CFrame.new(0, -hs.Y * 0.2, -hs.Z * 0.51), rgb(170, 20, 60))
+	-- enormous shoulder pads
+	for _, x in { -1, 1 } do
+		local wg = Instance.new("WedgePart")
+		_ = wg
+		block(model, torso, Vector3.new(ts.X * 0.55, 0.35, ts.Z * 1.25), CFrame.new(x * ts.X * 0.6, ts.Y * 0.48, 0) * CFrame.Angles(0, 0, math.rad(x * -12)), rgb(130, 50, 170))
+	end
+	block(model, torso, Vector3.new(ts.X * 0.3, ts.Y * 0.8, 0.05), CFrame.new(0, 0, -ts.Z * 0.53), rgb(30, 20, 40))
+	local hand = part(model, "LeftHand")
+	block(model, hand, Vector3.new(1.1, 1.5, 0.1), CFrame.new(0, 0.3, -0.35), rgb(25, 25, 30))
+	block(model, hand, Vector3.new(0.95, 1.3, 0.11), CFrame.new(0, 0.3, -0.37), rgb(120, 220, 255), Enum.Material.Neon)
+end
+
+-- Otis the bus driver: big grey beard, flat cap, mirrored aviators, hi-vis vest
+Props.TeacherLooks.otis = { skin = "tan", shirt = Color3.fromRGB(90, 110, 140), pants = Color3.fromRGB(50, 55, 70) }
+T.otis = function(model, head, hs, torso, ts)
+	blob(model, head, Vector3.new(hs.X * 1.1, hs.Y * 0.4, hs.Z * 1.12), CFrame.new(0, hs.Y * 0.36, 0), rgb(90, 90, 100))
+	block(model, head, Vector3.new(hs.X * 0.9, 0.12, hs.Z * 0.45), CFrame.new(0, hs.Y * 0.3, -hs.Z * 0.6), rgb(90, 90, 100))
+	blob(model, head, Vector3.new(hs.X * 0.95, hs.Y * 0.7, hs.Z * 0.5), CFrame.new(0, -hs.Y * 0.35, -hs.Z * 0.3), rgb(170, 170, 175))
+	for _, x in { -0.21, 0.21 } do
+		block(model, head, Vector3.new(hs.X * 0.32, hs.Y * 0.16, 0.06), CFrame.new(hs.X * x, hs.Y * 0.06, -hs.Z * 0.53), rgb(30, 30, 40), Enum.Material.Glass)
+	end
+	block(model, head, Vector3.new(hs.X * 0.85, 0.05, 0.06), CFrame.new(0, hs.Y * 0.15, -hs.Z * 0.53), rgb(200, 200, 210), Enum.Material.Metal)
+	block(model, torso, Vector3.new(ts.X * 1.05, ts.Y * 0.9, ts.Z * 1.06), CFrame.new(0, -ts.Y * 0.02, 0), rgb(255, 140, 30))
+	for i = 0, 1 do
+		block(model, torso, Vector3.new(ts.X * 1.07, 0.15, ts.Z * 1.08), CFrame.new(0, ts.Y * (0.1 - i * 0.3), 0), rgb(240, 240, 240), Enum.Material.Neon)
+	end
+end
+
 -- Crumpet, Vex's butler: tailcoat, white gloves, slicked hair, a silver tray and a feather duster
 Props.TeacherLooks.butler = { skin = "light", shirt = Color3.fromRGB(30, 30, 36), pants = Color3.fromRGB(30, 30, 36) }
 T.butler = function(model, head, hs, torso, ts)

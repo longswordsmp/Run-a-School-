@@ -134,8 +134,10 @@ function LetterService.deliver(player, def, free)
 		local oldest, oldestT
 		for s, m in benches[player] do
 			local t = m:GetAttribute("BenchSince") or 0
-			if not oldest or t < oldestT then oldest, oldestT = s, t end
+			-- free kids (scholarship, daily reward) are never the ones sent away
+			if not m:GetAttribute("Free") and (not oldest or t < oldestT) then oldest, oldestT = s, t end
 		end
+		if not oldest then return nil end
 		release(player, benches[player][oldest])
 		benches[player][oldest] = nil
 		seat = oldest
@@ -204,6 +206,10 @@ Actions.register("callLetter", function(player, p, rarity)
 	if not L then return { ok = false, err = "Unknown letter" } end
 	local left = letters(p)[rarity]
 	if left > 0 then return { ok = false, err = "Not ready yet" } end
+	if not PlotService.freeSlot(player) then
+		Remotes.Notify:FireClient(player, "Your school is full! Sell a kid or add desks, then call the letter.", "bad")
+		return { ok = false, err = "School is full" }
+	end
 	local free = rarity == "Rare" and not p.scholarshipUsed
 	local def = pick(p, rarity, free)
 	if not def then

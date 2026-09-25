@@ -49,6 +49,10 @@ end
 
 local function st(player)
 	local s = state[player]
+	if not s and not player.Parent then
+		-- a delayed callback for someone who has left: a throwaway, never stored
+		return { cheating = {}, detention = {}, nextCheat = math.huge, nextDeal = math.huge }
+	end
 	if not s then
 		s = { nextCheat = now() + math.random(CHEAT_EVERY[1], CHEAT_EVERY[2]) * 0.6, nextDeal = now() + math.random(DEAL_EVERY[1], DEAL_EVERY[2]) * 0.7, cheating = {}, detention = {}, lastMove = now() }
 		state[player] = s
@@ -593,13 +597,29 @@ end
 local function crumpetGiveBack(player, s, c)
 	if c.done then return end
 	c.done = true
+	local lifted = c.carried ~= nil
 	if c.carried then c.carried:Destroy() end
 	local p = Data.get(player)
-	if p and p.students[c.slot] == c.e then
+	-- only the kid he actually lifted goes back to the desk
+	if lifted and p and p.students[c.slot] == c.e then
 		c.e.carried = nil
 		PlotService.place(player, c.slot)
 		PlotService.updateIncome(player)
 	end
+end
+
+-- Crumpet walks off the lot and goes away; while the bonk step is still open he comes back later
+local function crumpetLeave(player, s, c, path)
+	local back = {}
+	for i = #path, 1, -1 do table.insert(back, path[i]) end
+	Factory.play(c.model, "walk")
+	Walkers.walk(c.model, back, 12, function()
+		c.model:Destroy()
+		if s.crumpet == c then s.crumpet = nil end
+		local pp = Data.get(player)
+		local step = pp and pp.tutorial and Config.Tutorial[pp.tutorial]
+		if player.Parent and step and step.id == "bonk" then task.delay(8, function() PatrolService.crumpet(player) end) end
+	end, { flat = false })
 end
 
 function PatrolService.crumpet(player)
@@ -629,7 +649,12 @@ function PatrolService.crumpet(player)
 	Walkers.walk(model, path, 10, function()
 		if c.done or not model.Parent then return end
 		local e = p.students[slot]
-		if e ~= c.e or not PlotService.earning(e) then crumpetGiveBack(player, s, c) return end
+		if e ~= c.e or not PlotService.earning(e) then
+			crumpetGiveBack(player, s, c)
+			crumpetSay(c, "Ah. Wrong child. Terribly sorry.")
+			crumpetLeave(player, s, c, path)
+			return
+		end
 		-- lift the kid over his head
 		e.carried = true
 		PlotService.detachModel(plot, slot)

@@ -187,6 +187,7 @@ local BOARD = {
 }
 local function seatBoard()
 	local room = workspace:FindFirstChild("BoardRoom")
+	if room then pcall(function() room.ModelStreamingMode = Enum.ModelStreamingMode.Persistent end) end
 	if not room or room:FindFirstChild("Members") then return end
 	local folder = Instance.new("Folder")
 	folder.Name = "Members"

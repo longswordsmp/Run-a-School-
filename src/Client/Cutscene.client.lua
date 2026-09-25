@@ -139,6 +139,7 @@ local function hideHud(on)
 end
 
 local busy = false
+local lastDouble
 local function board(data)
 	if busy then return end
 	busy = true
@@ -151,6 +152,7 @@ local function board(data)
 	local mark = room.PlayerMark
 	local podiumLook = CFrame.lookAt(mark.Position + Vector3.new(0, 0.1, 0), room.Table.Position * Vector3.new(1, 0, 1) + Vector3.new(0, mark.Position.Y + 0.1, 0))
 	local double = standIn(podiumLook)
+	lastDouble = double
 	local prevType, prevCF = camera.CameraType, camera.CFrame
 	camera.CameraType = Enum.CameraType.Scriptable
 	local target = room.Table.Position + Vector3.new(0, 1.5, 0)
@@ -317,10 +319,26 @@ local function intro()
 	busy = false
 end
 
+-- a cutscene that errors (a part not streamed in, say) must never leave the screen black
+local function safely(fn, data)
+	local ok, err = pcall(fn, data)
+	if ok then return end
+	warn("[Cutscene]", err)
+	if lastDouble then lastDouble:Destroy() lastDouble = nil end
+	camera.CameraType = Enum.CameraType.Custom
+	letterbox(false)
+	hideHud(false)
+	player:SetAttribute("LocalMusic", nil)
+	local d = gui:FindFirstChild("Dialog")
+	if d then d:Destroy() end
+	fade(1, 0.3)
+	busy = false
+end
+
 Remotes:WaitForChild("Cutscene").OnClientEvent:Connect(function(name, data)
 	if name == "Board" then
-		task.spawn(board, data)
+		task.spawn(safely, board, data)
 	elseif name == "Intro" then
-		task.spawn(intro, data)
+		task.spawn(safely, intro, data)
 	end
 end)

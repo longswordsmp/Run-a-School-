@@ -155,6 +155,9 @@ local function refreshMarquees()
 end
 
 function CampusService.start()
+	game:GetService("Players").PlayerRemoving:Connect(function(player)
+		brag[player] = nil
+	end)
 	task.spawn(function()
 		while true do
 			task.wait(5)

@@ -154,7 +154,7 @@ local function wobblesworth(spot)
 	place(m, spot.CFrame)
 	local npc = { model = m }
 	npc.bubble, npc.text = speech(m)
-	local greeted = {}
+	local greeted = setmetatable({}, { __mode = "k" })
 	task.spawn(function()
 		while m.Parent do
 			local pl = nearestPlayer(m.PrimaryPart.Position, 16)

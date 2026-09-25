@@ -128,7 +128,10 @@ MarketplaceService.ProcessReceipt = function(info)
 	-- a Board review resets cash, and an unsaved profile can't remember the receipt: try again later
 	if p.reviewing or p.unsaved then return Enum.ProductPurchaseDecision.NotProcessedYet end
 	p.receipts = p.receipts or {}
-	if p.receipts[info.PurchaseId] then return Enum.ProductPurchaseDecision.PurchaseGranted end
+	if p.receipts[info.PurchaseId] then
+		-- granted before but maybe not saved yet: only report success once it is
+		return Data.save(player) and Enum.ProductPurchaseDecision.PurchaseGranted or Enum.ProductPurchaseDecision.NotProcessedYet
+	end
 	local product = productById[info.ProductId]
 	if not product then
 		warn("[Store] unknown product", info.ProductId)
@@ -140,9 +143,10 @@ MarketplaceService.ProcessReceipt = function(info)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	p.receipts[info.PurchaseId] = os.time()
-	-- save straight away so a crash can't lose the record and grant it again
-	task.spawn(Data.save, player)
-	return Enum.ProductPurchaseDecision.PurchaseGranted
+	-- saved before we tell Roblox it's done; if the save fails, Roblox retries and the receipt above
+	-- keeps it from being granted twice
+	if Data.save(player) then return Enum.ProductPurchaseDecision.PurchaseGranted end
+	return Enum.ProductPurchaseDecision.NotProcessedYet
 end
 
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, id, purchased)
@@ -175,6 +179,12 @@ Actions.register("buy", function(player, p, kind, key)
 	elseif kind == "product" then
 		local product = productByKey[key]
 		if not product or product.id == 0 then return { ok = false, err = "Coming soon!" } end
+		if key == "LockRefresh" then
+			local plot = PlotService.getPlot(player)
+			if not plot or (plot:GetAttribute("CooldownUntil") or 0) <= workspace:GetServerTimeNow() then
+				return { ok = false, err = "Your gate can already lock!" }
+			end
+		end
 		MarketplaceService:PromptProductPurchase(player, product.id)
 		return { ok = true }
 	end

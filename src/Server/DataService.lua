@@ -197,8 +197,8 @@ function DataService.get(player)
 	return profiles[player]
 end
 
-function DataService.save(player, releasing)
-	local p = profiles[player]
+function DataService.save(player, releasing, profile)
+	local p = profile or profiles[player]
 	if not p or p.unsaved then return end
 	p.lastOnline = os.time()
 	p.lastIncome = player:GetAttribute("BaseIncome") or player:GetAttribute("IncomePerSec") or 0
@@ -218,8 +218,10 @@ function DataService.save(player, releasing)
 end
 
 function DataService.release(player)
-	DataService.save(player, true)
+	-- out of Data.all() first, so per-player loops stop seeing someone who has left while the save runs
+	local p = profiles[player]
 	profiles[player] = nil
+	if p then DataService.save(player, true, p) end
 end
 
 -- mirror what the HUD needs onto player attributes

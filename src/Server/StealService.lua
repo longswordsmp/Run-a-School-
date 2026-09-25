@@ -354,8 +354,10 @@ function StealService.start()
 				end
 				-- the owner's Jawbreaker Trap: leaving their gate with their kid trips you
 				local op = root and Data.get(c.owner)
-				local entry = c.plot:FindFirstChild("Entry")
-				if op and (op.traps or 0) > 0 and entry and (root.Position - entry.Position).Magnitude < 9 then
+				local nowInside = root and PlotService.inside(c.plot, root.Position)
+				local leaving = c.wasInside and not nowInside
+				c.wasInside = nowInside
+				if op and (op.traps or 0) > 0 and leaving then
 					op.traps -= 1
 					c.owner:SetAttribute("Traps", op.traps)
 					Remotes.Sfx:FireAllClients("GavelBig", root.Position)
