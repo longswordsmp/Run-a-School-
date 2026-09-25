@@ -20,24 +20,43 @@ local function today()
 	return math.floor(os.time() / 86400)
 end
 
--- three distinct requests, picked from the player's id and the day so a rejoin gets the same ones
-local function pickFor(userId, day, avoid)
-	local rng = Random.new(userId * 7 + day * 131 + (avoid and 17 or 0))
+-- three distinct requests, picked from the player's id and the day (or week) so a rejoin gets the
+-- same ones; one request per signal group, so a single catch or enroll never pays two requests
+local wById = {}
+for _, q in Config.WeeklyPool do wById[q.id] = q end
+local function pickFrom(poolDef, lookup, seed, avoid)
+	local rng = Random.new(seed + (avoid and 17 or 0))
 	local pool = {}
-	for _, q in Config.DailyPool do
+	for _, q in poolDef do
 		if not (avoid and (avoid[q.id] or avoid[q.group or q.signal])) then table.insert(pool, q.id) end
 	end
-	-- one request per signal, so a single catch or enroll never pays two requests
 	local out, used = {}, {}
 	while #out < 3 and #pool > 0 do
 		local id = table.remove(pool, rng:NextInteger(1, #pool))
-		local sig = byId[id].group or byId[id].signal
+		local sig = lookup[id].group or lookup[id].signal
 		if not used[sig] then
 			used[sig] = true
 			table.insert(out, id)
 		end
 	end
 	return out
+end
+local function pickFor(userId, day, avoid)
+	return pickFrom(Config.DailyPool, byId, userId * 7 + day * 131, avoid)
+end
+
+-- weeks start on Monday 00:00 UTC (1 Jan 1970 was a Thursday)
+local function weekNum()
+	return math.floor((today() + 3) / 7)
+end
+local function recWeekly(player, p)
+	local w = weekNum()
+	if not p.weeklyQ or p.weeklyQ.week ~= w then
+		local old = p.weeklyQ
+		local owed = old ~= nil and (old.owedChest == true or (old.done[1] and old.done[2] and old.done[3] and not old.chest)) or false
+		p.weeklyQ = { week = w, ids = pickFrom(Config.WeeklyPool, wById, player.UserId * 11 + w * 977), prog = { 0, 0, 0 }, done = { false, false, false }, chest = false, owedChest = owed }
+	end
+	return p.weeklyQ
 end
 
 -- today's record, rolled over when the UTC day changes
@@ -91,7 +110,36 @@ function DailyService.badge(player)
 	local r = rec(player, p)
 	local streak = require(script.Parent.RewardService).dailyState(p)
 	local box = (r.done[1] and r.done[2] and r.done[3] and not r.box) or r.owedBox == true
+	local w = recWeekly(player, p)
+	box = box or (w.done[1] and w.done[2] and w.done[3] and not w.chest) or w.owedChest == true
 	player:SetAttribute("DailyReady", (p.tutorial or 1) > 5 and (not streak.claimed or box) or false)
+end
+
+function DailyService.weeklyState(player)
+	local p = Data.get(player)
+	if not p then return { ok = false } end
+	local r = recWeekly(player, p)
+	local list = {}
+	for i, id in r.ids do
+		local q = wById[id]
+		if q then
+			list[i] = { id = id, text = q.text, progress = math.min(r.prog[i] or 0, q.count), count = q.count, done = r.done[i] }
+		end
+	end
+	local allDone = r.done[1] and r.done[2] and r.done[3]
+	local ready = (allDone and not r.chest) or r.owedChest == true
+	local nextWeek = ((weekNum() + 1) * 7 - 3) * 86400
+	return {
+		ok = true,
+		kind = "weekly",
+		requests = list,
+		candy = Config.WeeklyCandy,
+		boxReady = ready,
+		boxOpened = r.chest and not ready,
+		canReroll = false,
+		odds = { { pct = 100, text = "Legendary Letter, ready now" }, { pct = 100, text = Config.WeeklyChestTickets .. " Event Tickets" } },
+		resetIn = nextWeek - os.time(),
+	}
 end
 
 local function push(player)
@@ -129,11 +177,60 @@ local function progress(player, signal, def)
 			end
 		end
 	end
+	-- the weekly requests count the same actions
+	local w = recWeekly(player, p)
+	local wchanged = false
+	for i, id in w.ids do
+		local q = wById[id]
+		if q and not w.done[i] and q.signal == signal then
+			w.prog[i] = (w.prog[i] or 0) + 1
+			wchanged = true
+			if w.prog[i] >= q.count then
+				w.done[i] = true
+				p.candy = (p.candy or 0) + Config.WeeklyCandy
+				player:SetAttribute("Candy", p.candy)
+				Remotes.Notify:FireClient(player, ("Weekly request done: %s  +%d candy"):format(q.text, Config.WeeklyCandy), "good")
+				Remotes.Sfx:FireClient(player, "Rare")
+				if w.done[1] and w.done[2] and w.done[3] then
+					Remotes.Announce:FireClient(player, "WEEKLY CHEST READY! (Daily panel)", Color3.fromRGB(255, 159, 26))
+				end
+			end
+		end
+	end
+	if wchanged then
+		Remotes.Push:FireClient(player, "weeklyQ", DailyService.weeklyState(player))
+		DailyService.badge(player)
+	end
 	if changed then push(player) end
 end
 
 Actions.register("dailyQ", function(player)
 	return DailyService.state(player)
+end)
+
+Actions.register("weeklyQ", function(player)
+	return DailyService.weeklyState(player)
+end)
+
+Actions.register("openWeeklyChest", function(player, p)
+	local w = recWeekly(player, p)
+	if w.owedChest then
+		w.owedChest = false
+	else
+		if not (w.done[1] and w.done[2] and w.done[3]) then return { ok = false, err = "Finish all 3 weekly requests first" } end
+		if w.chest then return { ok = false, err = "Already opened this week" } end
+		w.chest = true
+	end
+	require(script.Parent.LetterService).fill(player, "Legendary")
+	p.tickets = (p.tickets or 0) + Config.WeeklyChestTickets
+	player:SetAttribute("Tickets", p.tickets)
+	Remotes.Announce:FireClient(player, ("WEEKLY CHEST: LEGENDARY LETTER + %d TICKETS!"):format(Config.WeeklyChestTickets), Color3.fromRGB(255, 159, 26))
+	Remotes.Sfx:FireClient(player, "Rare")
+	local s = DailyService.weeklyState(player)
+	s.prize = "a Legendary Letter and " .. Config.WeeklyChestTickets .. " tickets"
+	Remotes.Push:FireClient(player, "weeklyQ", s)
+	DailyService.badge(player)
+	return s
 end)
 
 -- swap one unfinished request for another one (once a day)
@@ -224,7 +321,10 @@ function DailyService.start()
 		end)
 	end)
 	local listening = {}
-	for _, q in Config.DailyPool do
+	local all = {}
+	for _, q in Config.DailyPool do table.insert(all, q) end
+	for _, q in Config.WeeklyPool do table.insert(all, q) end
+	for _, q in all do
 		if not listening[q.signal] then
 			listening[q.signal] = true
 			Signals.on(q.signal, function(player, a1)
@@ -237,10 +337,22 @@ function DailyService.start()
 	end
 end
 
--- Studio: finish today's requests (n of them)
+-- Studio: finish today's requests (n of them); n = "weekly" finishes this week's
 function DailyService.debugFinish(player, n)
 	local p = Data.get(player)
 	if not p then return false end
+	if n == "weekly" then
+		local w = recWeekly(player, p)
+		for i = 1, 3 do
+			local q = wById[w.ids[i]]
+			local guard = 0
+			while q and not w.done[i] and guard < 400 do
+				progress(player, q.signal, { rarity = "Secret" })
+				guard += 1
+			end
+		end
+		return DailyService.weeklyState(player)
+	end
 	local r = rec(player, p)
 	for i = 1, math.min(n or 3, 3) do
 		local q = byId[r.ids[i]]

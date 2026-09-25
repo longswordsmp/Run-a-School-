@@ -555,6 +555,21 @@ Config.DailyPool = {
 	{ id = "grad3", text = "Graduate 3 kids (hold G at a desk)", signal = "graduate", count = 3 },
 }
 Config.DailyCandy = 25
+-- Weekly Requests: 3 a week (weeks start Monday 00:00 UTC), bigger counts, 100 candy each; all 3 open
+-- the Weekly Chest (a Legendary letter and 30 Event Tickets). No cash rewards.
+Config.WeeklyPool = {
+	{ id = "wcatch60", text = "Catch 60 cheaters", signal = "catchCheater", count = 60 },
+	{ id = "wbust25", text = "Bust 25 Snack Smugglers", signal = "bustDealer", count = 25 },
+	{ id = "wenroll300", text = "Enroll 300 kids", signal = "enroll", count = 300 },
+	{ id = "wcollect300", text = "Collect tuition 300 times", signal = "collect", count = 300 },
+	{ id = "wquiz15", text = "Answer 15 Pop Quizzes right", signal = "quizRight", count = 15 },
+	{ id = "wgrad25", text = "Graduate 25 kids", signal = "graduate", count = 25 },
+	{ id = "wtokens80", text = "Collect 80 event tokens", signal = "ticket", count = 80 },
+	{ id = "wletter10", text = "CALL 10 Admissions Letters", signal = "letter", count = 10 },
+	{ id = "weagle10", text = "Make 10 EAGLE EYE catches", signal = "eagleEye", group = "catchCheater", count = 10 },
+}
+Config.WeeklyCandy = 100
+Config.WeeklyChestTickets = 30
 -- Loretta's Lunch Box, opened when all 3 are done. Odds are shown in the panel.
 Config.LunchBox = {
 	{ id = "candy", weight = 40, text = "80 Candy" },

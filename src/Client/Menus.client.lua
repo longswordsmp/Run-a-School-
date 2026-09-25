@@ -851,7 +851,13 @@ do
 	lift(claim.button, 12)
 
 	-- Daily Requests (DailyService): three rows, one free reroll, then Loretta's Lunch Box
-	UI.label(panel.body, { Text = "\u{1F4CB} TODAY'S REQUESTS", Font = UI.BIG, TextColor3 = UI.C.orange, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(0.6, 0, 0, 28), Position = UDim2.fromOffset(4, 266), ZIndex = 12, stroke = 2 })
+	local qMode = "daily"
+	local modeButtons = {}
+	for i, spec in { { "daily", "\u{1F4CB} TODAY" }, { "weekly", "\u{1F4C6} THIS WEEK" } } do
+		local b = UI.button(panel.body, { text = spec[2], color = UI.C.orange, size = UDim2.fromOffset(170, 32), position = UDim2.fromOffset(4 + (i - 1) * 178, 262), font = UI.BIG, radius = 10 })
+		lift(b.button, 12)
+		modeButtons[spec[1]] = b
+	end
 	local resetText = UI.label(panel.body, { Text = "", TextColor3 = UI.C.grey, TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.new(0.4, -8, 0, 22), Position = UDim2.new(0.6, 0, 0, 270), ZIndex = 12, stroke = 0 })
 	local qRows = {}
 	for i = 1, 3 do
@@ -889,15 +895,20 @@ do
 				r.reroll.button.Visible = q.canReroll and not it.done and it.progress == 0
 			end
 		end
+		local weekly = q.kind == "weekly"
 		box.setEnabled(q.boxReady == true)
-		box.setText(q.boxOpened and "OPENED TODAY" or "\u{1F371} OPEN LUNCH BOX")
-		boxNote.Text = q.prize and ("You got: " .. q.prize .. "!") or (q.boxOpened and "Come back tomorrow for 3 new requests")
-			or (q.boxReady and "Ready! Open it!" or "Finish all 3 to open Loretta's Lunch Box")
-		local lines = { "Lunch Box odds:" }
-		for _, o in q.odds do table.insert(lines, ("%s%%  %s"):format(tostring(o.pct), o.text)) end
+		box.setText(q.boxOpened and (weekly and "OPENED THIS WEEK" or "OPENED TODAY") or (weekly and "\u{1F381} WEEKLY CHEST" or "\u{1F371} OPEN LUNCH BOX"))
+		boxNote.Text = q.prize and ("You got: " .. q.prize .. "!") or (q.boxOpened and (weekly and "New requests on Monday" or "Come back tomorrow for 3 new requests"))
+			or (q.boxReady and "Ready! Open it!" or (weekly and "Finish all 3 to open the Weekly Chest" or "Finish all 3 to open Loretta's Lunch Box"))
+		local lines = { weekly and "The Weekly Chest holds:" or "Lunch Box odds:" }
+		for _, o in q.odds do table.insert(lines, weekly and ("\u{2022} " .. o.text) or ("%s%%  %s"):format(tostring(o.pct), o.text)) end
 		oddsText.Text = table.concat(lines, "\n")
 		local h = math.floor(q.resetIn / 3600)
-		resetText.Text = ("New requests in %dh %dm"):format(h, math.floor(q.resetIn % 3600 / 60))
+		resetText.Text = weekly and ("New requests in %dd %dh"):format(math.floor(h / 24), h % 24)
+			or ("New requests in %dh %dm"):format(h, math.floor(q.resetIn % 3600 / 60))
+		for mode, b in modeButtons do
+			b.setColor(mode == qMode and UI.C.orange or Color3.fromRGB(150, 150, 165))
+		end
 	end
 	for i, r in qRows do
 		r.reroll.button.Activated:Connect(function()
@@ -911,13 +922,25 @@ do
 			end
 		end)
 	end
+	for mode, b in modeButtons do
+		b.button.Activated:Connect(function()
+			qMode = mode
+			sfx("Ding")
+			showRequests(call(mode == "weekly" and "weeklyQ" or "dailyQ"))
+		end)
+	end
+	-- OpenPanel("Daily", 2) opens straight on this week's requests
+	panel.select = function(i)
+		qMode = i == 2 and "weekly" or "daily"
+		showRequests(call(qMode == "weekly" and "weeklyQ" or "dailyQ"))
+	end
 	box.button.Activated:Connect(function()
 		if not box.button.Active then return end
-		local res = call("openLunchBox")
-		if res and res.ok then showRequests(res) end
+		local res = call(qMode == "weekly" and "openWeeklyChest" or "openLunchBox")
+		if res and res.ok ~= false then showRequests(res) end
 	end)
 	Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
-		if kind == "dailyQ" then showRequests(data) end
+		if (kind == "dailyQ" and qMode == "daily") or (kind == "weeklyQ" and qMode == "weekly") then showRequests(data) end
 	end)
 	local state
 	function panel.refresh()
@@ -937,7 +960,7 @@ do
 		end
 		claim.setEnabled(not state.claimed)
 		claim.setText(state.claimed and "CLAIMED" or "CLAIM!")
-		showRequests(call("dailyQ"))
+		showRequests(call(qMode == "weekly" and "weeklyQ" or "dailyQ"))
 	end
 	claim.button.Activated:Connect(function()
 		if not claim.button.Active then return end
