@@ -120,6 +120,7 @@ local function toSave(p)
 		out.teachers[tostring(floor)] = t
 	end
 	out.lock = nil
+	out.reviewing = nil
 	return out
 end
 
@@ -175,6 +176,7 @@ function DataService.load(player)
 	end
 	local p = fill(migrate(fromSave(data)))
 	p.lock = nil
+	p.reviewing = nil
 
 	-- offline tuition, paid from the income they had when they left
 	local away = math.max(0, os.time() - (p.lastOnline or os.time()))

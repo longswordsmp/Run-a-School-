@@ -99,7 +99,7 @@ end)
 -- playtime gifts
 ---------------------------------------------------------------------------
 RewardService.Gifts = {
-	{ min = 5, text = "$1,000", give = function(player) Data.addCash(player, math.max(1000, tuition(player, 60))) end },
+	{ min = 5, text = "$1,000", give = function(player) Data.addCash(player, tuition(player, 120, 1000)) end },
 	{ min = 10, text = "A free teacher", give = function(player, p)
 		if not p.teachers[1] then
 			p.teachers[1] = { id = "SubSteve" }
@@ -129,9 +129,15 @@ function RewardService.start()
 			for player, p in Data.all() do
 				local s = session[player]
 				if not s then
-					s = { start = os.clock(), given = 0 }
+					-- gifts are per UTC day, so rejoining doesn't hand them out again
+					local day = math.floor(os.time() / 86400)
+					p.gifts = type(p.gifts) == "table" and p.gifts or {}
+					if p.gifts.day ~= day then p.gifts = { day = day, given = 0, played = 0 } end
+					s = { start = os.clock() - (p.gifts.played or 0), given = p.gifts.given or 0 }
 					session[player] = s
 				end
+				p.gifts.played = os.clock() - s.start
+				p.gifts.given = s.given
 				local mins = (os.clock() - s.start) / 60
 				local nextGift = RewardService.Gifts[s.given + 1]
 				if nextGift then

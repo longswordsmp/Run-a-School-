@@ -70,9 +70,10 @@ local function checkPasses(player)
 	local p = Data.get(player)
 	for _, pass in Config.Passes do
 		local owned = p and p.passes and p.passes[pass.key]
-		if not owned and pass.id ~= 0 then
+		if pass.id ~= 0 then
+			-- ask Roblox every time (a refunded pass goes away); the saved flag only covers an outage
 			local ok, res = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, pass.id)
-			owned = ok and res
+			if ok then owned = res end
 		end
 		if owned then applyPass(player, pass.key) end
 	end
@@ -124,6 +125,8 @@ MarketplaceService.ProcessReceipt = function(info)
 	local player = Players:GetPlayerByUserId(info.PlayerId)
 	local p = player and Data.get(player)
 	if not player or not p then return Enum.ProductPurchaseDecision.NotProcessedYet end
+	-- a Board review resets cash, and an unsaved profile can't remember the receipt: try again later
+	if p.reviewing or p.unsaved then return Enum.ProductPurchaseDecision.NotProcessedYet end
 	p.receipts = p.receipts or {}
 	if p.receipts[info.PurchaseId] then return Enum.ProductPurchaseDecision.PurchaseGranted end
 	local product = productById[info.ProductId]
@@ -144,7 +147,9 @@ end
 
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, id, purchased)
 	local pass = passById[id]
-	if purchased and pass then MonetizationService.grantPass(player, pass.key) end
+	if not purchased or not pass then return end
+	local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, player.UserId, id)
+	if ok and owns then MonetizationService.grantPass(player, pass.key) end
 end)
 
 -- the client's Store panel: what's for sale and what you own

@@ -214,7 +214,13 @@ Actions.register("callLetter", function(player, p, rarity)
 		return { ok = false, err = err }
 	end
 	if free then p.scholarshipUsed = true end
-	p.letters[rarity] = L.every
+	-- a banked letter keeps this one ready
+	local credits = p.letterCredits and p.letterCredits[rarity] or 0
+	if credits > 0 then
+		p.letterCredits[rarity] = credits - 1
+	else
+		p.letters[rarity] = L.every
+	end
 	sync(player, p)
 	LetterService.deliver(player, def, free)
 	Remotes.Announce:FireClient(player, free and "SCHOLARSHIP STUDENT ARRIVING!" or (rarity:upper() .. " LETTER DELIVERED!"), Config.rarityAccent(rarity))
@@ -254,6 +260,14 @@ end
 function LetterService.start()
 	Signals.on("questStep", function(player, id)
 		local p = Data.get(player)
+		if id == "scholarship" and p and p.scholarshipUsed then
+			-- they called it early: if the free kid isn't still waiting on the bench, make it free again
+			local waiting = false
+			for _, m in benches[player] or {} do
+				if m.Parent and m:GetAttribute("State") == "Hall" and m:GetAttribute("Free") then waiting = true end
+			end
+			if not waiting then p.scholarshipUsed = nil end
+		end
 		if id == "scholarship" and p and not p.scholarshipUsed then
 			letters(p).Rare = 0
 			sync(player, p)
@@ -262,8 +276,16 @@ function LetterService.start()
 		end
 	end)
 	Players.PlayerRemoving:Connect(function(player)
+		local p = Data.get(player)
 		for _, m in benches[player] or {} do
-			if m.Parent and m:GetAttribute("State") == "Hall" then m:Destroy() end
+			if m.Parent and m:GetAttribute("State") == "Hall" then
+				-- a free kid (scholarship, daily reward) waits for next time
+				if p and m:GetAttribute("Free") then
+					p.pendingBench = p.pendingBench or {}
+					table.insert(p.pendingBench, m:GetAttribute("StudentId"))
+				end
+				m:Destroy()
+			end
 		end
 		benches[player], seen[player], lastMove[player], lastPos[player] = nil, nil, nil, nil
 	end)
@@ -277,6 +299,17 @@ function LetterService.start()
 				local ls = letters(p)
 				if not seen[player] then
 					seen[player] = true
+					-- free kids left waiting last time come back to the bench
+					if type(p.pendingBench) == "table" and #p.pendingBench > 0 then
+						local list = p.pendingBench
+						p.pendingBench = nil
+						task.delay(6, function()
+							for _, id in list do
+								local def = Config.StudentById[id]
+								if def and player.Parent then LetterService.deliver(player, def, true) end
+							end
+						end)
+					end
 					local away = math.clamp((p.sessionStart or os.time()) - (p.lastOnline or os.time()), 0, OFFLINE_CAP)
 					if away > 60 then
 						for r, t in ls do ls[r] = math.max(0, t - away * OFFLINE_RATE) end
@@ -306,11 +339,16 @@ function LetterService.start()
 	end)
 end
 
--- test hook: make a letter ready now
+-- make a letter ready now; if it already is, bank a second one (rewards, Express products)
 function LetterService.debugReady(player, rarity)
 	local p = Data.get(player)
 	if not p then return false end
-	letters(p)[rarity] = 0
+	local ls = letters(p)
+	if ls[rarity] == 0 then
+		p.letterCredits = p.letterCredits or {}
+		p.letterCredits[rarity] = (p.letterCredits[rarity] or 0) + 1
+	end
+	ls[rarity] = 0
 	sync(player, p)
 	return true
 end

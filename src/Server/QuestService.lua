@@ -108,6 +108,22 @@ function QuestService.progress(player, signal, amount)
 end
 
 function QuestService.start()
+	-- a step the player already satisfies (a gifted teacher, pencils bought early) completes on arrival
+	Signals.on("questStep", function(player, id)
+		local p = Data.get(player)
+		if not p then return end
+		-- (the tutorial gifts Curtains, so they don't count as having built something)
+		local built = false
+		for itemId in p.builds or {} do
+			if itemId ~= "Curtains" then built = true end
+		end
+		local done = (id == "hire" and p.teachers[1] ~= nil) or (id == "pencils" and p.supplies and p.supplies.Pencils)
+			or (id == "name" and p.schoolName ~= nil) or (id == "build" and built)
+		if done then
+			local step = Config.Tutorial[p.tutorial]
+			if step and step.id == id then QuestService.progress(player, step.signal, step.count) end
+		end
+	end)
 	local function on(name, map)
 		Signals.on(name, function(player, ...)
 			if typeof(player) ~= "Instance" then return end

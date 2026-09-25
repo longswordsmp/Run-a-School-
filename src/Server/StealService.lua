@@ -174,7 +174,8 @@ function StealService.begin(thief, plot, slot)
 	PlotService.updatePad(plot, slot, e.stored or 0)
 	PlotService.updateIncome(owner)
 	local model = carryModel(thief, def, e.grade)
-	local c = { owner = owner, plot = plot, slot = slot, entry = e, def = def, model = model, started = os.clock() }
+	local _, root0 = humanoid(thief)
+	local c = { owner = owner, plot = plot, slot = slot, entry = e, def = def, model = model, started = os.clock(), lastPos = root0 and root0.Position, lastAt = os.clock() }
 	carrying[thief] = c
 	thief:SetAttribute("Carrying", def.id)
 	setSpeed(thief)
@@ -332,14 +333,25 @@ function StealService.start()
 				-- nobody carries a kid faster than they can run (catches teleports home)
 				if root and c.lastPos then
 					local tp = Data.get(thief)
-					local maxStep = Config.CarrySpeed * (tp and UpgradeService.carrySpeedMult(tp) or 1) * 0.2 * 1.6 + 3
+					local dt = math.max(0.05, os.clock() - (c.lastAt or os.clock()))
+					local maxStep = Config.CarrySpeed * (tp and UpgradeService.carrySpeedMult(tp) or 1) * dt * 1.3 + 1.5
 					local flat = (root.Position - c.lastPos) * Vector3.new(1, 0, 1)
 					if flat.Magnitude > maxStep then
-						StealService.drop(thief, "Whoa, too fast! They ran home.")
+						-- two in a row (one can be a replication hiccup); either way this tick is not accepted:
+						-- the position isn't taken and the delivery isn't checked, so a real teleport fails again next tick
+						c.strikes = (c.strikes or 0) + 1
+						if c.strikes >= 2 then
+							StealService.drop(thief, "Whoa, too fast! They ran home.")
+						end
 						continue
+					else
+						c.strikes = 0
 					end
 				end
-				if root then c.lastPos = root.Position end
+				if root then
+					c.lastPos = root.Position
+					c.lastAt = os.clock()
+				end
 				-- the owner's Jawbreaker Trap: leaving their gate with their kid trips you
 				local op = root and Data.get(c.owner)
 				local entry = c.plot:FindFirstChild("Entry")

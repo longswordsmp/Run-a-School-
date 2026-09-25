@@ -33,6 +33,7 @@ local DETENTION = 20
 local DEAL_EVERY = { 150, 260 }
 local DEAL_WINDOW = 60
 
+local bonkCrumpet -- defined with Crumpet below; the Ruler hook in start() calls it
 local state = {} -- [player] = { nextCheat, nextDeal, cheating = { [slot] = info }, detention = { [slot] = info }, dealer = info }
 
 local DEALERS = {
@@ -558,12 +559,12 @@ function PatrolService.start()
 					s.nextDeal = math.max(s.nextDeal, t + 5)
 				end
 				-- random cheaters once the tutorial has taught catching, smugglers once it taught busting
-				if active and (p.tutorial or 1) > 4 then
+				if active and (p.tutorial or 1) >= 4 then
 					if t >= s.nextCheat then
 						s.nextCheat = t + math.random(CHEAT_EVERY[1], CHEAT_EVERY[2])
 						pcall(startCheating, player)
 					end
-					if t >= s.nextDeal and (p.tutorial or 1) > 11 then
+					if t >= s.nextDeal and (p.tutorial or 1) >= 11 then
 						s.nextDeal = t + math.random(DEAL_EVERY[1], DEAL_EVERY[2])
 						pcall(sendDealer, player, s)
 					end
@@ -674,9 +675,9 @@ function PatrolService.crumpet(player)
 	end, { flat = false })
 end
 
-local function bonkCrumpet(player, s)
+bonkCrumpet = function(player, s)
 	local c = s.crumpet
-	if not c or c.done then return end
+	if not c or c.done or not c.carried then return end
 	local had = c.carried ~= nil
 	local def = Config.StudentById[c.e.id]
 	crumpetGiveBack(player, s, c)

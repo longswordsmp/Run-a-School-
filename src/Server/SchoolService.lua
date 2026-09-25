@@ -47,6 +47,7 @@ end)
 
 Actions.register("nameSchool", function(player, p, name)
 	if type(name) ~= "string" then return { ok = false, err = "Bad name" } end
+	if #name > 64 then return { ok = false, err = "Use 3 to 28 characters" } end
 	name = name:gsub("^%s+", ""):gsub("%s+$", "")
 	if #name < 3 or #name > 28 then return { ok = false, err = "Use 3 to 28 characters" } end
 	local ok, filtered = pcall(function()
