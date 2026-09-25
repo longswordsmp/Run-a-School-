@@ -604,6 +604,64 @@ do
 end
 
 ---------------------------------------------------------------------------
+-- Daily reward: a 7-day streak
+---------------------------------------------------------------------------
+do
+	local panel = UI.panel(gui, { name = "Daily", title = "DAILY REWARD", color = UI.C.orange, size = UDim2.fromOffset(780, 380) })
+	panels.Daily = panel
+	local streakText = UI.label(panel.body, { Text = "", TextColor3 = UI.C.navy, Size = UDim2.new(1, 0, 0, 28), ZIndex = 12, stroke = 0 })
+	local row = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 170), Position = UDim2.fromOffset(0, 36), ZIndex = 11, Parent = panel.body })
+	UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), HorizontalAlignment = Enum.HorizontalAlignment.Center, Parent = row })
+	local tiles = {}
+	for i = 1, 7 do
+		local t = UI.new("Frame", { Name = "Day" .. i, Size = UDim2.fromOffset(98, 160), BackgroundColor3 = UI.C.white, LayoutOrder = i, ZIndex = 12, Parent = row })
+		UI.corner(t, 14)
+		UI.stroke(t, 3)
+		local grad = UI.gradient(t, Color3.fromRGB(255, 240, 210), Color3.fromRGB(255, 210, 150))
+		UI.label(t, { Name = "Title", Text = "DAY " .. i, Font = UI.BIG, Size = UDim2.new(1, -8, 0, 30), Position = UDim2.fromOffset(4, 6), ZIndex = 13, stroke = 2 })
+		UI.label(t, { Name = "Icon", Text = i == 7 and "\u{1F381}" or "\u{2B50}", Size = UDim2.new(1, -30, 0, 46), Position = UDim2.fromOffset(15, 38), ZIndex = 13, stroke = 0 })
+		local txt = UI.label(t, { Name = "Text", Text = "", TextWrapped = true, TextColor3 = UI.C.navy, Size = UDim2.new(1, -10, 0, 60), Position = UDim2.fromOffset(5, 92), ZIndex = 13, stroke = 0 })
+		tiles[i] = { frame = t, text = txt, grad = grad }
+	end
+	local claim = UI.button(panel.body, { text = "CLAIM!", color = UI.C.green, size = UDim2.fromOffset(260, 62), position = UDim2.new(0.5, 0, 1, -4), anchor = Vector2.new(0.5, 1), font = UI.BIG })
+	lift(claim.button, 12)
+	local state
+	function panel.refresh()
+		state = call("daily")
+		if not state or state.ok == false then return end
+		local days = state.streak == 1 and "1 day" or (state.streak .. " days")
+		streakText.Text = state.claimed and ("Streak: %s. Come back tomorrow for day %d!"):format(days, state.day % 7 + 1)
+			or ("Streak: %s. Today is day %d!"):format(days, state.day)
+		for i, t in tiles do
+			t.text.Text = state.rewards[i] or ""
+			local isToday = i == state.day
+			local done = i < state.day or (isToday and state.claimed)
+			t.grad.Color = isToday and ColorSequence.new(Color3.fromRGB(180, 255, 180), Color3.fromRGB(70, 210, 110))
+				or done and ColorSequence.new(Color3.fromRGB(220, 220, 225), Color3.fromRGB(170, 170, 180))
+				or ColorSequence.new(Color3.fromRGB(255, 240, 210), Color3.fromRGB(255, 210, 150))
+			if isToday then UI.punch(t.frame, 1.08) end
+		end
+		claim.setEnabled(not state.claimed)
+		claim.setText(state.claimed and "CLAIMED" or "CLAIM!")
+	end
+	claim.button.Activated:Connect(function()
+		if not claim.button.Active then return end
+		local res = call("claimDaily")
+		if res and res.ok then sfx("Cheer") end
+		panel.refresh()
+	end)
+	panel.onOpen = panel.refresh
+	-- returning principals see it once per session when today's reward is waiting
+	task.delay(8, function()
+		local s = call("daily")
+		local prof = call("profile")
+		if s and s.ok ~= false and not s.claimed and prof and prof.tutorial and prof.tutorial > 5 then
+			panel.open()
+		end
+	end)
+end
+
+---------------------------------------------------------------------------
 -- Robux store: passes and products (only opens when you press it)
 ---------------------------------------------------------------------------
 do
@@ -813,6 +871,7 @@ sideButton(4, "\u{1F4D6}", "Yearbook", UI.C.pink, panels.Yearbook)
 sideButton(5, "\u{270F}\u{FE0F}", "Name", UI.C.blue, panels.NameSchool)
 sideButton(6, "\u{2699}\u{FE0F}", "Settings", UI.C.navy, panels.Settings)
 sideButton(0, "\u{1F48E}", "Store", Color3.fromRGB(40, 190, 90), panels.Store)
+sideButton(9, "\u{1F4C5}", "Daily", UI.C.orange, panels.Daily)
 -- Teleport Home pass: a home button once you own it
 local homeButton
 local function refreshHome()

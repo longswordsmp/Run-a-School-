@@ -261,6 +261,37 @@ for i, spec in LETTERS do
 		pcall(Action.InvokeServer, Action, "callLetter", r)
 	end)
 end
+-- the next playtime gift, under the letters
+local gift = Instance.new("Frame")
+gift.Name = "Gift"
+gift.LayoutOrder = 99
+gift.Size = UDim2.fromOffset(210, 44)
+gift.BackgroundColor3 = Color3.fromRGB(255, 120, 200)
+gift.Visible = false
+gift.Parent = letterBox
+corner(gift, 12)
+stroke(gift, 3)
+local giftGrad = Instance.new("UIGradient")
+giftGrad.Color = ColorSequence.new(Color3.fromRGB(255, 170, 225), Color3.fromRGB(230, 80, 170))
+giftGrad.Rotation = 90
+giftGrad.Parent = gift
+local giftName = text(gift, { Size = UDim2.new(0.66, -8, 0.55, 0), Position = UDim2.fromOffset(8, 3), TextXAlignment = Enum.TextXAlignment.Left, Text = "\u{1F381} Gift", strokeThickness = 2 })
+local giftSub = text(gift, { Size = UDim2.new(0.66, -8, 0.36, 0), Position = UDim2.new(0, 8, 0.58, 0), TextXAlignment = Enum.TextXAlignment.Left, Text = "", TextColor3 = Color3.fromRGB(255, 250, 230), strokeThickness = 1.5 })
+local giftTime = text(gift, { Size = UDim2.new(0.34, -8, 0.7, 0), Position = UDim2.new(0.66, 0, 0.15, 0), TextXAlignment = Enum.TextXAlignment.Right, Text = "", strokeThickness = 2 })
+task.spawn(function()
+	while true do
+		local at = player:GetAttribute("NextGiftAt")
+		gift.Visible = at ~= nil
+		if at then
+			local left = math.max(0, at - workspace:GetServerTimeNow())
+			giftName.Text = "\u{1F381} Next gift"
+			giftSub.Text = player:GetAttribute("NextGiftText") or ""
+			giftTime.Text = ("%d:%02d"):format(left // 60, left % 60)
+		end
+		task.wait(0.5)
+	end
+end)
+
 local function mmss2(s)
 	s = math.max(0, math.floor(s))
 	if s >= 3600 then return ("%dh %02dm"):format(s // 3600, (s % 3600) // 60) end

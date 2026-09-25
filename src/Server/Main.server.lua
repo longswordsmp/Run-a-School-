@@ -23,6 +23,7 @@ local PatrolService = require(Server.PatrolService)
 local EventService = require(Server.EventService)
 local LetterService = require(Server.LetterService)
 local MonetizationService = require(Server.MonetizationService)
+local RewardService = require(Server.RewardService)
 
 Factory.preload()
 PlotService.start()
@@ -37,6 +38,7 @@ PatrolService.start()
 EventService.startLoop()
 LetterService.start()
 MonetizationService.start()
+RewardService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -198,6 +200,14 @@ require(Server.DebugBridge).start({
 		return PatrolService.debugBonkCrumpet(player)
 	end,
 	-- the purchase grant paths without Robux (Studio only)
+	skipPlaytime = function(player, minutes)
+		return RewardService.debugSkip(player, minutes)
+	end,
+	resetDaily = function(player, dayOffset, streak)
+		local p = Data.get(player)
+		p.login = { day = math.floor(os.time() / 86400) + (dayOffset or -1), streak = streak or 0 }
+		return p.login
+	end,
 	grantPass = function(player, key)
 		return MonetizationService.grantPass(player, key)
 	end,
