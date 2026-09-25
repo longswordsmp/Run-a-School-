@@ -407,7 +407,8 @@ local function sendGoon(raid, g)
 	Walkers.walk(g.model, { g.path[2] }, R.runSpeed, function()
 		if g.gone then return end
 		local lockedUntil = plot:GetAttribute("LockedUntil") or 0
-		if lockedUntil > workspace:GetServerTimeNow() then
+		-- (the tutorial's Crumpet has a key: the lock is the step after him)
+		if not raid.tutorial and lockedUntil > workspace:GetServerTimeNow() then
 			goonSay(g, "It's LOCKED?! Ugh.")
 			Factory.play(g.model, "idle")
 			Factory.emote(g.model, "point")
@@ -438,7 +439,8 @@ local function hitGoon(player, raid, g, root)
 	local groot = g.model.PrimaryPart
 	if not groot or g.gone or now() < g.stunUntil then return end
 	local dir = groot.Position - root.Position
-	g.hp -= 1
+	-- the tutorial's Crumpet can't be knocked out before he's grabbed a kid (the step is to save one)
+	if not (raid.tutorial and not g.kid) then g.hp -= 1 end
 	Remotes.Sfx:FireClient(player, "Bonk")
 	Remotes.Push:FireClient(player, "hit", { pos = groot.Position + Vector3.new(0, 2, 0), ko = g.hp <= 0 })
 	burst(groot.Position + Vector3.new(0, 1.5, 0), Color3.fromRGB(255, 230, 120), 26)
@@ -463,7 +465,7 @@ local function hitGoon(player, raid, g, root)
 		Data.addCash(player, cash)
 		Remotes.CashPop:FireClient(player, cash, groot.Position)
 		Remotes.Notify:FireClient(player, ("You saved %s! +%s"):format(def.name, Config.formatCash(cash)), "good")
-		Signals.fire("bonkSave", player, nil, def, player)
+		Signals.fire("bonkSave", player, nil, def, raid.player)
 	end
 	g.waiting = nil
 	task.spawn(function()
