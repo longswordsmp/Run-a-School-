@@ -60,6 +60,7 @@ local function goonsLeft()
 end
 
 local raidOn = false
+local heistOn = false
 task.spawn(function()
 	while true do
 		task.wait(0.25)
@@ -153,8 +154,79 @@ Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
 				tint(RED)
 			end
 		end)
+	elseif kind == "heist" and data then
+		-- the Factory: carrying a kid out, and how it ended
+		if data.state == "carrying" then
+			heistOn = true
+			tint(Color3.fromRGB(150, 70, 220))
+			bannerText.Text = ("\u{1F3C3} GET %s OUT THE GATE!"):format(data.name:upper())
+			banner.Size = UDim2.fromOffset(460, 46)
+			banner.Visible = true
+			UI.pop(banner, 0.4)
+		else
+			heistOn = false
+			if data.state == "rescued" or data.state == "prize" then
+				tint(Color3.fromRGB(40, 170, 80))
+				bannerText.Text = data.state == "prize" and ("\u{1F389} YOU STOLE %s (%s)!"):format(data.name:upper(), (data.rarity or ""):upper())
+					or ("\u{1F389} RESCUED %s!"):format(data.name:upper())
+				UI.punch(banner, 1.1)
+				task.delay(3.5, function()
+					if not raidOn and not heistOn then
+						banner.Visible = false
+						tint(RED)
+					end
+				end)
+			else
+				banner.Visible = raidOn
+				tint(RED)
+			end
+		end
 	elseif kind == "hit" and data then
 		shakeUntil, shakeAmp = os.clock() + 0.2, data.ko and 0.9 or 0.5
 		pop(data.pos, data.ko and "K.O.!" or "BONK!", data.ko and Color3.fromRGB(255, 90, 90) or Color3.fromRGB(255, 230, 90))
+	end
+end)
+
+---------------------------------------------------------------------------
+-- the Factory: homework slides along the belts, the presses stamp
+---------------------------------------------------------------------------
+local CollectionService = game:GetService("CollectionService")
+local sheets, pistons = {}, {}
+local function addSheet(p)
+	if p:IsA("BasePart") then sheets[p] = { y = p.Position.Y, rot = p.CFrame - p.Position } end
+end
+local function addPiston(p)
+	if p:IsA("BasePart") then pistons[p] = { base = p.CFrame, phase = math.random() * 2 } end
+end
+for _, p in CollectionService:GetTagged("BeltItem") do addSheet(p) end
+for _, p in CollectionService:GetTagged("Piston") do addPiston(p) end
+CollectionService:GetInstanceAddedSignal("BeltItem"):Connect(addSheet)
+CollectionService:GetInstanceAddedSignal("Piston"):Connect(addPiston)
+CollectionService:GetInstanceRemovedSignal("BeltItem"):Connect(function(p) sheets[p] = nil end)
+CollectionService:GetInstanceRemovedSignal("Piston"):Connect(function(p) pistons[p] = nil end)
+local BELT_SPEED = 3
+RunService.RenderStepped:Connect(function()
+	local t = os.clock()
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	-- only animate when you're near enough to see it
+	if root and (root.Position - Vector3.new(0, 0, 86)).Magnitude > 160 then return end
+	for p, s in sheets do
+		if p.Parent then
+			local len = p:GetAttribute("BeltLen") or 40
+			local x = -len / 2 + ((p:GetAttribute("Offset") or 0) + t * BELT_SPEED) % len
+			p.CFrame = CFrame.new(x, s.y, p:GetAttribute("BeltZ") or p.Position.Z) * s.rot
+		else
+			sheets[p] = nil
+		end
+	end
+	for p, s in pistons do
+		if p.Parent then
+			-- a quick stamp every 2.2 s
+			local k = ((t + s.phase) % 2.2) / 2.2
+			local drop = k < 0.12 and (k / 0.12) or (k < 0.3 and 1 or math.max(0, 1 - (k - 0.3) / 0.4))
+			p.CFrame = s.base * CFrame.new(0, -3.4 * drop, 0)
+		else
+			pistons[p] = nil
+		end
 	end
 end)

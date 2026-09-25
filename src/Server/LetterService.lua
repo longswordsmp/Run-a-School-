@@ -125,7 +125,7 @@ local function release(player, model)
 end
 
 -- deliver a reserved kid to the owner's Waiting Bench
-function LetterService.deliver(player, def, free)
+function LetterService.deliver(player, def, free, gradeOverride)
 	local plot = PlotService.getPlot(player)
 	if not plot then return nil end
 	local seat = freeSeat(player)
@@ -143,6 +143,7 @@ function LetterService.deliver(player, def, free)
 		seat = oldest
 	end
 	local _, grade = HallService.roll(nil, def.id)
+	grade = gradeOverride or grade
 	local model = Factory.build(def, grade)
 	model:SetAttribute("State", "Hall")
 	model:SetAttribute("ReservedFor", player.UserId)

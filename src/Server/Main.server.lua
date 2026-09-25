@@ -32,6 +32,7 @@ local DailyService = require(Server.DailyService)
 local TicketService = require(Server.TicketService)
 local AlumniService = require(Server.AlumniService)
 local RaidService = require(Server.RaidService)
+local FactoryService = require(Server.FactoryService)
 
 Factory.preload()
 PlotService.start()
@@ -55,6 +56,7 @@ DailyService.start()
 TicketService.start()
 AlumniService.start()
 RaidService.start()
+FactoryService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -226,6 +228,23 @@ require(Server.DebugBridge).start({
 	end,
 	raidHit = function(player)
 		return RaidService.debugHit(player)
+	end,
+	factory = function(player)
+		return FactoryService.debugState()
+	end,
+	factoryTake = function(player, i)
+		return FactoryService.debugTake(player, i)
+	end,
+	-- send one of your seated kids straight to the Factory, as if a goon got away with them
+	capture = function(player, slot)
+		local p = Data.get(player)
+		local e = p.students[slot]
+		if not e then return false end
+		PlotService.remove(player, slot)
+		p.captured = p.captured or {}
+		table.insert(p.captured, { id = e.id, grade = e.grade })
+		require(Server.Signals).fire("kidCaptured", player, Config.StudentById[e.id])
+		return #p.captured
 	end,
 	-- the purchase grant paths without Robux (Studio only)
 	vex = function(player)

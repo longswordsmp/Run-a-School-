@@ -246,6 +246,23 @@ plots.DescendantAdded:Connect(function(d)
 	if d:IsA("ProximityPrompt") then task.defer(fixPrompt, d) end
 end)
 for _, d in plots:GetDescendants() do fixPrompt(d) end
+-- the Factory's pens: only a kid's owner can open their pen
+task.spawn(function()
+	local fac = workspace:WaitForChild("VexFactory", 30)
+	if not fac then return end
+	local function watch(d)
+		if d:IsA("ProximityPrompt") then
+			task.defer(fixPrompt, d)
+			d:GetAttributeChangedSignal("OwnerOnly"):Connect(function() fixPrompt(d) end)
+		elseif d:IsA("Model") and d.Name:match("^Pen%d") then
+			d:GetAttributeChangedSignal("OwnerId"):Connect(function()
+				for _, x in d:GetDescendants() do fixPrompt(x) end
+			end)
+		end
+	end
+	fac.DescendantAdded:Connect(watch)
+	for _, d in fac:GetDescendants() do watch(d) end
+end)
 -- a plot changing hands re-checks its prompts (the lock button's prompt is made only once)
 local function hookPlot(plot)
 	plot:GetAttributeChangedSignal("OwnerId"):Connect(function()

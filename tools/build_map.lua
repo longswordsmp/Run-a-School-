@@ -194,11 +194,13 @@ spawn.Anchored = true; spawn.Transparency = 1; spawn.CanCollide = false; spawn.N
 spawn.Parent = map
 for _, d in spawn:GetChildren() do d:Destroy() end
 local hub = Instance.new("Model"); hub.Name = "Hub"; hub.Parent = map
+-- the street arch stands west of the centre so it doesn't block the VexCorp Factory's gate
+local ARCH_X = -48
 for _, z in { -26, 26 } do
-	part(hub, "ArchPost", Vector3.new(3, 22, 3), CFrame.new(0, 11, z), C.white)
-	part(hub, "ArchCap", Vector3.new(4, 1, 4), CFrame.new(0, 22.5, z), C.trim)
+	part(hub, "ArchPost", Vector3.new(3, 22, 3), CFrame.new(ARCH_X, 11, z), C.white)
+	part(hub, "ArchCap", Vector3.new(4, 1, 4), CFrame.new(ARCH_X, 22.5, z), C.trim)
 end
-local arch = part(hub, "ArchSign", Vector3.new(2, 6, 50), CFrame.new(0, 24, 0), rgb(214, 44, 58))
+local arch = part(hub, "ArchSign", Vector3.new(2, 6, 50), CFrame.new(ARCH_X, 24, 0), rgb(214, 44, 58))
 signGui(arch, Enum.NormalId.Left, "RUN A SCHOOL", C.white, rgb(214, 44, 58), Enum.Font.LuckiestGuy)
 signGui(arch, Enum.NormalId.Right, "RUN A SCHOOL", C.white, rgb(214, 44, 58), Enum.Font.LuckiestGuy)
 part(hub, "FlagBase", Vector3.new(4, 1, 4), CFrame.new(0, 0.5, -48), rgb(200, 200, 205))
@@ -212,6 +214,7 @@ part(hub, "FlagStripe", Vector3.new(0.25, 1.4, 8), CFrame.new(0, 27, -52), C.whi
 local deco = Instance.new("Folder"); deco.Name = "Deco"; deco.Parent = map
 for x = -300, 300, 50 do
 	for _, z in { -24, 24 } do
+		if x == 0 and z == 24 then continue end -- the VexCorp Factory gate
 		local lamp = Instance.new("Model"); lamp.Name = "Lamp"; lamp.Parent = deco
 		part(lamp, "Pole", Vector3.new(0.8, 12, 0.8), CFrame.new(x, 6, z), rgb(50, 50, 60), Enum.Material.Metal)
 		part(lamp, "Arm", Vector3.new(0.4, 0.4, 3), CFrame.new(x, 12, z - math.sign(z) * 1.3), rgb(50, 50, 60), Enum.Material.Metal)
@@ -281,37 +284,7 @@ do
 	part(f, "NPCSpot", Vector3.new(1, 1, 1), CFrame.new(cx + 8, 0.6, cz + 12) * CFrame.Angles(0, math.rad(200), 0), C.white, nil, HIDDEN)
 end
 
--- centre, far side: the Teachers' Lounge and the Bell Schedule board
-do
-	local t = Instance.new("Model"); t.Name = "TeachersLounge"; t.Parent = lm
-	local cx, cz = 0, 88
-	walkway(0, 28, 0, 70)
-	local wall, trim = rgb(236, 226, 206), rgb(120, 70, 50)
-	part(t, "Floor", Vector3.new(44, 1, 32), CFrame.new(cx, 0.5, cz), rgb(170, 130, 90), Enum.Material.WoodPlanks)
-	part(t, "Back", Vector3.new(44, 16, 1.5), CFrame.new(cx, 8.5, cz + 15.5), wall)
-	for _, x in { -21.5, 21.5 } do part(t, "Side", Vector3.new(1.5, 16, 32), CFrame.new(cx + x, 8.5, cz), wall) end
-	part(t, "Roof", Vector3.new(46, 1.2, 34), CFrame.new(cx, 17, cz), rgb(150, 60, 50))
-	part(t, "Fascia", Vector3.new(46, 2, 1), CFrame.new(cx, 15.6, cz - 16.5), trim)
-	-- glass front with a door gap
-	for _, x in { -13, 13 } do
-		part(t, "Glass", Vector3.new(14, 12, 0.4), CFrame.new(cx + x, 7.5, cz - 15.5), rgb(190, 225, 255), Enum.Material.Glass, { Transparency = 0.45 })
-	end
-	for _, x in { -20.5, -6, 6, 20.5 } do part(t, "Mullion", Vector3.new(1, 14, 0.8), CFrame.new(cx + x, 8, cz - 15.5), trim) end
-	local sign = part(t, "Sign", Vector3.new(26, 3.4, 0.6), CFrame.new(cx, 19.4, cz - 15), rgb(40, 90, 60))
-	signGui(sign, Enum.NormalId.Front, "TEACHERS' LOUNGE", C.white, rgb(40, 90, 60), Enum.Font.LuckiestGuy)
-	-- inside: couch, coffee, a table of red pens
-	part(t, "Couch", Vector3.new(14, 2.4, 4), CFrame.new(cx - 9, 2.2, cz + 11), rgb(90, 110, 180))
-	part(t, "CouchBack", Vector3.new(14, 3, 1.2), CFrame.new(cx - 9, 4.2, cz + 13), rgb(80, 100, 170))
-	part(t, "Counter", Vector3.new(10, 3.6, 3), CFrame.new(cx + 12, 2.8, cz + 12), rgb(180, 180, 190))
-	part(t, "CoffeeMachine", Vector3.new(2, 2.6, 2), CFrame.new(cx + 14, 5.9, cz + 12), rgb(40, 40, 45), Enum.Material.Metal)
-	part(t, "Mug", Vector3.new(0.7, 0.8, 0.7), CFrame.new(cx + 11, 5, cz + 12), rgb(250, 250, 250))
-	part(t, "Table", Vector3.new(8, 0.6, 5), CFrame.new(cx, 3, cz + 2), rgb(150, 100, 60), Enum.Material.Wood)
-	part(t, "TableLeg", Vector3.new(1, 2.5, 1), CFrame.new(cx, 1.6, cz + 2), rgb(90, 60, 40), Enum.Material.Wood)
-	-- the Bell Schedule (the buses and recess run on the clock, in UTC)
-	for _, x in { -9, 9 } do part(t, "BoardPost", Vector3.new(0.8, 12, 0.8), CFrame.new(cx + x, 6, 48), rgb(60, 60, 70), Enum.Material.Metal) end
-	local board = part(t, "BellSchedule", Vector3.new(20, 9, 0.8), CFrame.new(cx, 9.5, 48), rgb(20, 24, 34))
-	signGui(board, Enum.NormalId.Front, "BELL SCHEDULE (UTC)\nLate Bus  :00 :05 :10 ...\nHonor Roll  :07:30 :22:30 :37:30 :52:30\nField Trip  :12:30 :42:30\nRecess  :00 :15 :30 :45", rgb(255, 220, 120), rgb(20, 24, 34), Enum.Font.Arcade)
-end
+-- centre, far side: the VexCorp Factory stands here (built at runtime by FactoryService)
 
 -- west, spawn side: Janitor Stan's Confiscation Closet
 do

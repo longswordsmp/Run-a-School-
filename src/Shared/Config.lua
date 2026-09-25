@@ -647,6 +647,43 @@ Config.Raids = {
 }
 
 ---------------------------------------------------------------------------
+-- The VexCorp Factory heist (FactoryService). Speeds in studs/second; players walk at 16.
+-- Empty-handed you outrun a guard (15); carrying a kid you're at 12 and they chase at 14, so you
+-- need your Ruler (a bonk stuns a guard for guardStun seconds). Vex's prize captives are a mystery
+-- kid rolled from the band for your tier when you get them out.
+---------------------------------------------------------------------------
+Config.Heist = {
+	guards = 3,
+	patrolSpeed = 7,
+	chaseSpeed = 15,
+	chaseSpeedCarry = 14,
+	carrySpeed = 12,
+	sightRange = 26,
+	sightAngle = 100,
+	hearRange = 5,
+	loseAfter = 3,
+	catchRange = 3.2,
+	caughtStun = 1.5,
+	guardStun = 3,
+	holdTime = 1.2,
+	prizeRestock = 300,
+	prizeByTier = {
+		{ "Uncommon", "Rare" },
+		{ "Rare", "Rare", "Epic" },
+		{ "Rare", "Epic" },
+		{ "Epic", "Epic", "Legendary" },
+		{ "Epic", "Legendary" },
+		{ "Legendary", "Legendary", "Mythic" },
+		{ "Legendary", "Mythic" },
+		{ "Legendary", "Mythic" },
+		{ "Mythic", "Mythic", "Prodigy" },
+		{ "Mythic", "Prodigy" },
+		{ "Mythic", "Prodigy" },
+		{ "Prodigy", "Prodigy", "Secret" },
+	},
+}
+
+---------------------------------------------------------------------------
 -- Janitor Stan's Confiscation Closet: what Confiscated Candy buys. Decor adds no Reputation (no income
 -- effect); traps protect your school. Candy is never sold for Robux.
 ---------------------------------------------------------------------------

@@ -2067,6 +2067,52 @@ T.goon = function(model, head, hs, torso, ts)
 	end
 end
 
+-- VexCorp security guard (the Factory): slate-grey uniform, a purple peaked cap with a silver
+-- badge, a radio on the chest, a purple armband, and a flashlight whose beam is the guard's eyes
+Props.TeacherLooks.guard = { skin = "brown", shirt = Color3.fromRGB(88, 94, 110), pants = Color3.fromRGB(34, 36, 46), torso = Color3.fromRGB(88, 94, 110) }
+T.guard = function(model, head, hs, torso, ts)
+	local purple = rgb(95, 45, 140)
+	local silver = rgb(205, 210, 220)
+	-- peaked cap: crown, band, visor, badge
+	blob(model, head, Vector3.new(hs.X * 1.12, hs.Y * 0.42, hs.Z * 1.14), CFrame.new(0, hs.Y * 0.4, hs.Z * 0.02), purple)
+	block(model, head, Vector3.new(hs.X * 1.1, hs.Y * 0.16, hs.Z * 1.1), CFrame.new(0, hs.Y * 0.22, 0), rgb(30, 30, 38))
+	block(model, head, Vector3.new(hs.X * 0.95, 0.1, hs.Z * 0.42), CFrame.new(0, hs.Y * 0.17, -hs.Z * 0.62) * CFrame.Angles(math.rad(-8), 0, 0), rgb(25, 25, 30))
+	block(model, head, Vector3.new(hs.X * 0.26, hs.Y * 0.2, 0.06), CFrame.new(0, hs.Y * 0.36, -hs.Z * 0.57), silver, Enum.Material.Metal)
+	-- a stern moustache
+	block(model, head, Vector3.new(hs.X * 0.46, hs.Y * 0.08, 0.05), CFrame.new(0, -hs.Y * 0.15, -hs.Z * 0.51), rgb(40, 28, 22))
+	-- uniform: pocket flaps, a shoulder radio with an antenna, a badge, a belt
+	for _, x in { -1, 1 } do
+		block(model, torso, Vector3.new(ts.X * 0.28, ts.Y * 0.08, 0.06), CFrame.new(x * ts.X * 0.24, ts.Y * 0.2, -ts.Z * 0.52), rgb(70, 76, 92))
+	end
+	block(model, torso, Vector3.new(ts.X * 0.18, ts.Y * 0.28, ts.Z * 0.3), CFrame.new(-ts.X * 0.34, ts.Y * 0.28, -ts.Z * 0.5), rgb(20, 20, 24))
+	block(model, torso, Vector3.new(0.05, 0.6, 0.05), CFrame.new(-ts.X * 0.4, ts.Y * 0.62, -ts.Z * 0.5), rgb(20, 20, 24))
+	block(model, torso, Vector3.new(ts.X * 0.16, ts.Y * 0.18, 0.06), CFrame.new(ts.X * 0.26, ts.Y * 0.3, -ts.Z * 0.53), silver, Enum.Material.Metal)
+	local lower = part(model, "LowerTorso")
+	if lower then
+		block(model, lower, Vector3.new(ts.X * 1.04, 0.28, ts.Z * 1.06), CFrame.new(0, 0.05, 0), rgb(22, 22, 26))
+		block(model, lower, Vector3.new(0.34, 0.24, 0.08), CFrame.new(0, 0.05, -ts.Z * 0.55), silver, Enum.Material.Metal)
+	end
+	local upper = part(model, "LeftUpperArm")
+	if upper then block(model, upper, Vector3.new(upper.Size.X * 1.06, 0.35, upper.Size.Z * 1.06), CFrame.new(0, 0.1, 0), purple) end
+	-- the flashlight: body, lens, and a spotlight that lights up what the guard can see
+	local hand = part(model, "RightHand")
+	if hand then
+		local body = cylZ(model, hand, 0.34, 1.3, CFrame.new(0, -0.1, -0.6), rgb(30, 30, 34), Enum.Material.Metal)
+		local lens = cylZ(model, hand, 0.42, 0.12, CFrame.new(0, -0.1, -1.28), rgb(255, 250, 215), Enum.Material.Neon)
+		lens.Name = "FlashlightLens"
+		local spot = Instance.new("SpotLight")
+		spot.Name = "Beam"
+		spot.Face = Enum.NormalId.Right
+		spot.Angle = 70
+		spot.Range = 26
+		spot.Brightness = 3
+		spot.Color = Color3.fromRGB(255, 245, 200)
+		spot.Shadows = true
+		spot.Parent = lens
+		_ = body
+	end
+end
+
 -- Otis the bus driver: big grey beard, flat cap, mirrored aviators, hi-vis vest
 Props.TeacherLooks.otis = { skin = "tan", shirt = Color3.fromRGB(90, 110, 140), pants = Color3.fromRGB(50, 55, 70) }
 T.otis = function(model, head, hs, torso, ts)

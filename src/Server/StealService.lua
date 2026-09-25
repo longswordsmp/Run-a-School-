@@ -234,6 +234,9 @@ local function makeRuler()
 	return tool
 end
 
+-- other systems that change a player's speed (the Factory heist) put it back through this
+StealService.setSpeed = setSpeed
+
 local lastSwing = {}
 local function swing(player, tool)
 	local now = os.clock()
