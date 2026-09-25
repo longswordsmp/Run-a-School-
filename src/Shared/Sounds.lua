@@ -59,6 +59,16 @@ Sounds.Sfx = {
 	Rare = { id = id(128460880879263), volume = 0.55, max = 4 },
 	Token = { id = id(3416831713), volume = 0.5, max = 1.5 },
 	Doom = { id = id(9039598193), volume = 0.5, max = 3 },
+	-- comedy and world effects (loaded in Studio 2026-09-25, lengths in seconds)
+	Whistle = { id = id(9117261163), volume = 0.5, max = 1 }, -- 0.62, Pro Sound Effects
+	WhistleLong = { id = id(9118113825), volume = 0.45, max = 2 }, -- 1.85, PSE
+	SlideWhistle = { id = id(9119198140), volume = 0.5, max = 1.5 }, -- 1.32, PSE
+	Hammer = { id = id(9114756916), volume = 0.45, max = 1.8 }, -- 1.71, PSE
+	Splash = { id = id(9117947974), volume = 0.4, max = 0.5 }, -- 0.36, PSE
+	Bonk = { id = id(3765689841), volume = 0.6, max = 0.8 }, -- 0.73
+	DogBark = { id = id(123024926216748), volume = 0.4, max = 0.8 }, -- 0.73
+	SadTrombone = { id = id(190705984), volume = 0.45, max = 4 }, -- 3.92
+	DrumRoll = { id = id(4718483268), volume = 0.45, max = 2.1 }, -- 2.00
 	-- short musical stings for big moments
 	StingParty = { id = id(9045119921), volume = 0.5, max = 6 },
 	StingMorning = { id = id(9040476898), volume = 0.5, max = 6 },

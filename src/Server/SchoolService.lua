@@ -57,6 +57,7 @@ Actions.register("nameSchool", function(player, p, name)
 	p.schoolName = filtered
 	PlotService.refreshSign(player)
 	Remotes.Notify:FireClient(player, "Your school is now " .. filtered .. "!", "good")
+	Remotes.Sfx:FireClient(player, "DrumRoll")
 	Signals.fire("nameSchool", player)
 	return { ok = true, name = filtered }
 end)

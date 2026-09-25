@@ -81,7 +81,8 @@ Actions.register("buyBuild", function(player, p, id)
 	if plot then SchoolBuilder.setItems(plot, p.builds, id) end
 	sync(player, p)
 	PlotService.updateIncome(player)
-	Remotes.Sfx:FireClient(player, "Buy")
+	Remotes.Sfx:FireClient(player, "Hammer")
+	task.delay(1.2, function() Remotes.Sfx:FireClient(player, "Buy") end)
 	Remotes.Announce:FireClient(player, def.name:upper() .. " BUILT!", Color3.fromRGB(110, 230, 120))
 	Signals.fire("build", player, def)
 	return { ok = true, rep = CampusService.rep(p) }

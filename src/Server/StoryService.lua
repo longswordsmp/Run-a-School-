@@ -279,7 +279,7 @@ local function hector()
 						npc.bubble.Enabled = true
 						task.delay(3, function() npc.bubble.Enabled = false end)
 						Factory.emote(m, "point")
-						Remotes.Sfx:FireAllClients("WarningBeep", m.PrimaryPart.Position)
+						Remotes.Sfx:FireAllClients("Whistle", m.PrimaryPart.Position)
 						local h = Instance.new("Highlight")
 						h.FillColor = Color3.fromRGB(255, 60, 60)
 						h.FillTransparency = 0.6

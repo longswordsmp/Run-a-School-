@@ -9,6 +9,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
+local bus = ReplicatedStorage:WaitForChild("ClientBus", 10)
+local function sfx(name, model)
+	local root = model and model.PrimaryPart
+	if bus and bus:FindFirstChild("Sfx") then bus.Sfx:Fire(name, root and root.Position) end
+end
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
@@ -120,7 +125,7 @@ end
 
 -- signature gags for particular kids: { every = seconds, fn = function(model) }
 local GAGS = {
-	PuddlePip = { every = 8, fn = function(m) task.spawn(hop, m, 1.2, 0.2) pop(m, "splash!", Color3.fromRGB(110, 190, 255)) end },
+	PuddlePip = { every = 8, fn = function(m) task.spawn(hop, m, 1.2, 0.2) pop(m, "splash!", Color3.fromRGB(110, 190, 255)) sfx("Splash", m) end },
 	HiccupHank = { every = 7, fn = function(m) task.spawn(hop, m, 0.5, 0.1) pop(m, "hic!", Color3.fromRGB(200, 240, 255)) end },
 	SneezySid = { every = 20, fn = function(m)
 		pose(m, "Head", "Neck", CFrame.Angles(math.rad(25), 0, 0), 0.6)
@@ -129,7 +134,7 @@ local GAGS = {
 			pop(m, "ACHOO!", Color3.fromRGB(255, 255, 255))
 		end)
 	end },
-	HomeworkDoug = { every = 15, fn = function(m) pop(m, "WOOF!", Color3.fromRGB(220, 170, 110)) end },
+	HomeworkDoug = { every = 15, fn = function(m) pop(m, "WOOF!", Color3.fromRGB(220, 170, 110)) sfx("DogBark", m) end },
 	RecorderRosie = { every = 12, fn = function(m)
 		if math.random() < 0.2 then
 			pop(m, "\u{266A}?!", Color3.fromRGB(255, 90, 90))

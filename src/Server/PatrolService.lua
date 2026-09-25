@@ -167,7 +167,7 @@ function PatrolService.sendToOffice(player, slot, by)
 	Data.addCash(player, fee)
 	Remotes.CashPop:FireClient(player, fee, model.PrimaryPart.Position)
 	Remotes.Notify:FireClient(player, (by and (by .. " caught ") or (eagle and "EAGLE EYE! You caught " or "You caught ")) .. def.name .. " cheating! Detention fee +" .. Config.formatCash(fee), "good")
-	Remotes.Sfx:FireClient(player, "Bell")
+	Remotes.Sfx:FireClient(player, "WhistleLong")
 	Signals.fire("catchCheater", player, def)
 	Walkers.walk(model, pts, 10, function()
 		if not model.Parent then return end
@@ -329,7 +329,7 @@ local function tickCheating(player, s)
 				if f then game:GetService("Debris"):AddItem(f.Parent, 120) end
 			end
 			Remotes.Notify:FireClient(player, def.name .. " got away with cheating! F for 2 minutes, and it is spreading...", "bad")
-			Remotes.Sfx:FireClient(player, "Error")
+			Remotes.Sfx:FireClient(player, "SadTrombone")
 			for _, n in { slot - 1, slot + 1 } do
 				local ne = p and p.students[n]
 				if ne and PlotService.slotRow(n) == PlotService.slotRow(slot) and PlotService.slotFloor(n) == PlotService.slotFloor(slot) and PlotService.earning(ne) then
@@ -682,7 +682,8 @@ local function bonkCrumpet(player, s)
 	crumpetGiveBack(player, s, c)
 	Walkers.stop(c.model)
 	crumpetSay(c, "Most irregular.")
-	Remotes.Sfx:FireClient(player, "GavelBig")
+	Remotes.Sfx:FireClient(player, "Bonk")
+	task.delay(0.3, function() Remotes.Sfx:FireClient(player, "SlideWhistle") end)
 	if had then
 		Remotes.Notify:FireClient(player, "You saved " .. def.name .. "! +DEFENDED", "good")
 		Signals.fire("bonkSave", player, nil, def, player)

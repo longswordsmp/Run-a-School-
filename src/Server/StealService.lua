@@ -262,7 +262,7 @@ local function swing(player, tool)
 					stunned[other] = now + 1.2
 					setSpeed(other)
 					oroot.AssemblyLinearVelocity = flat.Unit * 40 + Vector3.new(0, 25, 0)
-					Remotes.Sfx:FireAllClients("GavelBig", oroot.Position)
+					Remotes.Sfx:FireAllClients("Bonk", oroot.Position)
 					if carrying[other] then
 						local c = carrying[other]
 						StealService.drop(other, player.DisplayName .. " bonked you! " .. c.def.name .. " ran home.")
