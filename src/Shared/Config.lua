@@ -383,8 +383,32 @@ Config.Goals = {
 	{ text = "Bust a Snack Smuggler", signal = "bustDealer", count = 1, secs = 300, min = 1500 },
 }
 
+---------------------------------------------------------------------------
+-- Robux store (docs/DESIGN-v2.md section 13). Create each pass/product on the Creator Dashboard and
+-- paste its id here; id = 0 shows as "SOON" in the store and can't be bought.
+-- Fairness: nothing is ever prompted automatically; paid random items show their odds.
+---------------------------------------------------------------------------
+Config.Passes = {
+	{ key = "VIP", id = 0, name = "VIP Principal", robux = 499, icon = "\u{1F451}", desc = "x2 tuition forever, VIP tag" },
+	{ key = "Luck", id = 0, name = "2x Luck", robux = 349, icon = "\u{1F340}", desc = "x2 luck on the buses you stand near" },
+	{ key = "AutoCollect", id = 0, name = "Auto Collect", robux = 249, icon = "\u{1F9F9}", desc = "The Janitor's Cart at max level from the start" },
+	{ key = "LongLock", id = 0, name = "Long Lock", robux = 149, icon = "\u{1F510}", desc = "+30s every time you lock your gate" },
+	{ key = "TeleportHome", id = 0, name = "Teleport Home", robux = 99, icon = "\u{1F3E0}", desc = "A button that takes you home (not while carrying)" },
+	{ key = "OfflinePlus", id = 0, name = "Offline Tuition+", robux = 149, icon = "\u{1F319}", desc = "Earn 50% for up to 12h while offline (was 25% for 2h)" },
+}
+Config.Products = {
+	{ key = "Cash10m", id = 0, name = "Tuition Pack", robux = 49, icon = "\u{1F4B5}", desc = "10 minutes of your tuition", seconds = 600 },
+	{ key = "Cash1h", id = 0, name = "Tuition Bag", robux = 149, icon = "\u{1F4B0}", desc = "1 hour of your tuition", seconds = 3600 },
+	{ key = "Cash4h", id = 0, name = "Tuition Vault", robux = 399, icon = "\u{1F3E6}", desc = "4 hours of your tuition", seconds = 14400 },
+	{ key = "LuckyBus", id = 0, name = "Lucky Bus", robux = 199, icon = "\u{1F68C}", desc = "A bus for the whole server with YOUR name on it. Legendary 70% / Mythic 24% / Prodigy 5% / Secret 1%" },
+	{ key = "ServerLuck", id = 0, name = "Server Luck x2", robux = 99, icon = "\u{2728}", desc = "x2 luck for everyone for 15 minutes" },
+	{ key = "ExpressRare", id = 0, name = "Express Rare Letter", robux = 25, icon = "\u{2709}\u{FE0F}", desc = "Your Rare letter, ready now (you still pay the kid's price)" },
+	{ key = "ExpressEpic", id = 0, name = "Express Epic Letter", robux = 79, icon = "\u{1F48C}", desc = "Your Epic letter, ready now (you still pay the kid's price)" },
+	{ key = "LockRefresh", id = 0, name = "Instant Lock Refresh", robux = 25, icon = "\u{1F504}", desc = "Your gate can lock again right now" },
+}
+
 -- special buses
-Config.LateBus = { every = 300, offset = 0, count = 6, minRarity = 3 } -- Rare+, :00 :05 :10 ...
+Config.LateBus ={ every = 300, offset = 0, count = 6, minRarity = 3 } -- Rare+, :00 :05 :10 ...
 -- the Honor Roll Bus: the first student off is guaranteed Legendary or better
 Config.HonorBus = { every = 900, offset = 450, count = 5, first = { Legendary = 80, Mythic = 17, Prodigy = 2.5, Secret = 0.5 }, weights = { Epic = 70, Legendary = 25, Mythic = 5 } }
 Config.FieldTrip = { every = 1800, offset = 750, count = 8, weights = { Epic = 60, Legendary = 30, Mythic = 8, Prodigy = 1.8, Secret = 0.2 } }

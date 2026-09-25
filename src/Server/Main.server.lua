@@ -22,6 +22,7 @@ local QuestService = require(Server.QuestService)
 local PatrolService = require(Server.PatrolService)
 local EventService = require(Server.EventService)
 local LetterService = require(Server.LetterService)
+local MonetizationService = require(Server.MonetizationService)
 
 Factory.preload()
 PlotService.start()
@@ -35,6 +36,7 @@ QuestService.start()
 PatrolService.start()
 EventService.startLoop()
 LetterService.start()
+MonetizationService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -194,6 +196,13 @@ require(Server.DebugBridge).start({
 	end,
 	bonkCrumpet = function(player)
 		return PatrolService.debugBonkCrumpet(player)
+	end,
+	-- the purchase grant paths without Robux (Studio only)
+	grantPass = function(player, key)
+		return MonetizationService.grantPass(player, key)
+	end,
+	grantProduct = function(player, key)
+		return MonetizationService.grantProduct(player, key)
 	end,
 	letterReady = function(player, rarity)
 		return LetterService.debugReady(player, rarity)

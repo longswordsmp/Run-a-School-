@@ -145,14 +145,21 @@ ADMIN.money = function(player)
 	task.spawn(EventService.moneyRain, 80)
 	return true
 end
+-- server-wide luck for a while (admin panel, the Server Luck product); more time stacks on
+function EventService.serverLuck(mult, secs, byName)
+	local now = workspace:GetServerTimeNow()
+	serverLuck.mult = math.max(serverLuck.untilT > now and serverLuck.mult or 1, mult)
+	serverLuck.untilT = math.max(serverLuck.untilT, now) + secs
+	workspace:SetAttribute("ServerLuck", serverLuck.mult)
+	workspace:SetAttribute("ServerLuckUntil", serverLuck.untilT)
+	local who = byName and (byName .. " bought ") or ""
+	Remotes.Announce:FireAllClients(("%sSERVER LUCK x%d FOR %d MINUTES!"):format(who:upper(), mult, math.floor(secs / 60)), Color3.fromRGB(110, 255, 160))
+	Remotes.Sfx:FireAllClients("Upgrade")
+end
+
 ADMIN.luck = function(player, mult)
 	mult = math.clamp(tonumber(mult) or 2, 1, 5)
-	serverLuck.mult = mult
-	serverLuck.untilT = workspace:GetServerTimeNow() + 300
-	workspace:SetAttribute("ServerLuck", mult)
-	workspace:SetAttribute("ServerLuckUntil", serverLuck.untilT)
-	Remotes.Announce:FireAllClients(("SERVER LUCK x%d FOR 5 MINUTES!"):format(mult), Color3.fromRGB(110, 255, 160))
-	Remotes.Sfx:FireAllClients("Upgrade")
+	EventService.serverLuck(mult, 300)
 	return true
 end
 ADMIN.recess = function(player)

@@ -604,6 +604,91 @@ do
 end
 
 ---------------------------------------------------------------------------
+-- Robux store: passes and products (only opens when you press it)
+---------------------------------------------------------------------------
+do
+	local panel = UI.panel(gui, { name = "Store", title = "STORE", color = Color3.fromRGB(40, 190, 90), size = UDim2.fromOffset(820, 560) })
+	panels.Store = panel
+	local pages = {}
+	for i = 1, 2 do
+		pages[i] = UI.new("Frame", { Name = "Page" .. i, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -56), Position = UDim2.fromOffset(0, 54), Visible = false, ZIndex = 11, Parent = panel.body })
+	end
+	local rows = { pass = {}, product = {} }
+	local passList = scrollList(pages[1])
+	for i, x in Config.Passes do
+		local row = shopRow(passList, i, { name = x.key, icon = x.icon, title = x.name, desc = x.desc, sub = "Game pass \u{2022} yours forever", iconBg = Color3.fromRGB(230, 255, 230) })
+		rows.pass[x.key] = row
+		row.buy.button.Activated:Connect(function()
+			if not row.buy.button.Active then return end
+			call("buy", "pass", x.key)
+		end)
+	end
+	local productList = scrollList(pages[2])
+	for i, x in Config.Products do
+		local row = shopRow(productList, i, { name = x.key, icon = x.icon, title = x.name, desc = x.desc, sub = "One-time purchase", iconBg = Color3.fromRGB(230, 245, 255), height = 96 })
+		row.desc.TextWrapped = true
+		row.desc.Size = UDim2.new(1, -280, 0, 34)
+		row.sub.Position = UDim2.new(0, 88, 0, 76)
+		rows.product[x.key] = row
+		row.buy.button.Activated:Connect(function()
+			if not row.buy.button.Active then return end
+			call("buy", "product", x.key)
+		end)
+	end
+	local function robuxText(n)
+		return "R$ " .. n
+	end
+	local current = 1
+	function panel.refresh()
+		local res = call("store")
+		if not res or res.ok == false then return end
+		for _, s in res.passes do
+			local row = rows.pass[s.key]
+			local def
+			for _, x in Config.Passes do if x.key == s.key then def = x end end
+			if s.owned then
+				row.buy.setText("\u{2714} OWNED")
+				row.buy.setEnabled(false)
+			elseif not s.ready then
+				row.buy.setText("SOON")
+				row.buy.setEnabled(false)
+			else
+				row.buy.setText(robuxText(def.robux))
+				row.buy.setEnabled(true)
+				row.buy.setColor(Color3.fromRGB(40, 190, 90))
+			end
+		end
+		for _, s in res.products do
+			local row = rows.product[s.key]
+			local def
+			for _, x in Config.Products do if x.key == s.key then def = x end end
+			if not s.ready then
+				row.buy.setText("SOON")
+				row.buy.setEnabled(false)
+			else
+				row.buy.setText(robuxText(def.robux))
+				row.buy.setEnabled(true)
+				row.buy.setColor(Color3.fromRGB(40, 190, 90))
+			end
+		end
+	end
+	local selectTab = tabs(panel.body, {
+		{ "\u{1F451} Passes", Color3.fromRGB(40, 190, 90), 220 },
+		{ "\u{1F4B0} Boosts", UI.C.blue, 220 },
+	}, function(i)
+		current = i
+		for j, pg in pages do pg.Visible = j == i end
+		panel.refresh()
+	end)
+	panel.onOpen = function() selectTab(current) end
+	panel.select = function(i) selectTab(i) end
+	-- owning a pass changes what the store shows
+	player.AttributeChanged:Connect(function(attr)
+		if attr:sub(1, 5) == "Pass_" and panel.frame.Visible then panel.refresh() end
+	end)
+end
+
+---------------------------------------------------------------------------
 -- Admin (only for admins): buses, events, spawns, money rain, server luck
 ---------------------------------------------------------------------------
 do
@@ -727,6 +812,22 @@ sideButton(3, "\u{1F3DB}\u{FE0F}", "Board", UI.C.purple, panels.Board)
 sideButton(4, "\u{1F4D6}", "Yearbook", UI.C.pink, panels.Yearbook)
 sideButton(5, "\u{270F}\u{FE0F}", "Name", UI.C.blue, panels.NameSchool)
 sideButton(6, "\u{2699}\u{FE0F}", "Settings", UI.C.navy, panels.Settings)
+sideButton(0, "\u{1F48E}", "Store", Color3.fromRGB(40, 190, 90), panels.Store)
+-- Teleport Home pass: a home button once you own it
+local homeButton
+local function refreshHome()
+	if player:GetAttribute("Pass_TeleportHome") and not homeButton then
+		homeButton = UI.button(bar, { name = "Home", text = "", color = UI.C.orange, size = UDim2.fromOffset(78, 78), radius = 18, layoutOrder = 8 })
+		UI.label(homeButton.button, { Text = "\u{1F3E0}", Size = UDim2.new(1, -16, 0.56, 0), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 4, stroke = 0 })
+		UI.label(homeButton.button, { Text = "Home", Size = UDim2.new(1, -6, 0.28, 0), Position = UDim2.new(0.5, 0, 1, -5), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 4, stroke = 2 })
+		homeButton.button.Activated:Connect(function()
+			local res = call("teleportHome")
+			sfx(res and res.ok and "Whoosh" or "Error")
+		end)
+	end
+end
+player:GetAttributeChangedSignal("Pass_TeleportHome"):Connect(refreshHome)
+refreshHome()
 -- the admin button appears only for admins
 local adminButton
 local function refreshAdmin()

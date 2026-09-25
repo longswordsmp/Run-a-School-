@@ -25,6 +25,10 @@ function UpgradeService.lockTime(p)
 	return PlotService.tierOf(p).lock + 8 * UpgradeService.level(p, "LockTime") + (p.lockBonus or 0)
 end
 
+function UpgradeService.lockTimeWithPass(p)
+	return UpgradeService.lockTime(p) + ((p.passes and p.passes.LongLock) and 30 or 0)
+end
+
 function UpgradeService.lockCooldown(p)
 	return Config.LockCooldown - 1.5 * UpgradeService.level(p, "LockCooldown")
 end
@@ -152,6 +156,7 @@ function UpgradeService.start()
 			local now = os.clock()
 			for player, p in Data.all() do
 				local lvl = UpgradeService.level(p, "Janitor")
+				if p.passes and p.passes.AutoCollect then lvl = #Config.JanitorIntervals end
 				if lvl > 0 then
 					local interval = Config.JanitorIntervals[lvl]
 					if not last[player] or now - last[player] >= interval then

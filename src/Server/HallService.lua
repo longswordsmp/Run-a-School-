@@ -29,8 +29,10 @@ local path = map.HallPath
 local FLOOR_Y = 0.65
 local RECESS_EVERY, RECESS_LEN = 900, 60
 
--- extra luck multipliers (game passes, server luck products): fn() -> number
+-- extra luck multipliers (server luck products, admin luck): fn() -> number
 HallService.luckHooks = {}
+-- per-player luck multipliers (the 2x Luck pass): fn(player) -> number
+HallService.playerLuckHooks = {}
 -- event grades that can roll right now, set by EventService: { [gradeId] = weight }
 HallService.eventGrades = {}
 
@@ -55,7 +57,11 @@ function HallService.luck()
 	for player, p in Data.all() do
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		if root and math.abs(root.Position.Z) < 20 and root.Position.X > path.Start.Position.X - 30 and root.Position.X < path.End.Position.X + 5 then
-			best = math.max(best, UpgradeService.luck(p) * (p.luckMult or 1))
+			local mine = UpgradeService.luck(p) * (p.luckMult or 1)
+			for _, hook in HallService.playerLuckHooks do
+				mine *= hook(player)
+			end
+			best = math.max(best, mine)
 		end
 	end
 	if HallService.recessActive() then best *= 2 end

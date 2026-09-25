@@ -39,7 +39,7 @@ function GateService.lock(player)
 		Remotes.Notify:FireClient(player, "The gate is cooling down...", "bad")
 		return false
 	end
-	local dur = UpgradeService.lockTime(p)
+	local dur = UpgradeService.lockTimeWithPass(p)
 	plot:SetAttribute("LockedUntil", now + dur)
 	plot:SetAttribute("CooldownUntil", now + dur + UpgradeService.lockCooldown(p))
 	setVisual(plot, true)
