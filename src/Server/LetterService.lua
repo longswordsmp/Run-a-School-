@@ -201,7 +201,9 @@ function LetterService.deliver(player, def, free)
 	return model
 end
 
-Actions.register("callLetter", function(player, p, rarity)
+-- a ready letter sends its kid to the Waiting Bench. quiet: the automatic delivery, which says
+-- nothing when it can't happen yet (no free desk, can't afford one) and just tries again later
+local function callLetter(player, p, rarity, quiet)
 	local L
 	for _, x in LetterService.Letters do
 		if x.rarity == rarity then L = x end
@@ -210,7 +212,7 @@ Actions.register("callLetter", function(player, p, rarity)
 	local left = letters(p)[rarity]
 	if left > 0 then return { ok = false, err = "Not ready yet" } end
 	if not PlotService.freeSlot(player) then
-		Remotes.Notify:FireClient(player, "Your school is full! Sell a kid or add desks, then call the letter.", "bad")
+		if not quiet then Remotes.Notify:FireClient(player, "Your school is full! Sell a kid or add desks.", "bad") end
 		return { ok = false, err = "School is full" }
 	end
 	local free = rarity == "Rare" and not p.scholarshipUsed
@@ -218,8 +220,7 @@ Actions.register("callLetter", function(player, p, rarity)
 	if not def then
 		local c = cheapest(rarity)
 		local err = ("Cheapest %s: %s. You have %s. Save up!"):format(rarity, Config.formatCash(c.price), Config.formatCash(p.cash))
-		Remotes.Notify:FireClient(player, err, "bad")
-		Remotes.Sfx:FireClient(player, "Error")
+		if not quiet then Remotes.Notify:FireClient(player, err, "bad") end
 		return { ok = false, err = err }
 	end
 	if free then p.scholarshipUsed = true end
@@ -232,10 +233,13 @@ Actions.register("callLetter", function(player, p, rarity)
 	end
 	sync(player, p)
 	LetterService.deliver(player, def, free)
-	Remotes.Announce:FireClient(player, free and "SCHOLARSHIP STUDENT ARRIVING!" or (rarity:upper() .. " LETTER DELIVERED!"), Config.rarityAccent(rarity))
-	Remotes.Sfx:FireClient(player, rarity == "Rare" and "Ding" or "Rare")
+	Remotes.Notify:FireClient(player, free and ("\u{2709}\u{FE0F} A Scholarship student is on your Waiting Bench! (free)")
+		or ("\u{2709}\u{FE0F} A %s student arrived on your Waiting Bench!"):format(rarity), "good")
 	Signals.fire("letter", player, rarity)
 	return { ok = true, id = def.id }
+end
+Actions.register("callLetter", function(player, p, rarity)
+	return callLetter(player, p, rarity, false)
 end)
 
 -- the Pocket Money Promise: someone you can afford always turns up early on
@@ -280,8 +284,6 @@ function LetterService.start()
 		if id == "scholarship" and p and not p.scholarshipUsed then
 			letters(p).Rare = 0
 			sync(player, p)
-			Remotes.Notify:FireClient(player, "\u{2709}\u{FE0F} A Scholarship letter arrived! Press CALL on the Rare letter.", "good")
-			Remotes.Sfx:FireClient(player, "Token")
 		end
 	end)
 	Players.PlayerRemoving:Connect(function(player)
@@ -335,13 +337,21 @@ function LetterService.start()
 							ls[r] = t - 1
 							if ls[r] <= 0 then
 								ls[r] = 0
-								Remotes.Notify:FireClient(player, ("\u{2709}\u{FE0F} Your %s Admissions Letter is READY! Call it from the letters card."):format(r), "good")
-								Remotes.Sfx:FireClient(player, "Token")
 							end
 						end
 					end
 				end
 				sync(player, p)
+				-- ready letters deliver themselves every few seconds, once there's a desk and a kid
+				-- they can afford (rarest first)
+				if tick % 3 == 0 and not p.reviewing then
+					for i = #LetterService.Letters, 1, -1 do
+						local r = LetterService.Letters[i].rarity
+						if ls[r] and ls[r] <= 0 and (i <= 2 or (p.tier or 1) >= i) then
+							callLetter(player, p, r, true)
+						end
+					end
+				end
 			end
 			if tick % 20 == 0 then pcall(pocketMoney) end
 		end

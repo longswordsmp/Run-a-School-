@@ -195,7 +195,7 @@ Actions.register("buyTicket", function(player, p, id)
 	syncTickets(player, p)
 	if item.kind == "letter" then
 		require(script.Parent.LetterService).fill(player, item.rarity)
-		Remotes.Notify:FireClient(player, item.rarity .. " Letter ready to CALL!", "good")
+		Remotes.Notify:FireClient(player, "A " .. item.rarity .. " student is on the way to your Waiting Bench!", "good")
 	elseif item.kind == "candy" then
 		p.candy = (p.candy or 0) + item.amount
 		player:SetAttribute("Candy", p.candy)

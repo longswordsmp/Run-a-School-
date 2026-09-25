@@ -166,7 +166,7 @@ end
 local function hudBottom()
 	local hud = player.PlayerGui:FindFirstChild("HUD")
 	local box = hud and hud:FindFirstChild("Letters", true)
-	if not box then return 480 end
+	if not box then return 0 end
 	local bottom = box.AbsolutePosition.Y
 	for _, c in box:GetChildren() do
 		if c:IsA("GuiObject") and c.Visible then

@@ -188,7 +188,7 @@ local function finish(player, p, c)
 	LetterService.fill(player, ch.letter)
 	Remotes.Announce:FireClient(player, ("CHAPTER %d COMPLETE!"):format(c.n), Color3.fromRGB(255, 159, 26))
 	Remotes.Sfx:FireClient(player, "Cheer")
-	Remotes.Notify:FireClient(player, ("Your %s Letter is ready to CALL!"):format(ch.letter), "good")
+	Remotes.Notify:FireClient(player, ("A %s student is on the way to your Waiting Bench!"):format(ch.letter), "good")
 	Signals.fire("chapterDone", player, c.n)
 	p.chapter = { n = c.n + 1, done = { false, false, false, false, false }, prog = { 0, 0, 0, 0 } }
 	local nxt = Config.Chapters[c.n + 1]

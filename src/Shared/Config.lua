@@ -404,7 +404,7 @@ Config.Tutorial = {
 	{ id = "bonk", text = "Crumpet is stealing a kid! Bonk him with your Ruler", signal = "bonkSave", count = 1, reward = 150, guide = "thief" },
 	{ id = "lock", text = "Lock your laser gate (red button by the gate)", signal = "lock", count = 1, reward = 400, guide = "lock" },
 	{ id = "name", text = "Give your school a name", signal = "nameSchool", count = 1, reward = 300, guide = "panel:NameSchool" },
-	{ id = "scholarship", text = "Your Rare letter is here! CALL it, then enroll the kid on your bench", signal = "benchEnroll", count = 1, reward = 200, guide = "bench" },
+	{ id = "scholarship", text = "A Scholarship student is waiting on your bench! Enroll them (free)", signal = "benchEnroll", count = 1, reward = 200, guide = "bench" },
 	{ id = "hire", text = "Hire a teacher for Floor 1", signal = "hire", count = 1, reward = 250, guide = "shop:2" },
 	{ id = "bust", text = "A Snack Smuggler snuck in! BUST him (hold E or bonk)", signal = "bustDealer", count = 1, reward = 500, guide = "smuggler" },
 	{ id = "build", text = "Build something in the School Builder", signal = "build", count = 1, reward = 600, guide = "shop:3" },
@@ -547,7 +547,7 @@ Config.DailyPool = {
 	{ id = "epic1", text = "Enroll an Epic kid (or rarer)", signal = "enroll", rarity = "Epic", count = 1 },
 	{ id = "quiz3", text = "Answer 3 Pop Quizzes right", signal = "quizRight", count = 3 },
 	{ id = "collect30", text = "Collect tuition 30 times", signal = "collect", count = 30 },
-	{ id = "letter1", text = "CALL an Admissions Letter", signal = "letter", count = 1 },
+	{ id = "letter1", text = "Enroll a kid from an Admissions Letter", signal = "benchEnroll", group = "enroll", count = 1 },
 	{ id = "lock5", text = "Lock your gate 5 times", signal = "lock", count = 5 },
 	-- group: requests credited by the same action (a bus kid is also an enroll) are never dealt together
 	{ id = "bus2", text = "Enroll 2 kids off special buses", signal = "busEnroll", group = "enroll", count = 2 },
@@ -565,7 +565,7 @@ Config.WeeklyPool = {
 	{ id = "wquiz15", text = "Answer 15 Pop Quizzes right", signal = "quizRight", count = 15 },
 	{ id = "wgrad25", text = "Graduate 25 kids", signal = "graduate", count = 25 },
 	{ id = "wtokens80", text = "Collect 80 event tokens", signal = "ticket", count = 80 },
-	{ id = "wletter10", text = "CALL 10 Admissions Letters", signal = "letter", count = 10 },
+	{ id = "wletter10", text = "Enroll 10 kids from Admissions Letters", signal = "benchEnroll", group = "enroll", count = 10 },
 	{ id = "weagle10", text = "Make 10 EAGLE EYE catches", signal = "eagleEye", group = "catchCheater", count = 10 },
 }
 Config.WeeklyCandy = 100
