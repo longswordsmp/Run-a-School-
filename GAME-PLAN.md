@@ -463,3 +463,6 @@ Each step ends with a play-test (screenshot + console) before the next starts.
   (screenshot); tuition $2/s piled on the pad; stepping on the pad collected ($50 -> $104);
   holding F sold it ($104 -> $151, desk cleared, income 0). Console clean.
   Test hook: ServerStorage.DebugBridge (Studio only) — see src/Server/DebugBridge.lua.
+- 2026-09-24/25 (overnight) — see NIGHT-LOG.md for every feature built overnight with its evidence
+  (play-test numbers, screenshots, econ sim). docs/DESIGN-v2.md supersedes this file where they
+  disagree (teachers, prestige, tier cash); its build order steps 1-5 are done.
