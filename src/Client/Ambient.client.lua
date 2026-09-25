@@ -69,6 +69,112 @@ local function pose(model, partName, jointName, angles, hold)
 	end)
 end
 
+-- a word floating up off a kid's head ("hic!", "WOOF!", a music note)
+local function pop(model, text, color)
+	local head = model:FindFirstChild("Head")
+	if not head then return end
+	local bb = Instance.new("BillboardGui")
+	bb.Size = UDim2.fromOffset(140, 40)
+	bb.StudsOffsetWorldSpace = Vector3.new(math.random() - 0.5, 2.2, 0)
+	bb.MaxDistance = 60
+	bb.LightInfluence = 0
+	bb.Parent = head
+	local t = Instance.new("TextLabel")
+	t.Size = UDim2.fromScale(1, 1)
+	t.BackgroundTransparency = 1
+	t.Font = Enum.Font.LuckiestGuy
+	t.TextScaled = true
+	t.Text = text
+	t.TextColor3 = color or Color3.new(1, 1, 1)
+	t.Parent = bb
+	local s = Instance.new("UIStroke")
+	s.Thickness = 2
+	s.Parent = t
+	TweenService:Create(bb, TweenInfo.new(1.4, Enum.EasingStyle.Quad), { StudsOffsetWorldSpace = bb.StudsOffsetWorldSpace + Vector3.new(0, 2.2, 0) }):Play()
+	TweenService:Create(t, TweenInfo.new(1.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { TextTransparency = 1 }):Play()
+	TweenService:Create(s, TweenInfo.new(1.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Transparency = 1 }):Play()
+	task.delay(1.5, function() bb:Destroy() end)
+end
+
+-- lift the whole body off the root for a moment (the Root joint's attachment on the root part)
+local function hop(model, height, t)
+	local lower = model:FindFirstChild("LowerTorso")
+	local joint = lower and lower:FindFirstChild("Root")
+	local target, prop
+	if joint and joint:IsA("Motor6D") then
+		target, prop = joint, "C0"
+	elseif joint and joint.ClassName == "AnimationConstraint" and joint.Attachment0 then
+		target, prop = joint.Attachment0, "CFrame"
+	end
+	if not target or target:GetAttribute("Hopping") then return end
+	target:SetAttribute("Hopping", true)
+	local base = target[prop]
+	local up = TweenService:Create(target, TweenInfo.new(t or 0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { [prop] = base * CFrame.new(0, height, 0) })
+	up:Play()
+	up.Completed:Wait()
+	local down = TweenService:Create(target, TweenInfo.new(t or 0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { [prop] = base })
+	down:Play()
+	down.Completed:Wait()
+	target:SetAttribute("Hopping", nil)
+end
+
+-- signature gags for particular kids: { every = seconds, fn = function(model) }
+local GAGS = {
+	PuddlePip = { every = 8, fn = function(m) task.spawn(hop, m, 1.2, 0.2) pop(m, "splash!", Color3.fromRGB(110, 190, 255)) end },
+	HiccupHank = { every = 7, fn = function(m) task.spawn(hop, m, 0.5, 0.1) pop(m, "hic!", Color3.fromRGB(200, 240, 255)) end },
+	SneezySid = { every = 20, fn = function(m)
+		pose(m, "Head", "Neck", CFrame.Angles(math.rad(25), 0, 0), 0.6)
+		task.delay(0.8, function()
+			pose(m, "Head", "Neck", CFrame.Angles(math.rad(-30), 0, 0), 0.4)
+			pop(m, "ACHOO!", Color3.fromRGB(255, 255, 255))
+		end)
+	end },
+	HomeworkDoug = { every = 15, fn = function(m) pop(m, "WOOF!", Color3.fromRGB(220, 170, 110)) end },
+	RecorderRosie = { every = 12, fn = function(m)
+		if math.random() < 0.2 then
+			pop(m, "\u{266A}?!", Color3.fromRGB(255, 90, 90))
+		else
+			pop(m, "\u{266A}", Color3.fromRGB(255, 150, 210))
+		end
+	end },
+	CardboardRudy = { every = 5, fn = function(m)
+		pose(m, "Head", "Neck", CFrame.Angles(0, math.rad(math.random() < 0.5 and 90 or -90), 0), 0.5)
+		if math.random() < 0.3 then pop(m, "BEEP BOOP", Color3.fromRGB(200, 205, 215)) end
+	end },
+	MimeMimi = { every = 15, fn = function(m)
+		pose(m, "RightUpperArm", "RightShoulder", CFrame.Angles(math.rad(90), 0, 0), 2)
+		pose(m, "LeftUpperArm", "LeftShoulder", CFrame.Angles(math.rad(90), 0, 0), 2)
+		pop(m, "...", Color3.fromRGB(230, 230, 230))
+	end },
+	TattletaleTina = { every = 4, fn = function(m)
+		-- points at a cheater in her school
+		local students = m.Parent
+		for _, o in students and students:GetChildren() or {} do
+			local head = o:FindFirstChild("Head")
+			if o ~= m and head and head:FindFirstChild("Cheating") then
+				local root = m.PrimaryPart
+				emote(m, "point")
+				pop(m, "TEACHERRR!", Color3.fromRGB(255, 90, 90))
+				_ = root
+				return
+			end
+		end
+	end },
+}
+local nextGag = setmetatable({}, { __mode = "k" })
+
+local function gag(model, now)
+	local g = GAGS[model:GetAttribute("StudentId")]
+	if not g then return end
+	local t = nextGag[model]
+	if not t then
+		nextGag[model] = now + math.random() * g.every
+	elseif now >= t then
+		nextGag[model] = now + g.every * (0.8 + math.random() * 0.4)
+		task.spawn(g.fn, model)
+	end
+end
+
 local function seatedAct(model)
 	local id = model:GetAttribute("StudentId")
 	local r = math.random()
@@ -128,6 +234,7 @@ task.spawn(function()
 			for _, m in students and students:GetChildren() or {} do
 				local root = m.PrimaryPart
 				if root and (root.Position - camPos).Magnitude < RANGE then
+					if m:GetAttribute("Slot") then gag(m, now) end
 					local t = nextAct[m]
 					if not t then
 						nextAct[m] = now + 2 + math.random() * 10
@@ -150,6 +257,7 @@ task.spawn(function()
 			if r and root and m:GetAttribute("State") == "Hall" then
 				local d = (r.Position - root.Position).Magnitude
 				if d < 45 then
+					gag(m, now)
 					local t = nextAct[m]
 					if not t then
 						nextAct[m] = now + math.random() * 6
