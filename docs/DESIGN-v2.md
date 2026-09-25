@@ -313,7 +313,7 @@ After the finale:
 | 2:52 | Wobblesworth: "Bonk him with your Ruler!" | Swings | A bonk (stars over Crumpet). Hank drops, sees dizzy stars for 1.5 s and walks back to his desk. Crumpet: "Most irregular." **+$100 DEFENDED!** | `Swing`, new "cartoon bonk" | 12 bonk |
 | 3:02 | The red lock button at your gate pulses. | Presses it | Lasers rise and a 60 s countdown appears. Crumpet comes back with a fresh duster, bonks into the lasers, backflips and lands sitting: "I shall inform Madam." Wobblesworth: "Nobody can steal from you for 10 minutes. After that, LOCK it." **+$400** | `Lock`, new "slide whistle down" | 13 lock |
 | 3:20 | The **Name Your School** panel opens (existing): name (TextService filtered), 6 mascots, 3 colours. The gate sign flips split-flap style and your mascot flag runs up the yard flagpole. Server toast: "Welcome Hilltop Hot Dogs to Recess Row!" | Names it | **+$300** | New "drumroll", `Cheer` | 14 name |
-| 3:40 | To-Do: "Fill all 8 desks". The Pocket Money Promise shows Loose Tooth Lou ($360, dragging a door) and Cardboard Robot Rudy ($420). | Buys, sells | ~$11-15/s | `Enroll` | |
+| 3:40 | To-Do: "Fill all 8 desks" (**+$500**; completes at once if the desks are already full). The Pocket Money Promise shows Loose Tooth Lou ($360, dragging a door) and Cardboard Robot Rudy ($420) as upgrades. Wobblesworth: "Swap a small kid for a big one. Hold F." | Sells a $9-$12 kid, enrolls an Uncommon | ~$11-15/s | `Sell`, `Enroll` | |
 | 4:10 | The envelope bounces: "RARE LETTER 0:10". The **mailbox flag** at your gate flips up. | | | `Token` | |
 | 4:20 | The Welcome Bus returns with a blue beam. Banner: "[Name], your SCHOLARSHIP STUDENT has arrived!" **Teacher's Pet** (Rare, $5,400, $45/s) steps off. Her $5,400 tag is struck through and replaced with **FREE**. She sits on your Waiting Bench. | Sells the cheapest kid (hold F), then presses E at the bench | **~$12/s to ~$57/s (x4.7)**. The $/s number punches three times. "RARE ENROLLED!" | `Rare`, `Choir2` | 15 scholarship |
 | 4:40 | Kevin's face pops in a toast from the School Board button: "Hi! Bring $680K and a Hall Monitor and we'll make you an Elementary School! Also, can we get a waterslide?" | | | Blips | |
@@ -323,6 +323,22 @@ After the finale:
 
 **The scripted smuggler:** Sweet Tooth Sal's first visit is at 6:00. It hands out the first 🍬 and
 unlocks Stan's Confiscation Closet (section 6).
+
+**The new `Config.Tutorial`** (the First Day To-Do chain run by QuestService; the funnel steps above are a finer superset):
+
+| # | id | Text on the To-Do card | Signal (count) | Reward | Guide |
+|---|---|---|---|---|---|
+| 1 | enroll1 | "Enroll a kid off the Welcome Bus" | enroll (1) | $40 | the bus at your gate |
+| 2 | enroll6 | "Enroll the rest of the Welcome Bus" | enroll (5) | $80 | the bus at your gate |
+| 3 | collect | "Walk over a glowing desk pad" | collect (1) | $60 | pad |
+| 4 | catch | "Catch the cheater!" | catchCheater (1) | $100 + the free Curtains build | the cheater |
+| 5 | rescue | "Rescue Tina from Vex's tent" | rescue (1), new signal | Tina, free | the tent |
+| 6 | bonk | "Bonk Crumpet with your Ruler" | bonkSave (1) | $100 | the thief |
+| 7 | lock | "Lock your laser gate" | lock (1) | $400 | lock |
+| 8 | name | "Give your school a name" | nameSchool (1) | $300 | panel:NameSchool |
+| 9 | fill8 | "Fill all 8 desks" | desksFull (1), new signal | $500 | carpet |
+| 10 | scholarship | "Enroll your Scholarship student" | enrollBench (1), new signal | Teacher's Pet, free | the bench |
+| 11 | bust | "Bust Sweet Tooth Sal!" (at 6:00) | bustDealer (1) | 🍬20, and the Closet opens | the smuggler |
 
 **State at 5:00:**
 - 8/8 desks and about $57/s.
@@ -774,8 +790,11 @@ Answer Key (x5, Exam Week).
 - That was not in econ_sim. Row E in 0.3 measures it.
 
 **[CHANGE]**
-1. **The bust buff shrinks:** Sugar Rush becomes **x2 tuition for 20 s** (about +10 %, row F). Slime Time
-   stays at luck x2, but for **60 s**, and luck only matters while you stand on the carpet.
+1. **The bust buff shrinks:**
+   - Sugar Rush becomes **x2 tuition for 20 s on the row he was working** (the 4 desks), not the whole
+     school. The saved kids bounce with rainbow sparkles.
+   - Measured: the whole package lands at 92.4 h (row G), against 79.9 h with today's buff (row E).
+   - Slime Time stays at luck x2, but for **60 s**. Luck only matters while you stand on the carpet [SIM].
 2. **Busts also pay Confiscated Candy 🍬**, the currency below.
 3. **The approach becomes a chase you can see:**
    - A smuggler now spawns at a **lurk spot** in the gap nearest your plot (section 8.1): a trash can,
@@ -826,7 +845,7 @@ Answer Key (x5, Exam Week).
 
 | Bust | 🍬 | Also |
 |---|---|---|
-| Sweet Tooth Sal | 8 | Sugar Rush x2 for 20 s (your school) |
+| Sweet Tooth Sal | 8 | Sugar Rush x2 for 20 s on the row he targeted |
 | Goo Gary | 12 | Slime Time luck x2 for 60 s |
 | Golden Smuggler | 50 | A Golden Wrapper |
 | Public ground or someone else's school | x1.5 | |
@@ -1078,6 +1097,11 @@ look (`Config.TierLooks`, 12 buildings) is still the biggest visual upgrade. The
   - Event and Limited Alumni go to your **Alumni Lounge**, a trophy bench in the side yard.
   - They sit at a desk and pay tuition **only from State University (tier 8) onward**.
   - Otherwise a 250M/s Alumni would break every early tier.
+  - **Even at State University, one Alumni roughly doubles a strong player's income [SIM].** 250M/s x13
+    tier x2.4 teacher x2.6 IQ x1.5 Rep is about 30B/s. In row G the whole school makes about 21B/s at the
+    end of that tier.
+  - So each event shop sells **one** Alumni per player. Add an Alumni hook to econ_sim before a second
+    event ships.
 - **Always-on moments:**
   - Recess (EXISTS), every 15 min.
   - Pop Quiz every 10 min at :03, :13 and so on: a 10 s trivia pop-up, and the right answer pays 60 s of tuition.
@@ -1418,7 +1442,7 @@ The target is a first session of 25+ minutes.
 
 | Ch. | At (host) | Step 1 | Step 2 | Step 3 | Step 4 | Step 5: Face the Board |
 |---|---|---|---|---|---|---|
-| 1 | Kindergarten (Wobblesworth) | Buy Sharpened Pencils | Hire a teacher for Floor 1 | Bust your first Snack Smuggler (opens the Closet) | Buy desk row 3 ($5K) + Honor Roll token | Hall Monitor + $680K, then beat 2 |
+| 1 | Kindergarten (Wobblesworth) | Buy Sharpened Pencils | Hire a teacher for Floor 1 | Build something in the School Builder | Buy desk row 3 ($5K) + Honor Roll token | Hall Monitor + $680K, then beat 2 |
 | 2 | Elementary (Loretta) | Build the Playground | Hire Mr. Chalk | Enroll a Rare off a Late Bus | Reach IQ 150 (Textbooks + Rulers) | Band Geek + $59M, then beat 3 |
 | 3 | Middle (Stan) | Build Mascot Lockers | Bust 10 smugglers | Make an Eagle Eye catch | Hire Ms. Honeycutt | Star Quarterback + $910M, then beat 4 |
 | 4 | High (Hector) | Build the Bleachers | Bonk 3 thieves carrying your kids | Enroll the first kid off an Honor Roll Bus | Own a Legendary | Valedictorian + $47B, then beat 5 |
@@ -1494,7 +1518,9 @@ The target is a first session of 25+ minutes.
 - **Friends in the server:** +5 % each, up to +20 %. **Group:** +10 %. Both come from GAME-PLAN [SIM].
 
 ### Where players are at hour 20, 50 and 100
-"Strong" is the measured sim player (0.3 row D). "Typical" is roughly half that pace (GAME-PLAN section 9).
+"Strong" is the measured sim player with the full package (0.3 row G): University at 16.8 h, Ivy at
+24.8 h, Wizard at 41.9 h, Space at 64.2 h, Multiverse at 92.4 h. "Typical" is roughly half that pace
+(GAME-PLAN section 9).
 
 | Hour | Strong player | Typical player | What pulls them forward |
 |---|---|---|---|
@@ -1574,7 +1600,7 @@ evidence, before the next one starts** (CLAUDE.md rule). Any step that touches i
 1. **Kid-safety strings and the smuggler and cheater economics.**
    - Rename "DEALING", "dealer" and "Bust a candy or slime dealer".
    - Kids keep paying during detention, a 60 s fee, no pad wipe, strict-teacher auto-catch only.
-   - Sugar Rush x2 for 20 s.
+   - Sugar Rush x2 for 20 s on the targeted row only.
    - These are small edits to PatrolService and Config, and they fix the two things that feel bad
      today (catching costs money; the bust buff is +29 %).
 2. **Map widening** (build_map.lua: `plotXs`, trees, ground, the luck strip) with blockout landmarks in
@@ -1611,7 +1637,10 @@ evidence, before the next one starts** (CLAUDE.md rule). Any step that touches i
    `build_map.lua` in Studio. OK to do?
 3. **Principal's Pick:** Prodigy 95 % / Secret 5 % (this doc, about +7 % Secret supply), or a guaranteed
    Secret every 2 hours (more hype, about +77 % Secret supply, so Secrets feel less rare)?
-4. **Smuggler rewards:** this doc cuts the bust buff from x2 tuition for 60 s to x2 for 20 s and adds 🍬.
-   Keep that, or keep the bigger buff and raise the School Board cash values to match? (Row E shows the pacing effect.)
+4. **Smuggler rewards:** as built, busting gives x2 tuition on the whole school for 60 s. The sim puts
+   that at 79.9 h to Multiverse, with Elementary in 17 minutes (row E).
+   - This doc makes it x2 on the targeted row for 20 s, plus 🍬 (92.4 h, row G).
+   - The alternative is to keep the big buff and raise the School Board cash values, which the brief
+     said to keep. Which one?
 5. **The weekly clock:** the update and featured event on Saturday 15:00 UTC, admin abuse at 17:00 UTC.
    Does that fit when you can be online?

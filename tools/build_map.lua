@@ -110,13 +110,13 @@ local plots = Instance.new("Folder"); plots.Name = "Plots"; plots.Parent = works
 ---------------------------------------------------------------------------
 -- ground and main street
 ---------------------------------------------------------------------------
-part(map, "Ground", Vector3.new(860, 2, 520), CFrame.new(0, -1, 0), C.grass, Enum.Material.Grass)
-part(map, "Sidewalk", Vector3.new(720, 0.4, 56), CFrame.new(0, 0.2, 0), C.sidewalk, Enum.Material.Concrete)
+part(map, "Ground", Vector3.new(980, 2, 520), CFrame.new(0, -1, 0), C.grass, Enum.Material.Grass)
+part(map, "Sidewalk", Vector3.new(800, 0.4, 56), CFrame.new(0, 0.2, 0), C.sidewalk, Enum.Material.Concrete)
 part(map, "Carpet", Vector3.new(660, 0.3, 16), CFrame.new(0, 0.5, 0), C.carpet, Enum.Material.Fabric)
 part(map, "TrimN", Vector3.new(660, 0.32, 1), CFrame.new(0, 0.5, 8.5), C.trim)
 part(map, "TrimS", Vector3.new(660, 0.32, 1), CFrame.new(0, 0.5, -8.5), C.trim)
 for _, z in { -28.3, 28.3 } do
-	part(map, "Curb", Vector3.new(720, 0.7, 0.8), CFrame.new(0, 0.35, z), C.curb, Enum.Material.Concrete)
+	part(map, "Curb", Vector3.new(800, 0.7, 0.8), CFrame.new(0, 0.35, z), C.curb, Enum.Material.Concrete)
 end
 local path = Instance.new("Folder"); path.Name = "HallPath"; path.Parent = map
 part(path, "Start", Vector3.new(1, 1, 1), CFrame.new(-318, 1, 0), C.trim, nil, HIDDEN)
@@ -220,7 +220,7 @@ local function tree(x, z, s, leaf)
 end
 local leaves = { rgb(60, 170, 70), rgb(80, 180, 60), rgb(50, 150, 80), rgb(230, 140, 60) }
 local n = 0
-for _, gx in { -150, 0, 150 } do
+for _, gx in { -190, 0, 190 } do
 	for _, z in { 45, 80, 115, 150, 185 } do
 		for _, side in { -1, 1 } do
 			n += 1
@@ -230,13 +230,13 @@ for _, gx in { -150, 0, 150 } do
 		end
 	end
 end
-for x = -380, 380, 38 do
+for x = -456, 456, 38 do
 	for _, z in { -225, 225 } do
 		n += 1
 		tree(x + (n % 2) * 9, z, 1.3, leaves[n % #leaves + 1])
 	end
 end
-for _, x in { -330, 330 } do
+for _, x in { -392, 392 } do
 	for z = 60, 200, 35 do
 		for _, side in { -1, 1 } do
 			n += 1
@@ -249,7 +249,8 @@ end
 -- plots: lots with a gate arch; the school is built at runtime
 ---------------------------------------------------------------------------
 local LOT_W, LOT_D, GATE = 120, 150, 18
-local plotXs = { -225, -75, 75, 225 }
+-- 70-stud gaps between lots (lot edges at +-35, +-155, +-225, +-345)
+local plotXs = { -285, -95, 95, 285 }
 local idx = 0
 for side = 1, 2 do
 	for _, px in plotXs do

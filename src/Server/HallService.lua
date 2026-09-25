@@ -51,7 +51,7 @@ function HallService.luck()
 	local best = 1
 	for player, p in Data.all() do
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		if root and math.abs(root.Position.Z) < 20 and math.abs(root.Position.X) < 250 then
+		if root and math.abs(root.Position.Z) < 20 and math.abs(root.Position.X) < 335 then
 			best = math.max(best, UpgradeService.luck(p) * (p.luckMult or 1))
 		end
 	end
