@@ -136,6 +136,7 @@ function QuestService.start()
 	on("catchCheater")
 	on("benchEnroll")
 	on("bustDealer")
+	on("quizRight")
 	for _, name in { "supply", "hire", "build" } do
 		Signals.on(name, function(player)
 			QuestService.progress(player, "shopBuy")

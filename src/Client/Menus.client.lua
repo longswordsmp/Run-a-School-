@@ -860,6 +860,82 @@ do
 end
 
 ---------------------------------------------------------------------------
+-- Pop Quiz: a question from the server, three answers, ten seconds
+---------------------------------------------------------------------------
+do
+	local card = UI.new("Frame", {
+		Name = "PopQuiz",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 90),
+		Size = UDim2.fromOffset(560, 210),
+		BackgroundColor3 = UI.C.cream,
+		Visible = false,
+		ZIndex = 40,
+		Parent = gui,
+	})
+	UI.corner(card, 18)
+	UI.stroke(card, 4)
+	local head = UI.new("Frame", { Size = UDim2.new(1, 0, 0, 40), BackgroundColor3 = UI.C.white, ZIndex = 41, Parent = card })
+	UI.corner(head, 18)
+	UI.gradient(head, UI.lighten(UI.C.purple, 0.3), UI.C.purple)
+	UI.label(head, { Text = "\u{1F514} POP QUIZ!", Font = UI.BIG, Size = UDim2.new(0.7, 0, 1, -8), Position = UDim2.fromOffset(12, 4), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 42, stroke = 2 })
+	local timer = UI.label(head, { Text = "10", Font = UI.BIG, Size = UDim2.new(0.25, 0, 1, -8), Position = UDim2.new(0.75, -12, 0, 4), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 42, stroke = 2 })
+	local question = UI.label(card, { Text = "", TextColor3 = UI.C.ink, Size = UDim2.new(1, -24, 0, 50), Position = UDim2.fromOffset(12, 48), ZIndex = 41, stroke = 0 })
+	local row = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -24, 0, 70), Position = UDim2.fromOffset(12, 110), ZIndex = 41, Parent = card })
+	UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, Parent = row })
+	local buttons = {}
+	local quiz
+	local done = false
+	local colors = { UI.C.blue, UI.C.orange, UI.C.green }
+	for i = 1, 3 do
+		local b = UI.button(row, { text = "", color = colors[i], size = UDim2.fromOffset(170, 64), layoutOrder = i })
+		lift(b.button, 42)
+		buttons[i] = b
+		b.button.Activated:Connect(function()
+			if done or not quiz then return end
+			done = true
+			local res = call("quizAnswer", quiz.id, i)
+			if res and res.right then
+				question.Text = "Correct! +" .. Config.formatCash(res.amount)
+				question.TextColor3 = Color3.fromRGB(40, 160, 70)
+				b.setColor(UI.C.green)
+			elseif res and res.ok then
+				question.Text = "Nope! It was: " .. quiz.options[res.answer]
+				question.TextColor3 = UI.C.red
+				b.setColor(UI.C.red)
+			end
+			task.delay(1.6, function() card.Visible = false end)
+		end)
+	end
+	Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
+		if kind ~= "quiz" then return end
+		quiz = data
+		done = false
+		question.Text = data.question
+		question.TextColor3 = UI.C.ink
+		for i, b in buttons do
+			b.setText(data.options[i] or "")
+			b.setColor(colors[i])
+			b.setEnabled(true)
+		end
+		card.Visible = true
+		UI.pop(card, 0.5)
+		task.spawn(function()
+			while card.Visible and quiz == data do
+				local left = math.max(0, math.ceil(data.closes - workspace:GetServerTimeNow()))
+				timer.Text = tostring(left)
+				if left <= 0 then
+					task.wait(0.6)
+					if quiz == data and not done then card.Visible = false end
+					break
+				end
+				task.wait(0.2)
+			end
+		end)
+	end)
+end
+
+---------------------------------------------------------------------------
 -- left button bar
 ---------------------------------------------------------------------------
 local bar = UI.new("Frame", {

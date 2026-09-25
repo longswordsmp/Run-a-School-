@@ -177,12 +177,12 @@ Config.Tiers = {
 	{ name = "High School", cash = 910e6, needs = "Quarterback", mult = 3, floors = 2, lock = 80 },
 	{ name = "Prep School", cash = 47e9, needs = "Valedictorian", mult = 4.5, floors = 3, lock = 85 },
 	{ name = "Private Academy", cash = 740e9, needs = "PromKing", mult = 6.5, floors = 3, lock = 90 },
-	{ name = "Community College", cash = 9.6e12, needs = "KidGenius", mult = 9, floors = 3, lock = 95 },
-	{ name = "State University", cash = 110e12, needs = "NewKid", mult = 13, floors = 3, lock = 100 },
-	{ name = "Ivy League", cash = 410e12, needs = "TinyProfessor", mult = 18, floors = 3, lock = 105 },
-	{ name = "Wizard School", cash = 2.3e15, needs = "PopStarKid", mult = 25, floors = 3, lock = 110 },
-	{ name = "Space Academy", cash = 7.2e15, needs = "ChildCEO", mult = 35, floors = 3, lock = 115 },
-	{ name = "Multiverse University", cash = 22e15, needs = "Secret", mult = 50, floors = 3, lock = 120 },
+	{ name = "Community College", cash = 40e12, needs = "KidGenius", mult = 9, floors = 3, lock = 95 },
+	{ name = "State University", cash = 84e12, needs = "NewKid", mult = 13, floors = 3, lock = 100 },
+	{ name = "Ivy League", cash = 420e12, needs = "TinyProfessor", mult = 18, floors = 3, lock = 105 },
+	{ name = "Wizard School", cash = 1.1e15, needs = "PopStarKid", mult = 25, floors = 3, lock = 110 },
+	{ name = "Space Academy", cash = 9e15, needs = "ChildCEO", mult = 35, floors = 3, lock = 115 },
+	{ name = "Multiverse University", cash = 44e15, needs = "Secret", mult = 50, floors = 3, lock = 120 },
 }
 -- what the Board Chair says when approving each tier (the story so far, one line per promotion)
 Config.BoardLines = {
@@ -388,6 +388,7 @@ Config.Goals = {
 	{ text = "Enroll 25 kids", signal = "enroll", count = 25, secs = 300, min = 2000 },
 	{ text = "Catch 2 cheaters", signal = "catchCheater", count = 2, secs = 240, min = 1000 },
 	{ text = "Bust a Snack Smuggler", signal = "bustDealer", count = 1, secs = 300, min = 1500 },
+	{ text = "Answer 2 Pop Quizzes right", signal = "quizRight", count = 2, secs = 240, min = 1000 },
 }
 
 ---------------------------------------------------------------------------

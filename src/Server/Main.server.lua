@@ -26,6 +26,7 @@ local MonetizationService = require(Server.MonetizationService)
 local RewardService = require(Server.RewardService)
 local StoryService = require(Server.StoryService)
 local LeaderboardService = require(Server.LeaderboardService)
+local QuizService = require(Server.QuizService)
 
 Factory.preload()
 PlotService.start()
@@ -43,6 +44,7 @@ MonetizationService.start()
 RewardService.start()
 StoryService.start()
 LeaderboardService.start()
+QuizService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -204,6 +206,10 @@ require(Server.DebugBridge).start({
 		return PatrolService.debugBonkCrumpet(player)
 	end,
 	-- the purchase grant paths without Robux (Studio only)
+	quiz = function(player)
+		QuizService.ask()
+		return true
+	end,
 	beam = function(player)
 		require(Server.EventService).beamTick(true)
 		task.wait(1)
