@@ -17,6 +17,7 @@ require(Server.SchoolService)
 require(Server.BoardService)
 local TeacherService = require(Server.TeacherService)
 local CampusService = require(Server.CampusService)
+local StealService = require(Server.StealService)
 
 Factory.preload()
 PlotService.start()
@@ -25,6 +26,7 @@ GateService.start()
 HallService.start()
 TeacherService.start()
 CampusService.start()
+StealService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -119,6 +121,17 @@ require(Server.DebugBridge).start({
 		local model = HallService.spawnOne(nil, studentId)
 		HallService.enroll(player, model)
 		return model.Name
+	end,
+	-- steal one of your own students (one-player test of the carry / deliver / drop paths)
+	stealSelf = function(player, slot)
+		StealService.debugAllowSelf = true
+		StealService.begin(player, PlotService.getPlot(player), slot)
+		StealService.debugAllowSelf = false
+		return { carrying = StealService.isCarrying(player), attr = player:GetAttribute("Carrying"), speed = player.Character.Humanoid.WalkSpeed }
+	end,
+	dropCarry = function(player)
+		StealService.drop(player, "debug drop")
+		return StealService.isCarrying(player)
 	end,
 	rows = function(player, a, b, c)
 		local p = Data.get(player)
