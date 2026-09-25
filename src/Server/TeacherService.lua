@@ -179,7 +179,7 @@ end
 
 -- the School Board: five senior staff behind the table in the Board Room
 local BOARD = {
-	{ outfit = "tweed", title = "TRUSTEE" },
+	{ outfit = "kevin", title = "KEVIN, AGE 10", id = "Kevin", name = "Kevin", kid = true },
 	{ outfit = "honey", title = "SECRETARY" },
 	{ outfit = "dean", title = "CHAIR" },
 	{ outfit = "beaker", title = "INSPECTOR" },
@@ -201,14 +201,18 @@ local function seatBoard()
 	table.sort(plates, function(a, b) return a.Position.X < b.Position.X end)
 	for i, seat in seats do
 		local spec = BOARD[i]
-		local tdef
-		for _, t in Config.Teachers do
-			if t.outfit == spec.outfit then tdef = t end
+		local tdef = spec.id and { id = spec.id, name = spec.name, title = spec.title, mult = 1, outfit = spec.outfit }
+		if not tdef then
+			for _, t in Config.Teachers do
+				if t.outfit == spec.outfit then tdef = t end
+			end
 		end
 		if tdef then
 			local model = Factory.buildTeacher(tdef, 1)
-			model.Name = "Board" .. spec.title
-			model.PrimaryPart.CFrame = CFrame.new(seat.Position + Vector3.new(0, 1.35, 0)) * CFrame.Angles(0, math.pi, 0)
+			model.Name = spec.id and ("Board" .. spec.id) or ("Board" .. spec.title)
+			local scale = spec.kid and 0.72 or 1
+			if scale ~= 1 then model:ScaleTo(scale) end
+			model.PrimaryPart.CFrame = CFrame.new(seat.Position + Vector3.new(0, 1.35 * scale + (1 - scale) * 0.4, 0)) * CFrame.Angles(0, math.pi, 0)
 			model.Parent = folder
 			Factory.play(model, "sit")
 		end
@@ -234,6 +238,15 @@ end
 function TeacherService.start()
 	Factory.preloadTeachers()
 	task.spawn(seatBoard)
+	-- portraits for the Board-review story beats (the client frames these templates)
+	task.spawn(function()
+		for _, t in {
+			{ id = "Vex", name = "Dr. Veronica Vex", title = "VexCorp CEO", mult = 1, outfit = "vex" },
+			{ id = "Baron", name = "The Sugar Baron", title = "???", mult = 1, outfit = "baron" },
+		} do
+			pcall(function() Factory.buildTeacher(t, 1):Destroy() end)
+		end
+	end)
 	table.insert(PlotService.rebuildHooks, function(player)
 		TeacherService.refresh(player)
 	end)

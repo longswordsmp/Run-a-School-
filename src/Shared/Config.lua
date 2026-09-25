@@ -199,6 +199,20 @@ Config.BoardLines = {
 	[12] = "Multiverse University. There are nine of me now. We ALL approve.",
 	star = "Another star! The Board bows to you, Principal.",
 }
+-- the story beat inside each Board review, before APPROVED: { speaker, portrait template id, line }
+Config.BoardBeats = {
+	[2] = { { "KEVIN, AGE 10", "Kevin", "Can we get a waterslide?" }, { "THE WHOLE BOARD", "DeanMaximus", "No." } },
+	[3] = { { "KEVIN, AGE 10", "Kevin", "Okay, but a SMALL waterslide?" }, { "THE BOARD CHAIR", "DeanMaximus", "No." } },
+	[4] = { { "???", "Baron", "Pssst... nice school. Shame if it had... SNACKS." } },
+	[5] = { { "DR. VERONICA VEX", "Vex", "A fruit basket for the Board. No reason." }, { "KEVIN, AGE 10", "Kevin", "(mouth full) ...I vote yes." } },
+	[6] = { { "DR. VERONICA VEX", "Vex", "MARBLE?! Fine. My Homework Factory goes RIGHT ACROSS THE STREET." } },
+	[7] = { { "DR. VERONICA VEX", "Vex", "Homework Machine: twelve percent complete. Tick tock, Principal." } },
+	[8] = { { "JANITOR STAN", "Stan", "That statue on your lawn... it blinked. I'm not joking." } },
+	[9] = { { "KEVIN, AGE 10", "Kevin", "Fine, I'm the Sugar Baron! I just wanted a WATERSLIDE!" }, { "THE BOARD CHAIR", "DeanMaximus", "Detention." } },
+	[10] = { { "MR. WOBBLESWORTH", "Wobblesworth", "I dropped out of wizard school, you know. Couldn't pronounce the spells." } },
+	[11] = { { "OTIS", "Otis", "(looking at the stars) ...Home." } },
+	[12] = { { "THE WHOLE BOARD", "DeanMaximus", "Motion... APPROVED... in EVERY universe." } },
+}
 -- the Board Chair's welcome for a brand-new principal (the intro cutscene, and page 1 of the Scrapbook)
 Config.IntroLines = {
 	"Ahem! Welcome, new Principal!",

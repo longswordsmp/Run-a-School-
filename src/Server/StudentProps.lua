@@ -2058,6 +2058,33 @@ T.butler = function(model, head, hs, torso, ts)
 	end
 end
 
+-- Kevin, age 10, the School Board's youngest member: a propeller beanie, a milk moustache and a
+-- bowl of cereal he brings to every meeting
+Props.TeacherLooks.kevin = { skin = "light", shirt = Color3.fromRGB(80, 190, 90), pants = Color3.fromRGB(60, 90, 170) }
+T.kevin = function(model, head, hs, torso, ts)
+	-- beanie in four colours with a button, a stem and a two-blade propeller
+	local colors = { rgb(230, 60, 60), rgb(255, 210, 50), rgb(60, 130, 230), rgb(80, 200, 90) }
+	for i = 0, 3 do
+		blob(model, head, Vector3.new(hs.X * 0.62, hs.Y * 0.5, hs.Z * 0.62), CFrame.new((i % 2 - 0.5) * hs.X * 0.44, hs.Y * 0.36, (math.floor(i / 2) - 0.5) * hs.Z * 0.44), colors[i + 1])
+	end
+	block(model, head, Vector3.new(0.14, 0.45, 0.14), CFrame.new(0, hs.Y * 0.72, 0), rgb(120, 120, 130), Enum.Material.Metal)
+	for _, a in { 0, 90 } do
+		block(model, head, Vector3.new(1.5, 0.06, 0.26), CFrame.new(0, hs.Y * 0.72 + 0.24, 0) * CFrame.Angles(0, math.rad(a + 20), 0), rgb(255, 210, 50))
+	end
+	-- milk moustache
+	blob(model, head, Vector3.new(hs.X * 0.5, hs.Y * 0.1, 0.12), CFrame.new(0, -hs.Y * 0.16, -hs.Z * 0.5), rgb(250, 250, 250))
+	-- striped shirt
+	for i = 0, 2 do
+		block(model, torso, Vector3.new(ts.X * 1.02, 0.14, ts.Z * 1.03), CFrame.new(0, ts.Y * (0.25 - i * 0.25), 0), rgb(250, 250, 250))
+	end
+	-- the cereal bowl
+	local left = part(model, "LeftHand")
+	cylY(model, left, 1.1, 0.45, CFrame.new(0, 0.15, -0.55), rgb(250, 250, 250))
+	for i = 0, 5 do
+		ball(model, left, 0.22, CFrame.new(math.cos(i) * 0.3, 0.42, -0.55 + math.sin(i) * 0.3), colors[i % 4 + 1])
+	end
+end
+
 function Props.teacher(model, outfit)
 	local build = T[outfit]
 	if not build then return end

@@ -138,6 +138,59 @@ local function hideHud(on)
 	end
 end
 
+local function dialogBox(speaker, templateId)
+	local box = UI.new("Frame", {
+		Name = "Dialog",
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -24),
+		Size = UDim2.new(0.7, 0, 0, 150),
+		BackgroundColor3 = UI.C.cream,
+		ZIndex = 6,
+		Parent = gui,
+	})
+	UI.new("UISizeConstraint", { MaxSize = Vector2.new(900, 150), Parent = box })
+	UI.corner(box, 18)
+	UI.stroke(box, 4)
+	local portrait = UI.new("Frame", {
+		Size = UDim2.fromOffset(120, 120),
+		Position = UDim2.fromOffset(14, 15),
+		BackgroundColor3 = Color3.fromRGB(80, 60, 140),
+		ZIndex = 7,
+		Parent = box,
+	})
+	UI.corner(portrait, 14)
+	UI.stroke(portrait, 3)
+	local tt = ReplicatedStorage:FindFirstChild("TeacherTemplates")
+	local chair = tt and tt:FindFirstChild(templateId or "DeanMaximus")
+	if chair then
+		local vp, m = UI.viewport(portrait, chair, { zindex = 8, zoom = 0.55 })
+		-- frame the head and shoulders
+		local cam = vp.CurrentCamera
+		local head = m and m:FindFirstChild("Head")
+		if head and cam then
+			cam.CFrame = CFrame.lookAt(head.Position + Vector3.new(0, 0.1, -4.2), head.Position + Vector3.new(0, -0.3, 0))
+		end
+	end
+	UI.label(box, { Text = speaker or "THE BOARD CHAIR", Font = UI.BIG, TextColor3 = UI.C.purple, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -170, 0, 30), Position = UDim2.fromOffset(150, 12), ZIndex = 7, stroke = 2 })
+	local text = UI.label(box, { Text = "", TextColor3 = UI.C.ink, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, TextScaled = false, TextSize = 26, Size = UDim2.new(1, -170, 0, 80), Position = UDim2.fromOffset(150, 48), ZIndex = 7, stroke = 0 })
+	local hint = UI.label(box, { Text = "click to continue", TextColor3 = UI.C.grey, TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.new(0, 200, 0, 18), Position = UDim2.new(1, -212, 1, -24), ZIndex = 7, stroke = 0 })
+	UI.pop(box, 0.6)
+	return box, text, hint
+end
+
+-- one story line in the dialog box: typed at 40 characters a second, held, then gone
+local function sayLine(speaker, templateId, line)
+	local box, text, hint = dialogBox(speaker, templateId)
+	hint.Visible = false
+	for c = 1, #line do
+		text.Text = line:sub(1, c)
+		if c % 3 == 0 then sfx("Coin") end
+		task.wait(0.025)
+	end
+	task.wait(math.clamp(#line * 0.03, 1.1, 2.2))
+	box:Destroy()
+end
+
 local busy = false
 local lastDouble
 local function board(data)
@@ -183,6 +236,19 @@ local function board(data)
 	end)
 	task.wait(0.3)
 	conn:Disconnect()
+	-- the story beat for this promotion (Kevin gets a close-up for his lines)
+	local beat = data and not data.star and Config.BoardBeats[data.tier]
+	for _, b in beat or {} do
+		local kevin = room:FindFirstChild("Members") and room.Members:FindFirstChild("BoardKevin")
+		local head = kevin and kevin:FindFirstChild("Head")
+		if b[2] == "Kevin" and head then
+			camera.CFrame = CFrame.lookAt(head.Position + Vector3.new(0, 0.6, -5.5), head.Position)
+		else
+			camera.CFrame = CFrame.lookAt(room.CameraA.Position:Lerp(target, 0.25), target)
+		end
+		sayLine(b[1], b[2], b[3])
+		if b[3] == "No." then sfx("SadTrombone") end
+	end
 	-- approved!
 	camera.CFrame = CFrame.lookAt(room.CameraA.Position:Lerp(target, 0.5), mark.Position + Vector3.new(0, 2, 0))
 	sfx("StingParty")
@@ -212,46 +278,6 @@ end
 -- Intro: the Board Chair welcomes a brand-new principal to an empty school
 ---------------------------------------------------------------------------
 local INTRO = Config.IntroLines
-
-local function dialogBox()
-	local box = UI.new("Frame", {
-		Name = "Dialog",
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -24),
-		Size = UDim2.new(0.7, 0, 0, 150),
-		BackgroundColor3 = UI.C.cream,
-		ZIndex = 6,
-		Parent = gui,
-	})
-	UI.new("UISizeConstraint", { MaxSize = Vector2.new(900, 150), Parent = box })
-	UI.corner(box, 18)
-	UI.stroke(box, 4)
-	local portrait = UI.new("Frame", {
-		Size = UDim2.fromOffset(120, 120),
-		Position = UDim2.fromOffset(14, 15),
-		BackgroundColor3 = Color3.fromRGB(80, 60, 140),
-		ZIndex = 7,
-		Parent = box,
-	})
-	UI.corner(portrait, 14)
-	UI.stroke(portrait, 3)
-	local tt = ReplicatedStorage:FindFirstChild("TeacherTemplates")
-	local chair = tt and tt:FindFirstChild("DeanMaximus")
-	if chair then
-		local vp, m = UI.viewport(portrait, chair, { zindex = 8, zoom = 0.55 })
-		-- frame the head and shoulders
-		local cam = vp.CurrentCamera
-		local head = m and m:FindFirstChild("Head")
-		if head and cam then
-			cam.CFrame = CFrame.lookAt(head.Position + Vector3.new(0, 0.1, -4.2), head.Position + Vector3.new(0, -0.3, 0))
-		end
-	end
-	UI.label(box, { Text = "THE BOARD CHAIR", Font = UI.BIG, TextColor3 = UI.C.purple, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -170, 0, 30), Position = UDim2.fromOffset(150, 12), ZIndex = 7, stroke = 2 })
-	local text = UI.label(box, { Text = "", TextColor3 = UI.C.ink, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, TextScaled = false, TextSize = 26, Size = UDim2.new(1, -170, 0, 80), Position = UDim2.fromOffset(150, 48), ZIndex = 7, stroke = 0 })
-	local hint = UI.label(box, { Text = "click to continue", TextColor3 = UI.C.grey, TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.new(0, 200, 0, 18), Position = UDim2.new(1, -212, 1, -24), ZIndex = 7, stroke = 0 })
-	UI.pop(box, 0.6)
-	return box, text, hint
-end
 
 local function intro()
 	if busy then return end

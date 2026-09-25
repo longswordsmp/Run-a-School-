@@ -599,7 +599,13 @@ do
 	end
 	scrapEntry(1, "intro", "Day One", "The Board Chair", table.concat(Config.IntroLines, " "), 1)
 	for tier = 2, #Config.Tiers do
-		scrapEntry(tier * 2, "board", Config.Tiers[tier].name .. "!", "The School Board", Config.BoardLines[tier] or "", tier)
+		local lines = {}
+		for _, b in Config.BoardBeats[tier] or {} do
+			local who = b[1]:gsub("(%a)([%w']*)", function(a, rest) return a:upper() .. rest:lower() end)
+			table.insert(lines, ("%s: \"%s\""):format(who, b[3]))
+		end
+		table.insert(lines, ("The Board Chair: \"%s\""):format(Config.BoardLines[tier] or ""))
+		scrapEntry(tier * 2, "board", Config.Tiers[tier].name .. "!", nil, table.concat(lines, "  "), tier)
 		local i = tier - 1
 		local ch = Config.Chapters[i]
 		if ch then
@@ -658,7 +664,7 @@ do
 			local open = tier >= pg.unlockAt
 			if open then n += 1 end
 			pg.title.Text = open and pg.full or "???"
-			pg.quote.Text = open and (pg.speaker .. ': "' .. pg.text .. '"') or "Keep growing your school to unlock this page."
+			pg.quote.Text = open and (pg.speaker and (pg.speaker .. ': "' .. pg.text .. '"') or pg.text) or "Keep growing your school to unlock this page."
 			pg.quote.TextColor3 = open and UI.C.ink or UI.C.grey
 		end
 		return n
