@@ -228,6 +228,12 @@ require(Server.DebugBridge).start({
 	tickets = function(player, n)
 		return TicketService.debugGive(player, n)
 	end,
+	-- pretend today's Daily Requests were dealt yesterday (tests the UTC rollover)
+	dailyAge = function(player)
+		local p = Data.get(player)
+		if p.dailyQ then p.dailyQ.day -= 1 end
+		return p.dailyQ ~= nil
+	end,
 	-- enroll a kid who came off a named special bus (still in the hall)
 	enrollBus = function(player, kind)
 		for _, m in workspace.Hall:GetChildren() do

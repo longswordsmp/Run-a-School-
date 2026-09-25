@@ -25,12 +25,17 @@ local function pickFor(userId, day, avoid)
 	local rng = Random.new(userId * 7 + day * 131 + (avoid and 17 or 0))
 	local pool = {}
 	for _, q in Config.DailyPool do
-		if not (avoid and avoid[q.id]) then table.insert(pool, q.id) end
+		if not (avoid and (avoid[q.id] or avoid[q.signal])) then table.insert(pool, q.id) end
 	end
-	local out = {}
-	for _ = 1, 3 do
-		local i = rng:NextInteger(1, #pool)
-		table.insert(out, table.remove(pool, i))
+	-- one request per signal, so a single catch or enroll never pays two requests
+	local out, used = {}, {}
+	while #out < 3 and #pool > 0 do
+		local id = table.remove(pool, rng:NextInteger(1, #pool))
+		local sig = byId[id].signal
+		if not used[sig] then
+			used[sig] = true
+			table.insert(out, id)
+		end
 	end
 	return out
 end
@@ -39,7 +44,10 @@ end
 local function rec(player, p)
 	local d = today()
 	if not p.dailyQ or p.dailyQ.day ~= d then
-		p.dailyQ = { day = d, ids = pickFor(player.UserId, d), prog = { 0, 0, 0 }, done = { false, false, false }, box = false, rerolled = false }
+		local old = p.dailyQ
+		-- a Lunch Box earned yesterday and not opened is kept
+		local owed = old ~= nil and (old.owedBox == true or (old.done[1] and old.done[2] and old.done[3] and not old.box)) or false
+		p.dailyQ = { day = d, ids = pickFor(player.UserId, d), prog = { 0, 0, 0 }, done = { false, false, false }, box = false, rerolled = false, owedBox = owed }
 	end
 	return p.dailyQ
 end
@@ -52,10 +60,11 @@ function DailyService.state(player)
 	for i, id in r.ids do
 		local q = byId[id]
 		if q then
-			list[i] = { text = q.text, progress = math.min(r.prog[i] or 0, q.count), count = q.count, done = r.done[i] }
+			list[i] = { id = id, text = q.text, progress = math.min(r.prog[i] or 0, q.count), count = q.count, done = r.done[i] }
 		end
 	end
 	local allDone = r.done[1] and r.done[2] and r.done[3]
+	local ready = (allDone and not r.box) or r.owedBox == true
 	local odds = {}
 	local total = 0
 	for _, b in Config.LunchBox do total += b.weight end
@@ -66,8 +75,8 @@ function DailyService.state(player)
 		ok = true,
 		requests = list,
 		candy = Config.DailyCandy,
-		boxReady = allDone and not r.box,
-		boxOpened = r.box,
+		boxReady = ready,
+		boxOpened = r.box and not ready,
 		canReroll = not r.rerolled,
 		odds = odds,
 		resetIn = resetIn,
@@ -81,7 +90,7 @@ function DailyService.badge(player)
 	if not p then return end
 	local r = rec(player, p)
 	local streak = require(script.Parent.RewardService).dailyState(p)
-	local box = r.done[1] and r.done[2] and r.done[3] and not r.box
+	local box = (r.done[1] and r.done[2] and r.done[3] and not r.box) or r.owedBox == true
 	player:SetAttribute("DailyReady", (p.tutorial or 1) > 5 and (not streak.claimed or box) or false)
 end
 
@@ -128,16 +137,27 @@ Actions.register("dailyQ", function(player)
 end)
 
 -- swap one unfinished request for another one (once a day)
-Actions.register("rerollDaily", function(player, p, index)
+Actions.register("rerollDaily", function(player, p, index, seenId)
 	if type(index) ~= "number" then return { ok = false } end
 	local r = rec(player, p)
 	index = math.floor(index)
+	if seenId ~= nil and r.ids[index] ~= seenId then
+		-- the panel was showing yesterday's requests: send today's instead of spending the reroll
+		local s = DailyService.state(player)
+		s.ok = false
+		s.err = "New day, new requests!"
+		Remotes.Push:FireClient(player, "dailyQ", DailyService.state(player))
+		return s
+	end
 	if r.rerolled then return { ok = false, err = "One reroll a day!" } end
 	if not r.ids[index] or r.done[index] or (r.prog[index] or 0) > 0 then
 		return { ok = false, err = "Only a request you haven't started" }
 	end
 	local avoid = {}
-	for _, id in r.ids do avoid[id] = true end
+	for i, id in r.ids do
+		avoid[id] = true
+		if i ~= index then avoid[byId[id].signal] = true end
+	end
 	r.ids[index] = pickFor(player.UserId, r.day, avoid)[1]
 	r.prog[index] = 0
 	r.rerolled = true
@@ -146,9 +166,13 @@ end)
 
 Actions.register("openLunchBox", function(player, p)
 	local r = rec(player, p)
-	if not (r.done[1] and r.done[2] and r.done[3]) then return { ok = false, err = "Finish all 3 requests first" } end
-	if r.box then return { ok = false, err = "Already opened today" } end
-	r.box = true
+	if r.owedBox then
+		r.owedBox = false -- yesterday's box first
+	else
+		if not (r.done[1] and r.done[2] and r.done[3]) then return { ok = false, err = "Finish all 3 requests first" } end
+		if r.box then return { ok = false, err = "Already opened today" } end
+		r.box = true
+	end
 	local total = 0
 	for _, b in Config.LunchBox do total += b.weight end
 	local roll = math.random() * total
@@ -184,8 +208,13 @@ function DailyService.start()
 		end)
 	end
 	task.spawn(function()
+		local lastDay = today()
 		while true do
-			for _, player in Players:GetPlayers() do pcall(DailyService.badge, player) end
+			local rolled = today() ~= lastDay
+			lastDay = today()
+			for _, player in Players:GetPlayers() do
+				if rolled then pcall(push, player) else pcall(DailyService.badge, player) end
+			end
 			task.wait(60)
 		end
 	end)

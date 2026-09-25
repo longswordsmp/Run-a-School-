@@ -774,9 +774,12 @@ do
 	end
 	for i, r in qRows do
 		r.reroll.button.Activated:Connect(function()
-			local res = call("rerollDaily", i)
+			local seen = qState and qState.requests and qState.requests[i]
+			local res = call("rerollDaily", i, seen and seen.id)
 			if res and res.ok then
 				sfx("Whoosh")
+				showRequests(res)
+			elseif res and res.requests then
 				showRequests(res)
 			end
 		end)
