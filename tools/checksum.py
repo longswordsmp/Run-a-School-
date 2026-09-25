@@ -1,41 +1,29 @@
-# Prints a checksum per source file, matching tools/checksum.lua run in Studio.
+# Prints a checksum per source file, matching tools/checksum.lua and tools/push.lua in Studio.
 # checksum = (len, sum over bytes of b * (i % 251 + 1)) mod 2^31, CRLF normalised to LF,
-# trailing newline stripped (Studio drops it).
+# trailing newlines stripped (Studio drops them).
+#   python tools/checksum.py            every file under src/
+#   python tools/checksum.py Audio HUD  only paths containing one of the words
 import sys, pathlib
 
-MAP = {
-    "Shared/Config.lua": "ReplicatedStorage.Shared.Config",
-    "Shared/UI.lua": "ReplicatedStorage.Shared.UI",
-    "Server/Walkers.lua": "ServerScriptService.Server.Walkers",
-    "Server/Remotes.lua": "ServerScriptService.Server.Remotes",
-    "Server/DataService.lua": "ServerScriptService.Server.DataService",
-    "Server/StudentProps.lua": "ServerScriptService.Server.StudentProps",
-    "Server/StudentFactory.lua": "ServerScriptService.Server.StudentFactory",
-    "Server/PlotService.lua": "ServerScriptService.Server.PlotService",
-    "Server/HallService.lua": "ServerScriptService.Server.HallService",
-    "Server/DebugBridge.lua": "ServerScriptService.Server.DebugBridge",
-    "Server/StealService.lua": "ServerScriptService.Server.StealService",
-    "Server/SchoolService.lua": "ServerScriptService.Server.SchoolService",
-    "Server/Signals.lua": "ServerScriptService.Server.Signals",
-    "Server/SchoolBuilder.lua": "ServerScriptService.Server.SchoolBuilder",
-    "Server/Actions.lua": "ServerScriptService.Server.Actions",
-    "Server/UpgradeService.lua": "ServerScriptService.Server.UpgradeService",
-    "Server/GateService.lua": "ServerScriptService.Server.GateService",
-    "Server/BoardService.lua": "ServerScriptService.Server.BoardService",
-    "Server/Main.server.lua": "ServerScriptService.Server.Main",
-    "Client/HUD.client.lua": "StarterPlayer.StarterPlayerScripts.HUD",
-    "Client/Menus.client.lua": "StarterPlayer.StarterPlayerScripts.Menus",
-    "Client/Prompts.client.lua": "StarterPlayer.StarterPlayerScripts.Prompts",
-    "Client/Effects.client.lua": "StarterPlayer.StarterPlayerScripts.Effects",
+BASES = {
+    "Shared": "ReplicatedStorage.Shared",
+    "Server": "ServerScriptService.Server",
+    "Client": "StarterPlayer.StarterPlayerScripts",
 }
 
 root = pathlib.Path(__file__).resolve().parent.parent / "src"
-for rel, path in MAP.items():
-    f = root / rel
-    if not f.exists():
-        continue
-    data = f.read_bytes().replace(b"\r\n", b"\n").rstrip(b"\n")
-    s = 0
-    for i, b in enumerate(data):
-        s = (s + b * (i % 251 + 1)) % 2147483648
-    print(f"{path} {len(data)} {s}")
+words = sys.argv[1:]
+for folder, base in BASES.items():
+    for f in sorted((root / folder).glob("*.lua")):
+        name = f.name[:-4]
+        for suffix in (".server", ".client"):
+            if name.endswith(suffix):
+                name = name[: -len(suffix)]
+        path = f"{base}.{name}"
+        if words and not any(w in path for w in words):
+            continue
+        data = f.read_bytes().replace(b"\r\n", b"\n").rstrip(b"\n")
+        s = 0
+        for i, b in enumerate(data):
+            s = (s + b * (i % 251 + 1)) % 2147483648
+        print(f"{path} {len(data)} {s}")
