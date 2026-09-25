@@ -329,17 +329,29 @@ local function runToVan(raid, g, speed)
 				raid.lost += 1
 				Remotes.Notify:FireClient(player, ("\u{1F6A8} They got away with %s! Rescue them from the VexCorp Factory."):format(def.name), "bad")
 				Signals.fire("kidCaptured", player, def)
+				if raid.onLost then task.spawn(raid.onLost, raid) end
 			end
 		end
 		removeGoon(raid, g)
 	end, { flat = false })
 end
 
+local sendGoon -- (below: a story goon who finds no kid goes round again)
+
 local function lift(raid, g)
 	local player = raid.player
 	local p = Data.get(player)
 	local plot = PlotService.getPlot(player)
 	local e = p and p.students[g.slot]
+	if raid.story and e == g.e and e and (e.carried or e.away) then
+		-- a story crew doesn't give up: he hangs about and tries again until you knock him out
+		goonSay(g, "Where'd the kid go?!")
+		Factory.play(g.model, "idle")
+		task.delay(2.5, function()
+			if not g.gone and not raid.ended and g.model.Parent and not g.kid then sendGoon(raid, g) end
+		end)
+		return
+	end
 	if not plot or e ~= g.e or not PlotService.earning(e) or e.away or e.carried then
 		-- the kid moved, was sold or is already gone: go home empty-handed
 		goonSay(g, "Huh. Nobody here.")
@@ -378,7 +390,7 @@ end
 
 -- into the school from wherever the goon is: to the gate first if he's still outside (a locked
 -- laser keeps him out), then down the aisle to the kid
-local function sendGoon(raid, g)
+sendGoon = function(raid, g)
 	local plot = raid.plot
 	local root = g.model.PrimaryPart
 	if not root then return end
@@ -408,7 +420,7 @@ local function sendGoon(raid, g)
 		if g.gone then return end
 		local lockedUntil = plot:GetAttribute("LockedUntil") or 0
 		-- (the tutorial's Crumpet has a key: the lock is the step after him)
-		if not raid.tutorial and lockedUntil > workspace:GetServerTimeNow() then
+		if not raid.tutorial and not raid.story and lockedUntil > workspace:GetServerTimeNow() then
 			goonSay(g, "It's LOCKED?! Ugh.")
 			Factory.play(g.model, "idle")
 			Factory.emote(g.model, "point")
@@ -481,6 +493,7 @@ local function hitGoon(player, raid, g, root)
 			if g.gone then return end
 			burst(groot.Position, Color3.fromRGB(230, 230, 240), 40)
 			raid.ko += 1
+			if raid.onKO then task.spawn(raid.onKO, raid) end
 			local cash = reward(player, R.koSecs, R.koFloor)
 			Data.addCash(player, cash)
 			Remotes.CashPop:FireClient(player, cash, groot.Position)
@@ -496,7 +509,7 @@ local function hitGoon(player, raid, g, root)
 		Factory.play(g.model, "idle")
 		task.wait(R.stun)
 		if g.gone or not groot.Parent then return end
-		if hadKid or g.fleeing then
+		if (hadKid or g.fleeing) and not raid.story then
 			g.fleeing = true
 			goonSay(g, "RUN!")
 			runToVan(raid, g, R.fleeSpeed)
@@ -585,6 +598,7 @@ raidEnded = function(raid)
 	else
 		Remotes.Push:FireClient(player, "raidOver", { defended = raid.lost == 0, lost = raid.lost })
 	end
+	if raid.onEnd then task.spawn(raid.onEnd, raid) end
 end
 
 function RaidService.start_raid(player, opts)
@@ -596,12 +610,22 @@ function RaidService.start_raid(player, opts)
 	local n = opts.goons or R.goonsByTier[tierOf(p)]
 	local slots = targets(player, plot, p, n)
 	if #slots == 0 then return false end
+	-- a story crew is always its full size: short of kids, two goons go for the same one
+	local k = 1
+	while opts.story and #slots < n do
+		table.insert(slots, slots[k])
+		k += 1
+	end
 	local raid = {
 		player = player, plot = plot, goons = {}, van = buildVan(),
 		saved = 0, lost = 0, ko = 0, repelled = 0, tutorial = opts.tutorial,
+		-- a story raid (MissionService): the gate lock doesn't stop them, a goon who loses his kid comes
+		-- back for more instead of fleeing, and the mission hears about every KO, loss and the end
+		story = opts.story, onEnd = opts.onEnd, onKO = opts.onKO, onLost = opts.onLost, count = #slots,
 	}
 	raids[player] = raid
 	player:SetAttribute("Raid", #slots)
+	if opts.onStart then task.spawn(opts.onStart, raid) end
 	raid.van:PivotTo(vanCF(plot, 150))
 	raid.van.Parent = folder
 	Remotes.Push:FireClient(player, "raid", { goons = #slots, tutorial = opts.tutorial })
@@ -622,7 +646,7 @@ function RaidService.start_raid(player, opts)
 		task.delay((i - 1) * 0.6, function()
 			if raid.ended or not player.Parent then return end
 			local e = p.students[slot]
-			if not e or e.away or e.carried then spawned() return end
+			if not e or ((e.away or e.carried) and not opts.story) then spawned() return end
 			local spec = opts.tutorial and CRUMPET or GOON
 			local model = Factory.buildTeacher(spec, 1)
 			model.Name = opts.tutorial and "Crumpet" or "Goon"

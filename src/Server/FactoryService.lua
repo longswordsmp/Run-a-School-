@@ -387,6 +387,74 @@ local function buildPen(m, i)
 	return pen
 end
 
+-- Vex's desk, in the aisle in front of the pens. The "Vex's Blueprints" mission (MissionService)
+-- steals the rolled-up plans off it; only a player on that mission sees the prompt (HUD's fixPrompt
+-- reads MissionOnly). Everyone on the mission gets their own copy, so nobody waits on anyone.
+local desk
+local DESK_Z = 104
+local BLUEPRINT = rgb(45, 110, 200)
+local function buildDesk(m)
+	local model = Instance.new("Model")
+	model.Name = "VexDesk"
+	model.Parent = m
+	local z = DESK_Z
+	local top = part(model, "DeskTop", Vector3.new(9, 0.5, 3.6), CFrame.new(0, 3.55, z), rgb(38, 30, 48), Enum.Material.SmoothPlastic)
+	part(model, "DeskFront", Vector3.new(9, 3, 0.4), CFrame.new(0, 1.95, z - 1.6), PURPLE, Enum.Material.SmoothPlastic)
+	for _, x in { -4.3, 4.3 } do
+		part(model, "DeskSide", Vector3.new(0.4, 3, 3.6), CFrame.new(x, 1.95, z), PURPLE, Enum.Material.SmoothPlastic)
+	end
+	part(model, "DeskTrim", Vector3.new(9.05, 0.15, 0.1), CFrame.new(0, 3.25, z - 1.82), LILAC, Enum.Material.Neon)
+	local logo = part(model, "DeskLogo", Vector3.new(2.2, 2.2, 0.1), CFrame.new(0, 1.9, z - 1.85), rgb(28, 16, 40), Enum.Material.SmoothPlastic)
+	sign(logo, Enum.NormalId.Front, "V", LILAC, Enum.Font.LuckiestGuy, rgb(10, 5, 20))
+	-- her chair: a tall purple throne of an office chair
+	part(model, "ChairSeat", Vector3.new(2.6, 0.5, 2.4), CFrame.new(0, 2.2, z + 3), rgb(70, 35, 100), Enum.Material.Fabric)
+	part(model, "ChairBack", Vector3.new(2.8, 4.2, 0.5), CFrame.new(0, 4.6, z + 4.1), rgb(70, 35, 100), Enum.Material.Fabric)
+	part(model, "ChairTrim", Vector3.new(2.9, 0.2, 0.55), CFrame.new(0, 6.7, z + 4.1), LILAC, Enum.Material.Neon)
+	cyl(model, "ChairPole", 0.35, 1.6, CFrame.new(0, 1.2, z + 3) * CFrame.Angles(0, 0, math.rad(90)), STEEL, Enum.Material.Metal)
+	part(model, "ChairBase", Vector3.new(2.2, 0.3, 2.2), CFrame.new(0, 0.7, z + 3), DARK, Enum.Material.Metal)
+	-- a nameplate, a lamp, a mug, homework piles
+	local plate = part(model, "Nameplate", Vector3.new(2.6, 0.6, 0.3), CFrame.new(-2.6, 4.1, z - 1.2) * CFrame.Angles(math.rad(-20), 0, 0), rgb(20, 12, 30), Enum.Material.SmoothPlastic)
+	sign(plate, Enum.NormalId.Front, "DR. V. VEX", LILAC, Enum.Font.FredokaOne)
+	part(model, "LampBase", Vector3.new(0.9, 0.2, 0.9), CFrame.new(3.4, 3.9, z + 0.8), DARK, Enum.Material.Metal)
+	cyl(model, "LampArm", 0.18, 1.8, CFrame.new(3.4, 4.8, z + 0.8) * CFrame.Angles(0, 0, math.rad(90)), DARK, Enum.Material.Metal)
+	local shade = part(model, "LampShade", Vector3.new(1.2, 0.6, 1.2), CFrame.new(3.2, 5.7, z + 0.4) * CFrame.Angles(math.rad(-25), 0, 0), PURPLE, Enum.Material.Metal)
+	local lampLight = light(shade, 10, 1.2, rgb(220, 190, 255))
+	_ = lampLight
+	cyl(model, "Mug", 0.6, 0.7, CFrame.new(-3.6, 4.15, z + 0.9) * CFrame.Angles(0, 0, math.rad(90)), rgb(240, 240, 245), Enum.Material.SmoothPlastic)
+	for k, spec in { { -1.2, 0.8, 5 }, { -0.4, 1, 3 } } do
+		for h = 1, spec[3] do
+			part(model, "Homework", Vector3.new(1.1, 0.12, 1.4), CFrame.new(spec[1] - 1.4 * k, 3.8 + h * 0.13, z + spec[2]) * CFrame.Angles(0, math.rad(h * 7), 0), rgb(245, 245, 235), Enum.Material.SmoothPlastic)
+		end
+	end
+	-- the plans: one spread out with a white grid, one rolled up
+	local sheet = part(model, "PlansSheet", Vector3.new(3, 0.06, 2), CFrame.new(1, 3.83, z - 0.3) * CFrame.Angles(0, math.rad(-8), 0), BLUEPRINT, Enum.Material.SmoothPlastic)
+	sign(sheet, Enum.NormalId.Top, "HOMEWORK\nMACHINE", rgb(235, 245, 255), Enum.Font.Arcade)
+	local roll = cyl(model, "Blueprints", 0.6, 3, CFrame.new(1.2, 4.15, z + 1.1), BLUEPRINT, Enum.Material.SmoothPlastic)
+	for _, dx in { -1.2, 1.2 } do
+		cyl(model, "RollBand", 0.64, 0.12, CFrame.new(1.2 + dx, 4.15, z + 1.1), rgb(235, 245, 255), Enum.Material.SmoothPlastic)
+	end
+	local glow = Instance.new("Highlight")
+	glow.Name = "PlansGlow"
+	glow.FillTransparency = 1
+	glow.OutlineColor = rgb(120, 200, 255)
+	glow.Enabled = false
+	glow.Parent = roll
+	local hold = part(model, "PromptSpot", Vector3.new(1, 1, 1), CFrame.new(0, 3, z - 2.4), DARK, nil, { Transparency = 1, CanCollide = false, CanQuery = false })
+	local prompt = Instance.new("ProximityPrompt")
+	prompt.Name = "PlansPrompt"
+	prompt.ActionText = "Steal"
+	prompt.ObjectText = "Vex's Blueprints"
+	prompt.HoldDuration = H.holdTime
+	prompt.KeyboardKeyCode = Enum.KeyCode.E
+	prompt.RequiresLineOfSight = false
+	prompt.MaxActivationDistance = 7
+	prompt:SetAttribute("MissionOnly", "vex_blueprints")
+	prompt:SetAttribute("Color", rgb(120, 200, 255))
+	prompt.Parent = hold
+	desk = { model = model, prompt = prompt, kind = "item", mission = "vex_blueprints", roll = roll, glow = glow }
+	_ = top
+end
+
 ---------------------------------------------------------------------------
 -- what's in the pens
 ---------------------------------------------------------------------------
@@ -517,7 +585,8 @@ function FactoryService.refresh()
 					pen.owner = q.player
 					pen.entry = q.entry
 					placeKid(pen, def, q.entry.grade or "Normal", false)
-					pen.label.Text = (q.player.DisplayName .. "'s " .. def.name):upper()
+					local story = q.entry.story and Config.Missions[q.entry.story]
+					pen.label.Text = story and ("\u{2605} " .. def.name:upper() .. " \u{2605}") or (q.player.DisplayName .. "'s " .. def.name):upper()
 					pen.prompt.ObjectText = def.name
 					pen.prompt.ActionText = "Rescue"
 					pen.prompt.Enabled = true
@@ -692,7 +761,8 @@ local function dropHeist(player, why)
 		placeKid(pen, hs.def, hs.grade, false)
 		if pen.owner then pen.model:SetAttribute("OwnerId", pen.owner.UserId) end
 	end
-	pen.prompt.Enabled = pen.kind ~= nil
+	-- (the desk's prompt is switched per player on the client)
+	if pen.kind ~= "item" then pen.prompt.Enabled = pen.kind ~= nil end
 	player:SetAttribute("Heist", nil)
 	if player.Parent then
 		setCarrySpeed(player, false)
@@ -730,6 +800,8 @@ local function escaped(player)
 	local LetterService = require(script.Parent.LetterService)
 	if pen.kind == "captured" and p then
 		-- your own kid: out of the captured list and back to your bench, free
+		local story = pen.entry and pen.entry.story
+		if story and Config.Missions[story] then task.defer(Signals.fire, "storyRescued", player, story) end
 		for i, c in p.captured or {} do
 			if c == pen.entry then table.remove(p.captured, i) break end
 		end
@@ -766,6 +838,9 @@ local function escaped(player)
 		Remotes.Push:FireClient(player, "heist", { state = "prize", name = def.name, rarity = rarity })
 		Remotes.Notify:FireClient(player, ("You stole Vex's captive: %s (%s)! They're on your Waiting Bench."):format(def.name, rarity), "good")
 		Signals.fire("rescued", player, def, true)
+	elseif pen.kind == "item" then
+		Remotes.Push:FireClient(player, "heist", { state = "item", name = "Vex's Blueprints" })
+		task.defer(Signals.fire, "storyRescued", player, pen.mission)
 	end
 	if not anyHeist() then alarm(false) end
 	FactoryService.refresh()
@@ -834,6 +909,55 @@ local function takeKid(player, i)
 		for _, g in guards do
 			if now() >= g.stunUntil then chase(g, player) end
 		end
+	end
+end
+
+local function takePlans(player)
+	if heists[player] or player:GetAttribute("Carrying") or player:GetAttribute("Mission") ~= desk.mission then return end
+	local char = player.Character
+	local proot = char and char:FindFirstChild("HumanoidRootPart")
+	if not proot or (stunUntil[player] or 0) > now() then return end
+	-- a rolled copy rides over your head
+	local roll = Instance.new("Part")
+	roll.Name = "CarriedPlans"
+	roll.Shape = Enum.PartType.Cylinder
+	roll.Size = Vector3.new(3.4, 0.8, 0.8)
+	roll.Color = BLUEPRINT
+	roll.Material = Enum.Material.SmoothPlastic
+	roll.Massless = true
+	roll.CanCollide = false
+	roll.CanQuery = false
+	roll.CanTouch = false
+	for _, dx in { -1.3, 1.3 } do
+		local band = roll:Clone()
+		band.Name = "Band"
+		band.Size = Vector3.new(0.15, 0.85, 0.85)
+		band.Color = rgb(235, 245, 255)
+		band.CFrame = CFrame.new(dx, 0, 0)
+		band.Parent = roll
+		local bw = Instance.new("Weld")
+		bw.Part0, bw.Part1 = roll, band
+		bw.C0 = CFrame.new(dx, 0, 0)
+		bw.Parent = band
+	end
+	local off = 3.6
+	roll.CFrame = proot.CFrame * CFrame.new(0, off, 0)
+	local w = Instance.new("Weld")
+	w.Part0, w.Part1 = proot, roll
+	w.C0 = CFrame.new(0, off, 0)
+	w.Parent = roll
+	local glow = Instance.new("Highlight")
+	glow.FillTransparency = 1
+	glow.OutlineColor = rgb(120, 200, 255)
+	glow.Parent = roll
+	roll.Parent = char
+	heists[player] = { pen = desk, kid = roll, item = true, lastPos = proot.Position, lastT = now() }
+	player:SetAttribute("Heist", "Vex's Blueprints")
+	setCarrySpeed(player, true)
+	alarm(true)
+	Remotes.Push:FireClient(player, "heist", { state = "carrying", name = "Vex's Blueprints" })
+	for _, g in guards do
+		if now() >= g.stunUntil then chase(g, player) end
 	end
 end
 
@@ -978,6 +1102,7 @@ function FactoryService.start()
 	pensModel.Name = "Pens"
 	pensModel.Parent = root
 	for i = 1, #PEN_XS do buildPen(pensModel, i) end
+	buildDesk(inside)
 	guardsFolder = Instance.new("Folder")
 	guardsFolder.Name = "Guards"
 	guardsFolder.Parent = root
@@ -989,6 +1114,7 @@ function FactoryService.start()
 			takeKid(player, i)
 		end)
 	end
+	desk.prompt.Triggered:Connect(takePlans)
 	for i = 1, H.guards do
 		local g = makeGuard(ROUTES[(i - 1) % #ROUTES + 1])
 		table.insert(guards, g)
@@ -1051,6 +1177,33 @@ function FactoryService.tutorialCapture(player)
 	FactoryService.refresh()
 end
 
+-- a mission's kid (MissionService), waiting in a pen with a star on it
+function FactoryService.storyCapture(player, missionId, kidId)
+	local p = Data.get(player)
+	if not p or not Config.StudentById[kidId] then return end
+	p.captured = p.captured or {}
+	for _, c in p.captured do
+		if c.story == missionId then
+			FactoryService.refresh()
+			return
+		end
+	end
+	table.insert(p.captured, 1, { id = kidId, grade = "Normal", story = missionId })
+	FactoryService.refresh()
+end
+
+-- the blueprints glow on the desk while anyone is on that mission
+function FactoryService.storyItem(player, missionId)
+	if desk and desk.mission == missionId then desk.glow.Enabled = true end
+end
+function FactoryService.storyItemDone()
+	if not desk then return end
+	for _, pl in Players:GetPlayers() do
+		if pl:GetAttribute("Mission") == desk.mission then return end
+	end
+	desk.glow.Enabled = false
+end
+
 -- Studio
 function FactoryService.debugState()
 	local out = { pens = {}, guards = {}, heists = {} }
@@ -1063,6 +1216,10 @@ function FactoryService.debugState()
 	end
 	for player, hs in heists do out.heists[player.Name] = hs.def.name end
 	return out
+end
+function FactoryService.debugTakePlans(player)
+	takePlans(player)
+	return heists[player] ~= nil
 end
 function FactoryService.debugTake(player, i)
 	takeKid(player, i)

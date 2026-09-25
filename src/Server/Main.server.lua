@@ -33,6 +33,7 @@ local TicketService = require(Server.TicketService)
 local AlumniService = require(Server.AlumniService)
 local RaidService = require(Server.RaidService)
 local FactoryService = require(Server.FactoryService)
+local MissionService = require(Server.MissionService)
 
 Factory.preload()
 PlotService.start()
@@ -57,6 +58,7 @@ TicketService.start()
 AlumniService.start()
 RaidService.start()
 FactoryService.start()
+MissionService.start_service()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -234,6 +236,15 @@ require(Server.DebugBridge).start({
 	end,
 	factoryTake = function(player, i)
 		return FactoryService.debugTake(player, i)
+	end,
+	mission = function(player, id)
+		return MissionService.debugStart(player, id)
+	end,
+	missionState = function(player)
+		return MissionService.debugState(player)
+	end,
+	runnerHit = function(player)
+		return MissionService.debugHitRunner(player)
 	end,
 	-- send one of your seated kids straight to the Factory, as if a goon got away with them
 	capture = function(player, slot)

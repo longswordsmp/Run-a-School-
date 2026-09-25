@@ -232,6 +232,12 @@ end)
 -- desk prompts: the owner sees Sell, everyone else sees Steal
 local function fixPrompt(prompt)
 	if not prompt:IsA("ProximityPrompt") then return end
+	-- a mission's own prompt (Vex's desk): only while you're on that mission
+	local mission = prompt:GetAttribute("MissionOnly")
+	if mission then
+		prompt.Enabled = player:GetAttribute("Mission") == mission
+		return
+	end
 	local owner = prompt:FindFirstAncestorOfClass("Model")
 	while owner and owner:GetAttribute("OwnerId") == nil do
 		owner = owner:FindFirstAncestorOfClass("Model")
@@ -262,6 +268,11 @@ task.spawn(function()
 	end
 	fac.DescendantAdded:Connect(watch)
 	for _, d in fac:GetDescendants() do watch(d) end
+	player:GetAttributeChangedSignal("Mission"):Connect(function()
+		for _, d in fac:GetDescendants() do
+			if d:IsA("ProximityPrompt") and d:GetAttribute("MissionOnly") then fixPrompt(d) end
+		end
+	end)
 end)
 -- a plot changing hands re-checks its prompts (the lock button's prompt is made only once)
 local function hookPlot(plot)

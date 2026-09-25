@@ -55,6 +55,8 @@ local function stepText(step)
 		return ("Own %d %s kids at once"):format(step.n, step.rarity)
 	elseif step.kind == "builds" then
 		return ("Own %d School Builder items"):format(step.n)
+	elseif step.kind == "mission" then
+		return "Mission: " .. Config.Missions[step.id].title
 	end
 	return "?"
 end
@@ -69,6 +71,7 @@ local function guideOf(step)
 	if step.kind == "supply" or step.kind == "iq" then return "shop:1" end
 	if step.kind == "hire" then return "shop:2" end
 	if step.kind == "build" or step.kind == "builds" then return "shop:3" end
+	if step.kind == "mission" then return "npc:Wobblesworth" end
 	return nil
 end
 
@@ -109,6 +112,8 @@ local function owns(p, step)
 			if Config.BuildById[id] then n += 1 end
 		end
 		return n >= step.n
+	elseif step.kind == "mission" then
+		return p.missions ~= nil and p.missions[step.id] == true
 	end
 	return false
 end
@@ -122,7 +127,9 @@ end
 local function rewardOf(player, n, i)
 	local tier = Config.ChapterTier(n)
 	local nxt = Config.Tiers[math.min(tier + 1, #Config.Tiers)]
-	return math.floor(nxt.cash * Config.ChapterPct)
+	local step = Config.Chapters[n] and Config.Chapters[n].steps[i]
+	local mult = step and step.kind == "mission" and Config.MissionRewardMult or 1
+	return math.floor(nxt.cash * Config.ChapterPct * mult)
 end
 
 function ChapterService.state(player)
@@ -141,6 +148,7 @@ function ChapterService.state(player)
 			reward = rewardOf(player, c.n, i),
 			candy = Config.ChapterCandy[i],
 			guide = guideOf(step),
+			mission = step.kind == "mission" or nil,
 		}
 	end
 	steps[STEPS] = { text = boardText(c.n), done = c.done[STEPS], guide = "panel:Board", board = true }
@@ -276,7 +284,7 @@ function ChapterService.start()
 		end
 	end
 	-- anything that can change what you own, your tier, or finish the tutorial
-	for _, name in { "supply", "hire", "build", "enroll", "review", "questDone", "sell" } do
+	for _, name in { "supply", "hire", "build", "enroll", "review", "questDone", "sell", "missionWon" } do
 		Signals.on(name, function(player)
 			if typeof(player) == "Instance" and player:IsA("Player") then
 				task.defer(evaluate, player)

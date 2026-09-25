@@ -433,14 +433,14 @@ Config.Chapters = {
 			{ kind = "hire", id = "MrChalk" },
 			{ kind = "build", id = "Playground" },
 			{ kind = "iq", n = 150 },
-			{ kind = "count", signal = "busEnroll", arg = "LateBus", count = 1, text = "Enroll a kid off the Late Bus" },
+			{ kind = "mission", id = "crumpets_crew" },
 		} },
 	{ title = "Lockers and Lies", host = "Janitor Stan", letter = "Rare",
 		line = "Middle schoolers. They cheat, they sneak candy, they lose their shoes. Stay sharp.",
 		steps = {
 			{ kind = "build", id = "MascotLockers" },
 			{ kind = "hire", id = "MsHoneycutt" },
-			{ kind = "count", signal = "bustDealer", count = 10, text = "Bust 10 Snack Smugglers" },
+			{ kind = "mission", id = "sugar_run" },
 			{ kind = "count", signal = "eagleEye", count = 1, text = "Make an EAGLE EYE catch" },
 		} },
 	{ title = "Friday Night Lights", host = "Hall Monitor Hector", letter = "Epic",
@@ -448,7 +448,7 @@ Config.Chapters = {
 		steps = {
 			{ kind = "build", id = "Bleachers" },
 			{ kind = "hire", id = "CoachRex" },
-			{ kind = "count", signal = "busEnroll", arg = "HonorBus", count = 1, text = "Enroll a kid off the Honor Roll Bus" },
+			{ kind = "mission", id = "free_the_mascot" },
 			{ kind = "own", rarity = "Legendary", n = 1 },
 		} },
 	{ title = "Blazers Required", host = "Wobblesworth", letter = "Epic",
@@ -457,14 +457,14 @@ Config.Chapters = {
 			{ kind = "build", id = "ArchedWindows" },
 			{ kind = "hire", id = "DrBeaker" },
 			{ kind = "supply", id = "Laptops" },
-			{ kind = "own", rarity = "Legendary", n = 2 },
+			{ kind = "mission", id = "surprise_inspection" },
 		} },
 	{ title = "Vex Makes an Offer", host = "Dr. Veronica Vex", letter = "Legendary",
 		line = "A fountain? How quaint. I'll be draining it when I buy this place.",
 		steps = {
 			{ kind = "build", id = "Fountain" },
 			{ kind = "hire", id = "MadameVerse" },
-			{ kind = "supply", id = "Tablets" },
+			{ kind = "mission", id = "vex_blueprints" },
 			{ kind = "own", rarity = "Mythic", n = 1 },
 		} },
 	{ title = "Campus Life", host = "Lunch Lady Loretta", letter = "Legendary",
@@ -473,13 +473,13 @@ Config.Chapters = {
 			{ kind = "build", id = "Statue" },
 			{ kind = "hire", id = "ProfTweed" },
 			{ kind = "supply", id = "Smartboards" },
-			{ kind = "count", signal = "quizRight", count = 5, text = "Answer 5 Pop Quizzes right" },
+			{ kind = "mission", id = "recipe_chase" },
 		} },
 	{ title = "Iron and Glass", host = "Janitor Stan", letter = "Legendary",
 		line = "University. The statue blinked at me last night. I'm not joking.",
 		steps = {
 			{ kind = "build", id = "StainedGlass" },
-			{ kind = "build", id = "IronFence" },
+			{ kind = "mission", id = "night_raid" },
 			{ kind = "hire", id = "DeanMaximus" },
 			{ kind = "supply", id = "VRHeadsets" },
 		} },
@@ -488,7 +488,7 @@ Config.Chapters = {
 		steps = {
 			{ kind = "build", id = "SolarPanels" },
 			{ kind = "supply", id = "RobotTutors" },
-			{ kind = "count", signal = "catchCheater", count = 40, text = "Catch 40 cheaters" },
+			{ kind = "mission", id = "unmask_baron" },
 			{ kind = "own", rarity = "Mythic", n = 3 },
 		} },
 	{ title = "The Bell Tolls", host = "Archmage Quill", letter = "Mythic",
@@ -496,7 +496,7 @@ Config.Chapters = {
 		steps = {
 			{ kind = "build", id = "BellTower" },
 			{ kind = "hire", id = "ArchmageQuill" },
-			{ kind = "supply", id = "HoloDesks" },
+			{ kind = "mission", id = "the_vault" },
 			{ kind = "own", rarity = "Prodigy", n = 1 },
 		} },
 	{ title = "Countdown", host = "Otis", letter = "Prodigy",
@@ -504,7 +504,7 @@ Config.Chapters = {
 		steps = {
 			{ kind = "hire", id = "CommanderNova" },
 			{ kind = "supply", id = "QuantumPCs" },
-			{ kind = "count", signal = "bustDealer", count = 50, text = "Bust 50 Snack Smugglers" },
+			{ kind = "mission", id = "machine_wakes" },
 			{ kind = "own", rarity = "Prodigy", n = 2 },
 		} },
 	{ title = "Every School at Once", host = "Everyone", letter = "Prodigy",
@@ -512,10 +512,108 @@ Config.Chapters = {
 		steps = {
 			{ kind = "hire", id = "Omniteacher" },
 			{ kind = "supply", id = "ThinkingCaps" },
-			{ kind = "builds", n = 20 },
+			{ kind = "mission", id = "final_stand" },
 			{ kind = "own", rarity = "Secret", n = 1 },
 		} },
 }
+-- Missions (MissionService): the playable story, one per chapter. Mr. Wobblesworth at the Hub fountain
+-- hands them out ("!" over his head when you have one); talk to him to hear it and start.
+--   defend: a VexCorp crew raids your school; knock them all out before any gets away with a kid
+--   chase:  someone runs off down Recess Row; bonk them hp times before they reach the end
+--   heist:  a story kid (kid) or Vex's blueprints (item) sit in the VexCorp Factory; get them out
+-- lines: { speaker, portrait template id, text }
+Config.Missions = {
+	crumpets_crew = { title = "Crumpet's Crew", kind = "defend", goons = 3, hp = 1,
+		lines = {
+			{ "MR. WOBBLESWORTH", "Wobblesworth", "Principal! Vex has hired a whole crew of goons, and they're on their way to your school!" },
+			{ "MR. WOBBLESWORTH", "Wobblesworth", "Get back there and knock out all three. Don't let a single one get away with a child!" },
+		},
+		objective = "Knock out all 3 goons at your school",
+		win = "Three goons down! Back in MY day we had ONE goon, and we SHARED him!" },
+	sugar_run = { title = "The Sugar Run", kind = "chase", runner = "courier", hp = 3, route = "factory_to_shack",
+		lines = {
+			{ "JANITOR STAN", "Stan", "Psst. See the courier sneaking out of VexCorp? That sack is full of smuggled candy." },
+			{ "JANITOR STAN", "Stan", "He's making for the Sugar Shack. Catch him and bonk him three times before he gets there." },
+		},
+		objective = "Bonk the candy courier 3 times before he reaches the Sugar Shack",
+		win = "Candy everywhere. I'll get the big broom." },
+	free_the_mascot = { title = "Free the Mascot", kind = "heist", kid = "SchoolMascot",
+		lines = {
+			{ "MR. WOBBLESWORTH", "Wobblesworth", "Dreadful news! Vex has kidnapped the School Mascot for a VexCorp commercial!" },
+			{ "MR. WOBBLESWORTH", "Wobblesworth", "Sneak into the Factory and bring the Mascot out. The guards are awake this time, mind!" },
+		},
+		objective = "Get the School Mascot out of the VexCorp Factory",
+		win = "The Mascot is free, and wants to join YOUR school!" },
+	surprise_inspection = { title = "Surprise Inspection", kind = "defend", goons = 4, hp = 2,
+		lines = {
+			{ "THE BOARD CHAIR", "DeanMaximus", "Principal, the Board has learned Vex is sending 'inspectors'. They are goons in clipboards." },
+			{ "THE BOARD CHAIR", "DeanMaximus", "Four of them, and tougher than before. Knock them all out. The Board is watching." },
+		},
+		objective = "Knock out all 4 inspectors at your school",
+		win = "Motion to keep your school... APPROVED!" },
+	vex_blueprints = { title = "Vex's Blueprints", kind = "heist", item = "Blueprints",
+		lines = {
+			{ "MR. WOBBLESWORTH", "Wobblesworth", "Vex left her plans on her desk, at the back of the Factory. The plans for the HOMEWORK MACHINE!" },
+			{ "MR. WOBBLESWORTH", "Wobblesworth", "Steal them and bring them out. Whatever she's building, we need to know." },
+		},
+		objective = "Steal the blueprints from Vex's desk and get out of the Factory",
+		win = "A machine that makes homework... forever? Oh dear. Oh dear, oh dear." },
+	recipe_chase = { title = "The Secret Recipe", kind = "chase", runner = "crumpet", hp = 4, route = "hub_to_bus",
+		lines = {
+			{ "LUNCH LADY LORETTA", "Loretta", "That BUTLER just swiped my secret mystery meat recipe! Forty years in the making!" },
+			{ "LUNCH LADY LORETTA", "Loretta", "He's running for the bus stop. Bonk him four times, sweetie, and bring it back!" },
+		},
+		objective = "Bonk Crumpet 4 times before he reaches the bus stop",
+		win = "My recipe! Eat your veggies, sweetie. And your mystery meat." },
+	night_raid = { title = "Night Raid", kind = "defend", goons = 5, hp = 2,
+		lines = {
+			{ "JANITOR STAN", "Stan", "I've seen things under those bleachers, kid. Tonight I saw five goons in a van." },
+			{ "JANITOR STAN", "Stan", "They're coming for your school. Knock out every last one." },
+		},
+		objective = "Knock out all 5 goons at your school",
+		win = "Five goons. Not bad, kid. Not bad at all." },
+	unmask_baron = { title = "Unmask the Sugar Baron", kind = "chase", runner = "baron", hp = 6, route = "shack_to_hub",
+		lines = {
+			{ "JANITOR STAN", "Stan", "The Sugar Baron himself just jumped off the Sugar Shack roof. He's running!" },
+			{ "JANITOR STAN", "Stan", "Bonk him six times and we'll finally see who's under that cake hat." },
+		},
+		objective = "Bonk the Sugar Baron 6 times before he gets away",
+		win = "It's KEVIN?! 'I just wanted a WATERSLIDE!'" },
+	the_vault = { title = "The Vault", kind = "heist", kid = "TinyProfessor",
+		lines = {
+			{ "MR. WOBBLESWORTH", "Wobblesworth", "Vex has locked the Tiny Professor in her Factory. She wants his brain for the Homework Machine!" },
+			{ "MR. WOBBLESWORTH", "Wobblesworth", "Get him out, Principal. Quickly now!" },
+		},
+		objective = "Get the Tiny Professor out of the VexCorp Factory",
+		win = "The Professor is safe, and he'd like a desk at your school." },
+	machine_wakes = { title = "The Machine Wakes", kind = "defend", goons = 6, hp = 3,
+		lines = {
+			{ "OTIS", "Otis", "Forty years driving this street. Never seen a van that big. Six goons, and they look mean." },
+			{ "OTIS", "Otis", "Knock 'em all out, Principal. Doors closin'." },
+		},
+		objective = "Knock out all 6 goons at your school",
+		win = "Next stop: wherever. Good work." },
+	final_stand = { title = "The Final Stand", kind = "defend", goons = 8, hp = 3,
+		lines = {
+			{ "DR. VERONICA VEX", "Vex", "Tick tock, Principal. Eight of my finest are on their way to your little school." },
+			{ "DR. VERONICA VEX", "Vex", "When they're done, the Multiverse is MINE. Recess is cancelled. Forever." },
+		},
+		objective = "Knock out all 8 of Vex's finest at your school",
+		win = "No... NO! This isn't over, Principal!" },
+}
+-- the chase routes (world waypoints, ground level)
+Config.ChaseRoutes = {
+	factory_to_shack = { Vector3.new(0, 0, 30), Vector3.new(20, 0, 24), Vector3.new(80, 0, 22), Vector3.new(140, 0, 22), Vector3.new(190, 0, 26), Vector3.new(190, 0, 52) },
+	hub_to_bus = { Vector3.new(-14, 0, -64), Vector3.new(-14, 0, -40), Vector3.new(-40, 0, -24), Vector3.new(-100, 0, -22), Vector3.new(-170, 0, -22), Vector3.new(-240, 0, -22), Vector3.new(-318, 0, -18) },
+	shack_to_hub = { Vector3.new(190, 0, 60), Vector3.new(190, 0, 26), Vector3.new(150, 0, 22), Vector3.new(100, 0, -22), Vector3.new(40, 0, -24), Vector3.new(0, 0, -44), Vector3.new(-40, 0, -24), Vector3.new(-110, 0, 22), Vector3.new(-160, 0, 22), Vector3.new(-190, 0, 60) },
+}
+Config.ChaseRunners = {
+	courier = { id = "VexGoon", name = "Candy Courier", title = "VexCorp", mult = 1, outfit = "goon", speed = 15, dash = 22 },
+	crumpet = { id = "Crumpet", name = "Crumpet", title = "Butler", mult = 1, outfit = "butler", speed = 15.5, dash = 23 },
+	baron = { id = "Baron", name = "The Sugar Baron", title = "???", mult = 1, outfit = "baron", speed = 15.5, dash = 24 },
+}
+Config.MissionRewardMult = 3 -- a mission step pays this many times a normal chapter request
+
 -- chapter i is played at tier i + 1
 Config.ChapterTier = function(i) return i + 1 end
 Config.ChapterPct = 0.01

@@ -167,6 +167,9 @@ local function wobblesworth(spot)
 					npc.bubble.Enabled = true
 					task.delay(4, function() npc.bubble.Enabled = false end)
 					task.wait(5)
+				elseif (m:GetAttribute("QuietUntil") or 0) > os.clock() then
+					npc.bubble.Enabled = false -- (he's talking someone through a mission)
+					task.wait(1)
 				else
 					say(npc, LINES.Wobblesworth)
 					if math.random() < 0.4 then Factory.emote(m, math.random() < 0.5 and "point" or "laugh") end

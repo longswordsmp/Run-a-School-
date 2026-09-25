@@ -105,9 +105,50 @@ local function myPlot()
 end
 
 -- where the current step wants you to go (nil = it happens in a menu)
+local function missionTarget()
+	local id = player:GetAttribute("Mission")
+	local def = id and Config.Missions[id]
+	if def then
+		if def.kind == "defend" then
+			if player:GetAttribute("Raid") then return nil, "thief" end
+			local plot = myPlot()
+			local entry = plot and plot:FindFirstChild("Entry")
+			return entry and entry.Position + Vector3.new(0, 3, 0) or nil
+		end
+		if def.kind == "chase" then
+			local folder = workspace:FindFirstChild("Runners")
+			for _, m in folder and folder:GetChildren() or {} do
+				if m:GetAttribute("Runner") == player.UserId and m.PrimaryPart then
+					return m.PrimaryPart.Position + Vector3.new(0, 4, 0)
+				end
+			end
+			return nil
+		end
+		if def.item and not player:GetAttribute("Heist") then
+			local fac = workspace:FindFirstChild("VexFactory")
+			local desk = fac and fac:FindFirstChild("VexDesk", true)
+			local spot = desk and desk:FindFirstChild("PromptSpot")
+			return spot and spot.Position + Vector3.new(0, 2, 0) or Vector3.new(0, 5, 34)
+		end
+		return nil, "factory"
+	end
+	if player:GetAttribute("MissionReady") and not player:GetAttribute("Talking") then
+		-- (the "!" over his head marks him; the beam leads the way)
+		local story = workspace:FindFirstChild("StoryNPCs")
+		local wob = story and story:FindFirstChild("Wobblesworth")
+		return wob and wob.PrimaryPart and wob.PrimaryPart.Position + Vector3.new(0, 4.5, 0) or nil, nil, true
+	end
+	return nil
+end
+
+local noArrow = false
 local function worldTarget()
-	if not state or not state.guide then return nil end
-	local g = state.guide
+	local mpos, mguide, beamOnly = missionTarget()
+	noArrow = beamOnly == true
+	if player:GetAttribute("Talking") then return nil end
+	if mpos then return mpos end
+	if not mguide and (not state or not state.guide) then return nil end
+	local g = mguide or state.guide
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if g == "carpet" then
 		local hall = workspace:FindFirstChild("Hall")
@@ -242,7 +283,7 @@ RunService.RenderStepped:Connect(function(dt)
 				w.CFrame = CFrame.new(top) * spin * CFrame.new(0, -0.8, s * 0.55) * CFrame.Angles(math.rad(180), s > 0 and 0 or math.pi, 0)
 			end
 		end
-		for _, p in arrow:GetChildren() do p.Transparency = 0 end
+		for _, p in arrow:GetChildren() do p.Transparency = noArrow and 1 or 0 end
 	else
 		beam.Enabled = false
 		for _, p in arrow:GetChildren() do p.Transparency = 1 end
