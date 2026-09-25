@@ -85,7 +85,7 @@ local function onPlayer(player)
 		task.delay(2.5, function()
 			if not player.Parent then return end
 			Remotes.Cutscene:FireClient(player, "Intro", { name = PlotService.schoolName(player) })
-			task.wait(14)
+			task.wait(7)
 			task.spawn(HallService.specialBus, "Welcome")
 		end)
 	end

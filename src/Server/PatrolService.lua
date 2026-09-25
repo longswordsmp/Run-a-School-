@@ -251,6 +251,10 @@ local function startCheating(player, forceSlot)
 	local model = PlotService.seatedModel(plot, slot)
 	local def = Config.StudentById[e.id]
 	e.cheating = true
+	if not p.hintCheat then
+		p.hintCheat = true
+		Remotes.Notify:FireClient(player, ("\u{1F4DD} %s is CHEATING! Walk up to them and hold E to send them to the office."):format(def.name), "steal")
+	end
 	PlotService.updateIncome(player)
 	local info = { e = e, started = now(), parts = {} }
 	s.cheating[slot] = info
@@ -440,7 +444,13 @@ local function sendDealer(player, s, scripted)
 	Factory.play(model, "walk")
 	local d = { model = model, def = def, slot = slot, plot = plot, path = pts, started = now() }
 	s.dealer = d
-	Remotes.Notify:FireClient(player, ("\u{1F6A8} %s snuck into your school! Bust them!"):format(def.name), "steal")
+	local pp = Data.get(player)
+	local how = ""
+	if pp and not pp.hintDeal then
+		pp.hintDeal = true
+		how = " Hold E on them or bonk them with your Ruler."
+	end
+	Remotes.Notify:FireClient(player, ("\u{1F6A8} %s snuck into your school! Bust them!%s"):format(def.name, how), "steal")
 	Remotes.Sfx:FireClient(player, "StingSitcom")
 	Walkers.walk(model, pts, 8, function()
 		if s.dealer ~= d or d.leaving then return end
@@ -477,15 +487,10 @@ function PatrolService.start()
 		return m
 	end)
 
-	-- the tutorial's scripted moments
+	-- the tutorial's scripted moment: Crumpet raids your school
 	Signals.on("questStep", function(player, id)
-		local s = st(player)
-		if id == "catch" then
-			pcall(startCheating, player)
-		elseif id == "bonk" then
+		if id == "bonk" then
 			task.delay(2, function() pcall(require(script.Parent.RaidService).tutorialRaid, player) end)
-		elseif id == "bust" then
-			pcall(sendDealer, player, s, true)
 		end
 	end)
 
@@ -549,13 +554,13 @@ function PatrolService.start()
 					s.nextCheat = math.max(s.nextCheat, t + 5)
 					s.nextDeal = math.max(s.nextDeal, t + 5)
 				end
-				-- random cheaters once the tutorial has taught catching, smugglers once it taught busting
-				if active and (p.tutorial or 1) >= 4 then
+				-- random cheaters and smugglers once the tutorial is over (each explained the first time)
+				if active and (p.tutorial or 1) > #Config.Tutorial then
 					if t >= s.nextCheat then
 						s.nextCheat = t + math.random(CHEAT_EVERY[1], CHEAT_EVERY[2])
 						pcall(startCheating, player)
 					end
-					if t >= s.nextDeal and (p.tutorial or 1) >= 11 then
+					if t >= s.nextDeal then
 						s.nextDeal = t + math.random(DEAL_EVERY[1], DEAL_EVERY[2])
 						pcall(sendDealer, player, s)
 					end

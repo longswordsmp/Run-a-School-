@@ -49,14 +49,17 @@ local bannerText = UI.label(banner, { Text = "", Font = UI.BIG, Size = UDim2.new
 local function goonsLeft()
 	local plot = player:GetAttribute("Plot")
 	local folder = workspace:FindFirstChild("Raids")
-	local n, carrying = 0, 0
+	local n, carrying, crumpet = 0, 0, false
 	for _, m in folder and folder:GetChildren() or {} do
 		if m:GetAttribute("RaidGoon") and m:GetAttribute("PlotName") == plot then
 			n += 1
-			if m:GetAttribute("Carrying") then carrying += 1 end
+			if m:GetAttribute("Carrying") then
+				carrying += 1
+				if m.Name == "Crumpet" then crumpet = true end
+			end
 		end
 	end
-	return n, carrying
+	return n, carrying, crumpet
 end
 
 local raidOn = false
@@ -65,9 +68,10 @@ task.spawn(function()
 	while true do
 		task.wait(0.25)
 		if raidOn then
-			local n, carrying = goonsLeft()
+			local n, carrying, crumpet = goonsLeft()
 			if carrying > 0 then
-				bannerText.Text = carrying == 1 and "\u{1F6A8} A GOON HAS YOUR KID! BONK HIM!" or ("\u{1F6A8} %d GOONS HAVE YOUR KIDS!"):format(carrying)
+				bannerText.Text = crumpet and "\u{1F3A9} CRUMPET HAS YOUR KID! BONK HIM!"
+					or carrying == 1 and "\u{1F6A8} A GOON HAS YOUR KID! BONK HIM!" or ("\u{1F6A8} %d GOONS HAVE YOUR KIDS!"):format(carrying)
 				local pulse = 0.5 + 0.5 * math.sin(os.clock() * 8)
 				banner.Size = UDim2.fromOffset(420 + pulse * 12, 46 + pulse * 3)
 			elseif n > 0 then

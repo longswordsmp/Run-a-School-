@@ -146,6 +146,17 @@ local function worldTarget()
 			end
 		end
 		return bestPad and bestPad.Position + Vector3.new(0, 1.5, 0) or nil
+	elseif g == "factory" then
+		local fac = workspace:FindFirstChild("VexFactory")
+		if player:GetAttribute("Heist") then return Vector3.new(0, 5, 30) end
+		local pens = fac and fac:FindFirstChild("Pens")
+		for _, pen in pens and pens:GetChildren() or {} do
+			if pen:GetAttribute("OwnerId") == player.UserId then
+				local spot = pen:FindFirstChild("PromptSpot")
+				if spot then return spot.Position + Vector3.new(0, 2, 0) end
+			end
+		end
+		return Vector3.new(0, 5, 34)
 	elseif g == "thief" then
 		local raids = workspace:FindFirstChild("Raids")
 		local best, bestScore

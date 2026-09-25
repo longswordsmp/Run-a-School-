@@ -40,6 +40,14 @@ local stunUntil = {} -- [player] = os.clock() they can move again after being th
 
 local function now() return os.clock() end
 
+-- the tutorial's rescue: the guards don't spot you, and once you grab the kid only the nearest one
+-- comes after you, slower than you can run
+local function lenient(player)
+	local p = Data.get(player)
+	local step = p and p.tutorial and Config.Tutorial[p.tutorial]
+	return step ~= nil and step.id == "rescue"
+end
+
 ---------------------------------------------------------------------------
 -- building
 ---------------------------------------------------------------------------
@@ -563,6 +571,7 @@ end
 local function patrol(g)
 	g.state = "patrol"
 	g.target = nil
+	g.slow = nil
 	guardTag(g, "")
 	Factory.play(g.model, "walk")
 	local function nextLeg()
@@ -581,14 +590,16 @@ local function patrol(g)
 	Walkers.walk(g.model, { g.route[best] }, H.patrolSpeed, nextLeg, { flat = true })
 end
 
-local function chase(g, player)
+-- a guard who spots you (or hears the alarm) shows a "!" and takes a moment before he runs
+local function chase(g, player, reaction)
 	if g.state == "chase" and g.target == player then return end
 	Walkers.stop(g.model)
 	g.state = "chase"
 	g.target = player
 	g.seenAt = now()
+	g.reactUntil = now() + (reaction or H.reaction)
 	guardTag(g, "!", rgb(255, 70, 70))
-	Factory.play(g.model, "run")
+	Factory.play(g.model, "idle")
 end
 
 local function canSee(g, char)
@@ -775,9 +786,23 @@ local function takeKid(player, i)
 	setCarrySpeed(player, true)
 	alarm(true)
 	Remotes.Push:FireClient(player, "heist", { state = "carrying", name = shown })
-	-- every guard comes running
-	for _, g in guards do
-		if now() >= g.stunUntil then chase(g, player) end
+	-- every guard comes running (a first-timer only gets the farthest one, and he's slow)
+	if lenient(player) then
+		local best, bestD
+		for _, g in guards do
+			local r = g.model.PrimaryPart
+			local d = r and (r.Position - proot.Position).Magnitude or 0
+			if not best or d > bestD then best, bestD = g, d end
+		end
+		if best then
+			chase(best, player, 1.5)
+			best.slow = true
+		end
+		Remotes.Notify:FireClient(player, "A guard heard you! Run for the gate (bonk him if he gets close).", "steal")
+	else
+		for _, g in guards do
+			if now() >= g.stunUntil then chase(g, player) end
+		end
 	end
 end
 
@@ -837,7 +862,7 @@ local function tick(dt)
 			for _, player in Players:GetPlayers() do
 				local char = player.Character
 				local proot = char and char:FindFirstChild("HumanoidRootPart")
-				if proot and inBuilding(proot.Position) and (stunUntil[player] or 0) <= now() and canSee(g, char) then
+				if proot and inBuilding(proot.Position) and (stunUntil[player] or 0) <= now() and not lenient(player) and canSee(g, char) then
 					chase(g, player)
 					break
 				end
@@ -858,15 +883,23 @@ local function tick(dt)
 				patrol(g)
 				continue
 			end
-			-- run straight at them, but never out of the building
+			-- run straight at them, but never out of the building (after the moment to react)
 			local d = proot.Position - root.Position
 			local flat = Vector3.new(d.X, 0, d.Z)
+			if g.reactUntil and now() < g.reactUntil then
+				if flat.Magnitude > 1e-3 then root.CFrame = CFrame.lookAt(root.Position, root.Position + flat.Unit) end
+				continue
+			end
+			if g.reactUntil then
+				g.reactUntil = nil
+				Factory.play(g.model, "run")
+			end
 			if flat.Magnitude < H.catchRange then
 				thrownOut(player)
 				patrol(g)
 				continue
 			end
-			local speed = carrying and H.chaseSpeedCarry or H.chaseSpeed
+			local speed = carrying and (g.slow and H.tutorialChase or H.chaseSpeedCarry) or H.chaseSpeed
 			local step = math.min(flat.Magnitude, speed * dt)
 			local np = root.Position + flat.Unit * step
 			np = Vector3.new(math.clamp(np.X, B.x0 + 2, B.x1 - 2), 0.55 + g.so, math.clamp(np.Z, B.z0 + 2, B.z1 - 2))
@@ -927,6 +960,9 @@ function FactoryService.start()
 	end)
 	-- the pens follow the captured lists
 	Signals.on("kidCaptured", function() task.defer(FactoryService.refresh) end)
+	Signals.on("questStep", function(player, id)
+		if id == "rescue" then FactoryService.tutorialCapture(player) end
+	end)
 	Players.PlayerAdded:Connect(function(player)
 		task.delay(6, FactoryService.refresh)
 		player.CharacterAdded:Connect(function()
@@ -948,6 +984,18 @@ function FactoryService.start()
 		end
 	end)
 	task.delay(3, FactoryService.refresh)
+end
+
+-- the tutorial: Skater Kid is waiting in a pen with your name on it
+function FactoryService.tutorialCapture(player)
+	local p = Data.get(player)
+	if not p then return end
+	p.captured = p.captured or {}
+	for _, c in p.captured do
+		if c.story == "rescue" then return end
+	end
+	table.insert(p.captured, 1, { id = "SkaterKid", grade = "Normal", story = "rescue" })
+	FactoryService.refresh()
 end
 
 -- Studio

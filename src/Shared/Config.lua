@@ -228,11 +228,8 @@ Config.FinaleLines = {
 }
 -- the Board Chair's welcome for a brand-new principal (the intro cutscene, and page 1 of the Scrapbook)
 Config.IntroLines = {
-	"Ahem! Welcome, new Principal!",
-	"This is your school. It has... zero students. ZERO. The Board is not impressed.",
-	"Kids step off the bus onto the red carpet. Enroll them before another school does!",
-	"Earn tuition, stock supplies, hire teachers... and maybe we'll make you an Elementary School.",
-	"Oh! Here comes the Welcome Bus. Go get 'em!",
+	"Welcome, Principal! Your school has... zero students. ZERO.",
+	"Kids step off the bus onto the red carpet. Grab them before the other schools do!",
 }
 -- after the last tier, each Prestige star costs the previous requirement x3 and adds +10 %
 Config.PrestigeStep = { cashMult = 3, bonus = 0.1 }
@@ -390,26 +387,20 @@ for i, b in Config.Builds do
 end
 
 ---------------------------------------------------------------------------
--- the Principal's To-Do: the first-session tutorial chain, then repeating goals
--- guide: "carpet" | "pad" | "lock" | "shop:<tab>" | "panel:<name>" (what the arrow points at)
+-- The first session: nine steps, action from minute two. Scripted moments start on questStep:
+-- bonk -> Crumpet raids your school (RaidService.tutorialRaid), rescue -> Skater Kid is waiting
+-- in a VexCorp Factory pen and the guards go easy on you (FactoryService).
 ---------------------------------------------------------------------------
--- steps with a scripted moment (QuestService fires "questStep" when one starts): catch -> a cheater
--- appears, bonk -> Crumpet steals a kid, scholarship -> the Rare letter is ready, bust -> a smuggler
 Config.Tutorial = {
-	{ id = "enroll1", text = "Enroll a kid off the Welcome Bus", signal = "enroll", count = 1, reward = 40, guide = "carpet" },
+	{ id = "enroll1", text = "Enroll a kid off the Welcome Bus (walk up and press E)", signal = "enroll", count = 1, reward = 40, guide = "carpet" },
+	{ id = "collect", text = "Walk over the glowing pad to collect tuition", signal = "collect", count = 1, reward = 60, guide = "pad" },
 	{ id = "enroll4", text = "Fill 3 more desks", signal = "enroll", count = 3, reward = 80, guide = "carpet" },
-	{ id = "collect", text = "Walk over a glowing desk pad to collect tuition", signal = "collect", count = 1, reward = 60, guide = "pad" },
-	{ id = "catch", text = "A kid is CHEATING! Catch them (hold E)", signal = "catchCheater", count = 1, reward = 100, guide = "cheater" },
-	{ id = "pencils", text = "Buy Sharpened Pencils in the Shop", signal = "supply", count = 1, reward = 120, guide = "shop:1" },
 	{ id = "bonk", text = "Crumpet grabbed a kid! Chase him and click to bonk him with your Ruler", signal = "bonkSave", count = 1, reward = 150, guide = "thief" },
-	{ id = "lock", text = "Lock your laser gate (red button by the gate)", signal = "lock", count = 1, reward = 400, guide = "lock" },
-	{ id = "name", text = "Give your school a name", signal = "nameSchool", count = 1, reward = 300, guide = "panel:NameSchool" },
-	{ id = "scholarship", text = "A Scholarship student is waiting on your bench! Enroll them (free)", signal = "benchEnroll", count = 1, reward = 200, guide = "bench" },
+	{ id = "lock", text = "Vex will send more goons. Lock your gate (the red button) to keep them out", signal = "lock", count = 1, reward = 200, guide = "lock" },
+	{ id = "rescue", text = "Vex snatched Skater Kid on your first morning! Sneak into the VexCorp Factory and bring him home", signal = "rescued", count = 1, reward = 300, guide = "factory" },
+	{ id = "pencils", text = "Buy Sharpened Pencils in the Shop (smarter kids earn more)", signal = "supply", count = 1, reward = 120, guide = "shop:1" },
 	{ id = "hire", text = "Hire a teacher for Floor 1", signal = "hire", count = 1, reward = 250, guide = "shop:2" },
-	{ id = "bust", text = "A Snack Smuggler snuck in! BUST him (hold E or bonk)", signal = "bustDealer", count = 1, reward = 500, guide = "smuggler" },
-	{ id = "build", text = "Build something in the School Builder", signal = "build", count = 1, reward = 600, guide = "shop:3" },
-	{ id = "upgrade", text = "Buy an upgrade", signal = "upgrade", count = 1, reward = 2500, guide = "panel:Upgrades" },
-	{ id = "board", text = "Impress the School Board", signal = "review", count = 1, reward = 0, guide = "panel:Board" },
+	{ id = "board", text = "Impress the School Board: become an Elementary School", signal = "review", count = 1, reward = 0, guide = "panel:Board" },
 }
 -- after the tutorial: goals in rotation; reward = max(min, tuition per second x secs)
 Config.Goals = {
@@ -663,6 +654,8 @@ Config.Heist = {
 	hearRange = 5,
 	loseAfter = 3,
 	catchRange = 3.2,
+	tutorialChase = 10, -- the one guard who chases a first-timer (you carry at 12)
+	reaction = 0.7, -- seconds a guard stands and stares ("!") before he runs
 	caughtStun = 1.5,
 	guardStun = 3,
 	holdTime = 1.2,

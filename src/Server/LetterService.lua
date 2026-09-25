@@ -272,21 +272,6 @@ local function pocketMoney()
 end
 
 function LetterService.start()
-	Signals.on("questStep", function(player, id)
-		local p = Data.get(player)
-		if id == "scholarship" and p and p.scholarshipUsed then
-			-- they called it early: if the free kid isn't still waiting on the bench, make it free again
-			local waiting = false
-			for _, m in benches[player] or {} do
-				if m.Parent and m:GetAttribute("State") == "Hall" and m:GetAttribute("Free") then waiting = true end
-			end
-			if not waiting then p.scholarshipUsed = nil end
-		end
-		if id == "scholarship" and p and not p.scholarshipUsed then
-			letters(p).Rare = 0
-			sync(player, p)
-		end
-	end)
 	Players.PlayerRemoving:Connect(function(player)
 		local p = Data.get(player)
 		for _, m in benches[player] or {} do
