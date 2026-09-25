@@ -78,7 +78,23 @@ Scratch folder:
 `C:\Users\tomas\AppData\Local\Temp\claude\C--Users-tomas-dihcheeseclient\4a68965e-a4cf-4dc2-8c04-1f92af07e924\scratchpad\design3\`
 (`make.py` builds every variant).
 
-{{SIMTABLE}}
+| Row | Variant | Elementary | Middle | Prep | State Univ. | Wizard | Multiverse (min to max) |
+|---|---|---|---|---|---|---|---|
+| A | Today's Config (62 students, Honor Roll Bus) | 29.1 m | 1.87 h | 4.76 h | 18.1 h | 45.2 h | **99.6 h** (89.7 to 110.7) |
+| B | A + the 8 starters (section 4) | 26.9 m | 1.87 h | 4.47 h | 17.7 h | 46.2 h | 95.5 h (85.4 to 117.3) |
+| C | B + Admissions Letters, the free Scholarship at 4:20, the Principal's Pick, cheater rewards (stand-in) | 26.1 m | 1.70 h | 4.81 h | 21.5 h | 47.5 h | 99.5 h (84.6 to 114.3) |
+| D | C + the 8 new Builder items (section 8, +12 Rep) | 25.6 m | 1.63 h | 4.26 h | 17.6 h | 45.1 h | 95.8 h (81.5 to 109.6) |
+| E | D + the smuggler bust buff **as built today** (x2 on the whole school for 60 s, about +29 %) | 17.3 m | 1.21 h | 3.39 h | 13.7 h | 37.4 h | **79.9 h** (70.1 to 99.6) |
+| F | D + x2 on the whole school for 20 s (about +10 %) | 22.9 m | 1.38 h | 3.92 h | 15.7 h | 41.2 h | 88.7 h (77.8 to 102.6) |
+| **G** | **D + this doc's buff: x2 on the targeted row only, for 20 s** (the full package) | 25.2 m | 1.59 h | 4.45 h | 16.8 h | 41.9 h | **92.4 h** (80.5 to 110.4) |
+
+What the table shows:
+- Rows B to D each stay inside the baseline's seed range.
+- The whole package (G) moves the median 7 % faster (99.6 h to 92.4 h) **without touching any School
+  Board cash value**.
+- The one real problem is the smuggler buff as built (E). It removes 20 hours and brings Elementary down
+  to 17 minutes. Section 6 changes it.
+- If the strong player's median has to stay at 95 h or more, drop the row buff too (row D).
 
 How to read the table:
 - The sim player is strong: always online, always at the carpet, never robbed. Real players are

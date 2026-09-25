@@ -386,9 +386,10 @@ end
 ---------------------------------------------------------------------------
 -- income
 ---------------------------------------------------------------------------
--- is this seated entry earning right now? (not walking in, carried off, in detention or cheating)
+-- is this entry earning right now? (not walking in, carried off, or cheating; a kid in detention
+-- keeps paying tuition, so catching a cheater never costs you)
 function PlotService.earning(e)
-	return not (e.arriving or e.carried or e.away or e.cheating)
+	return not (e.arriving or e.carried or e.cheating)
 end
 
 function PlotService.tierMult(p)

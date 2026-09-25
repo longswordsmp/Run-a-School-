@@ -24,7 +24,9 @@ local Signals = require(script.Parent.Signals)
 
 local PatrolService = {}
 
-local CHEAT_EVERY = { 70, 130 }
+local CHEAT_EVERY = { 90, 150 }
+-- only strict teachers catch cheaters by themselves (the rest leave the fun to you)
+local STRICT = { MrChalk = true, MsHoneycutt = true, DeanMaximus = true, Omniteacher = true }
 local CHEAT_WINDOW = 40
 local TEACHER_CATCH_AFTER = 12
 local DETENTION = 20
@@ -47,7 +49,7 @@ end
 local function st(player)
 	local s = state[player]
 	if not s then
-		s = { nextCheat = now() + math.random(CHEAT_EVERY[1], CHEAT_EVERY[2]) * 0.6, nextDeal = now() + math.random(DEAL_EVERY[1], DEAL_EVERY[2]) * 0.7, cheating = {}, detention = {} }
+		s = { nextCheat = now() + math.random(CHEAT_EVERY[1], CHEAT_EVERY[2]) * 0.6, nextDeal = now() + math.random(DEAL_EVERY[1], DEAL_EVERY[2]) * 0.7, cheating = {}, detention = {}, lastMove = now() }
 		state[player] = s
 	end
 	return s
@@ -115,6 +117,7 @@ local function benchSeat(s)
 	return nil
 end
 
+-- by: the teacher's name when a strict teacher made the catch (half fee, no Reformed)
 function PatrolService.sendToOffice(player, slot, by)
 	local s = st(player)
 	local plot = PlotService.getPlot(player)
@@ -123,9 +126,14 @@ function PatrolService.sendToOffice(player, slot, by)
 	if not plot or not e or e.away then return end
 	local seat = benchSeat(s)
 	if not seat then return end
+	local info = s.cheating[slot]
+	local eagle = not by and info and now() - info.started < 10
 	endCheating(player, slot, s)
 	local def = Config.StudentById[e.id]
-	local fee = math.floor(PlotService.incomeOf(player, e, slot) * 30) + 5
+	-- the fee: 60 s of that kid's tuition, x1.5 for an Eagle Eye catch, half for a teacher's
+	local fee = math.floor(PlotService.incomeOf(player, e, slot) * 60 * (eagle and 1.5 or 1) * (by and 0.5 or 1)) + 5
+	p.stats.caught = (p.stats.caught or 0) + 1
+	if p.stats.caught == 1 then fee += 100 end
 	e.away = true
 	PlotService.detachModel(plot, slot)
 	PlotService.updateIncome(player)
@@ -143,7 +151,7 @@ function PatrolService.sendToOffice(player, slot, by)
 	s.detention[slot] = d
 	Data.addCash(player, fee)
 	Remotes.CashPop:FireClient(player, fee, model.PrimaryPart.Position)
-	Remotes.Notify:FireClient(player, (by and (by .. " caught ") or "You caught ") .. def.name .. " cheating! Detention fee +" .. Config.formatCash(fee), "good")
+	Remotes.Notify:FireClient(player, (by and (by .. " caught ") or (eagle and "EAGLE EYE! You caught " or "You caught ")) .. def.name .. " cheating! Detention fee +" .. Config.formatCash(fee), "good")
 	Remotes.Sfx:FireClient(player, "Bell")
 	Signals.fire("catchCheater", player, def)
 	Walkers.walk(model, pts, 10, function()
@@ -172,26 +180,53 @@ function PatrolService.sendToOffice(player, slot, by)
 			if s.detention[slot] == d then s.detention[slot] = nil end
 			if p.students[slot] == e and PlotService.getPlot(player) == plot then
 				e.away = nil
-				PlotService.place(player, slot)
+				if not by then e.reformedUntil = now() + 300 end
+				local seatedModel = PlotService.place(player, slot)
 				PlotService.updateIncome(player)
+				-- reformed: a halo for five minutes (+10 % tuition while it lasts)
+				if seatedModel and not by then
+					local head = seatedModel:FindFirstChild("Head")
+					if head then
+						local halo = Instance.new("Part")
+						halo.Name = "Halo"
+						halo.Shape = Enum.PartType.Cylinder
+						halo.Size = Vector3.new(0.12, head.Size.X * 1.1, head.Size.X * 1.1)
+						halo.Color = Color3.fromRGB(255, 240, 150)
+						halo.Material = Enum.Material.Neon
+						halo.CanCollide, halo.CanQuery, halo.CanTouch, halo.Massless = false, false, false, true
+						halo.CFrame = head.CFrame * CFrame.new(0, head.Size.Y * 0.95, 0) * CFrame.Angles(0, 0, math.rad(90))
+						local w = Instance.new("WeldConstraint")
+						w.Part0, w.Part1 = head, halo
+						w.Parent = halo
+						halo.Parent = seatedModel
+						game:GetService("Debris"):AddItem(halo, 300)
+					end
+				end
 			end
 		end, { flat = false })
 	end, { flat = false })
 end
 
-local function startCheating(player)
+local function startCheating(player, forceSlot)
 	local s = st(player)
 	local plot = PlotService.getPlot(player)
 	local p = Data.get(player)
 	if not plot or not p or not benchSeat(s) then return end
+	-- at most one cheater per floor
+	local busyFloor = {}
+	for slot in s.cheating do busyFloor[PlotService.slotFloor(slot)] = true end
 	local candidates = {}
 	for slot, e in p.students do
-		if PlotService.earning(e) and not s.cheating[slot] and PlotService.seatedModel(plot, slot) then
+		if PlotService.earning(e) and not e.away and not s.cheating[slot] and not busyFloor[PlotService.slotFloor(slot)] and PlotService.seatedModel(plot, slot) then
 			table.insert(candidates, slot)
 		end
 	end
-	if #candidates < 2 then return end
+	if #candidates < 2 and not forceSlot then return end
 	local slot = candidates[math.random(#candidates)]
+	if forceSlot then
+		if not table.find(candidates, forceSlot) then return end
+		slot = forceSlot
+	end
 	local e = p.students[slot]
 	local model = PlotService.seatedModel(plot, slot)
 	local def = Config.StudentById[e.id]
@@ -242,6 +277,10 @@ local function startCheating(player)
 	Signals.fire("cheatStart", player, def)
 end
 
+function PatrolService.startCheatingAt(player, slot)
+	startCheating(player, slot)
+end
+
 local function tickCheating(player, s)
 	local p = Data.get(player)
 	for slot, info in s.cheating do
@@ -250,19 +289,33 @@ local function tickCheating(player, s)
 		if age > TEACHER_CATCH_AFTER and p then
 			local t = p.teachers[PlotService.slotFloor(slot)]
 			local tdef = t and Config.TeacherById[t.id]
-			if tdef and tdef.mult >= 1.5 then
+			if tdef and STRICT[tdef.id] then
 				PatrolService.sendToOffice(player, slot, tdef.name)
 				continue
 			end
 		end
 		if age > CHEAT_WINDOW then
-			local def = Config.StudentById[info.e.id]
-			info.e.stored = 0
-			PlotService.updatePad(PlotService.getPlot(player), slot, 0)
+			-- missed: an F for two minutes (earns half), and the cheating spreads next door
+			local e = info.e
+			local def = Config.StudentById[e.id]
 			endCheating(player, slot, s)
+			e.failUntil = now() + 120
 			PlotService.updateIncome(player)
-			Remotes.Notify:FireClient(player, def.name .. " got away with cheating! Their desk cash is gone.", "bad")
+			local plot = PlotService.getPlot(player)
+			local model = plot and PlotService.seatedModel(plot, slot)
+			if model then
+				local f = tag(model, "FailTag", "F", Color3.fromRGB(255, 60, 60))
+				if f then game:GetService("Debris"):AddItem(f.Parent, 120) end
+			end
+			Remotes.Notify:FireClient(player, def.name .. " got away with cheating! F for 2 minutes, and it is spreading...", "bad")
 			Remotes.Sfx:FireClient(player, "Error")
+			for _, n in { slot - 1, slot + 1 } do
+				local ne = p and p.students[n]
+				if ne and PlotService.slotRow(n) == PlotService.slotRow(slot) and PlotService.slotFloor(n) == PlotService.slotFloor(slot) and PlotService.earning(ne) then
+					task.delay(3, function() pcall(PatrolService.startCheatingAt, player, n) end)
+					break
+				end
+			end
 		end
 	end
 end
@@ -286,18 +339,24 @@ local function dealerLeave(player, s, busted, by)
 	if busted then
 		if label then label.Text = "BUSTED!" end
 		local p = Data.get(player)
-		local until_ = workspace:GetServerTimeNow() + (d.def.kind == "candy" and 60 or 90)
+		local until_ = workspace:GetServerTimeNow() + (d.def.kind == "candy" and 20 or 60)
+		-- Confiscated Candy: the currency for Stan's Confiscation Closet
+		local candy = d.def.kind == "candy" and 8 or 12
+		if p then
+			p.candy = (p.candy or 0) + candy
+			player:SetAttribute("Candy", p.candy)
+		end
 		if d.def.kind == "candy" then
 			player:SetAttribute("SugarUntil", until_)
-			Remotes.Announce:FireClient(player, "SUGAR RUSH! TUITION x2 FOR 60s", Color3.fromRGB(255, 110, 190))
+			Remotes.Announce:FireClient(player, "SUGAR RUSH! TUITION x2 FOR 20s", Color3.fromRGB(255, 110, 190))
 		else
 			player:SetAttribute("SlimeUntil", until_)
 			if p then p.luckMult = 2 end
-			Remotes.Announce:FireClient(player, "SLIME TIME! LUCK x2 FOR 90s", Color3.fromRGB(110, 255, 130))
+			Remotes.Announce:FireClient(player, "SLIME TIME! LUCK x2 FOR 60s", Color3.fromRGB(110, 255, 130))
 		end
 		PlotService.updateIncome(player)
 		Remotes.Sfx:FireClient(player, "StingWhat")
-		Remotes.Notify:FireClient(player, ("%s busted %s! Goods confiscated."):format(by or "You", d.def.name), "good")
+		Remotes.Notify:FireClient(player, ("%s busted %s! Contraband confiscated: +%d candy"):format(by or "You", d.def.name, candy), "good")
 		if p then p.stats.busted = (p.stats.busted or 0) + 1 end
 		Signals.fire("bustDealer", player, d.def)
 	else
@@ -362,7 +421,7 @@ local function sendDealer(player, s)
 		d.dealing = true
 		d.started = now()
 		Factory.play(model, "idle")
-		if label then label.Text = def.kind == "candy" and "DEALING CANDY!" or "DEALING SLIME!" end
+		if label then label.Text = def.kind == "candy" and "SNEAKING CANDY!" or "SNEAKING SLIME!" end
 		PlotService.updateIncome(player)
 		local pp = prompt(model.PrimaryPart, "Bust!", Color3.fromRGB(255, 170, 40), 0.3)
 		pp.ObjectText = def.name
@@ -386,6 +445,9 @@ function PatrolService.start()
 		if (player:GetAttribute("SugarUntil") or 0) > workspace:GetServerTimeNow() then
 			m *= 2
 		end
+		local t = now()
+		if e.reformedUntil and e.reformedUntil > t then m *= 1.1 end
+		if e.failUntil and e.failUntil > t then m *= 0.5 end
 		return m
 	end)
 
@@ -438,7 +500,18 @@ function PatrolService.start()
 					player:SetAttribute("SlimeUntil", nil)
 				end
 				if not player:GetAttribute("SlimeUntil") and p.luckMult then p.luckMult = nil end
-				if (p.tutorial or 1) >= 3 then -- not during the first steps of the tutorial
+				-- only while the owner is actually playing (moved in the last minute)
+				local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				if root and (not s.lastPos or (root.Position - s.lastPos).Magnitude > 2) then
+					s.lastPos = root.Position
+					s.lastMove = t
+				end
+				local active = t - (s.lastMove or t) < 60
+				if not active then
+					s.nextCheat = math.max(s.nextCheat, t + 5)
+					s.nextDeal = math.max(s.nextDeal, t + 5)
+				end
+				if active and (p.tutorial or 1) >= 3 then -- not during the first steps of the tutorial
 					if t >= s.nextCheat then
 						s.nextCheat = t + math.random(CHEAT_EVERY[1], CHEAT_EVERY[2])
 						pcall(startCheating, player)

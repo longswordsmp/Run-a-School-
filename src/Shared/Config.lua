@@ -359,7 +359,7 @@ Config.Goals = {
 	{ text = "Lock your gate 3 times", signal = "lock", count = 3, secs = 120, min = 500 },
 	{ text = "Enroll 25 kids", signal = "enroll", count = 25, secs = 300, min = 2000 },
 	{ text = "Catch 2 cheaters", signal = "catchCheater", count = 2, secs = 240, min = 1000 },
-	{ text = "Bust a candy or slime dealer", signal = "bustDealer", count = 1, secs = 300, min = 1500 },
+	{ text = "Bust a Snack Smuggler", signal = "bustDealer", count = 1, secs = 300, min = 1500 },
 }
 
 -- special buses
