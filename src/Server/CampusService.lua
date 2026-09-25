@@ -90,7 +90,7 @@ end)
 Actions.register("hireTeacher", function(player, p, floor, id)
 	local def = Config.TeacherById[id]
 	floor = tonumber(floor)
-	if not def or not floor then return { ok = false, err = "Unknown teacher" } end
+	if not def or not floor or floor ~= math.floor(floor) then return { ok = false, err = "Unknown teacher" } end
 	if floor < 1 or floor > PlotService.floorsOf(p) then return { ok = false, err = "You don't have that floor yet" } end
 	if p.tier < def.tier then return { ok = false, err = "Unlocks at " .. Config.Tiers[def.tier].name } end
 	if CampusService.teacherMult(p, floor) >= def.mult then return { ok = false, err = "Floor " .. floor .. " already has a better teacher" } end

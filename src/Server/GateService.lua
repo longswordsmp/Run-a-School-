@@ -91,6 +91,7 @@ function GateService.start()
 			local label = plot.LockButton.Button.Info.Label
 			if owner == 0 then
 				label.Text = ""
+				if plot.Gate.Laser.Transparency < 1 then setVisual(plot, false) end
 				continue
 			end
 			local lockedUntil = plot:GetAttribute("LockedUntil") or 0

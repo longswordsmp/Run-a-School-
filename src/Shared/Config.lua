@@ -373,10 +373,10 @@ Config.Tutorial = {
 Config.Goals = {
 	{ text = "Enroll 10 kids", signal = "enroll", count = 10, secs = 150, min = 500 },
 	{ text = "Collect tuition 20 times", signal = "collect", count = 20, secs = 120, min = 400 },
-	{ text = "Steal a kid from another school", signal = "stole", count = 1, secs = 300, min = 1000 },
+	{ text = "Steal a kid from another school", signal = "stole", count = 1, secs = 300, min = 1000, multi = true },
 	{ text = "Enroll an Epic kid or better", signal = "enrollEpic", count = 1, secs = 240, min = 1500 },
 	{ text = "Buy something in the Shop", signal = "shopBuy", count = 1, secs = 180, min = 800 },
-	{ text = "Bonk a thief with your Ruler", signal = "bonkSave", count = 1, secs = 300, min = 1000 },
+	{ text = "Bonk a thief with your Ruler", signal = "bonkSave", count = 1, secs = 300, min = 1000, multi = true },
 	{ text = "Lock your gate 3 times", signal = "lock", count = 3, secs = 120, min = 500 },
 	{ text = "Enroll 25 kids", signal = "enroll", count = 25, secs = 300, min = 2000 },
 	{ text = "Catch 2 cheaters", signal = "catchCheater", count = 2, secs = 240, min = 1000 },

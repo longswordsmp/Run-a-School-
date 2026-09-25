@@ -74,6 +74,8 @@ local function ensureOfficePad(player)
 		if debounce then return end
 		local char = hit:FindFirstAncestorOfClass("Model")
 		if char ~= player.Character then return end
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+		if not root or (root.Position - pad.Position).Magnitude > 10 then return end
 		debounce = true
 		PlotService.collectAll(player, pad.Position)
 		task.delay(1, function() debounce = false end)
@@ -126,7 +128,7 @@ end)
 
 Actions.register("buyRow", function(player, p, floor)
 	floor = tonumber(floor)
-	if not floor or floor < 1 or floor > PlotService.floorsOf(p) then return { ok = false, err = "Locked floor" } end
+	if not floor or floor ~= math.floor(floor) or floor < 1 or floor > PlotService.floorsOf(p) then return { ok = false, err = "Locked floor" } end
 	local owned = p.rows[floor] or 0
 	local costs = Config.DeskRows[floor]
 	if owned >= #costs then return { ok = false, err = "All desks unlocked" } end
@@ -137,6 +139,7 @@ Actions.register("buyRow", function(player, p, floor)
 	Remotes.Sfx:FireClient(player, "Upgrade")
 	Remotes.Announce:FireClient(player, "NEW DESKS!", Color3.fromRGB(61, 220, 106))
 	Signals.fire("desks", player, PlotService.deskCount(p))
+	Signals.fire("upgrade", player, "Desks", p.rows[floor])
 	return { ok = true }
 end)
 
@@ -153,9 +156,11 @@ function UpgradeService.start()
 					local interval = Config.JanitorIntervals[lvl]
 					if not last[player] or now - last[player] >= interval then
 						last[player] = now
-						local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-						local got = PlotService.collectAll(player, root and root.Position)
-						if got > 0 then Remotes.Sfx:FireClient(player, "Collect") end
+						pcall(function()
+							local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+							local got = PlotService.collectAll(player, root and root.Position)
+							if got > 0 then Remotes.Sfx:FireClient(player, "Collect") end
+						end)
 					end
 				end
 			end

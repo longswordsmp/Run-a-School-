@@ -73,12 +73,21 @@ Actions.register("review", function(player, p)
 	if p.cash < n.cash then return { ok = false, err = "The Board wants " .. Config.formatCash(n.cash) } end
 	if not hasNeeded(p, n.needs) then return { ok = false, err = "Bring the student the Board asked for" } end
 	busy[player] = true
+	-- nothing can be bought or sold while the Board meets (Actions refuses spending while this is set)
+	p.reviewing = true
 	-- the client plays the Board Room cutscene; the school changes while the screen is covered
 	Remotes.Cutscene:FireClient(player, "Board", { name = n.name, star = n.star, tier = not n.star and p.tier + 1 or nil })
 	task.wait(4.2)
+	p.reviewing = nil
 	if not player.Parent then
 		busy[player] = nil
 		return { ok = false }
+	end
+	-- still qualified? (a steal during the cutscene can take the required student)
+	if p.cash < n.cash or not hasNeeded(p, n.needs) then
+		busy[player] = nil
+		Remotes.Notify:FireClient(player, "The Board changed its mind: you no longer meet the requirements.", "bad")
+		return { ok = false, err = "Requirements no longer met" }
 	end
 	PlotService.clearAll(player)
 	if n.star then

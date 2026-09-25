@@ -20,6 +20,8 @@ local CARPET_Y = 0.65
 
 -- extra income multipliers from other systems: fn(player, profile, entry, slot, def) -> number
 PlotService.multHooks = {}
+-- the same, for short boosts (Sugar Rush, a smuggler in the row) that offline pay and rewards ignore
+PlotService.tempHooks = {}
 -- called after a campus is rebuilt: fn(player, plot)
 PlotService.rebuildHooks = {}
 
@@ -134,7 +136,8 @@ local function wirePads(plot)
 			desk.CollectPad.Touched:Connect(function(hit)
 				local char = hit:FindFirstAncestorOfClass("Model")
 				local player = char and Players:GetPlayerFromCharacter(char)
-				if player and plotOf[player] == plot then
+				local root = char and char:FindFirstChild("HumanoidRootPart")
+				if player and plotOf[player] == plot and root and (root.Position - desk.CollectPad.Position).Magnitude < 10 then
 					PlotService.collect(player, slot)
 				end
 			end)
@@ -259,7 +262,7 @@ function PlotService.place(player, slot)
 	local p = Data.get(player)
 	if not plot or not p then return end
 	local e = p.students[slot]
-	if not e then return end
+	if not e or e.away or e.carried then return end
 	e.arriving = nil
 	local def = Config.StudentById[e.id]
 	local desk = PlotService.desk(plot, slot)
@@ -366,7 +369,7 @@ function PlotService.sell(player, plot, slot)
 	if plotOf[player] ~= plot then return end
 	local p = Data.get(player)
 	local e = p and p.students[slot]
-	if not e or e.arriving or e.carried or e.away then return end
+	if not e or e.arriving or e.carried or e.away or p.reviewing then return end
 	local def = Config.StudentById[e.id]
 	local stored = math.floor(e.stored or 0)
 	PlotService.remove(player, slot)
@@ -396,7 +399,7 @@ function PlotService.tierMult(p)
 	return PlotService.tierOf(p).mult * (1 + Config.PrestigeStep.bonus * (p.stars or 0))
 end
 
-function PlotService.incomeOf(player, e, slot)
+function PlotService.incomeOf(player, e, slot, base)
 	local p = Data.get(player)
 	local def = Config.StudentById[e.id]
 	local grade = Config.GradeById[e.grade] or Config.Grades[1]
@@ -404,17 +407,26 @@ function PlotService.incomeOf(player, e, slot)
 	for _, hook in PlotService.multHooks do
 		mult *= hook(player, p, e, slot, def)
 	end
+	if not base then
+		for _, hook in PlotService.tempHooks do
+			mult *= hook(player, p, e, slot, def)
+		end
+	end
 	return mult
 end
 
 function PlotService.updateIncome(player)
 	local p = Data.get(player)
 	if not p then return end
-	local total = 0
+	local total, baseTotal = 0, 0
 	for slot, e in p.students do
-		if PlotService.earning(e) then total += PlotService.incomeOf(player, e, slot) end
+		if PlotService.earning(e) then
+			total += PlotService.incomeOf(player, e, slot)
+			baseTotal += PlotService.incomeOf(player, e, slot, true)
+		end
 	end
 	player:SetAttribute("IncomePerSec", total)
+	player:SetAttribute("BaseIncome", baseTotal)
 	return total
 end
 
@@ -422,7 +434,7 @@ function PlotService.collect(player, slot, quiet)
 	local plot = plotOf[player]
 	local p = Data.get(player)
 	local e = p and p.students[slot]
-	if not e then return 0 end
+	if not e or not plot then return 0 end
 	local amount = math.floor(e.stored or 0)
 	if amount < 1 then return 0 end
 	e.stored -= amount
@@ -433,7 +445,7 @@ function PlotService.collect(player, slot, quiet)
 		Remotes.CashPop:FireClient(player, amount, PlotService.desk(plot, slot).CollectPad.Position)
 		Remotes.Sfx:FireClient(player, "Collect")
 	end
-	Signals.fire("collect", player, amount)
+	if not quiet then Signals.fire("collect", player, amount) end
 	return amount
 end
 
@@ -448,6 +460,7 @@ function PlotService.collectAll(player, where)
 	if total > 0 and where then
 		Remotes.CashPop:FireClient(player, total, where)
 	end
+	if total > 0 then Signals.fire("collect", player, total) end
 	return total
 end
 
@@ -491,6 +504,9 @@ function PlotService.release(player)
 	end
 	plot:SetAttribute("OwnerId", 0)
 	plot:SetAttribute("LockedUntil", 0)
+	plot:SetAttribute("CooldownUntil", 0)
+	local pad = plot:FindFirstChild("TuitionOffice")
+	if pad then pad:Destroy() end
 	buildEmpty(plot)
 end
 

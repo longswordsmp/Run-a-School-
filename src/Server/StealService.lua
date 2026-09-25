@@ -169,6 +169,7 @@ function StealService.begin(thief, plot, slot)
 	end
 	local def = Config.StudentById[e.id]
 	e.carried = true
+	e.cheating = nil
 	PlotService.detachModel(plot, slot)
 	PlotService.updatePad(plot, slot, e.stored or 0)
 	PlotService.updateIncome(owner)
@@ -328,6 +329,17 @@ function StealService.start()
 			for thief, c in carrying do
 				local _, root = humanoid(thief)
 				local home = PlotService.getPlot(thief)
+				-- nobody carries a kid faster than they can run (catches teleports home)
+				if root and c.lastPos then
+					local tp = Data.get(thief)
+					local maxStep = Config.CarrySpeed * (tp and UpgradeService.carrySpeedMult(tp) or 1) * 0.2 * 1.6 + 3
+					local flat = (root.Position - c.lastPos) * Vector3.new(1, 0, 1)
+					if flat.Magnitude > maxStep then
+						StealService.drop(thief, "Whoa, too fast! They ran home.")
+						continue
+					end
+				end
+				if root then c.lastPos = root.Position end
 				if not root or not home then
 					StealService.drop(thief)
 				elseif PlotService.inside(home, root.Position) then

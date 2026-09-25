@@ -32,7 +32,10 @@ local EVENT_EVERY = 1800
 -- admins: the place owner, listed ids, and anyone testing in Studio
 local ADMINS = { [1331076401] = true }
 function EventService.isAdmin(player)
-	return ADMINS[player.UserId] == true or player.UserId == game.CreatorId or RunService:IsStudio()
+	if ADMINS[player.UserId] or RunService:IsStudio() then return true end
+	if game.CreatorType == Enum.CreatorType.User then return player.UserId == game.CreatorId end
+	local ok, rank = pcall(function() return player:GetRankInGroup(game.CreatorId) end)
+	return ok and rank >= 255
 end
 
 local serverLuck = { mult = 1, untilT = 0 }
@@ -96,8 +99,10 @@ function EventService.moneyRain(count)
 			local char = hit:FindFirstAncestorOfClass("Model")
 			local player = char and Players:GetPlayerFromCharacter(char)
 			if not player then return end
+			local root = char:FindFirstChild("HumanoidRootPart")
+			if not root or (root.Position - bill.Position).Magnitude > 12 then return end
 			claimed = true
-			local amount = math.max(50, math.floor((player:GetAttribute("IncomePerSec") or 0) * 15))
+			local amount = math.max(50, math.floor((player:GetAttribute("BaseIncome") or 0) * 15))
 			Data.addCash(player, amount)
 			Remotes.CashPop:FireClient(player, amount, bill.Position)
 			Remotes.Sfx:FireClient(player, "Coin")
@@ -157,7 +162,9 @@ end
 ADMIN.cash = function(player, amount)
 	local p = Data.get(player)
 	if not p then return false end
-	Data.addCash(player, math.max(0, tonumber(amount) or 0))
+	local n = tonumber(amount) or 0
+	if n ~= n then n = 0 end
+	Data.addCash(player, math.clamp(n, 0, 1e15))
 	return true
 end
 

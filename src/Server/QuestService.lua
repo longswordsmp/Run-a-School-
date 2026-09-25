@@ -16,13 +16,20 @@ local function current(p)
 	if p.tutorial and p.tutorial <= #Config.Tutorial then
 		return Config.Tutorial[p.tutorial], "tutorial"
 	end
-	local i = ((p.quests.chain or 1) - 1) % #Config.Goals + 1
-	return Config.Goals[i], "goal"
+	local alone = #game:GetService("Players"):GetPlayers() < 2
+	for _ = 1, #Config.Goals do
+		local i = ((p.quests.chain or 1) - 1) % #Config.Goals + 1
+		local g = Config.Goals[i]
+		if not (g.multi and alone) then return g, "goal" end
+		p.quests.chain = (p.quests.chain or 1) + 1
+		p.quests.progress = 0
+	end
+	return Config.Goals[1], "goal"
 end
 
 local function rewardOf(player, q, kind)
 	if kind == "tutorial" then return q.reward end
-	local inc = player:GetAttribute("IncomePerSec") or 0
+	local inc = player:GetAttribute("BaseIncome") or 0
 	return math.floor(math.max(q.min or 0, inc * (q.secs or 120)))
 end
 

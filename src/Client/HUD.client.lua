@@ -381,3 +381,16 @@ plots.DescendantAdded:Connect(function(d)
 	if d:IsA("ProximityPrompt") then task.defer(fixPrompt, d) end
 end)
 for _, d in plots:GetDescendants() do fixPrompt(d) end
+-- a plot changing hands re-checks its prompts (the lock button's prompt is made only once)
+for _, plot in plots:GetChildren() do
+	plot:GetAttributeChangedSignal("OwnerId"):Connect(function()
+		for _, d in plot:GetDescendants() do fixPrompt(d) end
+	end)
+end
+-- kids waiting on a bench are reserved for their owner
+local hallFolder = workspace:WaitForChild("Hall", 10)
+if hallFolder then
+	hallFolder.DescendantAdded:Connect(function(d)
+		if d:IsA("ProximityPrompt") then task.defer(fixPrompt, d) end
+	end)
+end

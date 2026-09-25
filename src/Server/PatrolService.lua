@@ -123,10 +123,11 @@ function PatrolService.sendToOffice(player, slot, by)
 	local plot = PlotService.getPlot(player)
 	local p = Data.get(player)
 	local e = p and p.students[slot]
-	if not plot or not e or e.away then return end
+	if not plot or not e or e.away or e.carried or e.arriving then return end
+	local info = s.cheating[slot]
+	if by and (not info or info.e ~= e) then return end
 	local seat = benchSeat(s)
 	if not seat then return end
-	local info = s.cheating[slot]
 	local eagle = not by and info and now() - info.started < 10
 	endCheating(player, slot, s)
 	local def = Config.StudentById[e.id]
@@ -298,6 +299,12 @@ end
 local function tickCheating(player, s)
 	local p = Data.get(player)
 	for slot, info in s.cheating do
+		-- sold, stolen or moved: the cheating goes with them
+		if not p or p.students[slot] ~= info.e or info.e.carried then
+			endCheating(player, slot, s)
+			if p then PlotService.updateIncome(player) end
+			continue
+		end
 		local age = now() - info.started
 		-- a good teacher on that floor spots it first
 		if age > TEACHER_CATCH_AFTER and p then
@@ -449,7 +456,7 @@ end
 ---------------------------------------------------------------------------
 function PatrolService.start()
 	-- a dealing dealer halves their row; a Sugar Rush doubles everything
-	table.insert(PlotService.multHooks, function(player, p, e, slot)
+	table.insert(PlotService.tempHooks, function(player, p, e, slot)
 		local m = 1
 		local s = state[player]
 		local d = s and s.dealer

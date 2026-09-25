@@ -54,7 +54,7 @@ function HallService.luck()
 	local best = 1
 	for player, p in Data.all() do
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		if root and math.abs(root.Position.Z) < 20 and math.abs(root.Position.X) < 335 then
+		if root and math.abs(root.Position.Z) < 20 and root.Position.X > path.Start.Position.X - 30 and root.Position.X < path.End.Position.X + 5 then
 			best = math.max(best, UpgradeService.luck(p) * (p.luckMult or 1))
 		end
 	end
@@ -160,10 +160,11 @@ function HallService.enroll(player, model)
 	else
 		points = PlotService.pathTo(plot, slot, model.PrimaryPart.Position, Factory.standOffset(model))
 	end
+	local entry = p.students[slot]
 	Walkers.walk(model, points, 16, function()
 		model:Destroy()
 		local e = p.students[slot]
-		if e and e.arriving and PlotService.getPlot(player) == plot then
+		if e and e == entry and e.arriving and PlotService.getPlot(player) == plot then
 			local seatedModel = PlotService.place(player, slot)
 			PlotService.updateIncome(player)
 			if seatedModel then Factory.emote(seatedModel, "cheer") end

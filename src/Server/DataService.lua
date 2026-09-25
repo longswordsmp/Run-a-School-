@@ -199,7 +199,7 @@ function DataService.save(player, releasing)
 	local p = profiles[player]
 	if not p or p.unsaved then return end
 	p.lastOnline = os.time()
-	p.lastIncome = player:GetAttribute("IncomePerSec") or 0
+	p.lastIncome = player:GetAttribute("BaseIncome") or player:GetAttribute("IncomePerSec") or 0
 	local out = toSave(p)
 	out.sessionStart, out.offlineEarned, out.offlineAway = nil, nil, nil
 	local ok, err = pcall(function()

@@ -7,6 +7,8 @@ local Remotes = require(script.Parent.Remotes)
 local Data = require(script.Parent.DataService)
 
 local Actions = {}
+-- actions that spend or move cash, refused while a School Board review is running
+local SPENDING = { buyUpgrade = true, buyRow = true, buySupply = true, buyBuild = true, hireTeacher = true, callLetter = true }
 local handlers = {}
 local budget = {}
 
@@ -28,6 +30,7 @@ Remotes.Action.OnServerInvoke = function(player, action, ...)
 	local h = handlers[action]
 	local p = Data.get(player)
 	if not h or not p then return { ok = false, err = "Not ready" } end
+	if p.reviewing and SPENDING[action] then return { ok = false, err = "The School Board is meeting!" } end
 	local ok, res = pcall(h, player, p, ...)
 	if not ok then
 		warn("[Actions]", action, "failed:", res)
@@ -41,6 +44,7 @@ function Actions.invoke(player, name, ...)
 	local h = handlers[name]
 	local p = Data.get(player)
 	if not h or not p then return { ok = false, err = "Not ready" } end
+	if p.reviewing and SPENDING[name] then return { ok = false, err = "The School Board is meeting!" } end
 	return h(player, p, ...)
 end
 
