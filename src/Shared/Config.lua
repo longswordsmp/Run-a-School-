@@ -126,11 +126,11 @@ Config.Students = {
 	S("Student404", "Student #404", "Secret", 140e9, 40e6, "Tech", "Glitch", "light", rgb(255, 0, 200), rgb(0, 220, 255)),
 
 	-- Alumni (never on the regular bus)
-	S("GraduateGrandpa", "Graduate Grandpa", "Alumni", 1800e9, 250e6, "History", "Grandpa", "light", rgb(160, 30, 40), rgb(110, 100, 90)),
-	S("ClassOf99", "Class of '99", "Alumni", 2700e9, 380e6, "Tech", "Class99", "tan", rgb(60, 130, 220), rgb(60, 70, 110)),
-	S("HeadPrefect", "Head Prefect", "Alumni", 4000e9, 560e6, "English", "Prefect", "light", rgb(30, 30, 40), rgb(30, 30, 40)),
-	S("TheFounder", "The Founder", "Alumni", 7200e9, 1e9, "History", "Founder", "light", rgb(150, 110, 70), rgb(150, 110, 70)),
-	S("TinyPrincipal", "Principal (as a kid)", "Alumni", 11000e9, 1.5e9, "English", "TinyPrincipal", "brown", rgb(60, 60, 70), rgb(60, 60, 70)),
+	S("GraduateGrandpa", "Graduate Grandpa", "Alumni", 60e9, 18e6, "History", "Grandpa", "light", rgb(160, 30, 40), rgb(110, 100, 90)),
+	S("ClassOf99", "Class of '99", "Alumni", 90e9, 26e6, "Tech", "Class99", "tan", rgb(60, 130, 220), rgb(60, 70, 110)),
+	S("HeadPrefect", "Head Prefect", "Alumni", 130e9, 36e6, "English", "Prefect", "light", rgb(30, 30, 40), rgb(30, 30, 40)),
+	S("TheFounder", "The Founder", "Alumni", 190e9, 50e6, "History", "Founder", "light", rgb(150, 110, 70), rgb(150, 110, 70)),
+	S("TinyPrincipal", "Principal (as a kid)", "Alumni", 280e9, 70e6, "English", "TinyPrincipal", "brown", rgb(60, 60, 70), rgb(60, 60, 70)),
 }
 Config.StudentById = {}
 for i, s in Config.Students do
@@ -524,6 +524,7 @@ Config.DailyPool = {
 	{ id = "lock5", text = "Lock your gate 5 times", signal = "lock", count = 5 },
 	{ id = "bus2", text = "Enroll 2 kids off special buses", signal = "busEnroll", count = 2 },
 	{ id = "eagle2", text = "Make 2 EAGLE EYE catches", signal = "eagleEye", count = 2 },
+	{ id = "grad3", text = "Graduate 3 kids (hold G at a desk)", signal = "graduate", count = 3 },
 }
 Config.DailyCandy = 25
 -- Loretta's Lunch Box, opened when all 3 are done. Odds are shown in the panel.
@@ -562,6 +563,22 @@ Config.EventShop = {
 }
 Config.TrophyTickets = 40
 Config.TicketsPerToken = 1
+
+---------------------------------------------------------------------------
+-- Graduation: graduate a seated kid (hold G) and it leaves your school for Diplomas (by rarity,
+-- x its grade). Diplomas buy Alumni letters in the Yearbook: an Alumni kid on your bench that you
+-- still pay for. The Board review clears your desks, so graduating first is never wasted.
+---------------------------------------------------------------------------
+Config.Diplomas = { Common = 1, Uncommon = 3, Rare = 8, Epic = 20, Legendary = 50, Mythic = 150, Prodigy = 500, Secret = 2000 }
+-- the Alumni Hall opens at Ivy League: Alumni kids out-earn whole schools earlier than that
+Config.AlumniTier = 9
+Config.AlumniShop = {
+	{ id = "GraduateGrandpa", diplomas = 100000 },
+	{ id = "ClassOf99", diplomas = 200000 },
+	{ id = "HeadPrefect", diplomas = 400000 },
+	{ id = "TheFounder", diplomas = 800000 },
+	{ id = "TinyPrincipal", diplomas = 1600000 },
+}
 
 ---------------------------------------------------------------------------
 -- Janitor Stan's Confiscation Closet: what Confiscated Candy buys. Decor adds no Reputation (no income

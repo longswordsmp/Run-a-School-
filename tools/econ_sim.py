@@ -134,6 +134,14 @@ EVENT_LEGENDARY = num(r'id = "LetterLegendary"[^\n]*tickets = (\d+)', 120)
 USE_LETTERS = "--no-letters" not in sys.argv
 VIP = 2.0 if "--vip" in sys.argv else 1.0  # the VIP game pass: x2 tuition
 
+# Graduation: a replaced kid, and every kid before a Board review (the review clears the desks), is
+# graduated for Diplomas (Config.Diplomas by rarity, x grade). Diplomas buy Alumni letters
+# (Config.AlumniCost): an Alumni kid on the bench that you still pay cash for.
+DIPLOMAS = {m.group(1): float(m.group(2)) for m in re.finditer(r'(\w+) = (\d+)', (re.search(r"Config\.Diplomas = \{(.*?)\}", CFG, re.S) or re.search(r"()", "")).group(1))}
+ALUMNI_COST = [(m.group(1), float(m.group(2))) for m in re.finditer(r'\{ id = "(\w+)", diplomas = (\d+) \}', CFG)]
+USE_ALUMNI = "--no-alumni" not in sys.argv
+ALUMNI_TIER = num(r"Config\.AlumniTier = (\d+)", 9)  # 1-based tier where the Alumni Hall opens
+
 # luck upgrade (Recruitment Office): +2 % per level, 10 levels
 LUCK_COSTS = [10e3 * 4 ** i for i in range(10)]
 LUCK_STEP = 0.02
@@ -191,6 +199,9 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
     trophies_left = TROPHIES
     next_lunch = LUNCH_EVERY
     last_ev = None
+    diplomas = 0.0
+    alumni_next = 0
+    alumni_pending = []
     ev_first = rng.randrange(len(EVENT_ORDER)) if EVENT_ORDER else 0
     beams = {}  # event index -> beams used
     next_beam = 0.0
@@ -276,6 +287,18 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
                 s, g = roll(rng, luck, TRIP_WEIGHTS, event=event)
                 hall.append((t + WALK, s, g))
             next_trip += TRIP_EVERY
+        if USE_ALUMNI and tier + 1 >= ALUMNI_TIER and alumni_next < len(ALUMNI_COST) and diplomas >= ALUMNI_COST[alumni_next][1]:
+            aid, cost = ALUMNI_COST[alumni_next]
+            diplomas -= cost
+            alumni_next += 1
+            if BY_ID.get(aid):
+                alumni_pending.append(BY_ID[aid])
+                mark(f"alumni {alumni_next} {aid}")
+        # a banked Alumni letter is called once you can pay for the kid
+        for kid in list(alumni_pending):
+            if cash >= kid["price"]:
+                hall.append((t + BENCH_HOLD, kid, 1.0))
+                alumni_pending.remove(kid)
         if USE_LETTERS:
             for r, every, first in LETTERS:
                 if t >= letter_next[r]:
@@ -311,6 +334,9 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
                 if USE_LETTERS and USE_CHAPTERS and 1 <= tier <= len(CHAPTERS) and len(paid) == len(CHAPTERS[tier - 1]):
                     r = CHAPTER_LETTERS[tier - 1]
                     credits[r] = credits.get(r, 0) + 1
+                for _, st_, g_ in seated:
+                    diplomas += DIPLOMAS.get(st_["rarity"], 0) * g_
+                events[f"dipl@{tier}"] = diplomas
                 events[f"income@{tier}"] = inc
                 tier += 1
                 mark(f"tier {tier} {nxt['name']}")
@@ -415,7 +441,11 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
                 worst = seated[0]
                 keep_needed = needs and worst[1]["id"] == needs
                 if not keep_needed and (score == math.inf or (v > worst[0] * 1.25 and not saving)):
-                    cash += worst[1]["price"] * SELL - s["price"]
+                    if DIPLOMAS:
+                        diplomas += DIPLOMAS.get(worst[1]["rarity"], 0) * worst[2]
+                        cash -= s["price"]
+                    else:
+                        cash += worst[1]["price"] * SELL - s["price"]
                     seated[0] = (v, s, g)
                     hall.remove(h)
             mark(f"own {s['rarity']}")
@@ -477,7 +507,10 @@ def main():
     for k in [k for k in keys if k.startswith("income@")]:
         vals = sorted(r[k] for r in runs if k in r)
         print(f"{k:40s} {statistics.median(vals):.3g}/s at the end of that tier")
-    keys = [k for k in keys if not k.startswith("income@")]
+    for k in [k for k in keys if k.startswith("dipl@")]:
+        vals = sorted(r[k] for r in runs if k in r)
+        print(f"{k:40s} {statistics.median(vals):.3g} diplomas banked by the end of that tier")
+    keys = [k for k in keys if not k.startswith("income@") and not k.startswith("dipl@")]
     for k in keys:
         vals = [r[k] for r in runs if k in r]
         med = statistics.median(vals) if len(vals) == seeds else None

@@ -303,6 +303,28 @@ function PlotService.place(player, slot)
 		PlotService.sell(who, plot, slot)
 	end)
 
+	-- Graduation (AlumniService): the kid leaves for Diplomas instead of cash
+	local base = Config.Diplomas[def.rarity]
+	if base then
+		local g = Config.GradeById[e.grade]
+		local grad = Instance.new("ProximityPrompt")
+		grad.Name = "GraduatePrompt"
+		grad.ActionText = ("Graduate +%d \u{1F393}"):format(math.floor(base * (g and g.mult or 1)))
+		grad.ObjectText = def.name
+		grad.HoldDuration = 1.5
+		grad.KeyboardKeyCode = Enum.KeyCode.G
+		grad.GamepadKeyCode = Enum.KeyCode.ButtonY
+		grad.RequiresLineOfSight = false
+		grad.MaxActivationDistance = 8
+		grad:SetAttribute("OffsetY", -2.4) -- the Prompts client draws it under the Sell pill
+		grad:SetAttribute("OwnerOnly", true)
+		grad:SetAttribute("Color", Color3.fromRGB(170, 110, 255))
+		grad.Parent = model.PrimaryPart
+		grad.Triggered:Connect(function(who)
+			if PlotService.onGraduate then PlotService.onGraduate(who, plot, slot) end
+		end)
+	end
+
 	local steal = Instance.new("ProximityPrompt")
 	steal.Name = "StealPrompt"
 	steal.ActionText = "Steal"

@@ -30,6 +30,7 @@ local QuizService = require(Server.QuizService)
 local ChapterService = require(Server.ChapterService)
 local DailyService = require(Server.DailyService)
 local TicketService = require(Server.TicketService)
+local AlumniService = require(Server.AlumniService)
 
 Factory.preload()
 PlotService.start()
@@ -51,6 +52,7 @@ QuizService.start()
 ChapterService.start()
 DailyService.start()
 TicketService.start()
+AlumniService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -227,6 +229,13 @@ require(Server.DebugBridge).start({
 	end,
 	tickets = function(player, n)
 		return TicketService.debugGive(player, n)
+	end,
+	diplomas = function(player, n)
+		return AlumniService.debugGive(player, n)
+	end,
+	graduate = function(player, slot)
+		AlumniService.graduate(player, PlotService.getPlot(player), slot)
+		return { diplomas = player:GetAttribute("Diplomas"), still = Data.get(player).students[slot] ~= nil }
 	end,
 	-- pretend today's Daily Requests were dealt yesterday (tests the UTC rollover)
 	dailyAge = function(player)

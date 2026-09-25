@@ -521,7 +521,7 @@ do
 	local cashReq = req(84)
 	local studentReq = req(156)
 	local reward = UI.label(b, { Text = "", TextColor3 = Color3.fromRGB(40, 150, 70), Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 230), ZIndex = 12, stroke = 0 })
-	local warn = UI.label(b, { Text = "Your cash and students go back to the start. Supplies, teachers, builds, upgrades and desks stay.", TextWrapped = true, TextColor3 = Color3.fromRGB(150, 60, 60), Size = UDim2.new(1, -20, 0, 40), Position = UDim2.fromOffset(10, 258), ZIndex = 12, stroke = 0 })
+	local warn = UI.label(b, { Text = "Your cash and students go back to the start (graduate kids first for Diplomas: hold G). Supplies, teachers, builds, upgrades and desks stay.", TextWrapped = true, TextColor3 = Color3.fromRGB(150, 60, 60), Size = UDim2.new(1, -20, 0, 40), Position = UDim2.fromOffset(10, 258), ZIndex = 12, stroke = 0 })
 	_ = warn
 	local go = UI.button(b, { text = "REQUEST REVIEW", color = UI.C.purple, size = UDim2.fromOffset(300, 64), position = UDim2.new(0.5, 0, 1, -4), anchor = Vector2.new(0.5, 1), font = UI.BIG })
 	lift(go.button, 12)
@@ -606,6 +606,52 @@ do
 			scrapEntry(tier * 2 + 1, "chapter", ("Chapter %d: %s"):format(i, ch.title), ch.host, ch.line, Config.ChapterTier(i))
 		end
 	end
+	-- the Alumni Hall: Diplomas (from graduating kids) invite Alumni back
+	local alumniPage = UI.new("Frame", { Name = "Alumni", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -84), Position = UDim2.fromOffset(0, 84), Visible = false, ZIndex = 11, Parent = panel.body })
+	local alumniList = scrollList(alumniPage)
+	local alumniRows = {}
+	local refreshAlumni
+	for i, a in Config.AlumniShop do
+		local def = Config.StudentById[a.id]
+		local row = shopRow(alumniList, i, {
+			name = a.id, model = templates:FindFirstChild(a.id), icon = "\u{1F393}", title = def.name,
+			desc = ("Earns %s/s \u{2022} enrolls for %s"):format(Config.formatCash(def.income), Config.formatCash(def.price)),
+			sub = "Graduate kids (hold G at their desk) for Diplomas",
+			iconBg = Color3.fromRGB(255, 240, 200),
+		})
+		row.buy.button.Activated:Connect(function()
+			if not row.buy.button.Active then return end
+			local res = call("inviteAlumni", a.id)
+			if res and res.ok == false then
+				UI.punch(row.frame, 1.04)
+			end
+			refreshAlumni()
+		end)
+		alumniRows[a.id] = row
+	end
+	refreshAlumni = function()
+		local st = call("alumni")
+		if not st or st.ok == false then return 0 end
+		local open = st.tier >= st.openTier
+		for _, it in st.shop do
+			local row = alumniRows[it.id]
+			if it.invited then
+				setState(row, "owned")
+				row.buy.setText("\u{2714} INVITED")
+			elseif not open then
+				setState(row, "locked", nil, Config.Tiers[st.openTier].name)
+			else
+				setState(row, "buy", 0)
+				row.buy.setText("\u{1F393} " .. Config.formatCash(it.diplomas):gsub("%$", ""))
+				row.buy.setEnabled(st.diplomas >= it.diplomas)
+				if st.diplomas >= it.diplomas then row.buy.setColor(UI.C.purple) end
+			end
+		end
+		count.Text = open and ("\u{1F393} %s Diplomas \u{2022} invite an Alumni back to your school"):format(Config.formatCash(st.diplomas):gsub("%$", ""))
+			or ("\u{1F393} %s Diplomas \u{2022} the Alumni Hall opens at %s"):format(Config.formatCash(st.diplomas):gsub("%$", ""), Config.Tiers[st.openTier].name)
+		return 1
+	end
+
 	local function refreshScrapbook(tier)
 		local n = 0
 		for _, pg in pages do
@@ -643,10 +689,12 @@ do
 	local selectYearTab = tabs(panel.body, {
 		{ "\u{1F4D6} Students", UI.C.purple, 220 },
 		{ "\u{1F4DC} Scrapbook", UI.C.orange, 220 },
+		{ "\u{1F393} Alumni", Color3.fromRGB(170, 110, 255), 220 },
 	}, function(i)
 		yearTab = i
 		holder.Visible = i == 1
 		scrapPage.Visible = i == 2
+		alumniPage.Visible = i == 3
 		if refreshStudents then refreshStudents() end
 	end)
 	panel.onOpen = function()
@@ -657,6 +705,10 @@ do
 	end
 	refreshStudents = function()
 		if not built then build() end
+		if yearTab == 3 then
+			refreshAlumni()
+			return
+		end
 		local profile = call("profile")
 		if yearTab == 2 then
 			local n = refreshScrapbook(profile and profile.tier or 1)
