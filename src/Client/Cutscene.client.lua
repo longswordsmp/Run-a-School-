@@ -123,7 +123,7 @@ local function hideHud(on)
 	local pg = player:FindFirstChild("PlayerGui")
 	if not pg then return end
 	if on then
-		for _, name in { "HUD", "Menus", "NowPlaying", "Prompts", "Quests" } do
+		for _, name in { "HUD", "Menus", "NowPlaying", "Prompts", "Quests", "Chapters" } do
 			local g = pg:FindFirstChild(name)
 			if g and g.Enabled then
 				g.Enabled = false

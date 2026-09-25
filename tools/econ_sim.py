@@ -37,6 +37,22 @@ for m in re.finditer(r'\{ id = "([^"]+)", mult = ([\d.]+), weight = ([\d.]+)', C
     if float(m.group(3)) > 0:
         GRADES.append((m.group(1), float(m.group(2)), float(m.group(3))))
 
+# events (src/Server/EventService.lua): every EVENT_EVERY s, EVENT_LEN s long, cycling through ORDER.
+# While one runs, its grade joins the bus roll with its weight, and the event beam gives up to
+# BEAM_CAP seated Normal kids that grade (BEAM_CHANCE per minute).
+_ev_src = (ROOT / "src" / "Server" / "EventService.lua").read_text(encoding="utf-8")
+EVENT_MULT = {m.group(1): float(m.group(2)) for m in re.finditer(r'\{ id = "([^"]+)", mult = ([\d.]+), weight = 0, event = "\w+"', CFG)}
+EVENTS = {}
+for m in re.finditer(r'(\w+) = \{ name = "[^"]+", grade = "([^"]+)", weight = ([\d.]+)', _ev_src):
+    EVENTS[m.group(1)] = (EVENT_MULT.get(m.group(2), 1.0), float(m.group(3)))
+_order = re.search(r"local ORDER = \{ (.*?) \}", _ev_src)
+EVENT_ORDER = re.findall(r'"(\w+)"', _order.group(1)) if _order else []
+EVENT_EVERY = float(re.search(r"local EVENT_EVERY = (\d+)", _ev_src).group(1))
+EVENT_LEN = float(re.search(r"local EVENT_LEN = (\d+)", _ev_src).group(1))
+_bc = re.search(r"local BEAM_CHANCE, BEAM_CAP = ([\d.]+), (\d+)", _ev_src)
+BEAM_CHANCE, BEAM_CAP = (float(_bc.group(1)), int(_bc.group(2))) if _bc else (0.2, 3)
+USE_EVENTS = "--no-events" not in sys.argv
+
 TIERS = []
 for m in re.finditer(r'\{ name = "([^"]+)", cash = ([\d.e]+), needs = (nil|"\w+"), mult = ([\d.]+), floors = (\d+)', CFG):
     TIERS.append({"name": m.group(1), "cash": float(m.group(2)), "needs": None if m.group(3) == "nil" else m.group(3).strip('"'),
@@ -115,12 +131,15 @@ def weighted(rng, pairs):
     return pairs[-1][0]
 
 
-def roll(rng, luck, weights=None):
+def roll(rng, luck, weights=None, event=None):
     base = weights or RARITIES
     pairs = [(r, w * (luck if RARITY_ORDER[r] >= 3 else 1)) for r, w in base if w > 0]
     rarity = weighted(rng, pairs)
     s = rng.choice(BY_RARITY[rarity])
-    g = weighted(rng, [(m, w) for _, m, w in GRADES])
+    grades = [(m, w) for _, m, w in GRADES]
+    if event:
+        grades.append(event)
+    g = weighted(rng, grades)
     return s, g
 
 
@@ -148,6 +167,9 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
     next_honor = HONOR_OFFSET
     next_pick = PICK_OFFSET
     hired = set()
+    ev_first = rng.randrange(len(EVENT_ORDER)) if EVENT_ORDER else 0
+    beams = {}  # event index -> beams used
+    next_beam = 0.0
     tier_start = 0.0
     paid = set()
 
@@ -175,33 +197,48 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
         cash += inc * step
         t += step
 
+        # the running event (the first one starts EVENT_EVERY into the server)
+        event = None
+        k = int(t // EVENT_EVERY)
+        if USE_EVENTS and EVENT_ORDER and k >= 1 and t - k * EVENT_EVERY < EVENT_LEN:
+            event = EVENTS.get(EVENT_ORDER[(ev_first + k) % len(EVENT_ORDER)])
+            if event and t >= next_beam:
+                next_beam = t + 60
+                if beams.get(k, 0) < BEAM_CAP and rng.random() < BEAM_CHANCE:
+                    normal = [i for i, x in enumerate(seated) if x[2] == 1.0]
+                    if normal:
+                        i = rng.choice(normal)
+                        _, st, _ = seated[i]
+                        seated[i] = (st["income"] * event[0], st, event[0])
+                        beams[k] = beams.get(k, 0) + 1
+
         # spawns
         luck = 1 + LUCK_STEP * luck_level
         # recess: luck x2 for 60 s every 15 min
         if t % 900 < 60:  # recess
             luck *= 2
         while next_spawn <= t:
-            s, g = roll(rng, luck)
+            s, g = roll(rng, luck, event=event)
             hall.append((next_spawn + WALK, s, g))
             next_spawn += SPAWN
         if t >= next_late:
             base = [(r, w) for r, w in RARITIES if RARITY_ORDER[r] >= 3]
             for _ in range(LATE_COUNT):
-                s, g = roll(rng, luck, base)
+                s, g = roll(rng, luck, base, event=event)
                 hall.append((t + WALK, s, g))
             next_late += LATE_EVERY
         if PICK_WEIGHTS and t >= next_pick:
-            s, g = roll(rng, luck, PICK_WEIGHTS)
+            s, g = roll(rng, luck, PICK_WEIGHTS, event=event)
             hall.append((t + WALK, s, g))
             next_pick += PICK_EVERY
         if t >= next_honor:
             for i in range(HONOR_COUNT):
-                s, g = roll(rng, luck, HONOR_FIRST if i == 0 else HONOR_WEIGHTS)
+                s, g = roll(rng, luck, HONOR_FIRST if i == 0 else HONOR_WEIGHTS, event=event)
                 hall.append((t + WALK, s, g))
             next_honor += HONOR_EVERY
         if t >= next_trip:
             for _ in range(TRIP_COUNT):
-                s, g = roll(rng, luck, TRIP_WEIGHTS)
+                s, g = roll(rng, luck, TRIP_WEIGHTS, event=event)
                 hall.append((t + WALK, s, g))
             next_trip += TRIP_EVERY
         hall = [h for h in hall if h[0] > t]

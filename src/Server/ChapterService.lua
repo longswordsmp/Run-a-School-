@@ -25,10 +25,16 @@ end
 local function rec(p)
 	if not p.chapter then
 		local n = math.clamp((p.tier or 1) - 1, 1, #Config.Chapters)
-		p.chapter = { n = n, done = { false, false, false, false, false }, prog = { 0, 0, 0, 0 } }
+		p.chapter = { n = n, done = { false, false, false, false, false }, prog = { 0, 0, 0, 0 }, intro = true }
 	end
 	return p.chapter
 end
+
+-- after a chapter finishes, its successor waits a moment so the title card comes first
+local holdUntil = {}
+Players.PlayerRemoving:Connect(function(player)
+	holdUntil[player] = nil
+end)
 
 local function article(word)
 	return word:match("^[AEIOUaeiou]") and "an" or "a"
@@ -39,7 +45,7 @@ local function stepText(step)
 	if step.kind == "supply" then
 		return "Stock " .. Config.SupplyById[step.id].name
 	elseif step.kind == "hire" then
-		return "Hire " .. Config.TeacherById[step.id].name
+		return "Hire " .. Config.TeacherById[step.id].name .. " (or better)"
 	elseif step.kind == "build" then
 		return "Build the " .. Config.BuildById[step.id].name
 	elseif step.kind == "iq" then
@@ -70,8 +76,12 @@ local function owns(p, step)
 	if step.kind == "supply" then
 		return p.supplies ~= nil and p.supplies[step.id] ~= nil
 	elseif step.kind == "hire" then
+		-- that teacher or a better one: the shop won't put a worse teacher on a floor, so an exact
+		-- match could become impossible once the player has moved past it
+		local want = Config.TeacherById[step.id].mult
 		for _, t in p.teachers or {} do
-			if t.id == step.id then return true end
+			local def = Config.TeacherById[t.id]
+			if def and def.mult >= want then return true end
 		end
 		return false
 	elseif step.kind == "build" then
@@ -156,7 +166,15 @@ local function complete(player, p, c, i)
 	if i == STEPS then return end
 	local cash = rewardOf(player, c.n, i)
 	local candy = Config.ChapterCandy[i]
-	Data.addCash(player, cash)
+	if p.reviewing then
+		-- the Board is about to reset cash (BoardService): pay once the review is over
+		task.spawn(function()
+			while p.reviewing do task.wait(0.25) end
+			if player.Parent and Data.get(player) == p then Data.addCash(player, cash) end
+		end)
+	else
+		Data.addCash(player, cash)
+	end
 	p.candy = (p.candy or 0) + candy
 	player:SetAttribute("Candy", p.candy)
 	Remotes.Push:FireClient(player, "chapterStep", { text = stepText(ch.steps[i]), reward = cash, candy = candy })
@@ -174,6 +192,7 @@ local function finish(player, p, c)
 	Signals.fire("chapterDone", player, c.n)
 	p.chapter = { n = c.n + 1, done = { false, false, false, false, false }, prog = { 0, 0, 0, 0 } }
 	local nxt = Config.Chapters[c.n + 1]
+	holdUntil[player] = os.clock() + 2.9
 	task.delay(3, function()
 		if not player.Parent or Data.get(player) ~= p then return end
 		if nxt then
@@ -190,6 +209,14 @@ evaluate = function(player)
 	local c = rec(p)
 	local ch = Config.Chapters[c.n]
 	if not ch then return end
+	if c.intro then
+		c.intro = nil
+		Remotes.Push:FireClient(player, "chapterStart", { n = c.n, title = ch.title, host = ch.host, line = ch.line })
+	end
+	if holdUntil[player] and os.clock() < holdUntil[player] then
+		ChapterService.push(player)
+		return
+	end
 	for i, step in ch.steps do
 		if not c.done[i] and step.kind ~= "count" and owns(p, step) then complete(player, p, c, i) end
 	end
@@ -229,6 +256,13 @@ Actions.register("chapter", function(player)
 end)
 
 function ChapterService.start()
+	Signals.on("questDone", function(player, _, kind)
+		if kind ~= "tutorial" or typeof(player) ~= "Instance" or not player:IsA("Player") then return end
+		local p = Data.get(player)
+		if p and tutorialDone(p) and not p.chapter then
+			p.chapter = { n = 1, done = { false, false, false, false, false }, prog = { 0, 0, 0, 0 }, intro = true }
+		end
+	end)
 	-- signals the counted requests listen for
 	local listening = {}
 	for _, ch in Config.Chapters do

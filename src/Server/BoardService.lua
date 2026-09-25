@@ -100,7 +100,8 @@ Actions.register("review", function(player, p)
 	Data.sync(player)
 	PlotService.applyFloors(player)
 	PlotService.updateIncome(player)
-	Remotes.Announce:FireAllClients(("%s IS NOW A %s!"):format(PlotService.schoolName(player):upper(), n.name:upper()), Color3.fromRGB(255, 214, 51))
+	local an = n.name:match("^[AEIOUaeiou]") and "AN" or "A"
+	Remotes.Announce:FireAllClients(("%s IS NOW %s %s!"):format(PlotService.schoolName(player):upper(), an, n.name:upper()), Color3.fromRGB(255, 214, 51))
 	Signals.fire("review", player, p.tier, p.stars)
 	busy[player] = nil
 	return { ok = true, tier = p.tier, stars = p.stars }

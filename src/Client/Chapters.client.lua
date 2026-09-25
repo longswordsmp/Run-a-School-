@@ -41,6 +41,7 @@ UI.corner(card, 14)
 UI.stroke(card, 3)
 local scale = Instance.new("UIScale")
 scale.Parent = card
+local fitScale = 1
 
 local header = UI.new("TextButton", {
 	Name = "Header",
@@ -175,14 +176,18 @@ local function hudBottom()
 end
 local function fit()
 	local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
-	local small = vp.Y < 700
-	scale.Scale = small and 0.72 or 1
-	if not userToggled and collapsed ~= small then
-		collapsed = small
+	local top = hudBottom() + 10
+	fitScale = vp.Y < 700 and 0.72 or 1
+	scale.Scale = fitScale
+	-- fold to the next request when the whole card won't fit under the letters (clear of the
+	-- bottom bar); the card always sits under the letters, never over them
+	local full = (TOP + 5 * ROW + 30) * fitScale
+	local fold = top + full > vp.Y - 110
+	if not userToggled and collapsed ~= fold then
+		collapsed = fold
 		layout()
 	end
-	local y = math.min(hudBottom() + 10, vp.Y - card.AbsoluteSize.Y - 100)
-	card.Position = UDim2.new(1, -12, 0, math.max(0, y))
+	card.Position = UDim2.new(1, -12, 0, top)
 end
 task.spawn(function()
 	while true do
@@ -207,11 +212,16 @@ local function fadeOut(obj, after)
 	end)
 end
 
--- a request done: a strip that pops out to the left of the card
+-- a request done: a strip that pops out to the left of the card; several at once (things you
+-- already owned) stack downwards instead of on top of each other
+local liveToasts, nextSlot = 0, 0
 local function stepDone(d)
+	local slot = nextSlot
+	nextSlot += 1
+	liveToasts += 1
 	local t = UI.new("Frame", {
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -(W + 24), 0, card.Position.Y.Offset + 20),
+		Position = UDim2.new(1, -(W + 24), 0, card.Position.Y.Offset + 20 + slot * 64),
 		Size = UDim2.fromOffset(330, 58),
 		BackgroundColor3 = UI.C.cream,
 		Parent = gui,
@@ -228,12 +238,20 @@ local function stepDone(d)
 		Position = UDim2.fromOffset(10, 28),
 		stroke = 2,
 	})
+	t.Destroying:Connect(function()
+		liveToasts -= 1
+		if liveToasts == 0 then nextSlot = 0 end
+	end)
 	UI.pop(t, 0.5)
 	fadeOut(t, 2.6)
 end
 
 -- a new chapter: a title card in the middle of the screen with the host's line
 local function chapterStart(d)
+	-- after any cutscene (the Board review that opened this chapter hides this gui while it plays)
+	local t0 = os.clock()
+	while not gui.Enabled and os.clock() - t0 < 30 do task.wait(0.2) end
+	task.wait(0.4)
 	local f = UI.new("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 120),
@@ -265,9 +283,12 @@ Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
 		show(data)
 	elseif kind == "chapterStep" then
 		stepDone(data)
-		if state then UI.punch(card, 1.04) end
+		if state then
+			scale.Scale = fitScale * 1.04
+			TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Scale = fitScale }):Play()
+		end
 	elseif kind == "chapterStart" then
-		chapterStart(data)
+		task.spawn(chapterStart, data)
 	end
 end)
 
