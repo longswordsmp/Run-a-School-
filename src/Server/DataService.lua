@@ -64,6 +64,8 @@ local function default()
 		students = {}, -- [slot] = { id, grade, stored }
 		index = {}, -- ["id|grade"] = true
 		upgrades = {}, -- [upgradeId] = level
+		builds = {}, -- School Builder items owned: [itemId] = true
+		supplies = {}, -- school supplies owned: [supplyId] = true
 		teachers = {}, -- [floor] = { id, level }
 		staffRoom = nil, -- current restock, see TeacherService
 		gear = { owned = { Ruler = true } },

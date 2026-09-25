@@ -13,6 +13,7 @@ local paths = {
 	"ServerScriptService.Server.StealService",
 	"ServerScriptService.Server.SchoolService",
 	"ServerScriptService.Server.Signals",
+	"ServerScriptService.Server.SchoolBuilder",
 	"ServerScriptService.Server.Actions",
 	"ServerScriptService.Server.UpgradeService",
 	"ServerScriptService.Server.GateService",

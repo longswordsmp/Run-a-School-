@@ -1,15 +1,17 @@
 -- ServerScriptService.Server.Walkers
--- Moves anchored student rigs along waypoint lists on the server (one Heartbeat for all of them).
--- A waypoint is a Vector3 (walk there; Y is ignored, the rig keeps its height) or
--- { tp = Vector3 } (appear there instantly, Y included: the elevator).
+-- Moves anchored rigs along waypoint lists on the server (one Heartbeat for all of them).
+--   flat walks (the carpet): waypoints are Vector3, Y ignored, the rig keeps its height
+--   3D walks (into a school): waypoints are root positions, Y included (stairs, steps)
+--   { tp = Vector3 } in either kind: appear there instantly
 local RunService = game:GetService("RunService")
 
 local Walkers = {}
 local active = {}
 
--- onDone(model) runs when the last waypoint is reached
-function Walkers.walk(model, points, speed, onDone)
-	active[model] = { hrp = model.PrimaryPart, points = points, i = 1, speed = speed, onDone = onDone }
+-- opts: { flat = true (default) | false }; onDone(model) runs at the last waypoint
+function Walkers.walk(model, points, speed, onDone, opts)
+	local flat = not (opts and opts.flat == false)
+	active[model] = { hrp = model.PrimaryPart, points = points, i = 1, speed = speed, onDone = onDone, flat = flat }
 end
 
 function Walkers.stop(model)
@@ -33,7 +35,6 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 		local target = w.points[w.i]
 		if type(target) == "table" then
-			-- elevator: jump straight there, keep facing
 			local look = w.hrp.CFrame.LookVector
 			w.hrp.CFrame = CFrame.lookAt(target.tp, target.tp + Vector3.new(look.X, 0, look.Z))
 			w.i += 1
@@ -41,20 +42,21 @@ RunService.Heartbeat:Connect(function(dt)
 			continue
 		end
 		local pos = w.hrp.Position
-		local flat = Vector3.new(target.X, pos.Y, target.Z)
-		local delta = flat - pos
+		local goal = w.flat and Vector3.new(target.X, pos.Y, target.Z) or target
+		local delta = goal - pos
 		local dist = delta.Magnitude
 		local step = w.speed * dt
+		-- face along the ground, even on stairs
+		local ground = Vector3.new(delta.X, 0, delta.Z)
 		if dist <= step then
-			local look = dist > 1e-3 and delta.Unit or w.hrp.CFrame.LookVector
-			w.hrp.CFrame = CFrame.lookAt(flat, flat + look)
+			local look = ground.Magnitude > 1e-3 and ground.Unit or w.hrp.CFrame.LookVector
+			w.hrp.CFrame = CFrame.lookAt(goal, goal + Vector3.new(look.X, 0, look.Z))
 			w.i += 1
 			if w.i > #w.points then finish(model, w) end
 		else
-			local dir = delta.Unit
-			local np = pos + dir * step
-			-- turn smoothly toward the walking direction
+			local np = pos + delta.Unit * step
 			local cur = w.hrp.CFrame.LookVector
+			local dir = ground.Magnitude > 1e-3 and ground.Unit or Vector3.new(cur.X, 0, cur.Z)
 			local blended = cur:Lerp(dir, math.min(1, dt * 12))
 			blended = Vector3.new(blended.X, 0, blended.Z)
 			if blended.Magnitude < 1e-3 then blended = dir end

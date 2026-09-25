@@ -17,6 +17,7 @@ MAP = {
     "Server/StealService.lua": "ServerScriptService.Server.StealService",
     "Server/SchoolService.lua": "ServerScriptService.Server.SchoolService",
     "Server/Signals.lua": "ServerScriptService.Server.Signals",
+    "Server/SchoolBuilder.lua": "ServerScriptService.Server.SchoolBuilder",
     "Server/Actions.lua": "ServerScriptService.Server.Actions",
     "Server/UpgradeService.lua": "ServerScriptService.Server.UpgradeService",
     "Server/GateService.lua": "ServerScriptService.Server.GateService",

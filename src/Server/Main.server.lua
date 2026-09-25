@@ -110,6 +110,25 @@ require(Server.DebugBridge).start({
 		for _, m in workspace.Hall:GetChildren() do m:Destroy() end
 		return true
 	end,
+	-- spawn a hall student and enroll it through the normal walk-to-desk path
+	enroll = function(player, studentId)
+		local model = HallService.spawnOne(nil, studentId)
+		HallService.enroll(player, model)
+		return model.Name
+	end,
+	rows = function(player, a, b, c)
+		local p = Data.get(player)
+		p.rows = { a, b, c }
+		PlotService.rebuild(player)
+		return PlotService.deskCount(p)
+	end,
+	-- where a model is right now (x, y, z) and whether it is still walking
+	where = function(player, name)
+		local m = workspace.Hall:FindFirstChild(name) or workspace:FindFirstChild(name, true)
+		if not m or not m.PrimaryPart then return "gone" end
+		local p = m.PrimaryPart.Position
+		return { math.floor(p.X * 10) / 10, math.floor(p.Y * 10) / 10, math.floor(p.Z * 10) / 10, Walkers.isWalking(m) }
+	end,
 	tp = function(player, x, y, z, lookX, lookZ)
 		local at = Vector3.new(x, y, z)
 		player.Character:PivotTo(CFrame.lookAt(at, Vector3.new(lookX or x, y, lookZ or z - 1)))

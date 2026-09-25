@@ -174,20 +174,34 @@ Config.DeskRows = {
 }
 Config.DesksPerRow = 4
 
--- how each tier's building looks: walls, wall caps, floor, sign
+-- how each tier's building looks. wall/cap: outside walls and trim; inner: interior walls;
+-- floor/tile: classroom checker; lobby; locker; chair; door; roof; foundation; sign; column;
+-- tower: nil | "clock" | "bell" | "spires" | "rocket" | "portal"
+local function look(t)
+	t.inner = t.inner or rgb(252, 244, 226)
+	t.lobby = t.lobby or rgb(232, 224, 208)
+	t.foundation = t.foundation or rgb(160, 160, 170)
+	t.roof = t.roof or rgb(120, 120, 130)
+	t.desk = t.desk or rgb(214, 160, 100)
+	t.board = t.board or rgb(38, 74, 56)
+	t.column = t.column or rgb(248, 246, 240)
+	t.bush = t.bush or rgb(60, 160, 70)
+	t.stair = t.stair or rgb(175, 175, 185)
+	return t
+end
 Config.TierLooks = {
-	{ wall = rgb(90, 170, 255), cap = rgb(255, 220, 70), floor = rgb(255, 245, 215), tile = rgb(255, 225, 160), sign = rgb(240, 70, 70) }, -- crayon Kindergarten
-	{ wall = rgb(196, 92, 68), cap = rgb(255, 244, 214), floor = rgb(240, 226, 196), tile = rgb(222, 204, 170), sign = rgb(40, 90, 200) }, -- red-brick Elementary
-	{ wall = rgb(226, 190, 140), cap = rgb(60, 170, 160), floor = rgb(235, 235, 225), tile = rgb(200, 215, 210), sign = rgb(40, 150, 140) }, -- Middle School
-	{ wall = rgb(120, 140, 175), cap = rgb(150, 30, 45), floor = rgb(225, 225, 230), tile = rgb(190, 195, 205), sign = rgb(150, 30, 45) }, -- High School
-	{ wall = rgb(45, 65, 120), cap = rgb(240, 200, 90), floor = rgb(230, 220, 200), tile = rgb(150, 40, 50), sign = rgb(30, 45, 90) }, -- Prep School
-	{ wall = rgb(235, 235, 240), cap = rgb(240, 200, 90), floor = rgb(245, 245, 250), tile = rgb(215, 215, 225), sign = rgb(200, 160, 60) }, -- marble Academy
-	{ wall = rgb(70, 130, 90), cap = rgb(250, 240, 210), floor = rgb(235, 230, 215), tile = rgb(200, 190, 160), sign = rgb(40, 90, 60) }, -- College
-	{ wall = rgb(140, 40, 40), cap = rgb(250, 250, 250), floor = rgb(230, 225, 220), tile = rgb(170, 60, 60), sign = rgb(110, 25, 30) }, -- University
-	{ wall = rgb(110, 118, 100), cap = rgb(70, 140, 60), floor = rgb(225, 225, 215), tile = rgb(170, 175, 160), sign = rgb(40, 90, 40) }, -- Ivy League
-	{ wall = rgb(90, 60, 140), cap = rgb(240, 200, 90), floor = rgb(60, 45, 90), tile = rgb(90, 70, 130), sign = rgb(60, 30, 110) }, -- Wizard School
-	{ wall = rgb(220, 226, 236), cap = rgb(60, 220, 255), floor = rgb(40, 45, 60), tile = rgb(60, 70, 90), sign = rgb(20, 30, 60) }, -- Space Academy
-	{ wall = rgb(25, 20, 35), cap = rgb(255, 80, 220), floor = rgb(20, 15, 30), tile = rgb(60, 30, 90), sign = rgb(10, 10, 20) }, -- Multiverse
+	look({ wall = rgb(120, 190, 255), cap = rgb(255, 214, 70), floor = rgb(255, 246, 222), tile = rgb(255, 214, 150), sign = rgb(235, 70, 70), locker = rgb(235, 80, 80), chair = rgb(255, 130, 60), door = rgb(230, 60, 60), roof = rgb(235, 110, 90), lobby = rgb(255, 236, 200) }), -- crayon Kindergarten
+	look({ wall = rgb(196, 92, 68), cap = rgb(255, 244, 214), floor = rgb(240, 228, 200), tile = rgb(214, 196, 164), sign = rgb(40, 90, 200), locker = rgb(60, 120, 220), chair = rgb(60, 132, 232), door = rgb(40, 90, 200) }), -- red-brick Elementary
+	look({ wall = rgb(226, 190, 140), cap = rgb(60, 170, 160), floor = rgb(236, 236, 226), tile = rgb(196, 214, 206), sign = rgb(40, 150, 140), locker = rgb(50, 160, 150), chair = rgb(240, 140, 60), door = rgb(40, 140, 130) }), -- Middle School
+	look({ wall = rgb(126, 146, 180), cap = rgb(160, 36, 50), floor = rgb(228, 228, 232), tile = rgb(186, 192, 204), sign = rgb(150, 30, 45), locker = rgb(150, 40, 55), chair = rgb(90, 100, 120), door = rgb(140, 30, 45) }), -- High School
+	look({ wall = rgb(52, 72, 128), cap = rgb(240, 200, 90), floor = rgb(232, 222, 202), tile = rgb(150, 44, 54), sign = rgb(30, 45, 90), locker = rgb(40, 60, 110), chair = rgb(120, 25, 35), door = rgb(110, 20, 30), lobby = rgb(214, 206, 190) }), -- Prep School
+	look({ wall = rgb(236, 236, 242), cap = rgb(230, 190, 80), floor = rgb(246, 246, 250), tile = rgb(212, 212, 224), sign = rgb(200, 160, 60), locker = rgb(40, 50, 90), chair = rgb(30, 40, 80), door = rgb(30, 40, 80), roof = rgb(60, 70, 100), tower = "clock" }), -- marble Academy
+	look({ wall = rgb(76, 136, 96), cap = rgb(250, 240, 210), floor = rgb(236, 230, 216), tile = rgb(198, 188, 158), sign = rgb(40, 90, 60), locker = rgb(60, 110, 70), chair = rgb(150, 100, 60), door = rgb(90, 60, 40), tower = "clock" }), -- College
+	look({ wall = rgb(146, 44, 44), cap = rgb(250, 250, 250), floor = rgb(232, 226, 220), tile = rgb(170, 64, 64), sign = rgb(110, 25, 30), locker = rgb(110, 30, 35), chair = rgb(60, 60, 70), door = rgb(60, 30, 25), tower = "bell" }), -- University
+	look({ wall = rgb(116, 122, 104), cap = rgb(76, 146, 64), floor = rgb(226, 226, 216), tile = rgb(168, 174, 158), sign = rgb(40, 90, 40), locker = rgb(70, 90, 60), chair = rgb(110, 70, 40), door = rgb(70, 45, 30), roof = rgb(70, 80, 70), tower = "bell" }), -- Ivy League
+	look({ wall = rgb(96, 64, 146), cap = rgb(240, 200, 90), floor = rgb(70, 54, 100), tile = rgb(100, 78, 140), sign = rgb(60, 30, 110), locker = rgb(60, 40, 100), chair = rgb(140, 40, 60), door = rgb(50, 30, 80), lobby = rgb(80, 64, 110), inner = rgb(120, 100, 160), board = rgb(20, 20, 40), tower = "spires" }), -- Wizard School
+	look({ wall = rgb(222, 228, 238), cap = rgb(60, 220, 255), floor = rgb(46, 52, 70), tile = rgb(66, 76, 98), sign = rgb(20, 30, 60), locker = rgb(200, 210, 225), chair = rgb(60, 200, 255), door = rgb(60, 70, 90), lobby = rgb(56, 64, 84), inner = rgb(200, 210, 225), board = rgb(20, 30, 50), tower = "rocket" }), -- Space Academy
+	look({ wall = rgb(30, 24, 42), cap = rgb(255, 80, 220), floor = rgb(26, 20, 36), tile = rgb(66, 36, 100), sign = rgb(12, 10, 22), locker = rgb(120, 60, 200), chair = rgb(255, 80, 220), door = rgb(80, 220, 255), lobby = rgb(36, 28, 52), inner = rgb(60, 40, 90), board = rgb(10, 10, 20), tower = "portal" }), -- Multiverse
 }
 
 ---------------------------------------------------------------------------

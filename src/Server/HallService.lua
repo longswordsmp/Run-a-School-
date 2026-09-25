@@ -146,7 +146,7 @@ function HallService.enroll(player, model)
 			PlotService.place(player, slot)
 			PlotService.updateIncome(player)
 		end
-	end)
+	end, { flat = false })
 end
 
 -- put one student on the carpet; from = optional start position (a special bus door)
@@ -189,7 +189,7 @@ function HallService.spawnOne(forceRarity, forceId, weights, from)
 
 	local finish = path.End.Position
 	local pts = {}
-	if from then table.insert(pts, Vector3.new(start.X, 0, z)) end
+	if from then table.insert(pts, Vector3.new(from.X, 0, z)) end -- step down onto the carpet
 	table.insert(pts, Vector3.new(finish.X, 0, z))
 	Walkers.walk(model, pts, Config.WalkSpeed, function()
 		model:Destroy()
@@ -201,7 +201,7 @@ end
 -- special buses
 ---------------------------------------------------------------------------
 local busTemplate = map.SchoolBus
-local PARK = CFrame.new(-256, 0, 26) -- beside the regular bus, door facing the carpet
+local PARK = CFrame.new(-305, 0, 26) -- ahead of the regular bus, door facing the carpet
 local function makeBus(label, color)
 	local bus = busTemplate:Clone()
 	bus.Name = label:gsub(" ", "")

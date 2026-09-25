@@ -1,13 +1,14 @@
 -- ServerScriptService.Server.PlotService
--- Plot ownership, floors, desks, seated students, tuition, collecting, selling, tier looks.
--- Slots are numbered across floors: floor f holds slots (f-1)*16+1 .. f*16, four rows of four.
+-- Plot ownership, the campus (built by SchoolBuilder), desks, seated students, tuition,
+-- collecting and selling. Slots are numbered across floors: floor f holds (f-1)*16+1 .. f*16,
+-- four rows of four, row 1 nearest the lobby.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerStorage = game:GetService("ServerStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Data = require(script.Parent.DataService)
 local Factory = require(script.Parent.StudentFactory)
+local SchoolBuilder = require(script.Parent.SchoolBuilder)
 local Remotes = require(script.Parent.Remotes)
 local Signals = require(script.Parent.Signals)
 
@@ -15,10 +16,12 @@ local PlotService = {}
 local plotOf = {} -- [player] = plot
 local seated = {} -- [plot] = { [slot] = model }
 local plotsFolder = workspace:WaitForChild("Plots")
-local floorTemplates = ServerStorage:WaitForChild("FloorTemplates")
+local CARPET_Y = 0.65
 
 -- extra income multipliers from other systems: fn(player, profile, entry, slot, def) -> number
 PlotService.multHooks = {}
+-- called after a campus is rebuilt: fn(player, plot)
+PlotService.rebuildHooks = {}
 
 ---------------------------------------------------------------------------
 -- slots, floors, desks
@@ -40,13 +43,11 @@ function PlotService.slotRow(slot)
 end
 
 function PlotService.floorModel(plot, f)
-	if f == 1 then return plot end
-	return plot.Floors:FindFirstChild("Floor" .. f)
+	return SchoolBuilder.floorModel(plot, f)
 end
 
 function PlotService.desk(plot, slot)
-	local fm = PlotService.floorModel(plot, PlotService.slotFloor(slot))
-	return fm and fm.Desks:FindFirstChild("Desk" .. slot)
+	return SchoolBuilder.desk(plot, slot)
 end
 
 -- a newly granted floor arrives with its first two rows
@@ -111,7 +112,9 @@ function PlotService.refreshSign(player)
 	local p = Data.get(player)
 	if not plot or not p then return end
 	local look = Config.TierLooks[p.tier] or Config.TierLooks[#Config.TierLooks]
-	setSurfaceText(plot.Sign, PlotService.schoolName(player), look.sign)
+	local name = PlotService.schoolName(player)
+	setSurfaceText(plot.Sign, name, look.sign)
+	SchoolBuilder.setName(plot, name)
 	local tierName = PlotService.tierOf(p).name
 	if p.stars > 0 then
 		tierName ..= "  " .. string.rep("\u{2605}", math.min(p.stars, 5)) .. (p.stars > 5 and (" x" .. p.stars) or "")
@@ -119,120 +122,29 @@ function PlotService.refreshSign(player)
 	setSurfaceText(plot.TierPlate, tierName)
 end
 
--- recolour a floor's walls, caps, floor and tiles
-local function paint(root, look)
-	if root:FindFirstChild("Walls") then
-		for _, w in root.Walls:GetChildren() do
-			if w:IsA("BasePart") then
-				w.Color = w.Name:match("^Post") and look.cap or look.wall
-			end
-		end
-	end
-	if root:FindFirstChild("Caps") then
-		for _, c in root.Caps:GetChildren() do
-			if c:IsA("BasePart") then c.Color = look.cap end
-		end
-	end
-	local slab = root:FindFirstChild("Floor")
-	if slab then
-		slab.Color = look.floor
-		for _, t in slab:GetChildren() do
-			if t:IsA("BasePart") then t.Color = look.tile end
-		end
-	end
-end
-
-function PlotService.applyLook(plot, tierIndex)
-	local look = Config.TierLooks[tierIndex] or Config.TierLooks[#Config.TierLooks]
-	paint(plot, look)
-	for _, f in plot.Floors:GetChildren() do
-		paint(f, look)
-	end
-end
-
 ---------------------------------------------------------------------------
 -- collect pads
 ---------------------------------------------------------------------------
-local function wirePads(plot, root)
-	for _, desk in root.Desks:GetChildren() do
-		local slot = desk:GetAttribute("Slot")
-		desk.CollectPad.Touched:Connect(function(hit)
-			local char = hit:FindFirstAncestorOfClass("Model")
-			local player = char and Players:GetPlayerFromCharacter(char)
-			if player and plotOf[player] == plot then
-				PlotService.collect(player, slot)
-			end
-		end)
-	end
-end
-
----------------------------------------------------------------------------
--- elevator
----------------------------------------------------------------------------
-local function setupElevators(plot, floors)
-	for f = 1, 3 do
-		local fm = PlotService.floorModel(plot, f)
-		if fm then
-			local pad = fm.ElevatorPad
-			for _, old in pad:GetChildren() do
-				if old:IsA("ProximityPrompt") then old:Destroy() end
-			end
-			local function prompt(name, text, key, target)
-				local pp = Instance.new("ProximityPrompt")
-				pp.Name = name
-				pp.ActionText = text
-				pp.ObjectText = "Elevator"
-				pp.KeyboardKeyCode = key
-				pp.HoldDuration = 0
-				pp.RequiresLineOfSight = false
-				pp.MaxActivationDistance = 7
-				pp:SetAttribute("Color", Color3.fromRGB(80, 170, 255))
-				pp.Parent = pad
-				pp.Triggered:Connect(function(who)
-					local tm = PlotService.floorModel(plot, target)
-					local char = who.Character
-					if tm and char and char:FindFirstChild("HumanoidRootPart") then
-						char:PivotTo(tm.ElevatorPad.CFrame * CFrame.new(0, 3.5, -4))
-						Remotes.Sfx:FireClient(who, "Elevator")
-					end
-				end)
-			end
-			if f < floors then prompt("Up", "Floor " .. (f + 1) .. " \u{25B2}", Enum.KeyCode.E, f + 1) end
-			if f > 1 then prompt("Down", "Floor " .. (f - 1) .. " \u{25BC}", Enum.KeyCode.Q, f - 1) end
+local function wirePads(plot)
+	local school = plot:FindFirstChild("School")
+	if not school then return end
+	for _, fm in school.Floors:GetChildren() do
+		for _, desk in fm.Desks:GetChildren() do
+			local slot = desk:GetAttribute("Slot")
+			desk.CollectPad.Touched:Connect(function(hit)
+				local char = hit:FindFirstAncestorOfClass("Model")
+				local player = char and Players:GetPlayerFromCharacter(char)
+				if player and plotOf[player] == plot then
+					PlotService.collect(player, slot)
+				end
+			end)
 		end
 	end
 end
 
 ---------------------------------------------------------------------------
--- floors, desks, looks for an owner
+-- campus build for an owner
 ---------------------------------------------------------------------------
-function PlotService.applyFloors(player)
-	local plot = plotOf[player]
-	local p = Data.get(player)
-	if not plot or not p then return end
-	PlotService.normalizeRows(p)
-	local want = PlotService.floorsOf(p)
-	for f = 2, 3 do
-		local existing = plot.Floors:FindFirstChild("Floor" .. f)
-		if f <= want and not existing then
-			local m = floorTemplates["Floor" .. f]:Clone()
-			m:PivotTo(plot.Origin.CFrame * m:GetPivot())
-			m.Parent = plot.Floors
-			wirePads(plot, m)
-		elseif f > want and existing then
-			existing:Destroy()
-		end
-	end
-	local pad = plot.ElevatorPad
-	pad.Transparency = want > 1 and 0 or 1
-	pad.CanCollide = want > 1
-	pad.Info.Enabled = want > 1
-	setupElevators(plot, want)
-	PlotService.applyLook(plot, p.tier)
-	PlotService.applyDesks(player)
-	PlotService.refreshSign(player)
-end
-
 -- show/hide desk rows according to what the owner has unlocked
 function PlotService.applyDesks(player)
 	local plot = plotOf[player]
@@ -246,8 +158,14 @@ function PlotService.applyDesks(player)
 				d:SetAttribute("Locked", not unlocked)
 				for _, bp in d:GetDescendants() do
 					if bp:IsA("BasePart") and bp.Name ~= "SitPoint" then
-						bp.Transparency = unlocked and 0 or 0.8
-						bp.CanCollide = unlocked and bp.Name ~= "CollectPad"
+						if not unlocked then
+							bp:SetAttribute("BaseTransparency", bp:GetAttribute("BaseTransparency") or bp.Transparency)
+							bp.Transparency = 0.85
+							bp.CanCollide = false
+						else
+							bp.Transparency = bp:GetAttribute("BaseTransparency") or bp.Transparency
+							bp.CanCollide = bp.Name ~= "CollectPad" and bp.Name ~= "ChairLeg"
+						end
 					end
 				end
 				d.CollectPad.Cash.Enabled = unlocked
@@ -256,6 +174,37 @@ function PlotService.applyDesks(player)
 	end
 	player:SetAttribute("Desks", PlotService.deskCount(p))
 end
+
+-- (re)build the whole campus for the owner's tier, floors and bought items, then re-seat students
+function PlotService.rebuild(player)
+	local plot = plotOf[player]
+	local p = Data.get(player)
+	if not plot or not p then return end
+	PlotService.normalizeRows(p)
+	if seated[plot] then
+		for _, m in seated[plot] do m:Destroy() end
+		seated[plot] = {}
+	end
+	SchoolBuilder.build(plot, {
+		tier = p.tier,
+		floors = PlotService.floorsOf(p),
+		name = PlotService.schoolName(player),
+		items = p.builds,
+	})
+	wirePads(plot)
+	PlotService.applyDesks(player)
+	PlotService.refreshSign(player)
+	for slot, e in p.students do
+		if PlotService.isUnlocked(p, slot) and not e.arriving and not e.carried then
+			PlotService.place(player, slot)
+		end
+	end
+	for _, hook in PlotService.rebuildHooks do
+		task.spawn(hook, player, plot)
+	end
+end
+-- older name, kept for callers
+PlotService.applyFloors = PlotService.rebuild
 
 function PlotService.freeSlot(player)
 	local p = Data.get(player)
@@ -266,36 +215,19 @@ function PlotService.freeSlot(player)
 	return nil
 end
 
--- waypoints from a world position to a desk's chair. standOffset is the rig's root height above
--- the floor, used when the elevator carries it to an upper floor.
+-- world waypoints (root heights) from a hallway position to a desk's chair
 function PlotService.pathTo(plot, slot, from, standOffset)
 	local base = plot.Origin.CFrame
-	local function W(x, z)
-		return base:PointToWorldSpace(Vector3.new(x, 0, z))
-	end
-	local desk = PlotService.desk(plot, slot)
-	local lp = base:PointToObjectSpace(desk.SitPoint.Position)
-	local aisleX = lp.X - 5.5
+	local so = standOffset or 3
 	local pts = {}
 	local entry = plot.Entry.Position
 	if from then
-		table.insert(pts, Vector3.new(entry.X, 0, from.Z)) -- along the hallway to our gate
+		table.insert(pts, Vector3.new(entry.X, CARPET_Y + so, from.Z)) -- along the street to our gate
 	end
-	table.insert(pts, entry)
-	table.insert(pts, plot.Spawn.Position)
-	local floor = PlotService.slotFloor(slot)
-	if floor > 1 then
-		local groundPad = plot.ElevatorPad
-		local upPad = PlotService.floorModel(plot, floor).ElevatorPad
-		table.insert(pts, groundPad.Position)
-		local top = upPad.Position.Y + upPad.Size.Y / 2
-		table.insert(pts, { tp = Vector3.new(upPad.Position.X, top + (standOffset or 3), upPad.Position.Z) })
-		table.insert(pts, W(aisleX, base:PointToObjectSpace(upPad.Position).Z - 4))
-	else
-		table.insert(pts, W(aisleX, base:PointToObjectSpace(plot.Spawn.Position).Z))
+	table.insert(pts, Vector3.new(entry.X, 0.4 + so, entry.Z))
+	for _, lp in SchoolBuilder.route(slot) do
+		table.insert(pts, base:PointToWorldSpace(Vector3.new(lp.X, lp.Y + so, lp.Z)))
 	end
-	table.insert(pts, W(aisleX, lp.Z + 3.5))
-	table.insert(pts, W(lp.X, lp.Z + 3.5))
 	return pts
 end
 
@@ -373,11 +305,16 @@ function PlotService.place(player, slot)
 
 	seated[plot][slot] = model
 	PlotService.updatePad(plot, slot, e.stored or 0)
+	Signals.fire("seated", player, slot, model)
 	return model
 end
 
 function PlotService.seatedModel(plot, slot)
 	return seated[plot] and seated[plot][slot]
+end
+
+function PlotService.seatedModels(plot)
+	return seated[plot] or {}
 end
 
 -- hide a seated student while it is being carried away (the entry stays until the steal resolves)
@@ -477,6 +414,7 @@ function PlotService.collect(player, slot, quiet)
 	PlotService.updatePad(plot, slot, e.stored)
 	if not quiet then
 		Remotes.CashPop:FireClient(player, amount, PlotService.desk(plot, slot).CollectPad.Position)
+		Remotes.Sfx:FireClient(player, "Collect")
 	end
 	Signals.fire("collect", player, amount)
 	return amount
@@ -499,21 +437,23 @@ end
 ---------------------------------------------------------------------------
 -- ownership
 ---------------------------------------------------------------------------
+local function buildEmpty(plot)
+	SchoolBuilder.build(plot, { tier = 2, floors = 1, name = "Empty School", items = {} })
+	setSurfaceText(plot.Sign, "Empty School", Config.TierLooks[2].sign)
+	setSurfaceText(plot.TierPlate, "")
+end
+
 function PlotService.assign(player)
 	for _, plot in plotsFolder:GetChildren() do
 		if plot:GetAttribute("OwnerId") == 0 then
 			plot:SetAttribute("OwnerId", player.UserId)
 			plotOf[player] = plot
 			player:SetAttribute("Plot", plot.Name)
-			PlotService.applyFloors(player)
 			local p = Data.get(player)
 			for slot in p.students do
-				if PlotService.isUnlocked(p, slot) then
-					PlotService.place(player, slot)
-				else
-					p.students[slot] = nil
-				end
+				if not PlotService.isUnlocked(p, slot) then p.students[slot] = nil end
 			end
+			PlotService.rebuild(player)
 			PlotService.updateIncome(player)
 			return plot
 		end
@@ -530,29 +470,20 @@ function PlotService.release(player)
 		for _, m in seated[plot] do m:Destroy() end
 		seated[plot] = nil
 	end
-	for _, f in plot.Floors:GetChildren() do f:Destroy() end
-	for _, d in plot.Desks:GetChildren() do
-		d.CollectPad.Cash.Label.Text = ""
-	end
 	plot:SetAttribute("OwnerId", 0)
 	plot:SetAttribute("LockedUntil", 0)
-	setSurfaceText(plot.Sign, "Empty School", Config.TierLooks[2].sign)
-	setSurfaceText(plot.TierPlate, "")
-	plot.ElevatorPad.Transparency = 1
-	plot.ElevatorPad.CanCollide = false
-	plot.ElevatorPad.Info.Enabled = false
-	PlotService.applyLook(plot, 2)
+	buildEmpty(plot)
 end
 
 function PlotService.spawnCFrame(player)
 	local plot = plotOf[player]
 	if not plot then return nil end
 	local sp = plot.Spawn
-	-- face out toward the hallway
-	return CFrame.lookAt(sp.Position, sp.Position - plot.Origin.CFrame.LookVector) + Vector3.new(0, 2, 0)
+	-- face the school
+	return CFrame.lookAt(sp.Position, sp.Position + plot.Origin.CFrame.LookVector) + Vector3.new(0, 2, 0)
 end
 
--- is a world position inside this plot's walls (any floor)?
+-- is a world position inside this plot's lot (any floor)?
 function PlotService.inside(plot, pos)
 	local b = plot.Bounds
 	local lp = b.CFrame:PointToObjectSpace(pos)
@@ -562,8 +493,7 @@ end
 
 function PlotService.start()
 	for _, plot in plotsFolder:GetChildren() do
-		wirePads(plot, plot)
-		PlotService.applyLook(plot, 2)
+		buildEmpty(plot)
 	end
 	-- tuition tick
 	task.spawn(function()
