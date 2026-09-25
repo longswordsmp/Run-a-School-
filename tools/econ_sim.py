@@ -65,6 +65,10 @@ HONOR_COUNT = int(num(r"Config\.HonorBus = \{ every = \d+, offset = \d+, count =
 hb = re.search(r"Config\.HonorBus = .*?first = \{(.*?)\}, weights = \{(.*?)\}", CFG)
 HONOR_FIRST = [(k, float(v)) for k, v in re.findall(r"(\w+) = ([\d.]+)", hb.group(1))]
 HONOR_WEIGHTS = [(k, float(v)) for k, v in re.findall(r"(\w+) = ([\d.]+)", hb.group(2))]
+PICK_EVERY = num(r"Config\.PrincipalsPick = \{ every = (\d+)", 7200)
+PICK_OFFSET = num(r"Config\.PrincipalsPick = \{ every = \d+, offset = (\d+)", 1800)
+pk = re.search(r"Config\.PrincipalsPick = .*?weights = \{(.*?)\}", CFG)
+PICK_WEIGHTS = [(k, float(v)) for k, v in re.findall(r"(\w+) = ([\d.]+)", pk.group(1))] if pk else []
 WALK = 50.0  # seconds a student spends on the carpet
 
 # Supplies (School IQ), Teachers (per floor) and School Builder items (Reputation), all bought once
@@ -123,6 +127,7 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
     next_late = LATE_EVERY
     next_trip = TRIP_EVERY
     next_honor = HONOR_OFFSET
+    next_pick = PICK_OFFSET
 
     def desks():
         floors = TIERS[tier]["floors"]
@@ -163,6 +168,10 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
                 s, g = roll(rng, luck, base)
                 hall.append((t + WALK, s, g))
             next_late += LATE_EVERY
+        if PICK_WEIGHTS and t >= next_pick:
+            s, g = roll(rng, luck, PICK_WEIGHTS)
+            hall.append((t + WALK, s, g))
+            next_pick += PICK_EVERY
         if t >= next_honor:
             for i in range(HONOR_COUNT):
                 s, g = roll(rng, luck, HONOR_FIRST if i == 0 else HONOR_WEIGHTS)

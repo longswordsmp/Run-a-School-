@@ -267,12 +267,14 @@ local BUSES = {
 	Lucky = { label = "LUCKY BUS", color = Color3.fromRGB(60, 220, 110) },
 	HonorBus = { label = "HONOR ROLL", color = Color3.fromRGB(255, 200, 40) },
 	Welcome = { label = "WELCOME BUS", color = Color3.fromRGB(80, 190, 255) },
+	Pick = { label = "PRINCIPAL'S PICK", color = Color3.fromRGB(30, 30, 36), text = Color3.fromRGB(255, 215, 90) },
 }
 -- the Welcome Bus brings the six starter kids when a new principal arrives
 local WELCOME = { count = 6, ids = { "UntiedTyler", "GlueStickGus", "DoodleDot", "LunchboxLucy", "PajamaPete", "HiccupHank" } }
 
 function HallService.specialBus(kind, byName)
-	local spec = kind == "FieldTrip" and Config.FieldTrip or kind == "HonorBus" and Config.HonorBus or kind == "Welcome" and WELCOME or Config.LateBus
+	local spec = kind == "FieldTrip" and Config.FieldTrip or kind == "HonorBus" and Config.HonorBus or kind == "Welcome" and WELCOME
+		or kind == "Pick" and Config.PrincipalsPick or Config.LateBus
 	local style = BUSES[kind] or BUSES.LateBus
 	local label, color = style.label, style.color
 	local weights = spec.weights
@@ -332,6 +334,7 @@ function HallService.start()
 	workspace:SetAttribute("LateBusAt", nextAt(Config.LateBus.every, Config.LateBus.offset or 0))
 	workspace:SetAttribute("FieldTripAt", nextAt(Config.FieldTrip.every, Config.FieldTrip.offset or 750))
 	workspace:SetAttribute("HonorBusAt", nextAt(Config.HonorBus.every, Config.HonorBus.offset))
+	workspace:SetAttribute("PickAt", nextAt(Config.PrincipalsPick.every, Config.PrincipalsPick.offset))
 	workspace:SetAttribute("RecessAt", nextAt(RECESS_EVERY, 0))
 	workspace:SetAttribute("RecessUntil", 0)
 	task.spawn(function()
@@ -339,17 +342,26 @@ function HallService.start()
 		while true do
 			task.wait(0.5)
 			local t = workspace:GetServerTimeNow()
-			for _, kind in { "LateBus", "FieldTrip", "HonorBus" } do
+			-- the Pick gets a five-minute warning for the whole server
+			local pickAt = workspace:GetAttribute("PickAt")
+			if pickAt - t <= 300 and not warned.Pick5 then
+				warned.Pick5 = true
+				Remotes.Announce:FireAllClients("THE PRINCIPAL'S PICK ARRIVES IN 5 MINUTES! (PRODIGY OR SECRET)", Color3.fromRGB(255, 215, 90))
+				Remotes.Sfx:FireAllClients("BrassBell")
+			end
+			for _, kind in { "LateBus", "FieldTrip", "HonorBus", "Pick" } do
 				local at = workspace:GetAttribute(kind .. "At")
 				local label = "THE " .. BUSES[kind].label .. " BUS"
 				if kind == "LateBus" then label = "THE LATE BUS" end
 				if at - t <= 10 and not warned[kind] then
 					warned[kind] = true
-					Remotes.Announce:FireAllClients(label .. " ARRIVES IN 10s!", BUSES[kind].color)
+					Remotes.Announce:FireAllClients(label .. " ARRIVES IN 10s!", BUSES[kind].text or BUSES[kind].color)
 				end
 				if t >= at then
 					warned[kind] = nil
-					local every = (kind == "FieldTrip" and Config.FieldTrip or kind == "HonorBus" and Config.HonorBus or Config.LateBus).every
+					local every = (kind == "FieldTrip" and Config.FieldTrip or kind == "HonorBus" and Config.HonorBus
+						or kind == "Pick" and Config.PrincipalsPick or Config.LateBus).every
+					if kind == "Pick" then warned.Pick5 = nil end
 					workspace:SetAttribute(kind .. "At", at + every)
 					task.spawn(HallService.specialBus, kind)
 				end

@@ -105,6 +105,27 @@ end
 workspace:GetAttributeChangedSignal("Event"):Connect(onEvent)
 onEvent()
 
+-- the Principal's Pick: the street goes to dusk a minute before it arrives, back to day after
+local pickDusk = false
+task.spawn(function()
+	while true do
+		task.wait(1)
+		local at = workspace:GetAttribute("PickAt")
+		local now = workspace:GetServerTimeNow()
+		-- PickAt moves on to the next one as soon as the bus comes, so remember when this one was due
+		local want = at and (at - now <= 60) or false
+		if want and not pickDusk then
+			pickDusk = true
+			tween(Lighting, { ClockTime = 18.6 }, 20)
+			local due = at
+			task.delay(math.max(0, due - now) + 90, function()
+				pickDusk = false
+				if not current then tween(Lighting, { ClockTime = saved.ClockTime }, 10) end
+			end)
+		end
+	end
+end)
+
 -- keep the weather over the camera; flash now and then on Picture Day
 local nextFlash = 0
 RunService.RenderStepped:Connect(function()

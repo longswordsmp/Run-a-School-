@@ -803,6 +803,7 @@ do
 		{ "Field Trip", UI.C.purple, "bus", "FieldTrip" },
 		{ "Lucky Bus", UI.C.green, "bus", "Lucky" },
 		{ "Welcome", UI.C.blue, "bus", "Welcome" },
+		{ "The Pick", UI.C.navy, "bus", "Pick" },
 	})
 	section(2, "\u{1F389} EVENTS", {
 		{ "Snow Day", Color3.fromRGB(120, 190, 255), "event", "SnowDay" },

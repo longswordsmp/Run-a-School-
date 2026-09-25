@@ -124,7 +124,7 @@ end
 ---------------------------------------------------------------------------
 local ADMIN = {}
 ADMIN.bus = function(player, kind)
-	if kind ~= "LateBus" and kind ~= "HonorBus" and kind ~= "FieldTrip" and kind ~= "Lucky" and kind ~= "Welcome" then return false end
+	if kind ~= "LateBus" and kind ~= "HonorBus" and kind ~= "FieldTrip" and kind ~= "Lucky" and kind ~= "Welcome" and kind ~= "Pick" then return false end
 	task.spawn(HallService.specialBus, kind, player.DisplayName)
 	return true
 end

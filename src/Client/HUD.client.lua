@@ -142,7 +142,7 @@ local timers = Instance.new("Frame")
 timers.Name = "Timers"
 timers.AnchorPoint = Vector2.new(1, 0)
 timers.Position = UDim2.new(1, -12, 0, 8)
-timers.Size = UDim2.fromOffset(270, 280)
+timers.Size = UDim2.fromOffset(270, 330)
 timers.BackgroundTransparency = 1
 timers.Parent = gui
 local tlist = Instance.new("UIListLayout")
@@ -150,6 +150,7 @@ tlist.Padding = UDim.new(0, 6)
 tlist.SortOrder = Enum.SortOrder.LayoutOrder
 tlist.Parent = timers
 local TIMERS = {
+	{ attr = "PickAt", icon = "\u{1F451}", label = "Principal's Pick", sub = "Prodigy or Secret", color = Color3.fromRGB(60, 50, 80) },
 	{ attr = "HonorBusAt", icon = "\u{1F3C6}", label = "Honor Roll Bus", sub = "Legendary+", color = Color3.fromRGB(255, 190, 40) },
 	{ attr = "LateBusAt", icon = "\u{1F68C}", label = "Late Bus", sub = "Rare+", color = Color3.fromRGB(255, 130, 40) },
 	{ attr = "FieldTripAt", icon = "\u{1F392}", label = "Field Trip", sub = "Epic+", color = Color3.fromRGB(160, 90, 255) },
@@ -184,6 +185,7 @@ for i, spec in TIMERS do
 end
 local function mmss(s)
 	s = math.max(0, math.floor(s))
+	if s >= 3600 then return ("%d:%02d:%02d"):format(s // 3600, (s % 3600) // 60, s % 60) end
 	return ("%d:%02d"):format(s // 60, s % 60)
 end
 task.spawn(function()
@@ -221,7 +223,7 @@ local Action = Remotes:WaitForChild("Action")
 local letterBox = Instance.new("Frame")
 letterBox.Name = "Letters"
 letterBox.AnchorPoint = Vector2.new(1, 0)
-letterBox.Position = UDim2.new(1, -12, 0, 300)
+letterBox.Position = UDim2.new(1, -12, 0, 350)
 letterBox.Size = UDim2.fromOffset(230, 230)
 letterBox.BackgroundTransparency = 1
 letterBox.Parent = gui
