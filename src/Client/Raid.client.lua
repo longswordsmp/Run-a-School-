@@ -67,7 +67,7 @@ local heistOn = false
 task.spawn(function()
 	while true do
 		task.wait(0.25)
-		if raidOn then
+		if raidOn and not heistOn then
 			local n, carrying, crumpet = goonsLeft()
 			if carrying > 0 then
 				bannerText.Text = crumpet and "\u{1F3A9} CRUMPET HAS YOUR KID! BONK HIM!"
@@ -136,11 +136,13 @@ end
 Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
 	if kind == "raid" then
 		raidOn = true
+		if heistOn then return end
 		banner.Visible = true
 		bannerText.Text = data and data.tutorial and "\u{1F3A9} Someone's coming..." or "\u{1F6A8} VEXCORP RAID!"
 		UI.pop(banner, 0.4)
 	elseif kind == "raidOver" then
 		raidOn = false
+		if heistOn then return end
 		if data and data.defended and data.cash then
 			bannerText.Text = ("\u{1F6E1}\u{FE0F} RAID DEFENDED! +%s"):format(Config.formatCash(data.cash))
 			tint(Color3.fromRGB(40, 170, 80))

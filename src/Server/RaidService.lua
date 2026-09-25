@@ -340,7 +340,7 @@ local function lift(raid, g)
 	local p = Data.get(player)
 	local plot = PlotService.getPlot(player)
 	local e = p and p.students[g.slot]
-	if not plot or e ~= g.e or not PlotService.earning(e) then
+	if not plot or e ~= g.e or not PlotService.earning(e) or e.away or e.carried then
 		-- the kid moved, was sold or is already gone: go home empty-handed
 		goonSay(g, "Huh. Nobody here.")
 		runToVan(raid, g, R.fleeSpeed)
@@ -376,19 +376,47 @@ local function lift(raid, g)
 	runToVan(raid, g, raid.tutorial and R.tutorialCarrySpeed or R.carrySpeed)
 end
 
+-- into the school from wherever the goon is: to the gate first if he's still outside (a locked
+-- laser keeps him out), then down the aisle to the kid
 local function sendGoon(raid, g)
 	local plot = raid.plot
+	local root = g.model.PrimaryPart
+	if not root then return end
+	g.lockToken = nil
+	local inside = PlotService.inside(plot, root.Position) and (root.Position - g.path[2]).Magnitude > 2
+	local function goIn()
+		-- the rest of the way from the nearest point on the path
+		local best, bestD = 2, math.huge
+		for i = 2, #g.path do
+			local d = (g.path[i] - root.Position).Magnitude
+			if d < bestD then best, bestD = i, d end
+		end
+		local rest = {}
+		for i = best, #g.path do table.insert(rest, g.path[i]) end
+		Factory.play(g.model, "run")
+		Walkers.walk(g.model, rest, R.runSpeed, function()
+			if g.gone then return end
+			lift(raid, g)
+		end, { flat = false })
+	end
+	if inside then
+		goIn()
+		return
+	end
 	Factory.play(g.model, "run")
-	-- to the gate first: a locked laser keeps them out
-	Walkers.walk(g.model, { g.path[1], g.path[2] }, R.runSpeed, function()
+	Walkers.walk(g.model, { g.path[2] }, R.runSpeed, function()
 		if g.gone then return end
 		local lockedUntil = plot:GetAttribute("LockedUntil") or 0
 		if lockedUntil > workspace:GetServerTimeNow() then
 			goonSay(g, "It's LOCKED?! Ugh.")
 			Factory.play(g.model, "idle")
 			Factory.emote(g.model, "point")
+			local token = {}
+			g.lockToken = token
 			task.delay(math.min(R.lockWait, lockedUntil - workspace:GetServerTimeNow()), function()
-				if g.gone or not g.model.Parent then return end
+				-- (a bonk or anything else that moved him on since then cancels this)
+				if g.gone or not g.model.Parent or g.lockToken ~= token then return end
+				g.lockToken = nil
 				if (plot:GetAttribute("LockedUntil") or 0) > workspace:GetServerTimeNow() then
 					goonSay(g, "Forget it. We'll be back!")
 					raid.repelled += 1
@@ -399,12 +427,7 @@ local function sendGoon(raid, g)
 			end)
 			return
 		end
-		local rest = {}
-		for i = 2, #g.path do table.insert(rest, g.path[i]) end
-		Walkers.walk(g.model, rest, R.runSpeed, function()
-			if g.gone then return end
-			lift(raid, g)
-		end, { flat = false })
+		goIn()
 	end, { flat = false })
 end
 
@@ -428,8 +451,12 @@ local function hitGoon(player, raid, g, root)
 	end)
 	local hadKid = g.kid ~= nil
 	local def = hadKid and Config.StudentById[g.e.id]
+	g.lockToken = nil
 	if hadKid then
-		giveBack(player, g)
+		giveBack(raid.player, g)
+		if raid.player ~= player and raid.player.Parent then
+			Remotes.Notify:FireClient(raid.player, ("%s bonked a goon and saved your %s!"):format(player.DisplayName, def.name), "good")
+		end
 		g.model:SetAttribute("Carrying", nil)
 		raid.saved += 1
 		local cash = reward(player, R.saveSecs, R.saveFloor)
@@ -474,18 +501,7 @@ local function hitGoon(player, raid, g, root)
 		else
 			-- he shakes it off and tries again
 			goonSay(g, "You'll have to do better than that!")
-			local rest = {}
-			local best, bestD = 1, math.huge
-			for i, pt in g.path do
-				local d = (pt - groot.Position).Magnitude
-				if d < bestD then best, bestD = i, d end
-			end
-			for i = best, #g.path do table.insert(rest, g.path[i]) end
-			Factory.play(g.model, "run")
-			Walkers.walk(g.model, rest, R.runSpeed, function()
-				if g.gone then return end
-				lift(raid, g)
-			end, { flat = false })
+			sendGoon(raid, g)
 		end
 	end)
 end
@@ -547,6 +563,18 @@ raidEnded = function(raid)
 	nextRaid[player] = now() + math.random(R.every[1], R.every[2])
 	player:SetAttribute("Raid", nil)
 	if not player.Parent then return end
+	if raid.tutorial then
+		local p = Data.get(player)
+		local step = p and p.tutorial and Config.Tutorial[p.tutorial]
+		if step and step.id == "bonk" then
+			-- he got away without being bonked (or never found a kid): he'll try again
+			task.delay(6, function()
+				local pp = Data.get(player)
+				local st = pp and pp.tutorial and Config.Tutorial[pp.tutorial]
+				if player.Parent and st and st.id == "bonk" then RaidService.tutorialRaid(player) end
+			end)
+		end
+	end
 	if raid.lost == 0 and not raid.tutorial and (raid.saved > 0 or raid.ko > 0 or raid.repelled > 0) then
 		local cash = reward(player, R.defendSecs, R.defendFloor)
 		Data.addCash(player, cash)
@@ -582,11 +610,17 @@ function RaidService.start_raid(player, opts)
 	end
 	local hp = opts.hp or R.hpByTier[tierOf(p)]
 	local base = plot.Origin.CFrame
+	raid.pending = #slots
+	local function spawned()
+		raid.pending -= 1
+		-- every goon's kid vanished before he could set off: nothing to do, the van leaves
+		if raid.pending <= 0 and #raid.goons == 0 and not raid.ended then task.spawn(raidEnded, raid) end
+	end
 	for i, slot in slots do
 		task.delay((i - 1) * 0.6, function()
 			if raid.ended or not player.Parent then return end
 			local e = p.students[slot]
-			if not e then return end
+			if not e or e.away or e.carried then spawned() return end
 			local spec = opts.tutorial and CRUMPET or GOON
 			local model = Factory.buildTeacher(spec, 1)
 			model.Name = opts.tutorial and "Crumpet" or "Goon"
@@ -605,6 +639,7 @@ function RaidService.start_raid(player, opts)
 			table.insert(raid.goons, g)
 			if opts.tutorial then goonSay(g, "Terribly sorry. Just passing through.") end
 			sendGoon(raid, g)
+			spawned()
 		end)
 	end
 	return true
@@ -630,7 +665,10 @@ local function cleanup(player)
 	end
 	if raid.van.Parent then raid.van:Destroy() end
 	raids[player] = nil
-	if player.Parent then player:SetAttribute("Raid", nil) end
+	if player.Parent then
+		player:SetAttribute("Raid", nil)
+		Remotes.Push:FireClient(player, "raidOver", { defended = false, lost = 0 })
+	end
 end
 
 function RaidService.start()
