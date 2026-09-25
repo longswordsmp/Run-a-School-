@@ -220,6 +220,93 @@ function Factory.standOffset(model)
 	return hum.HipHeight + model.PrimaryPart.Size.Y / 2 + (model:GetAttribute("Hover") or 0)
 end
 
+-- teachers: adult proportions, their own template folder (the Shop renders them in viewports)
+local teacherTemplates = ReplicatedStorage:FindFirstChild("TeacherTemplates")
+if not teacherTemplates then
+	teacherTemplates = Instance.new("Folder")
+	teacherTemplates.Name = "TeacherTemplates"
+	teacherTemplates.Parent = ReplicatedStorage
+end
+
+local function makeTeacherTemplate(tdef)
+	local look = Props.TeacherLooks[tdef.outfit] or Props.TeacherLooks.sub
+	local skin = SKIN[look.skin] or SKIN.light
+	local desc = Instance.new("HumanoidDescription")
+	desc.HeadColor = skin
+	desc.LeftArmColor = look.shirt
+	desc.RightArmColor = look.shirt
+	desc.TorsoColor = look.torso or look.shirt
+	desc.LeftLegColor = look.pants
+	desc.RightLegColor = look.pants
+	desc.HeightScale = 1.08
+	desc.WidthScale = 1
+	desc.DepthScale = 1
+	desc.HeadScale = 1.05
+	desc.BodyTypeScale = 0.2
+	desc.ProportionScale = 0
+	local model = Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
+	model.Name = tdef.id
+	local hum = model:FindFirstChildOfClass("Humanoid")
+	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	hum.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+	hum.BreakJointsOnDeath = false
+	hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+	if not hum:FindFirstChildOfClass("Animator") then
+		Instance.new("Animator").Parent = hum
+	end
+	for _, n in { "LeftHand", "RightHand" } do
+		local h = model:FindFirstChild(n)
+		if h then h.Color = skin end
+	end
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.CanCollide = false
+			p.CanQuery = false
+			p.CanTouch = false
+			p.Massless = true
+		end
+	end
+	model.PrimaryPart = model:FindFirstChild("HumanoidRootPart")
+	model.PrimaryPart.Anchored = true
+	Props.teacher(model, tdef.outfit)
+	model.Parent = teacherTemplates
+	return model
+end
+
+-- withTag: a floating name tag (the Shop preview and lineups); in a classroom the teacher's
+-- name sits on the desk nameplate instead so it never covers the chalkboard
+function Factory.buildTeacher(tdef, floor, withTag)
+	local template = teacherTemplates:FindFirstChild(tdef.id) or makeTeacherTemplate(tdef)
+	local model = template:Clone()
+	model:SetAttribute("TeacherId", tdef.id)
+	if not withTag then return model end
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "Tag"
+	bb.Size = UDim2.new(9, 0, 3, 0)
+	bb.StudsOffsetWorldSpace = Vector3.new(0, 3.4, 0)
+	bb.MaxDistance = 70
+	bb.LightInfluence = 0
+	bb.Parent = model.Head
+	local list = Instance.new("UIListLayout")
+	list.SortOrder = Enum.SortOrder.LayoutOrder
+	list.VerticalAlignment = Enum.VerticalAlignment.Bottom
+	list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	list.Parent = bb
+	label(bb, "Title", 1, 0.28, tdef.title, Color3.fromRGB(255, 214, 90))
+	label(bb, "Name", 2, 0.38, tdef.name, Color3.new(1, 1, 1))
+	label(bb, "Boost", 3, 0.3, ("+%d%% tuition on floor %d"):format(math.floor((tdef.mult - 1) * 100 + 0.5), floor or 1), Color3.fromRGB(110, 255, 110))
+	return model
+end
+
+function Factory.preloadTeachers()
+	for _, t in Config.Teachers do
+		if not teacherTemplates:FindFirstChild(t.id) then
+			local ok, err = pcall(makeTeacherTemplate, t)
+			if not ok then warn("[StudentFactory] teacher template failed for", t.id, err) end
+		end
+	end
+end
+
 function Factory.build(def, gradeId)
 	local model = getTemplate(def):Clone()
 	model:SetAttribute("StudentId", def.id)

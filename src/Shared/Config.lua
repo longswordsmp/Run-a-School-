@@ -227,6 +227,89 @@ function Config.upgradeCost(id, level)
 end
 Config.JanitorIntervals = { 60, 45, 30, 20, 10 }
 
+---------------------------------------------------------------------------
+-- School Supplies: materials that make the school smarter. Each is bought once, kept on
+-- review, shows up on every desk, and adds School IQ. Tuition x (IQ / 100); IQ starts at 100.
+-- tools/econ_sim.py reads these lines; keep one per line.
+---------------------------------------------------------------------------
+Config.Supplies = {
+	{ id = "Pencils", name = "Sharpened Pencils", icon = "\u{270F}\u{FE0F}", iq = 10, tier = 1, price = 250 },
+	{ id = "Notebooks", name = "Spiral Notebooks", icon = "\u{1F4D3}", iq = 10, tier = 1, price = 2e3 },
+	{ id = "Crayons", name = "Giant Crayon Boxes", icon = "\u{1F58D}\u{FE0F}", iq = 10, tier = 1, price = 12e3 },
+	{ id = "Textbooks", name = "Textbooks", icon = "\u{1F4DA}", iq = 10, tier = 2, price = 90e3 },
+	{ id = "Rulers", name = "Rulers & Protractors", icon = "\u{1F4D0}", iq = 10, tier = 2, price = 300e3 },
+	{ id = "Calculators", name = "Calculators", icon = "\u{1F9EE}", iq = 15, tier = 3, price = 21e6 },
+	{ id = "Globes", name = "Desk Globes", icon = "\u{1F30D}", iq = 15, tier = 3, price = 19e6 },
+	{ id = "Microscopes", name = "Microscopes", icon = "\u{1F52C}", iq = 15, tier = 4, price = 540e6 },
+	{ id = "Laptops", name = "Laptops", icon = "\u{1F4BB}", iq = 20, tier = 5, price = 9.2e9 },
+	{ id = "Tablets", name = "Tablets", icon = "\u{1F4F1}", iq = 20, tier = 6, price = 54e9 },
+	{ id = "Smartboards", name = "Smartboards", icon = "\u{1F5A5}\u{FE0F}", iq = 25, tier = 7, price = 240e9 },
+	{ id = "VRHeadsets", name = "VR Headsets", icon = "\u{1F97D}", iq = 25, tier = 8, price = 580e9 },
+	{ id = "RobotTutors", name = "Robot Tutors", icon = "\u{1F916}", iq = 30, tier = 9, price = 1.2e12 },
+	{ id = "HoloDesks", name = "Hologram Desks", icon = "\u{2728}", iq = 30, tier = 10, price = 2.6e12 },
+	{ id = "QuantumPCs", name = "Quantum Computers", icon = "\u{269B}\u{FE0F}", iq = 40, tier = 11, price = 7.7e12 },
+	{ id = "ThinkingCaps", name = "Thinking Caps", icon = "\u{1F9E2}", iq = 50, tier = 12, price = 20e12 },
+}
+Config.SupplyById = {}
+for i, s in Config.Supplies do
+	s.order = i
+	Config.SupplyById[s.id] = s
+end
+
+---------------------------------------------------------------------------
+-- Teachers: one per floor, standing at the chalkboard. Hiring a better one replaces the old
+-- one; each floor is hired separately. mult applies to the students on that floor. Kept on review.
+-- tools/econ_sim.py reads these lines; keep one per line.
+---------------------------------------------------------------------------
+Config.Teachers = {
+	{ id = "SubSteve", name = "Substitute Steve", title = "Substitute", mult = 1.1, tier = 1, price = 600, outfit = "sub" },
+	{ id = "StudentTia", name = "Student Teacher Tia", title = "Student Teacher", mult = 1.2, tier = 1, price = 6e3, outfit = "tia" },
+	{ id = "MrChalk", name = "Mr. Chalk", title = "Math Teacher", mult = 1.35, tier = 2, price = 150e3, outfit = "chalk" },
+	{ id = "MsHoneycutt", name = "Ms. Honeycutt", title = "English Teacher", mult = 1.5, tier = 3, price = 12e6, outfit = "honey" },
+	{ id = "CoachRex", name = "Coach Rex", title = "Gym Coach", mult = 1.7, tier = 4, price = 430e6, outfit = "coach" },
+	{ id = "DrBeaker", name = "Dr. Beaker", title = "Science Teacher", mult = 1.9, tier = 5, price = 3.5e9, outfit = "beaker" },
+	{ id = "MadameVerse", name = "Madame Verse", title = "Poetry Teacher", mult = 2.1, tier = 6, price = 20e9, outfit = "verse" },
+	{ id = "ProfTweed", name = "Professor Tweed", title = "Professor", mult = 2.4, tier = 7, price = 110e9, outfit = "tweed" },
+	{ id = "DeanMaximus", name = "Dean Maximus", title = "Dean", mult = 2.7, tier = 8, price = 250e9, outfit = "dean" },
+	{ id = "ArchmageQuill", name = "Archmage Quill", title = "Wizard Teacher", mult = 3.0, tier = 10, price = 1e12, outfit = "mage" },
+	{ id = "CommanderNova", name = "Commander Nova", title = "Space Instructor", mult = 3.4, tier = 11, price = 3e12, outfit = "nova" },
+	{ id = "Omniteacher", name = "The Omniteacher", title = "Teaches Everything", mult = 4.0, tier = 12, price = 9.3e12, outfit = "omni" },
+}
+Config.TeacherById = {}
+for i, t in Config.Teachers do
+	t.order = i
+	Config.TeacherById[t.id] = t
+end
+
+---------------------------------------------------------------------------
+-- School Builder: things you add to the campus. Each adds Reputation; tuition x (1 + rep/100).
+-- Kept on review. A better fence replaces the one before it (replaces = id).
+-- tools/econ_sim.py reads these lines; keep one per line.
+---------------------------------------------------------------------------
+Config.Builds = {
+	{ id = "FlowerBeds", name = "Flower Beds", icon = "\u{1F337}", rep = 2, tier = 1, price = 1.5e3 },
+	{ id = "PicketFence", name = "Picket Fence", icon = "\u{1FAB5}", rep = 2, tier = 1, price = 5e3 },
+	{ id = "PathLights", name = "Path Lights", icon = "\u{1F4A1}", rep = 2, tier = 2, price = 50e3 },
+	{ id = "WindowBoxes", name = "Window Boxes", icon = "\u{1F33C}", rep = 2, tier = 2, price = 150e3 },
+	{ id = "Playground", name = "Playground", icon = "\u{1F6DD}", rep = 4, tier = 2, price = 350e3 },
+	{ id = "VendingMachines", name = "Vending Machines", icon = "\u{1F964}", rep = 3, tier = 3, price = 5.6e6 },
+	{ id = "Court", name = "Basketball Court", icon = "\u{1F3C0}", rep = 5, tier = 3, price = 9e6 },
+	{ id = "Garden", name = "School Garden", icon = "\u{1F955}", rep = 3, tier = 4, price = 160e6 },
+	{ id = "Bleachers", name = "Bleachers", icon = "\u{1F3DF}\u{FE0F}", rep = 3, tier = 4, price = 160e6 },
+	{ id = "BrickWall", name = "Brick Wall", icon = "\u{1F9F1}", rep = 3, tier = 5, price = 2.1e9, replaces = "PicketFence" },
+	{ id = "Fountain", name = "Fountain", icon = "\u{26F2}", rep = 6, tier = 5, price = 4.2e9 },
+	{ id = "Banners", name = "School Banners", icon = "\u{1F6A9}", rep = 3, tier = 6, price = 13e9 },
+	{ id = "Statue", name = "Founder's Statue", icon = "\u{1F5FF}", rep = 7, tier = 7, price = 120e9 },
+	{ id = "IronFence", name = "Iron Gates", icon = "\u{1F3F0}", rep = 4, tier = 8, price = 170e9, replaces = "BrickWall" },
+	{ id = "SolarPanels", name = "Solar Panels", icon = "\u{2600}\u{FE0F}", rep = 5, tier = 9, price = 370e9 },
+	{ id = "BellTower", name = "Bell Tower", icon = "\u{1F514}", rep = 8, tier = 10, price = 1.4e12 },
+}
+Config.BuildById = {}
+for i, b in Config.Builds do
+	b.order = i
+	Config.BuildById[b.id] = b
+end
+
 -- special buses
 Config.LateBus = { every = 300, count = 6, minRarity = 3 } -- Rare+
 Config.FieldTrip = { every = 1800, count = 8, weights = { Epic = 60, Legendary = 30, Mythic = 8, Prodigy = 1.8, Secret = 0.2 } }

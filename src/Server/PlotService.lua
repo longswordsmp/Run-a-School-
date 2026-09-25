@@ -193,6 +193,7 @@ function PlotService.rebuild(player)
 	})
 	wirePads(plot)
 	PlotService.applyDesks(player)
+	SchoolBuilder.decorate(plot, p.supplies)
 	PlotService.refreshSign(player)
 	for slot, e in p.students do
 		if PlotService.isUnlocked(p, slot) and not e.arriving and not e.carried then

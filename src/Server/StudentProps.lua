@@ -1201,6 +1201,284 @@ function Props.add(model, def)
 	build(model, head, head.Size)
 end
 
+---------------------------------------------------------------------------
+-- teachers: adult rigs, one recognisable outfit each (Config.Teachers[].outfit)
+---------------------------------------------------------------------------
+local T = {}
+Props.TeacherLooks = {
+	sub = { skin = "light", shirt = rgb(196, 176, 136), pants = rgb(105, 88, 70) },
+	tia = { skin = "tan", shirt = rgb(60, 180, 170), pants = rgb(40, 50, 90) },
+	chalk = { skin = "light", shirt = rgb(245, 245, 240), torso = rgb(120, 80, 50), pants = rgb(90, 92, 100) },
+	honey = { skin = "brown", shirt = rgb(240, 190, 70), pants = rgb(120, 30, 50) },
+	coach = { skin = "dark", shirt = rgb(210, 40, 40), pants = rgb(210, 40, 40) },
+	beaker = { skin = "light", shirt = rgb(250, 250, 250), pants = rgb(50, 55, 70) },
+	verse = { skin = "tan", shirt = rgb(130, 60, 170), pants = rgb(30, 30, 36) },
+	tweed = { skin = "light", shirt = rgb(140, 110, 80), pants = rgb(95, 75, 55) },
+	dean = { skin = "brown", shirt = rgb(30, 30, 40), pants = rgb(30, 30, 40) },
+	mage = { skin = "light", shirt = rgb(90, 50, 170), pants = rgb(90, 50, 170) },
+	nova = { skin = "tan", shirt = rgb(236, 238, 244), pants = rgb(236, 238, 244) },
+	omni = { skin = "light", shirt = rgb(40, 30, 90), pants = rgb(40, 30, 90) },
+}
+
+local function hairCap(model, head, hs, c, height)
+	blob(model, head, Vector3.new(hs.X * 1.08, hs.Y * (height or 0.66), hs.Z * 1.12), CFrame.new(0, hs.Y * 0.22, hs.Z * 0.06), c)
+	blob(model, head, Vector3.new(hs.X * 0.98, hs.Y * 0.26, hs.Z * 0.42), CFrame.new(0, hs.Y * 0.33, -hs.Z * 0.3), c)
+end
+
+local function lanyard(model, torso, ts, color)
+	for _, x in { -1, 1 } do
+		block(model, torso, Vector3.new(0.06, ts.Y * 0.5, 0.05), CFrame.new(x * ts.X * 0.12, ts.Y * 0.2, -ts.Z * 0.53) * CFrame.Angles(0, 0, math.rad(x * -14)), color)
+	end
+end
+
+-- Substitute Steve: rumpled cardigan, messy hair, a coffee he never puts down, a SUB badge
+T.sub = function(model, head, hs, torso, ts)
+	local brown = rgb(110, 75, 45)
+	hairCap(model, head, hs, brown)
+	for i, a in { -30, 10, 40 } do
+		blob(model, head, Vector3.new(hs.X * 0.35, hs.Y * 0.3, hs.X * 0.35), CFrame.new(hs.X * (i - 2) * 0.25, hs.Y * 0.55, 0) * CFrame.Angles(0, 0, math.rad(a)), brown)
+	end
+	-- tired eyes
+	for _, x in { -0.2, 0.2 } do
+		block(model, head, Vector3.new(hs.X * 0.2, hs.Y * 0.04, 0.05), CFrame.new(hs.X * x, hs.Y * 0.02, -hs.Z * 0.5), rgb(120, 90, 110))
+	end
+	local hand = part(model, "RightHand")
+	cylY(model, hand, 0.55, 0.65, CFrame.new(0, 0.1, -0.35), rgb(250, 250, 250))
+	cylY(model, hand, 0.5, 0.05, CFrame.new(0, 0.44, -0.35), rgb(90, 55, 30))
+	block(model, torso, Vector3.new(ts.X * 0.28, ts.Y * 0.16, 0.06), CFrame.new(ts.X * 0.22, ts.Y * 0.2, -ts.Z * 0.54), rgb(255, 255, 255))
+	block(model, torso, Vector3.new(ts.X * 0.2, ts.Y * 0.05, 0.07), CFrame.new(ts.X * 0.22, ts.Y * 0.2, -ts.Z * 0.56), rgb(220, 40, 40))
+end
+
+-- Student Teacher Tia: ponytail, lanyard and a clipboard full of gold stars
+T.tia = function(model, head, hs, torso, ts)
+	local c = rgb(90, 50, 30)
+	hairCap(model, head, hs, c, 0.8)
+	-- long hair falling past the shoulders, and a high ponytail with a pink band
+	for _, x in { -1, 1 } do
+		blob(model, head, Vector3.new(hs.X * 0.28, hs.Y * 1.1, hs.Z * 0.7), CFrame.new(x * hs.X * 0.5, -hs.Y * 0.2, hs.Z * 0.1), c)
+	end
+	blob(model, head, Vector3.new(hs.X * 0.9, hs.Y * 1.1, hs.Z * 0.3), CFrame.new(0, -hs.Y * 0.2, hs.Z * 0.5), c)
+	blob(model, head, Vector3.new(hs.X * 0.35, hs.Y * 0.9, hs.X * 0.35), CFrame.new(0, hs.Y * 0.35, hs.Z * 0.75) * CFrame.Angles(math.rad(35), 0, 0), c)
+	ball(model, head, hs.X * 0.2, CFrame.new(0, hs.Y * 0.5, hs.Z * 0.55), rgb(255, 120, 170))
+	lanyard(model, torso, ts, rgb(255, 120, 170))
+	local hand = part(model, "LeftHand")
+	block(model, hand, Vector3.new(0.95, 1.25, 0.08), CFrame.new(0, 0.25, -0.3), rgb(150, 100, 60))
+	block(model, hand, Vector3.new(0.8, 1.05, 0.1), CFrame.new(0, 0.2, -0.32), rgb(250, 250, 245))
+	for i = 0, 2 do
+		block(model, hand, Vector3.new(0.16, 0.16, 0.11), CFrame.new(-0.2 + i * 0.2, 0.5, -0.38), rgb(255, 200, 40), Enum.Material.Neon)
+	end
+end
+
+-- Mr. Chalk: bald on top with grey sides, round glasses, red bow tie, a long pointer stick
+T.chalk = function(model, head, hs, torso, ts)
+	local grey = rgb(170, 170, 175)
+	for _, x in { -1, 1 } do
+		blob(model, head, Vector3.new(hs.X * 0.25, hs.Y * 0.45, hs.Z * 0.9), CFrame.new(x * hs.X * 0.48, hs.Y * 0.05, hs.Z * 0.1), grey)
+	end
+	blob(model, head, Vector3.new(hs.X * 0.9, hs.Y * 0.35, hs.Z * 0.25), CFrame.new(0, 0, hs.Z * 0.48), grey)
+	wireGlasses(model, head, hs, 0.05, 0.15)
+	for _, x in { -1, 1 } do
+		block(model, torso, Vector3.new(ts.X * 0.14, ts.Y * 0.12, 0.08), CFrame.new(x * ts.X * 0.08, ts.Y * 0.42, -ts.Z * 0.54) * CFrame.Angles(0, 0, math.rad(x * 20)), rgb(210, 30, 40))
+	end
+	ball(model, torso, 0.12, CFrame.new(0, ts.Y * 0.42, -ts.Z * 0.56), rgb(170, 20, 30))
+	-- chalk dust on the vest
+	for i = 1, 3 do
+		blob(model, torso, Vector3.new(0.25, 0.18, 0.05), CFrame.new(ts.X * (0.25 - i * 0.12), -ts.Y * (0.1 + i * 0.08), -ts.Z * 0.53), rgb(250, 250, 250))
+	end
+	local hand = part(model, "RightHand")
+	cylY(model, hand, 0.1, 2.4, CFrame.new(0, -1.1, -0.15), rgb(120, 80, 40), Enum.Material.Wood)
+	ball(model, hand, 0.16, CFrame.new(0, -2.3, -0.15), rgb(30, 30, 30))
+end
+
+-- Ms. Honeycutt: bun with a pencil through it, red cat-eye glasses, a very large book
+T.honey = function(model, head, hs, torso, ts)
+	local c = rgb(35, 25, 20)
+	hairCap(model, head, hs, c)
+	local bun = ball(model, head, hs.X * 0.55, CFrame.new(0, hs.Y * 0.62, hs.Z * 0.2), c)
+	block(model, head, Vector3.new(hs.X * 1.1, 0.1, 0.1), CFrame.new(0, hs.Y * 0.66, hs.Z * 0.2) * CFrame.Angles(0, 0, math.rad(25)), rgb(255, 200, 40))
+	_ = bun
+	for _, x in { -1, 1 } do
+		block(model, head, Vector3.new(hs.X * 0.34, hs.Y * 0.18, 0.06), CFrame.new(x * hs.X * 0.21, hs.Y * 0.07, -hs.Z * 0.53) * CFrame.Angles(0, 0, math.rad(x * -12)), rgb(200, 30, 50))
+		local lens = block(model, head, Vector3.new(hs.X * 0.24, hs.Y * 0.1, 0.07), CFrame.new(x * hs.X * 0.21, hs.Y * 0.07, -hs.Z * 0.55), rgb(230, 240, 255), Enum.Material.Glass)
+		lens.Transparency = 0.5
+	end
+	local hand = part(model, "LeftHand")
+	block(model, hand, Vector3.new(0.5, 1.5, 1.2), CFrame.new(0, 0.3, -0.3), rgb(40, 90, 170))
+	block(model, hand, Vector3.new(0.52, 1.4, 1.05), CFrame.new(0, 0.3, -0.36), rgb(250, 245, 225))
+	-- pearls
+	for i = -3, 3 do
+		ball(model, torso, 0.16, CFrame.new(i * ts.X * 0.07, ts.Y * (0.38 - math.abs(i) * -0.02 - 0.06), -ts.Z * 0.55), rgb(250, 250, 245))
+	end
+end
+
+-- Coach Rex: cap, whistle, sweatband, clipboard
+T.coach = function(model, head, hs, torso, ts)
+	local red, white = rgb(210, 40, 40), rgb(250, 250, 250)
+	blob(model, head, Vector3.new(hs.X * 1.1, hs.Y * 0.55, hs.Z * 1.12), CFrame.new(0, hs.Y * 0.32, hs.Z * 0.02), red)
+	block(model, head, Vector3.new(hs.X * 0.95, 0.12, hs.Z * 0.6), CFrame.new(0, hs.Y * 0.28, -hs.Z * 0.62), red)
+	block(model, head, Vector3.new(hs.X * 1.1, hs.Y * 0.1, hs.Z * 1.1), CFrame.new(0, hs.Y * 0.12, 0), white)
+	lanyard(model, torso, ts, white)
+	block(model, torso, Vector3.new(0.3, 0.18, 0.35), CFrame.new(0, -ts.Y * 0.05, -ts.Z * 0.62), rgb(200, 200, 210), Enum.Material.Metal)
+	-- stripes down the tracksuit
+	for _, s in { "LeftUpperArm", "RightUpperArm", "LeftUpperLeg", "RightUpperLeg" } do
+		local a = part(model, s)
+		if a then
+			local x = s:find("Left") and -1 or 1
+			block(model, a, Vector3.new(0.06, a.Size.Y * 1.01, a.Size.Z * 0.3), CFrame.new(x * a.Size.X * 0.51, 0, 0), white)
+		end
+	end
+	local hand = part(model, "LeftHand")
+	block(model, hand, Vector3.new(0.95, 1.25, 0.08), CFrame.new(0, 0.25, -0.3), rgb(60, 60, 70))
+	block(model, hand, Vector3.new(0.8, 1.05, 0.1), CFrame.new(0, 0.2, -0.32), white)
+	for i = 0, 2 do
+		block(model, hand, Vector3.new(0.6, 0.05, 0.11), CFrame.new(0, 0.5 - i * 0.25, -0.38), rgb(40, 40, 50))
+	end
+end
+
+-- Dr. Beaker: lab coat, wild white hair, goggles up, a bubbling green beaker
+T.beaker = function(model, head, hs, torso, ts)
+	local white = rgb(245, 245, 245)
+	for i = 0, 6 do
+		local a = math.rad(i * 51)
+		ball(model, head, hs.X * 0.45, CFrame.new(math.cos(a) * hs.X * 0.42, hs.Y * (0.3 + (i % 2) * 0.12), math.sin(a) * hs.Z * 0.42), white)
+	end
+	block(model, head, Vector3.new(hs.X * 1.12, hs.Y * 0.12, hs.Z * 1.12), CFrame.new(0, hs.Y * 0.32, 0), rgb(40, 40, 45))
+	for _, x in { -0.22, 0.22 } do
+		local g = cylZ(model, head, hs.X * 0.3, 0.12, CFrame.new(hs.X * x, hs.Y * 0.34, -hs.Z * 0.55), rgb(120, 220, 255), Enum.Material.Glass)
+		g.Transparency = 0.3
+	end
+	-- coat lapels and a pocket of pens
+	for _, x in { -1, 1 } do
+		block(model, torso, Vector3.new(ts.X * 0.18, ts.Y * 0.8, 0.05), CFrame.new(x * ts.X * 0.12, 0, -ts.Z * 0.53) * CFrame.Angles(0, 0, math.rad(x * 8)), rgb(225, 225, 230))
+	end
+	for i, c in { rgb(220, 40, 40), rgb(40, 90, 220), rgb(40, 40, 40) } do
+		block(model, torso, Vector3.new(0.06, 0.35, 0.06), CFrame.new(-ts.X * (0.2 + i * 0.06), ts.Y * 0.28, -ts.Z * 0.56), c)
+	end
+	local hand = part(model, "RightHand")
+	local glass = cylY(model, hand, 0.95, 1.2, CFrame.new(0, 0.35, -0.55), rgb(220, 240, 255), Enum.Material.Glass)
+	glass.Transparency = 0.45
+	cylY(model, hand, 0.85, 0.75, CFrame.new(0, 0.15, -0.55), rgb(90, 255, 90), Enum.Material.Neon)
+	cylY(model, hand, 0.4, 0.5, CFrame.new(0, 1.1, -0.55), rgb(220, 240, 255), Enum.Material.Glass).Transparency = 0.45
+	sparkles(glass, rgb(140, 255, 140), 6)
+end
+
+-- Madame Verse: beret, striped scarf, a feather quill
+T.verse = function(model, head, hs, torso, ts)
+	hairCap(model, head, hs, rgb(20, 16, 14))
+	blob(model, head, Vector3.new(hs.X * 1.2, hs.Y * 0.28, hs.Z * 1.2), CFrame.new(-hs.X * 0.1, hs.Y * 0.55, 0) * CFrame.Angles(0, 0, math.rad(12)), rgb(170, 30, 50))
+	ball(model, head, 0.2, CFrame.new(-hs.X * 0.05, hs.Y * 0.72, 0), rgb(170, 30, 50))
+	for i = 0, 3 do
+		block(model, torso, Vector3.new(ts.X * 0.95, 0.18, ts.Z * 1.08), CFrame.new(0, ts.Y * 0.44 - i * 0.02, 0) * CFrame.Angles(0, math.rad(i * 3), 0), i % 2 == 0 and rgb(250, 200, 60) or rgb(220, 60, 90))
+	end
+	block(model, torso, Vector3.new(0.35, ts.Y * 0.7, 0.1), CFrame.new(ts.X * 0.18, ts.Y * 0.05, -ts.Z * 0.56), rgb(250, 200, 60))
+	local hand = part(model, "RightHand")
+	cylY(model, hand, 0.07, 1.6, CFrame.new(0, 0.7, -0.25) * CFrame.Angles(math.rad(-20), 0, 0), rgb(40, 30, 30))
+	blob(model, hand, Vector3.new(0.12, 1.5, 0.6), CFrame.new(0, 1.3, -0.5) * CFrame.Angles(math.rad(-20), 0, 0), rgb(200, 90, 255))
+	blob(model, hand, Vector3.new(0.13, 0.9, 0.3), CFrame.new(0, 1.3, -0.52) * CFrame.Angles(math.rad(-20), 0, 0), rgb(255, 170, 230))
+end
+
+-- Professor Tweed: white beard and side hair, bow tie, elbow patches, a stack of books
+T.tweed = function(model, head, hs, torso, ts)
+	local white = rgb(240, 240, 242)
+	for _, x in { -1, 1 } do
+		blob(model, head, Vector3.new(hs.X * 0.25, hs.Y * 0.45, hs.Z * 0.9), CFrame.new(x * hs.X * 0.48, hs.Y * 0.1, hs.Z * 0.1), white)
+	end
+	blob(model, head, Vector3.new(hs.X * 0.85, hs.Y * 0.5, hs.Z * 0.4), CFrame.new(0, -hs.Y * 0.35, -hs.Z * 0.3), white)
+	wireGlasses(model, head, hs, 0.05, 0.14)
+	block(model, torso, Vector3.new(ts.X * 0.3, ts.Y * 0.12, 0.08), CFrame.new(0, ts.Y * 0.42, -ts.Z * 0.54), rgb(40, 90, 60))
+	for _, s in { "LeftLowerArm", "RightLowerArm" } do
+		local a = part(model, s)
+		blob(model, a, Vector3.new(a.Size.X * 0.7, a.Size.Y * 0.4, 0.1), CFrame.new(0, 0, a.Size.Z * 0.5), rgb(90, 60, 40))
+	end
+	local hand = part(model, "LeftHand")
+	for i, c in { rgb(150, 40, 40), rgb(40, 70, 130), rgb(60, 110, 60) } do
+		block(model, hand, Vector3.new(0.9, 0.28, 1.2), CFrame.new(0, 0.1 + i * 0.28, -0.3), c)
+	end
+end
+
+-- Dean Maximus: black robe, mortarboard, gold chain of office
+T.dean = function(model, head, hs, torso, ts)
+	local black, gold = rgb(25, 25, 30), rgb(255, 200, 60)
+	cylY(model, head, hs.X * 1.05, hs.Y * 0.3, CFrame.new(0, hs.Y * 0.42, 0), black)
+	block(model, head, Vector3.new(hs.X * 1.7, 0.1, hs.X * 1.7), CFrame.new(0, hs.Y * 0.6, 0) * CFrame.Angles(0, math.rad(45), 0), black)
+	ball(model, head, 0.18, CFrame.new(0, hs.Y * 0.66, 0), gold)
+	block(model, head, Vector3.new(0.1, hs.Y * 0.45, 0.1), CFrame.new(hs.X * 0.6, hs.Y * 0.4, -hs.X * 0.6), gold)
+	for i = -4, 4 do
+		ball(model, torso, 0.16, CFrame.new(i * ts.X * 0.08, ts.Y * (0.4 - (4 - math.abs(i)) * 0.07), -ts.Z * 0.56), gold, Enum.Material.Metal)
+	end
+	cylZ(model, torso, 0.55, 0.1, CFrame.new(0, ts.Y * 0.05, -ts.Z * 0.58), gold, Enum.Material.Metal)
+	-- robe sleeves
+	for _, s in { "LeftUpperArm", "RightUpperArm" } do
+		local a = part(model, s)
+		blob(model, a, Vector3.new(a.Size.X * 1.5, a.Size.Y * 1.1, a.Size.Z * 1.5), CFrame.new(0, -a.Size.Y * 0.1, 0), black)
+	end
+	blob(model, part(model, "LowerTorso"), Vector3.new(ts.X * 1.25, ts.Y * 1.6, ts.Z * 1.4), CFrame.new(0, -ts.Y * 0.6, 0), black)
+end
+
+-- Archmage Quill: tall starry hat, long beard, a staff with a glowing orb
+T.mage = function(model, head, hs, torso, ts)
+	local purple = rgb(90, 50, 170)
+	cylY(model, head, hs.X * 1.5, 0.15, CFrame.new(0, hs.Y * 0.4, 0), purple)
+	local cf = CFrame.new(0, hs.Y * 0.5, 0)
+	local d = hs.X * 1.05
+	for i = 1, 5 do
+		local len = hs.Y * 0.35
+		cf = cf * CFrame.Angles(math.rad(i == 5 and 25 or 5), 0, 0) * CFrame.new(0, len * 0.5, 0)
+		cylY(model, head, d, len, cf, purple)
+		cf = cf * CFrame.new(0, len * 0.45, 0)
+		d *= 0.75
+	end
+	for i = 1, 3 do
+		ball(model, head, 0.2, CFrame.new(hs.X * (0.2 - i * 0.15), hs.Y * (0.6 + i * 0.25), -hs.Z * 0.3), rgb(255, 230, 90), Enum.Material.Neon)
+	end
+	blob(model, head, Vector3.new(hs.X * 0.8, hs.Y * 1.1, hs.Z * 0.4), CFrame.new(0, -hs.Y * 0.6, -hs.Z * 0.3), rgb(240, 240, 245))
+	local hand = part(model, "RightHand")
+	cylY(model, hand, 0.18, 4.2, CFrame.new(0, 0.9, -0.2), rgb(110, 70, 40), Enum.Material.Wood)
+	local orb = ball(model, hand, 0.7, CFrame.new(0, 3.2, -0.2), rgb(120, 200, 255), Enum.Material.Neon)
+	sparkles(orb, rgb(170, 220, 255), 10)
+	blob(model, part(model, "LowerTorso"), Vector3.new(ts.X * 1.25, ts.Y * 1.6, ts.Z * 1.4), CFrame.new(0, -ts.Y * 0.6, 0), purple)
+end
+
+-- Commander Nova: space suit, bubble helmet, jetpack, mission patch
+T.nova = function(model, head, hs, torso, ts)
+	hairCap(model, head, hs, rgb(30, 22, 18))
+	local bubble = ball(model, head, hs.X * 1.55, CFrame.new(0, hs.Y * 0.05, 0), rgb(200, 230, 255), Enum.Material.Glass)
+	bubble.Transparency = 0.7
+	block(model, torso, Vector3.new(ts.X * 1.2, 0.3, ts.Z * 1.2), CFrame.new(0, ts.Y * 0.5, 0), rgb(200, 205, 215), Enum.Material.Metal)
+	for _, x in { -1, 1 } do
+		cylY(model, torso, ts.X * 0.3, ts.Y * 0.9, CFrame.new(x * ts.X * 0.2, 0, ts.Z * 0.75), rgb(200, 205, 215), Enum.Material.Metal)
+		cylY(model, torso, ts.X * 0.18, 0.3, CFrame.new(x * ts.X * 0.2, -ts.Y * 0.55, ts.Z * 0.75), rgb(255, 140, 40), Enum.Material.Neon)
+	end
+	cylZ(model, torso, ts.X * 0.3, 0.08, CFrame.new(-ts.X * 0.22, ts.Y * 0.2, -ts.Z * 0.54), rgb(40, 80, 200))
+	ball(model, torso, 0.14, CFrame.new(-ts.X * 0.22, ts.Y * 0.2, -ts.Z * 0.6), rgb(255, 255, 255), Enum.Material.Neon)
+end
+
+-- The Omniteacher: cosmic robe, a halo, books orbiting around them
+T.omni = function(model, head, hs, torso, ts)
+	hairCap(model, head, hs, rgb(240, 240, 255))
+	local halo = cylY(model, head, hs.X * 1.3, 0.08, CFrame.new(0, hs.Y * 0.95, 0), rgb(255, 240, 150), Enum.Material.Neon)
+	_ = halo
+	for i = 0, 5 do
+		ball(model, torso, 0.18, CFrame.new(math.cos(i) * ts.X * 0.3, ts.Y * (0.3 - i * 0.12), -ts.Z * 0.55), rgb(255, 255, 255), Enum.Material.Neon)
+	end
+	local piv = pivot(model, part(model, "HumanoidRootPart"), CFrame.new(0, 1.2, 0), 60)
+	for i = 0, 3 do
+		local a = math.rad(i * 90)
+		local c = ({ rgb(230, 60, 60), rgb(60, 140, 230), rgb(250, 200, 60), rgb(80, 200, 110) })[i + 1]
+		block(model, piv, Vector3.new(0.9, 1.2, 0.3), CFrame.new(math.cos(a) * 3, math.sin(i) * 0.4, math.sin(a) * 3) * CFrame.Angles(0, -a, 0), c)
+	end
+	blob(model, part(model, "LowerTorso"), Vector3.new(ts.X * 1.25, ts.Y * 1.6, ts.Z * 1.4), CFrame.new(0, -ts.Y * 0.6, 0), rgb(40, 30, 90))
+	sparkles(part(model, "HumanoidRootPart"), rgb(200, 180, 255), 10)
+end
+
+function Props.teacher(model, outfit)
+	local build = T[outfit]
+	if not build then return end
+	local head = model:FindFirstChild("Head")
+	local torso = model:FindFirstChild("UpperTorso")
+	build(model, head, head.Size, torso, torso.Size)
+end
+
 local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
 
 function Props.gradeAura(model, grade)

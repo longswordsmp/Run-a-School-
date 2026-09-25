@@ -880,6 +880,202 @@ Items.VendingMachines = function(parent, L)
 end
 
 ---------------------------------------------------------------------------
+-- School Supplies on the desks (the three best a desk can hold) and in the classrooms
+---------------------------------------------------------------------------
+-- slot: "small" items stand at the back corners of a desk, "flat"/"device" lie in the middle
+local DESK_SUPPLY = {}
+
+local function onDesk(folder, top, name, size, x, y, z, color, material, extra)
+	local cf = top.CFrame * CFrame.new(x, top.Size.Y / 2 + size.Y / 2 + y, z)
+	return part(folder, name, size, cf, color, material, extra)
+end
+
+DESK_SUPPLY.Pencils = { kind = "small", build = function(f, top, x, z)
+	local cup = onDesk(f, top, "PencilCup", Vector3.new(0.6, 0.8, 0.6), x, 0, z, rgb(70, 130, 220))
+	for i, dx in { -0.14, 0, 0.14 } do
+		local p = part(f, "Pencil", Vector3.new(0.12, 1.1, 0.12), cup.CFrame * CFrame.new(dx, 0.55, (i - 2) * 0.1) * CFrame.Angles(math.rad((i - 2) * 10), 0, math.rad(dx * 60)), rgb(255, 200, 40))
+		part(f, "Tip", Vector3.new(0.13, 0.12, 0.13), p.CFrame * CFrame.new(0, 0.6, 0), rgb(255, 140, 170))
+	end
+end }
+DESK_SUPPLY.Crayons = { kind = "small", build = function(f, top, x, z)
+	local box = onDesk(f, top, "CrayonBox", Vector3.new(0.9, 0.55, 0.4), x, 0, z, rgb(80, 190, 90))
+	part(f, "Label", Vector3.new(0.92, 0.2, 0.42), box.CFrame * CFrame.new(0, -0.05, 0), rgb(255, 214, 60))
+	for i, c in { rgb(230, 50, 50), rgb(50, 110, 230), rgb(250, 160, 30), rgb(160, 70, 220) } do
+		part(f, "Crayon", Vector3.new(0.13, 0.25, 0.13), box.CFrame * CFrame.new(-0.33 + (i - 1) * 0.22, 0.38, 0), c)
+	end
+end }
+DESK_SUPPLY.Calculators = { kind = "small", build = function(f, top, x, z)
+	local c = onDesk(f, top, "Calculator", Vector3.new(0.7, 0.12, 1), x, 0, z, rgb(60, 64, 76))
+	part(f, "Screen", Vector3.new(0.5, 0.03, 0.25), c.CFrame * CFrame.new(0, 0.07, -0.3), rgb(170, 210, 150))
+	part(f, "Keys", Vector3.new(0.52, 0.03, 0.5), c.CFrame * CFrame.new(0, 0.07, 0.15), rgb(200, 200, 210))
+end }
+DESK_SUPPLY.Globes = { kind = "small", build = function(f, top, x, z)
+	onDesk(f, top, "GlobeBase", Vector3.new(0.5, 0.1, 0.5), x, 0, z, rgb(200, 160, 60), Enum.Material.Metal)
+	onDesk(f, top, "GlobeStem", Vector3.new(0.1, 0.5, 0.1), x, 0.1, z, rgb(200, 160, 60), Enum.Material.Metal)
+	local g = ball(f, "Globe", 0.8, top.CFrame * CFrame.new(x, top.Size.Y / 2 + 1, z), rgb(60, 140, 230))
+	ball(f, "Land", 0.45, g.CFrame * CFrame.new(0.18, 0.12, -0.12), rgb(90, 190, 90))
+end }
+DESK_SUPPLY.Microscopes = { kind = "small", build = function(f, top, x, z)
+	onDesk(f, top, "ScopeBase", Vector3.new(0.7, 0.15, 0.8), x, 0, z, rgb(240, 240, 245))
+	onDesk(f, top, "ScopeArm", Vector3.new(0.2, 1, 0.2), x, 0.15, z + 0.25, rgb(240, 240, 245))
+	local tube = part(f, "ScopeTube", Vector3.new(0.22, 0.8, 0.22), top.CFrame * CFrame.new(x, top.Size.Y / 2 + 1.2, z) * CFrame.Angles(math.rad(-25), 0, 0), rgb(40, 40, 50))
+	part(f, "Eyepiece", Vector3.new(0.26, 0.2, 0.26), tube.CFrame * CFrame.new(0, 0.45, 0), rgb(20, 20, 25))
+end }
+DESK_SUPPLY.VRHeadsets = { kind = "small", build = function(f, top, x, z)
+	local h = onDesk(f, top, "Headset", Vector3.new(0.95, 0.45, 0.55), x, 0, z, rgb(30, 30, 38))
+	part(f, "Visor", Vector3.new(0.85, 0.3, 0.05), h.CFrame * CFrame.new(0, 0, 0.29), rgb(80, 200, 255), Enum.Material.Neon)
+	part(f, "Strap", Vector3.new(1.05, 0.12, 0.3), h.CFrame * CFrame.new(0, 0.1, -0.2), rgb(60, 60, 70))
+end }
+DESK_SUPPLY.RobotTutors = { kind = "small", build = function(f, top, x, z)
+	local body = onDesk(f, top, "RobotBody", Vector3.new(0.6, 0.6, 0.5), x, 0, z, rgb(200, 205, 215), Enum.Material.Metal)
+	local head = part(f, "RobotHead", Vector3.new(0.5, 0.42, 0.45), body.CFrame * CFrame.new(0, 0.53, 0), rgb(220, 225, 235), Enum.Material.Metal)
+	for _, ex in { -0.12, 0.12 } do
+		part(f, "Eye", Vector3.new(0.1, 0.1, 0.05), head.CFrame * CFrame.new(ex, 0.03, 0.23), rgb(80, 230, 255), Enum.Material.Neon)
+	end
+	part(f, "Antenna", Vector3.new(0.05, 0.3, 0.05), head.CFrame * CFrame.new(0, 0.35, 0), rgb(90, 90, 100))
+	ball(f, "AntennaBall", 0.14, head.CFrame * CFrame.new(0, 0.52, 0), rgb(255, 80, 80), Enum.Material.Neon)
+end }
+DESK_SUPPLY.ThinkingCaps = { kind = "small", build = function(f, top, x, z)
+	local cap = ball(f, "ThinkingCap", 0.8, top.CFrame * CFrame.new(x, top.Size.Y / 2 + 0.2, z), rgb(90, 60, 220))
+	for i, c in { rgb(255, 80, 80), rgb(80, 220, 120), rgb(80, 160, 255) } do
+		part(f, "CapStripe", Vector3.new(0.82, 0.08, 0.2), cap.CFrame * CFrame.new(0, 0.12, -0.25 + (i - 1) * 0.25), c)
+	end
+	part(f, "PropStem", Vector3.new(0.06, 0.3, 0.06), cap.CFrame * CFrame.new(0, 0.5, 0), rgb(60, 60, 70))
+	part(f, "Propeller", Vector3.new(1, 0.05, 0.16), cap.CFrame * CFrame.new(0, 0.66, 0) * CFrame.Angles(0, math.rad(30), 0), rgb(255, 210, 60))
+end }
+DESK_SUPPLY.Notebooks = { kind = "flat", build = function(f, top, x, z)
+	local n = onDesk(f, top, "Notebook", Vector3.new(1.4, 0.1, 1.8), x - 0.3, 0, z, rgb(60, 120, 230))
+	part(f, "Pages", Vector3.new(1.3, 0.06, 1.7), n.CFrame * CFrame.new(0.03, 0.06, 0), rgb(250, 250, 245))
+	part(f, "Spiral", Vector3.new(0.12, 0.14, 1.75), n.CFrame * CFrame.new(-0.68, 0.04, 0), rgb(180, 180, 190), Enum.Material.Metal)
+end }
+DESK_SUPPLY.Rulers = { kind = "flat", build = function(f, top, x, z)
+	DESK_SUPPLY.Notebooks.build(f, top, x, z)
+	onDesk(f, top, "Ruler", Vector3.new(0.35, 0.05, 2.4), x + 0.75, 0, z, rgb(255, 214, 60))
+end }
+DESK_SUPPLY.Textbooks = { kind = "flat", build = function(f, top, x, z)
+	onDesk(f, top, "Textbook", Vector3.new(1.6, 0.32, 1.2), x, 0, z, rgb(200, 50, 50))
+	onDesk(f, top, "Textbook", Vector3.new(1.5, 0.3, 1.1), x + 0.05, 0.32, z, rgb(50, 160, 90))
+	onDesk(f, top, "Textbook", Vector3.new(1.4, 0.28, 1.05), x - 0.05, 0.62, z, rgb(250, 200, 60))
+end }
+DESK_SUPPLY.Laptops = { kind = "device", build = function(f, top, x, z)
+	local base = onDesk(f, top, "Laptop", Vector3.new(1.9, 0.1, 1.3), x, 0, z + 0.2, rgb(200, 204, 212), Enum.Material.Metal)
+	local lid = part(f, "LaptopLid", Vector3.new(1.9, 1.25, 0.08), base.CFrame * CFrame.new(0, 0.58, -0.62) * CFrame.Angles(math.rad(-12), 0, 0), rgb(200, 204, 212), Enum.Material.Metal)
+	part(f, "LaptopScreen", Vector3.new(1.7, 1.05, 0.02), lid.CFrame * CFrame.new(0, 0, 0.05), rgb(90, 170, 255), Enum.Material.Neon)
+end }
+DESK_SUPPLY.Tablets = { kind = "device", build = function(f, top, x, z)
+	local stand = onDesk(f, top, "TabletStand", Vector3.new(0.8, 0.15, 0.6), x, 0, z, rgb(60, 60, 70))
+	local t = part(f, "Tablet", Vector3.new(1.7, 1.2, 0.1), stand.CFrame * CFrame.new(0, 0.6, -0.1) * CFrame.Angles(math.rad(-18), 0, 0), rgb(25, 25, 30))
+	part(f, "TabletScreen", Vector3.new(1.5, 1.02, 0.02), t.CFrame * CFrame.new(0, 0, 0.06), rgb(120, 230, 170), Enum.Material.Neon)
+end }
+DESK_SUPPLY.HoloDesks = { kind = "device", build = function(f, top, x, z)
+	onDesk(f, top, "HoloPad", Vector3.new(5.6, 0.04, 3), 0, 0, 0, rgb(80, 220, 255), Enum.Material.Neon, { Transparency = 0.55, CanCollide = false })
+	local cube = part(f, "Hologram", Vector3.new(0.9, 0.9, 0.9), top.CFrame * CFrame.new(x, top.Size.Y / 2 + 1.6, z) * CFrame.Angles(math.rad(35), math.rad(45), 0), rgb(120, 230, 255), Enum.Material.ForceField, { CanCollide = false })
+	light(cube, 6, 0.5, rgb(120, 230, 255))
+end }
+
+-- the three best supplies for one desk: the newest device (or flat item) in the middle and the
+-- two newest small items at the back corners
+local function deskPicks(owned)
+	local small, device, flat = {}, nil, nil
+	for i = #Config.Supplies, 1, -1 do
+		local s = Config.Supplies[i]
+		local d = DESK_SUPPLY[s.id]
+		if owned[s.id] and d then
+			if d.kind == "small" then
+				if #small < 2 then table.insert(small, s.id) end
+			elseif d.kind == "device" then
+				device = device or s.id
+			else
+				flat = flat or s.id
+			end
+		end
+	end
+	return small, device or flat
+end
+
+-- (re)place supplies on every desk and the classroom-wide ones (Smartboards, Quantum Computers)
+function SchoolBuilder.decorate(plot, owned)
+	local school = plot:FindFirstChild("School")
+	if not school then return end
+	owned = owned or {}
+	local small, center = deskPicks(owned)
+	local base = plot.Origin.CFrame
+	for _, fm in school.Floors:GetChildren() do
+		local old = fm:FindFirstChild("Supplies")
+		if old then old:Destroy() end
+		local folder = Instance.new("Folder")
+		folder.Name = "Supplies"
+		folder.Parent = fm
+		for _, d in fm.Desks:GetChildren() do
+			local f = Instance.new("Folder")
+			f.Name = d.Name
+			f.Parent = folder
+			local top = d.Top
+			if center then DESK_SUPPLY[center].build(f, top, 0, 0) end
+			if small[1] then DESK_SUPPLY[small[1]].build(f, top, 2.3, -1) end
+			if small[2] then DESK_SUPPLY[small[2]].build(f, top, -2.3, -1) end
+			local locked = d:GetAttribute("Locked")
+			for _, p in f:GetDescendants() do
+				if p:IsA("BasePart") then
+					-- studs are too busy at this size
+					if p.Material == Enum.Material.Plastic then p.Material = Enum.Material.SmoothPlastic end
+					p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+					p.CanCollide, p.CanQuery, p.CanTouch = false, false, false
+					p.CastShadow = false
+					-- locked desks show their supplies as ghosts like the desk itself
+					if locked then p.Transparency = math.max(p.Transparency, 0.85) end
+				end
+			end
+		end
+		-- classroom upgrades
+		local board = fm.Classroom:FindFirstChild("Chalkboard")
+		local ft = board and (board.Position.Y - 7) or 0
+		if board then
+			if owned.Smartboards then
+				board.Color = rgb(18, 30, 60)
+				local L = function(x, y, z) return board.CFrame * CFrame.new(x, y, z) end
+				for _, e in { { 0, 3.6, 30.4, 0.25 }, { 0, -3.6, 30.4, 0.25 }, { -15.1, 0, 0.25, 7.4 }, { 15.1, 0, 0.25, 7.4 } } do
+					part(folder, "SmartFrame", Vector3.new(e[3], e[4], 0.1), L(e[1], e[2], 0.2), rgb(80, 220, 255), Enum.Material.Neon)
+				end
+			end
+		end
+		if owned.QuantumPCs then
+			-- the golden "chandelier" quantum computer, hanging over the back corner
+			local qx, qz = 24, -58
+			local function Lq(y) return base * CFrame.new(qx, ft + y, qz) end
+			part(folder, "QuantumRod", Vector3.new(0.3, 3, 0.3), Lq(13.3), rgb(230, 190, 90), Enum.Material.Metal)
+			for i, y in { 11.6, 10.2, 8.8, 7.4 } do
+				local d = 3.6 - i * 0.55
+				cyl(folder, "QuantumDisc", d, 0.25, Lq(y) * CFrame.Angles(0, 0, math.rad(90)), rgb(240, 200, 100), Enum.Material.Metal)
+				for k = 0, 5 do
+					local a = math.rad(k * 60)
+					part(folder, "QuantumWire", Vector3.new(0.12, 1.4, 0.12), Lq(y - 0.7) * CFrame.new(math.cos(a) * d * 0.35, 0, math.sin(a) * d * 0.35), rgb(200, 120, 60), Enum.Material.Metal)
+				end
+			end
+			local core = ball(folder, "QuantumCore", 0.9, Lq(6.4), rgb(140, 120, 255), Enum.Material.Neon)
+			light(core, 10, 0.6, rgb(140, 120, 255))
+		end
+	end
+end
+
+-- rebuild just the School Builder items (after a purchase), keeping the rest of the campus
+local function ownedItems(items)
+	local show = {}
+	for id in items or {} do show[id] = true end
+	-- a better fence replaces the one before it
+	for id in items or {} do
+		local def = Config.BuildById and Config.BuildById[id]
+		local r = def and def.replaces
+		while r do
+			show[r] = nil
+			local rd = Config.BuildById[r]
+			r = rd and rd.replaces
+		end
+	end
+	return show
+end
+
+---------------------------------------------------------------------------
 -- build / rebuild a campus
 ---------------------------------------------------------------------------
 -- opts: { tier = index, floors = n, name = string, items = { [itemId] = true } }
@@ -900,10 +1096,28 @@ function SchoolBuilder.build(plot, opts)
 	end
 	local roofY = buildFacade(school, L, opts.floors, look, opts.tier, opts.name or "Empty School")
 	buildYard(school, L, look)
+	school:SetAttribute("Floors", opts.floors)
+	school:SetAttribute("RoofY", roofY)
+	school:SetAttribute("Tier", opts.tier)
+	school.Parent = plot
+	SchoolBuilder.setItems(plot, opts.items)
+	if opts.supplies then SchoolBuilder.decorate(plot, opts.supplies) end
+	return school
+end
+
+-- (re)build the School Builder items on an existing campus
+function SchoolBuilder.setItems(plot, owned)
+	local school = plot:FindFirstChild("School")
+	if not school then return end
+	local old = school:FindFirstChild("Items")
+	if old then old:Destroy() end
+	local look = Config.TierLooks[school:GetAttribute("Tier") or 2] or Config.TierLooks[2]
+	local roofY = school:GetAttribute("RoofY") or 17
+	local base = plot.Origin.CFrame
+	local function L(x, y, z) return base * CFrame.new(x, y, z) end
 	local items = Instance.new("Folder")
 	items.Name = "Items"
-	items.Parent = school
-	for id in opts.items or {} do
+	for id in ownedItems(owned) do
 		local fn = Items[id]
 		if fn then
 			local f = Instance.new("Folder")
@@ -913,10 +1127,7 @@ function SchoolBuilder.build(plot, opts)
 			if not ok then warn("[SchoolBuilder] item", id, err) end
 		end
 	end
-	school:SetAttribute("Floors", opts.floors)
-	school:SetAttribute("RoofY", roofY)
-	school.Parent = plot
-	return school
+	items.Parent = school
 end
 
 function SchoolBuilder.setName(plot, name)

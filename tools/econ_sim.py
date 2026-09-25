@@ -61,10 +61,15 @@ trip_w = re.search(r"Config\.FieldTrip = .*?weights = \{(.*?)\}", CFG).group(1)
 TRIP_WEIGHTS = [(k, float(v)) for k, v in re.findall(r"(\w+) = ([\d.]+)", trip_w)]
 WALK = 50.0  # seconds a student spends on the carpet
 
-# Multipliers the finished game adds on top of students and tiers, by tier reached. Teachers are
-# kept across reviews and get better as the player can afford rarer ones; decor stars add +5 % each.
-TEACHER_MULT = [1.1, 1.2, 1.3, 1.45, 1.6, 1.8, 2.0, 2.3, 2.6, 3.0, 3.5, 3.5]
-DECOR_MULT = [1.0, 1.05, 1.1, 1.1, 1.15, 1.15, 1.2, 1.2, 1.25, 1.25, 1.25, 1.25]
+# Supplies (School IQ), Teachers (per floor) and School Builder items (Reputation), all bought once
+# and kept on review. A rational player buys one when it pays for itself within PAYBACK seconds.
+SUPPLIES = [{"id": m.group(1), "gain": float(m.group(2)), "tier": int(m.group(3)), "price": float(m.group(4))}
+            for m in re.finditer(r'\{ id = "(\w+)", name = "[^"]+", icon = "[^"]*", iq = ([\d.]+), tier = (\d+), price = ([\d.e]+)', CFG)]
+TEACHERS = [{"id": m.group(1), "mult": float(m.group(2)), "tier": int(m.group(3)), "price": float(m.group(4))}
+            for m in re.finditer(r'\{ id = "(\w+)", name = "[^"]+", title = "[^"]+", mult = ([\d.]+), tier = (\d+), price = ([\d.e]+)', CFG)]
+BUILDS = [{"id": m.group(1), "gain": float(m.group(2)), "tier": int(m.group(3)), "price": float(m.group(4))}
+          for m in re.finditer(r'\{ id = "(\w+)", name = "[^"]+", icon = "[^"]*", rep = ([\d.]+), tier = (\d+), price = ([\d.e]+)', CFG)]
+PAYBACK = 3600.0
 
 # luck upgrade (Recruitment Office): +2 % per level, 10 levels
 LUCK_COSTS = [10e3 * 4 ** i for i in range(10)]
@@ -102,6 +107,10 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
     seated = []  # (value_per_sec_before_mult, student, grade_mult)
     rows_owned = [2, 0, 0]  # floor 1 starts with 2 rows
     luck_level = 0
+    iq = 100.0
+    rep = 0.0
+    teacher = [1.0, 1.0, 1.0]  # mult per floor
+    owned_items = set()
     hall = []  # (expires, student, grade)
     events = {}
     next_spawn = 0.0
@@ -112,8 +121,14 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
         floors = TIERS[tier]["floors"]
         return sum(rows_owned[f] for f in range(floors)) * DESKS_PER_ROW
 
+    def teacher_avg():
+        floors = TIERS[tier]["floors"]
+        d = [rows_owned[f] * DESKS_PER_ROW for f in range(floors)]
+        tot = sum(d)
+        return sum(d[f] * teacher[f] for f in range(floors)) / tot if tot else 1.0
+
     def income():
-        return sum(v for v, _, _ in seated) * TIERS[tier]["mult"] * TEACHER_MULT[tier] * DECOR_MULT[tier]
+        return sum(v for v, _, _ in seated) * TIERS[tier]["mult"] * teacher_avg() * (iq / 100) * (1 + rep / 100)
 
     def mark(key):
         if key not in events:
@@ -155,6 +170,7 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
             has = needs is None or any(
                 (s["rarity"] == "Secret") if needs == "Secret" else (s["id"] == needs) for _, s, _ in seated)
             if cash >= tier_cash[tier + 1] and has:
+                events[f"income@{tier}"] = inc
                 tier += 1
                 mark(f"tier {tier} {nxt['name']}")
                 if stop_tier is not None and tier >= stop_tier:
@@ -176,6 +192,36 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
         if luck_level < len(LUCK_COSTS) and cash >= LUCK_COSTS[luck_level] and LUCK_COSTS[luck_level] <= inc * 300:
             cash -= LUCK_COSTS[luck_level]
             luck_level += 1
+
+        # supplies, builder items, teachers: best payback first
+        if inc > 0:
+            options = []
+            for it in SUPPLIES:
+                if it["id"] not in owned_items and tier + 1 >= it["tier"]:
+                    options.append((it["price"] / (inc * it["gain"] / iq), "iq", it))
+            for it in BUILDS:
+                if it["id"] not in owned_items and tier + 1 >= it["tier"]:
+                    options.append((it["price"] / (inc * it["gain"] / (100 + rep)), "rep", it))
+            floors = TIERS[tier]["floors"]
+            avg = teacher_avg()
+            for f in range(floors):
+                share = rows_owned[f] * DESKS_PER_ROW / max(1, sum(rows_owned[x] * DESKS_PER_ROW for x in range(floors)))
+                for it in TEACHERS:
+                    if tier + 1 >= it["tier"] and it["mult"] > teacher[f]:
+                        gain = inc * share * (it["mult"] - teacher[f]) / avg
+                        if gain > 0:
+                            options.append((it["price"] / gain, ("t", f), it))
+            options.sort(key=lambda o: o[0])
+            for pay, kind, it in options[:1]:
+                if pay <= PAYBACK and cash >= it["price"]:
+                    cash -= it["price"]
+                    if kind == "iq":
+                        iq += it["gain"]; owned_items.add(it["id"])
+                    elif kind == "rep":
+                        rep += it["gain"]; owned_items.add(it["id"])
+                    else:
+                        teacher[kind[1]] = it["mult"]
+                    mark(f"buy {it['id']}")
 
         # students
         needs = TIERS[tier + 1]["needs"] if tier + 1 < len(TIERS) else None
@@ -263,6 +309,10 @@ def main():
     keys.sort(key=lambda k: statistics.median([r.get(k, math.inf) for r in runs]))
     print(f"{len(STUDENTS)} students, {len(TIERS)} tiers, {seeds} seeds, {hours:.0f} h cap")
     print(f"{'milestone':40s} {'median':>9s} {'min':>9s} {'max':>9s}  reached")
+    for k in [k for k in keys if k.startswith("income@")]:
+        vals = sorted(r[k] for r in runs if k in r)
+        print(f"{k:40s} {statistics.median(vals):.3g}/s at the end of that tier")
+    keys = [k for k in keys if not k.startswith("income@")]
     for k in keys:
         vals = [r[k] for r in runs if k in r]
         med = statistics.median(vals) if len(vals) == seeds else None

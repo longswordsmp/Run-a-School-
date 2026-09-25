@@ -14,6 +14,9 @@ function SchoolService.snapshot(player, p)
 	local index = {}
 	for key in p.index do table.insert(index, key) end
 	local tier = PlotService.tierOf(p)
+	-- floor numbers as strings: a remote drops sparse integer keys
+	local teachers = {}
+	for floor, t in p.teachers do teachers[tostring(floor)] = t.id end
 	return {
 		ok = true,
 		cash = p.cash,
@@ -30,6 +33,11 @@ function SchoolService.snapshot(player, p)
 		settings = p.settings,
 		stats = p.stats,
 		tutorial = p.tutorial,
+		supplies = p.supplies,
+		builds = p.builds,
+		teachers = teachers,
+		iq = player:GetAttribute("IQ") or 100,
+		rep = player:GetAttribute("Rep") or 0,
 	}
 end
 
