@@ -163,6 +163,13 @@ local EVENT_NAMES = {
 	PictureDay = { "\u{1F4F8} PICTURE DAY", "Picture Perfect x2" },
 	Halloween = { "\u{1F383} HALLOWEEN", "Spooky kids x3.5" },
 	SpaceCamp = { "\u{1F680} SPACE CAMP", "Cosmic kids x7" },
+	FieldDay = { "\u{1F3C5} FIELD DAY", "Gold Medal kids x3" },
+	PromNight = { "\u{1FA69} PROM NIGHT", "Prom Royalty x4" },
+	Throwback = { "\u{1F4FC} THROWBACK WEEK", "Retro kids x3" },
+	WizardWeek = { "\u{1FA84} WIZARD WEEK", "Enchanted kids x5" },
+	CandyCarnival = { "\u{1F36D} CANDY CARNIVAL", "Sugar Rush kids x3" },
+	HostileTakeover = { "\u{1F3E2} HOSTILE TAKEOVER", "Old Money kids x5" },
+	Graduation = { "\u{1F393} GRADUATION", "Graduated kids x6" },
 }
 local rows = {}
 for i, spec in TIMERS do

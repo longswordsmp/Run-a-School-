@@ -24,8 +24,15 @@ EventService.Events = {
 	PictureDay = { name = "PICTURE DAY", grade = "Picture Perfect", weight = 10, color = Color3.fromRGB(255, 255, 255) },
 	Halloween = { name = "HALLOWEEN", grade = "Spooky", weight = 5, color = Color3.fromRGB(255, 130, 20), music = "halloween" },
 	SpaceCamp = { name = "SPACE CAMP", grade = "Cosmic", weight = 1.5, color = Color3.fromRGB(140, 90, 255) },
+	FieldDay = { name = "FIELD DAY", grade = "Gold Medal", weight = 6, color = Color3.fromRGB(255, 205, 60) },
+	PromNight = { name = "PROM NIGHT", grade = "Prom Royalty", weight = 4, color = Color3.fromRGB(255, 120, 220) },
+	Throwback = { name = "THROWBACK WEEK", grade = "Retro", weight = 6, color = Color3.fromRGB(230, 170, 90) },
+	WizardWeek = { name = "WIZARD WEEK", grade = "Enchanted", weight = 2.5, color = Color3.fromRGB(170, 110, 255) },
+	CandyCarnival = { name = "CANDY CARNIVAL", grade = "Sugar Rush", weight = 6, color = Color3.fromRGB(255, 110, 190) },
+	HostileTakeover = { name = "HOSTILE TAKEOVER", grade = "Old Money", weight = 2.5, color = Color3.fromRGB(80, 200, 120) },
+	Graduation = { name = "GRADUATION", grade = "Graduated", weight = 2, color = Color3.fromRGB(240, 240, 250) },
 }
-local ORDER = { "SnowDay", "ScienceFair", "PictureDay", "Halloween", "SpaceCamp" }
+local ORDER = { "SnowDay", "FieldDay", "ScienceFair", "PromNight", "PictureDay", "Throwback", "Halloween", "WizardWeek", "CandyCarnival", "SpaceCamp", "HostileTakeover", "Graduation" }
 local EVENT_LEN = 600
 local EVENT_EVERY = 1800
 
@@ -39,6 +46,7 @@ function EventService.isAdmin(player)
 end
 
 local serverLuck = { mult = 1, untilT = 0 }
+local beams = {} -- [player] = event beams this event
 
 function EventService.start(id)
 	local ev = EventService.Events[id]
@@ -50,8 +58,63 @@ function EventService.start(id)
 	HallService.eventGrades[ev.grade] = ev.weight
 	Remotes.Announce:FireAllClients(ev.name .. "! " .. ev.grade:upper() .. " KIDS ON THE BUS", ev.color)
 	Remotes.Sfx:FireAllClients("StingWild")
+	table.clear(beams)
+	-- Candy Carnival: every school gets a Snack Smuggler visit straight away
+	if id == "CandyCarnival" then
+		local Patrol = require(script.Parent.PatrolService)
+		for player in Data.all() do task.spawn(pcall, Patrol.debugDealer, player) end
+	end
 	Signals.fire("eventStart", id)
 	return true
+end
+
+-- the event beam: during an event, a seated kid with a Normal grade can be struck and gain the event
+-- grade (20 % per school per minute, at most 3 per player per event)
+local BEAM_CHANCE, BEAM_CAP = 0.2, 3
+function EventService.beamTick(force)
+	local id = workspace:GetAttribute("Event")
+	local ev = id and EventService.Events[id]
+	if not ev then return end
+	local PlotService = require(script.Parent.PlotService)
+	local Factory = require(script.Parent.StudentFactory)
+	for player, p in Data.all() do
+		local plot = PlotService.getPlot(player)
+		if plot and (beams[player] or 0) < BEAM_CAP and (force or math.random() < BEAM_CHANCE) then
+			local pool = {}
+			for slot, e in p.students do
+				if e.grade == "Normal" and PlotService.earning(e) and PlotService.seatedModel(plot, slot) then table.insert(pool, slot) end
+			end
+			if #pool > 0 then
+				local slot = pool[math.random(#pool)]
+				local model = PlotService.seatedModel(plot, slot)
+				local pos = model.PrimaryPart.Position
+				-- the beam from the sky
+				local beam = Instance.new("Part")
+				beam.Anchored, beam.CanCollide, beam.CanQuery, beam.CanTouch = true, false, false, false
+				beam.Material = Enum.Material.Neon
+				beam.Color = ev.color
+				beam.Transparency = 0.3
+				beam.Shape = Enum.PartType.Cylinder
+				beam.Size = Vector3.new(120, 3, 3)
+				beam.CFrame = CFrame.new(pos + Vector3.new(0, 60, 0)) * CFrame.Angles(0, 0, math.rad(90))
+				beam.Parent = workspace
+				game:GetService("Debris"):AddItem(beam, 1.2)
+				Remotes.Sfx:FireAllClients("Upgrade", pos)
+				beams[player] = (beams[player] or 0) + 1
+				task.delay(0.8, function()
+					local e = p.students[slot]
+					if not e or e.grade ~= "Normal" then return end
+					e.grade = ev.grade
+					p.index[e.id .. "|" .. ev.grade] = true
+					PlotService.place(player, slot)
+					PlotService.updateIncome(player)
+					local def = Config.StudentById[e.id]
+					Remotes.Announce:FireClient(player, ("%s IS NOW %s!"):format(def.name:upper(), ev.grade:upper()), ev.color)
+					_ = Factory
+				end)
+			end
+		end
+	end
 end
 
 function EventService.stop()
@@ -191,10 +254,14 @@ function EventService.startLoop()
 	Players.PlayerAdded:Connect(function(player)
 		player:SetAttribute("Admin", EventService.isAdmin(player))
 	end)
+	Players.PlayerRemoving:Connect(function(player)
+		beams[player] = nil
+	end)
 	for _, player in Players:GetPlayers() do
 		player:SetAttribute("Admin", EventService.isAdmin(player))
 	end
 	workspace:SetAttribute("NextEventAt", workspace:GetServerTimeNow() + EVENT_EVERY)
+	local beamClock
 	task.spawn(function()
 		local i = math.random(#ORDER)
 		while true do
@@ -209,6 +276,8 @@ function EventService.startLoop()
 					EventService.start(ORDER[i])
 				end
 			end
+			beamClock = (beamClock or 0) + 1
+			if beamClock % 60 == 0 then pcall(EventService.beamTick) end
 			if workspace:GetAttribute("ServerLuckUntil") and now >= workspace:GetAttribute("ServerLuckUntil") then
 				workspace:SetAttribute("ServerLuck", nil)
 				workspace:SetAttribute("ServerLuckUntil", nil)

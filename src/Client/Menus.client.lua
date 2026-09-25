@@ -785,10 +785,12 @@ do
 	panels.Admin = panel
 	local list = scrollList(panel.body, 10)
 	local function section(order, title, buttons)
-		local holder = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 110), LayoutOrder = order, ZIndex = 11, Parent = list })
+		-- six buttons fit on a row; the section grows with its rows
+		local lines = math.ceil(#buttons / 6)
+		local holder = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 40 + lines * 64), LayoutOrder = order, ZIndex = 11, Parent = list })
 		UI.label(holder, { Text = title, Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = UI.C.navy, Size = UDim2.new(1, 0, 0, 28), ZIndex = 12, stroke = 0 })
-		local row = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 72), Position = UDim2.fromOffset(0, 32), ZIndex = 11, Parent = holder })
-		UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), Wraps = true, Parent = row })
+		local row = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, lines * 64), Position = UDim2.fromOffset(0, 32), ZIndex = 11, Parent = holder })
+		UI.new("UIGridLayout", { CellSize = UDim2.fromOffset(110, 56), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		for i, spec in buttons do
 			local b = UI.button(row, { text = spec[1], color = spec[2], size = UDim2.fromOffset(spec[5] or 110, 56), layoutOrder = i, onClick = function()
 				local res = call("admin", spec[3], spec[4])
@@ -811,6 +813,13 @@ do
 		{ "Picture Day", UI.C.grey, "event", "PictureDay" },
 		{ "Halloween", UI.C.orange, "event", "Halloween" },
 		{ "Space Camp", UI.C.purple, "event", "SpaceCamp" },
+		{ "Field Day", UI.C.yellow, "event", "FieldDay" },
+		{ "Prom Night", UI.C.pink, "event", "PromNight" },
+		{ "Throwback", UI.C.orange, "event", "Throwback" },
+		{ "Wizard Week", UI.C.purple, "event", "WizardWeek" },
+		{ "Candy Carnival", UI.C.pink, "event", "CandyCarnival" },
+		{ "Takeover", UI.C.navy, "event", "HostileTakeover" },
+		{ "Graduation", UI.C.grey, "event", "Graduation" },
 		{ "End Event", UI.C.red, "event", "stop" },
 	})
 	section(3, "\u{2728} SPAWN 3 KIDS", {

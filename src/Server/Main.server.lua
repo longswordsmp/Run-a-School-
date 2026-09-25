@@ -204,6 +204,13 @@ require(Server.DebugBridge).start({
 		return PatrolService.debugBonkCrumpet(player)
 	end,
 	-- the purchase grant paths without Robux (Studio only)
+	beam = function(player)
+		require(Server.EventService).beamTick(true)
+		task.wait(1)
+		local out = {}
+		for slot, e in Data.get(player).students do out[tostring(slot)] = e.id .. ":" .. e.grade end
+		return out
+	end,
 	candy = function(player, amount)
 		local p = Data.get(player)
 		p.candy = amount

@@ -153,6 +153,13 @@ Config.Grades = {
 	{ id = "Picture Perfect", mult = 2, weight = 0, event = "PictureDay", color = rgb(255, 255, 255) },
 	{ id = "Spooky", mult = 3.5, weight = 0, event = "Halloween", color = rgb(255, 130, 20) },
 	{ id = "Cosmic", mult = 7, weight = 0, event = "SpaceCamp", color = rgb(140, 90, 255) },
+	{ id = "Gold Medal", mult = 3, weight = 0, event = "FieldDay", color = rgb(255, 205, 60) },
+	{ id = "Prom Royalty", mult = 4, weight = 0, event = "PromNight", color = rgb(255, 120, 220) },
+	{ id = "Retro", mult = 3, weight = 0, event = "Throwback", color = rgb(230, 170, 90) },
+	{ id = "Enchanted", mult = 5, weight = 0, event = "WizardWeek", color = rgb(170, 110, 255) },
+	{ id = "Sugar Rush", mult = 3, weight = 0, event = "CandyCarnival", color = rgb(255, 110, 190) },
+	{ id = "Old Money", mult = 5, weight = 0, event = "HostileTakeover", color = rgb(40, 120, 70) },
+	{ id = "Graduated", mult = 6, weight = 0, event = "Graduation", color = rgb(30, 30, 40) },
 }
 Config.GradeById = {}
 for _, g in Config.Grades do Config.GradeById[g.id] = g end
