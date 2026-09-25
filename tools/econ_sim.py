@@ -132,6 +132,7 @@ TROPHIES = 12
 TROPHY_TICKETS = num(r"Config\.TrophyTickets = (\d+)", 40)
 EVENT_LEGENDARY = num(r'id = "LetterLegendary"[^\n]*tickets = (\d+)', 120)
 USE_LETTERS = "--no-letters" not in sys.argv
+VIP = 2.0 if "--vip" in sys.argv else 1.0  # the VIP game pass: x2 tuition
 
 # luck upgrade (Recruitment Office): +2 % per level, 10 levels
 LUCK_COSTS = [10e3 * 4 ** i for i in range(10)]
@@ -207,7 +208,7 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
         return sum(d[f] * teacher[f] for f in range(floors)) / tot if tot else 1.0
 
     def income():
-        return sum(v for v, _, _ in seated) * TIERS[tier]["mult"] * teacher_avg() * (iq / 100) * (1 + rep / 100)
+        return sum(v for v, _, _ in seated) * TIERS[tier]["mult"] * teacher_avg() * (iq / 100) * (1 + rep / 100) * VIP
 
     def mark(key):
         if key not in events:
