@@ -86,6 +86,112 @@ end)
 refreshCash()
 incomeText.Text = Config.formatCash(player:GetAttribute("IncomePerSec") or 0) .. "/s tuition"
 
+-- School IQ and Reputation chips above the cash panel
+local chips = Instance.new("Frame")
+chips.Name = "Chips"
+chips.AnchorPoint = Vector2.new(0.5, 1)
+chips.Position = UDim2.new(0.5, 0, 1, -112)
+chips.Size = UDim2.fromOffset(300, 34)
+chips.BackgroundTransparency = 1
+chips.Parent = gui
+local cl = Instance.new("UIListLayout")
+cl.FillDirection = Enum.FillDirection.Horizontal
+cl.HorizontalAlignment = Enum.HorizontalAlignment.Center
+cl.Padding = UDim.new(0, 8)
+cl.Parent = chips
+local function chip(name, color)
+	local f = Instance.new("Frame")
+	f.Name = name
+	f.Size = UDim2.fromOffset(140, 34)
+	f.BackgroundColor3 = color
+	f.Parent = chips
+	corner(f, 12)
+	stroke(f, 3)
+	local t = text(f, { Name = "Text", Size = UDim2.new(1, -12, 1, -8), Position = UDim2.fromOffset(6, 4), Text = "", strokeThickness = 2 })
+	return t
+end
+local iqText = chip("IQ", Color3.fromRGB(70, 150, 255))
+local repText = chip("Rep", Color3.fromRGB(255, 140, 60))
+local function refreshChips()
+	iqText.Text = "\u{1F9E0} IQ " .. tostring(player:GetAttribute("IQ") or 100)
+	repText.Text = "\u{2B50} Rep " .. tostring(player:GetAttribute("Rep") or 0)
+end
+player:GetAttributeChangedSignal("IQ"):Connect(function()
+	refreshChips()
+	local sc = chips.IQ:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", chips.IQ)
+	sc.Scale = 1.25
+	TweenService:Create(sc, TweenInfo.new(0.35, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+end)
+player:GetAttributeChangedSignal("Rep"):Connect(function()
+	refreshChips()
+	local sc = chips.Rep:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", chips.Rep)
+	sc.Scale = 1.25
+	TweenService:Create(sc, TweenInfo.new(0.35, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+end)
+refreshChips()
+
+-- event timers, top right: what's coming and when
+local timers = Instance.new("Frame")
+timers.Name = "Timers"
+timers.AnchorPoint = Vector2.new(1, 0)
+timers.Position = UDim2.new(1, -12, 0, 8)
+timers.Size = UDim2.fromOffset(270, 200)
+timers.BackgroundTransparency = 1
+timers.Parent = gui
+local tlist = Instance.new("UIListLayout")
+tlist.Padding = UDim.new(0, 6)
+tlist.SortOrder = Enum.SortOrder.LayoutOrder
+tlist.Parent = timers
+local TIMERS = {
+	{ attr = "HonorBusAt", icon = "\u{1F3C6}", label = "Honor Roll Bus", sub = "Legendary+", color = Color3.fromRGB(255, 190, 40) },
+	{ attr = "LateBusAt", icon = "\u{1F68C}", label = "Late Bus", sub = "Rare+", color = Color3.fromRGB(255, 130, 40) },
+	{ attr = "FieldTripAt", icon = "\u{1F392}", label = "Field Trip", sub = "Epic+", color = Color3.fromRGB(160, 90, 255) },
+	{ attr = "RecessAt", icon = "\u{1F514}", label = "Recess", sub = "Luck x2", color = Color3.fromRGB(60, 200, 110) },
+}
+local rows = {}
+for i, spec in TIMERS do
+	local f = Instance.new("Frame")
+	f.Name = spec.attr
+	f.LayoutOrder = i
+	f.Size = UDim2.fromOffset(270, 48)
+	f.BackgroundColor3 = spec.color
+	f.Parent = timers
+	corner(f, 12)
+	stroke(f, 3)
+	local g2 = Instance.new("UIGradient")
+	g2.Color = ColorSequence.new(spec.color:Lerp(Color3.new(1, 1, 1), 0.3), spec.color)
+	g2.Rotation = 90
+	g2.Parent = f
+	local name = text(f, { Name = "Name", Size = UDim2.new(0.66, -8, 0.56, 0), Position = UDim2.fromOffset(8, 3), TextXAlignment = Enum.TextXAlignment.Left, Text = spec.icon .. " " .. spec.label, strokeThickness = 2 })
+	text(f, { Name = "Sub", Size = UDim2.new(0.66, -8, 0.34, 0), Position = UDim2.new(0, 30, 0.6, 0), TextXAlignment = Enum.TextXAlignment.Left, Text = spec.sub, TextColor3 = Color3.fromRGB(255, 255, 230), strokeThickness = 1.5 })
+	local time = text(f, { Name = "Time", Size = UDim2.new(0.34, -10, 0.7, 0), Position = UDim2.new(0.66, 0, 0.15, 0), TextXAlignment = Enum.TextXAlignment.Right, Text = "", strokeThickness = 2 })
+	rows[spec.attr] = { frame = f, name = name, time = time, spec = spec }
+end
+local function mmss(s)
+	s = math.max(0, math.floor(s))
+	return ("%d:%02d"):format(s // 60, s % 60)
+end
+task.spawn(function()
+	while true do
+		local now = workspace:GetServerTimeNow()
+		for attr, r in rows do
+			local at = workspace:GetAttribute(attr)
+			r.frame.Visible = at ~= nil
+			if at then
+				if attr == "RecessAt" and (workspace:GetAttribute("RecessUntil") or 0) > now then
+					r.name.Text = "\u{1F514} RECESS! Luck x2"
+					r.time.Text = mmss(workspace:GetAttribute("RecessUntil") - now)
+				else
+					local left = at - now
+					r.name.Text = r.spec.icon .. " " .. r.spec.label
+					r.time.Text = left <= 10 and "SOON!" or mmss(left)
+				end
+			end
+		end
+		task.wait(0.25)
+	end
+end)
+
 -- toasts, top centre
 local toastHolder = Instance.new("Frame")
 toastHolder.Name = "Toasts"

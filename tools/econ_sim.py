@@ -59,6 +59,12 @@ TRIP_EVERY = num(r"Config\.FieldTrip = \{ every = (\d+)", 1800)
 TRIP_COUNT = int(num(r"Config\.FieldTrip = \{ every = \d+, count = (\d+)", 8))
 trip_w = re.search(r"Config\.FieldTrip = .*?weights = \{(.*?)\}", CFG).group(1)
 TRIP_WEIGHTS = [(k, float(v)) for k, v in re.findall(r"(\w+) = ([\d.]+)", trip_w)]
+HONOR_EVERY = num(r"Config\.HonorBus = \{ every = (\d+)", 900)
+HONOR_OFFSET = num(r"Config\.HonorBus = \{ every = \d+, offset = (\d+)", 450)
+HONOR_COUNT = int(num(r"Config\.HonorBus = \{ every = \d+, offset = \d+, count = (\d+)", 5))
+hb = re.search(r"Config\.HonorBus = .*?first = \{(.*?)\}, weights = \{(.*?)\}", CFG)
+HONOR_FIRST = [(k, float(v)) for k, v in re.findall(r"(\w+) = ([\d.]+)", hb.group(1))]
+HONOR_WEIGHTS = [(k, float(v)) for k, v in re.findall(r"(\w+) = ([\d.]+)", hb.group(2))]
 WALK = 50.0  # seconds a student spends on the carpet
 
 # Supplies (School IQ), Teachers (per floor) and School Builder items (Reputation), all bought once
@@ -116,6 +122,7 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
     next_spawn = 0.0
     next_late = LATE_EVERY
     next_trip = TRIP_EVERY
+    next_honor = HONOR_OFFSET
 
     def desks():
         floors = TIERS[tier]["floors"]
@@ -156,6 +163,11 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
                 s, g = roll(rng, luck, base)
                 hall.append((t + WALK, s, g))
             next_late += LATE_EVERY
+        if t >= next_honor:
+            for i in range(HONOR_COUNT):
+                s, g = roll(rng, luck, HONOR_FIRST if i == 0 else HONOR_WEIGHTS)
+                hall.append((t + WALK, s, g))
+            next_honor += HONOR_EVERY
         if t >= next_trip:
             for _ in range(TRIP_COUNT):
                 s, g = roll(rng, luck, TRIP_WEIGHTS)

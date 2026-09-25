@@ -151,17 +151,17 @@ for _, g in Config.Grades do Config.GradeById[g.id] = g end
 ---------------------------------------------------------------------------
 Config.Tiers = {
 	{ name = "Kindergarten", cash = 0, needs = nil, mult = 1, floors = 1, lock = 60 },
-	{ name = "Elementary School", cash = 450e3, needs = "HallMonitor", mult = 1.5, floors = 1, lock = 70 },
-	{ name = "Middle School", cash = 20e6, needs = "BandGeek", mult = 2, floors = 2, lock = 75 },
-	{ name = "High School", cash = 400e6, needs = "Quarterback", mult = 3, floors = 2, lock = 80 },
-	{ name = "Prep School", cash = 17e9, needs = "Valedictorian", mult = 4.5, floors = 3, lock = 85 },
-	{ name = "Private Academy", cash = 140e9, needs = "PromKing", mult = 6.5, floors = 3, lock = 90 },
-	{ name = "Community College", cash = 3e12, needs = "KidGenius", mult = 9, floors = 3, lock = 95 },
-	{ name = "State University", cash = 30e12, needs = "NewKid", mult = 13, floors = 3, lock = 100 },
-	{ name = "Ivy League", cash = 100e12, needs = "TinyProfessor", mult = 18, floors = 3, lock = 105 },
-	{ name = "Wizard School", cash = 360e12, needs = "PopStarKid", mult = 25, floors = 3, lock = 110 },
-	{ name = "Space Academy", cash = 1.6e15, needs = "ChildCEO", mult = 35, floors = 3, lock = 115 },
-	{ name = "Multiverse University", cash = 5.7e15, needs = "Secret", mult = 50, floors = 3, lock = 120 },
+	{ name = "Elementary School", cash = 680e3, needs = "HallMonitor", mult = 1.5, floors = 1, lock = 70 },
+	{ name = "Middle School", cash = 59e6, needs = "BandGeek", mult = 2, floors = 2, lock = 75 },
+	{ name = "High School", cash = 910e6, needs = "Quarterback", mult = 3, floors = 2, lock = 80 },
+	{ name = "Prep School", cash = 47e9, needs = "Valedictorian", mult = 4.5, floors = 3, lock = 85 },
+	{ name = "Private Academy", cash = 740e9, needs = "PromKing", mult = 6.5, floors = 3, lock = 90 },
+	{ name = "Community College", cash = 9.6e12, needs = "KidGenius", mult = 9, floors = 3, lock = 95 },
+	{ name = "State University", cash = 110e12, needs = "NewKid", mult = 13, floors = 3, lock = 100 },
+	{ name = "Ivy League", cash = 410e12, needs = "TinyProfessor", mult = 18, floors = 3, lock = 105 },
+	{ name = "Wizard School", cash = 2.3e15, needs = "PopStarKid", mult = 25, floors = 3, lock = 110 },
+	{ name = "Space Academy", cash = 7.2e15, needs = "ChildCEO", mult = 35, floors = 3, lock = 115 },
+	{ name = "Multiverse University", cash = 22e15, needs = "Secret", mult = 50, floors = 3, lock = 120 },
 }
 -- after the last tier, each Prestige star costs the previous requirement x3 and adds +10 %
 Config.PrestigeStep = { cashMult = 3, bonus = 0.1 }
@@ -234,7 +234,7 @@ Config.JanitorIntervals = { 60, 45, 30, 20, 10 }
 ---------------------------------------------------------------------------
 Config.Supplies = {
 	{ id = "Pencils", name = "Sharpened Pencils", icon = "\u{270F}\u{FE0F}", iq = 10, tier = 1, price = 250 },
-	{ id = "Notebooks", name = "Spiral Notebooks", icon = "\u{1F4D3}", iq = 10, tier = 1, price = 2e3 },
+	{ id = "Notebooks", name = "Spiral Notebooks", icon = "\u{1F4D2}", iq = 10, tier = 1, price = 2e3 },
 	{ id = "Crayons", name = "Giant Crayon Boxes", icon = "\u{1F58D}\u{FE0F}", iq = 10, tier = 1, price = 12e3 },
 	{ id = "Textbooks", name = "Textbooks", icon = "\u{1F4DA}", iq = 10, tier = 2, price = 90e3 },
 	{ id = "Rulers", name = "Rulers & Protractors", icon = "\u{1F4D0}", iq = 10, tier = 2, price = 300e3 },
@@ -312,6 +312,8 @@ end
 
 -- special buses
 Config.LateBus = { every = 300, count = 6, minRarity = 3 } -- Rare+
+-- the Honor Roll Bus: the first student off is guaranteed Legendary or better
+Config.HonorBus = { every = 900, offset = 450, count = 5, first = { Legendary = 80, Mythic = 17, Prodigy = 2.5, Secret = 0.5 }, weights = { Epic = 70, Legendary = 25, Mythic = 5 } }
 Config.FieldTrip = { every = 1800, count = 8, weights = { Epic = 60, Legendary = 30, Mythic = 8, Prodigy = 1.8, Secret = 0.2 } }
 
 ---------------------------------------------------------------------------

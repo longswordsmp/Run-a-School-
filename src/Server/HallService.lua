@@ -232,10 +232,17 @@ local function drive(model, from, to, t)
 	end
 end
 
+local BUSES = {
+	LateBus = { label = "LATE BUS", color = Color3.fromRGB(255, 120, 30) },
+	FieldTrip = { label = "FIELD TRIP", color = Color3.fromRGB(150, 80, 255) },
+	Lucky = { label = "LUCKY BUS", color = Color3.fromRGB(60, 220, 110) },
+	HonorBus = { label = "HONOR ROLL", color = Color3.fromRGB(255, 200, 40) },
+}
+
 function HallService.specialBus(kind, byName)
-	local spec = kind == "FieldTrip" and Config.FieldTrip or Config.LateBus
-	local label = kind == "FieldTrip" and "FIELD TRIP" or (kind == "Lucky" and "LUCKY BUS" or "LATE BUS")
-	local color = kind == "FieldTrip" and Color3.fromRGB(150, 80, 255) or (kind == "Lucky" and Color3.fromRGB(60, 220, 110) or Color3.fromRGB(255, 120, 30))
+	local spec = kind == "FieldTrip" and Config.FieldTrip or kind == "HonorBus" and Config.HonorBus or Config.LateBus
+	local style = BUSES[kind] or BUSES.LateBus
+	local label, color = style.label, style.color
 	local weights = spec.weights
 	if not weights then
 		weights = {}
@@ -256,8 +263,9 @@ function HallService.specialBus(kind, byName)
 	Remotes.Sfx:FireAllClients("BusHorn")
 	drive(bus, away, parked, 4)
 	local door = bus.Door.Position
-	for _ = 1, spec.count or 6 do
-		HallService.spawnOne(nil, nil, weights, Vector3.new(door.X, 0, door.Z - 3))
+	for i = 1, spec.count or 6 do
+		local w = (i == 1 and spec.first) or weights
+		HallService.spawnOne(nil, nil, w, Vector3.new(door.X, 0, door.Z - 3))
 		task.wait(0.6)
 	end
 	task.wait(1.5)
@@ -283,6 +291,7 @@ function HallService.start()
 	local now = workspace:GetServerTimeNow()
 	workspace:SetAttribute("LateBusAt", now + Config.LateBus.every)
 	workspace:SetAttribute("FieldTripAt", now + Config.FieldTrip.every)
+	workspace:SetAttribute("HonorBusAt", now + Config.HonorBus.offset)
 	workspace:SetAttribute("RecessAt", now + RECESS_EVERY)
 	workspace:SetAttribute("RecessUntil", 0)
 	task.spawn(function()
@@ -290,16 +299,17 @@ function HallService.start()
 		while true do
 			task.wait(0.5)
 			local t = workspace:GetServerTimeNow()
-			for _, kind in { "LateBus", "FieldTrip" } do
+			for _, kind in { "LateBus", "FieldTrip", "HonorBus" } do
 				local at = workspace:GetAttribute(kind .. "At")
-				local label = kind == "FieldTrip" and "THE FIELD TRIP BUS" or "THE LATE BUS"
+				local label = "THE " .. BUSES[kind].label .. " BUS"
+				if kind == "LateBus" then label = "THE LATE BUS" end
 				if at - t <= 10 and not warned[kind] then
 					warned[kind] = true
-					Remotes.Announce:FireAllClients(label .. " ARRIVES IN 10s!", kind == "FieldTrip" and Color3.fromRGB(190, 130, 255) or Color3.fromRGB(255, 160, 60))
+					Remotes.Announce:FireAllClients(label .. " ARRIVES IN 10s!", BUSES[kind].color)
 				end
 				if t >= at then
 					warned[kind] = nil
-					local every = kind == "FieldTrip" and Config.FieldTrip.every or Config.LateBus.every
+					local every = (kind == "FieldTrip" and Config.FieldTrip or kind == "HonorBus" and Config.HonorBus or Config.LateBus).every
 					workspace:SetAttribute(kind .. "At", at + every)
 					task.spawn(HallService.specialBus, kind)
 				end
