@@ -21,6 +21,7 @@ local StealService = require(Server.StealService)
 local QuestService = require(Server.QuestService)
 local PatrolService = require(Server.PatrolService)
 local EventService = require(Server.EventService)
+local LetterService = require(Server.LetterService)
 
 Factory.preload()
 PlotService.start()
@@ -33,6 +34,7 @@ StealService.start()
 QuestService.start()
 PatrolService.start()
 EventService.startLoop()
+LetterService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -51,7 +53,9 @@ local function onPlayer(player)
 	end
 
 	-- a brand-new principal gets the intro and the Welcome Bus
-	if p.tutorial == 1 and p.stats.enrolled == 0 and not p.introSeen then
+	-- (Studio tests can skip it with the ServerStorage attribute SkipIntro)
+	local skip = game:GetService("RunService"):IsStudio() and game.ServerStorage:GetAttribute("SkipIntro")
+	if p.tutorial == 1 and p.stats.enrolled == 0 and not p.introSeen and not skip then
 		p.introSeen = true
 		task.delay(2.5, function()
 			if not player.Parent then return end
@@ -163,6 +167,19 @@ require(Server.DebugBridge).start({
 	end,
 	bust = function(player)
 		return PatrolService.debugBust(player)
+	end,
+	-- enroll the kid waiting on your bench (reserved for you)
+	enrollBench = function(player)
+		for _, m in workspace.Hall:GetChildren() do
+			if m:GetAttribute("ReservedFor") == player.UserId and m:GetAttribute("State") == "Hall" then
+				HallService.enroll(player, m)
+				return m:GetAttribute("StudentId")
+			end
+		end
+		return false
+	end,
+	letterReady = function(player, rarity)
+		return LetterService.debugReady(player, rarity)
 	end,
 	dropCarry = function(player)
 		StealService.drop(player, "debug drop")

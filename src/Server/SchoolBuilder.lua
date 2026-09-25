@@ -641,6 +641,19 @@ local function buildYard(school, L, look)
 	for _, side in { -1, 1 } do
 		part(yard, "WalkEdge", Vector3.new(0.6, 0.35, 75 - ZF - 5), L(side * 6.3, 0.55, (75 + ZF + 5) / 2), rgb(170, 170, 178))
 	end
+	-- the Waiting Bench: kids your Admissions Letters bring wait here for you (3 seats, facing the walk)
+	local wait = Instance.new("Model")
+	wait.Name = "WaitingBench"
+	wait.Parent = yard
+	part(wait, "Seat", Vector3.new(2.2, 0.5, 10), L(-24, 1.9, 60), look.sign)
+	part(wait, "Back", Vector3.new(0.5, 2.4, 10), L(-25.2, 3.3, 60), look.sign)
+	part(wait, "Legs", Vector3.new(1.8, 1.6, 9.4), L(-24, 0.9, 60), rgb(80, 85, 95), Enum.Material.Metal, { Transparency = 0.4 })
+	local sign = part(wait, "Sign", Vector3.new(0.3, 1.4, 6), L(-25.3, 5.3, 60), WHITE)
+	surfaceText(sign, Enum.NormalId.Right, "WAITING BENCH", look.sign, nil, Enum.Font.LuckiestGuy)
+	for i, sz in { 56.8, 60, 63.2 } do
+		local sp = part(wait, "BenchSpot", Vector3.new(1, 1, 1), L(-24, 2.15, sz) * CFrame.Angles(0, math.rad(-90), 0), WHITE, nil, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+		sp:SetAttribute("Seat", i)
+	end
 	-- flagpole
 	part(yard, "FlagBase", Vector3.new(3, 0.8, 3), L(46, 0.8, 62), rgb(190, 190, 198))
 	part(yard, "FlagPole", Vector3.new(0.45, 22, 0.45), L(46, 11.6, 62), rgb(225, 225, 230), Enum.Material.Metal)

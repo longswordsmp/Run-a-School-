@@ -16,6 +16,9 @@ local Remotes = require(script.Parent.Remotes)
 local Signals = require(script.Parent.Signals)
 
 local HallService = {}
+local function SchoolBuilderRoute(slot)
+	return require(script.Parent.SchoolBuilder).route(slot)
+end
 
 local hall = workspace:FindFirstChild("Hall") or Instance.new("Folder")
 hall.Name = "Hall"
@@ -106,7 +109,13 @@ function HallService.enroll(player, model)
 	if not p or not plot then return end
 	local def = Config.StudentById[model:GetAttribute("StudentId")]
 	local grade = model:GetAttribute("Grade")
-	if p.cash < def.price then
+	local reserved = model:GetAttribute("ReservedFor")
+	if reserved and reserved ~= player.UserId then
+		Remotes.Notify:FireClient(player, "That kid is reserved for someone else!", "bad")
+		return
+	end
+	local price = model:GetAttribute("Free") and 0 or def.price
+	if p.cash < price then
 		Remotes.Notify:FireClient(player, "Not enough cash!", "bad")
 		Remotes.Sfx:FireClient(player, "Error")
 		return
@@ -117,7 +126,7 @@ function HallService.enroll(player, model)
 		Remotes.Sfx:FireClient(player, "Error")
 		return
 	end
-	if not Data.addCash(player, -def.price) then return end
+	if price > 0 and not Data.addCash(player, -price) then return end
 	model:SetAttribute("State", "Enrolled")
 	local prompt = model.PrimaryPart:FindFirstChild("EnrollPrompt")
 	if prompt then prompt:Destroy() end
@@ -138,7 +147,18 @@ function HallService.enroll(player, model)
 	Factory.setMode(model, "walking", player.DisplayName)
 	Walkers.stop(model)
 	Factory.play(model, "walk")
-	local points = PlotService.pathTo(plot, slot, model.PrimaryPart.Position, Factory.standOffset(model))
+	local points
+	if model:GetAttribute("OnBench") then
+		-- from the Waiting Bench: onto the front walk, then the normal route in
+		local so = Factory.standOffset(model)
+		local route = SchoolBuilderRoute(slot)
+		table.remove(route, 1) -- (the gate: we are already inside)
+		table.insert(route, 1, Vector3.new(-20.5, 0.5, plot.Origin.CFrame:PointToObjectSpace(model.PrimaryPart.Position).Z))
+		table.insert(route, 2, Vector3.new(0, 0.5, 60))
+		points = PlotService.worldPoints(plot, route, so)
+	else
+		points = PlotService.pathTo(plot, slot, model.PrimaryPart.Position, Factory.standOffset(model))
+	end
 	Walkers.walk(model, points, 16, function()
 		model:Destroy()
 		local e = p.students[slot]
@@ -296,11 +316,15 @@ function HallService.start()
 	end)
 
 	-- schedule: late bus, field trip, recess (times published for the HUD)
+	-- every schedule runs on the wall clock, so every server agrees ("Honor Roll at :07:30")
 	local now = workspace:GetServerTimeNow()
-	workspace:SetAttribute("LateBusAt", now + Config.LateBus.every)
-	workspace:SetAttribute("FieldTripAt", now + Config.FieldTrip.every)
-	workspace:SetAttribute("HonorBusAt", now + Config.HonorBus.offset)
-	workspace:SetAttribute("RecessAt", now + RECESS_EVERY)
+	local function nextAt(every, offset)
+		return offset + every * math.ceil((now - offset) / every)
+	end
+	workspace:SetAttribute("LateBusAt", nextAt(Config.LateBus.every, Config.LateBus.offset or 0))
+	workspace:SetAttribute("FieldTripAt", nextAt(Config.FieldTrip.every, Config.FieldTrip.offset or 750))
+	workspace:SetAttribute("HonorBusAt", nextAt(Config.HonorBus.every, Config.HonorBus.offset))
+	workspace:SetAttribute("RecessAt", nextAt(RECESS_EVERY, 0))
 	workspace:SetAttribute("RecessUntil", 0)
 	task.spawn(function()
 		local warned = {}

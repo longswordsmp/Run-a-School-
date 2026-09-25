@@ -209,6 +209,89 @@ task.spawn(function()
 	end
 end)
 
+-- Admissions Letters, right edge: time until each letter fills, CALL when it's ready
+local Action = Remotes:WaitForChild("Action")
+local letterBox = Instance.new("Frame")
+letterBox.Name = "Letters"
+letterBox.AnchorPoint = Vector2.new(1, 0)
+letterBox.Position = UDim2.new(1, -12, 0, 300)
+letterBox.Size = UDim2.fromOffset(230, 230)
+letterBox.BackgroundTransparency = 1
+letterBox.Parent = gui
+local ll = Instance.new("UIListLayout")
+ll.Padding = UDim.new(0, 5)
+ll.SortOrder = Enum.SortOrder.LayoutOrder
+ll.HorizontalAlignment = Enum.HorizontalAlignment.Right
+ll.Parent = letterBox
+local LETTERS = {
+	{ "Rare", Color3.fromRGB(70, 150, 255) },
+	{ "Epic", Color3.fromRGB(180, 80, 255) },
+	{ "Legendary", Color3.fromRGB(255, 170, 30) },
+	{ "Mythic", Color3.fromRGB(255, 50, 90) },
+	{ "Prodigy", Color3.fromRGB(90, 230, 255) },
+}
+local letterRows = {}
+for i, spec in LETTERS do
+	local r, color = spec[1], spec[2]
+	local b = Instance.new("TextButton")
+	b.Name = r
+	b.LayoutOrder = i
+	b.Size = UDim2.fromOffset(210, 38)
+	b.AutoButtonColor = false
+	b.Text = ""
+	b.BackgroundColor3 = Color3.fromRGB(255, 247, 230)
+	b.Parent = letterBox
+	corner(b, 12)
+	stroke(b, 3)
+	local seal = Instance.new("Frame")
+	seal.Size = UDim2.fromOffset(26, 26)
+	seal.Position = UDim2.new(0, 6, 0.5, 0)
+	seal.AnchorPoint = Vector2.new(0, 0.5)
+	seal.BackgroundColor3 = color
+	seal.Parent = b
+	corner(seal, 13)
+	stroke(seal, 2)
+	text(seal, { Size = UDim2.fromScale(1, 1), Text = "\u{2709}", strokeThickness = 1 })
+	local name = text(b, { Name = "Name", Size = UDim2.new(0.5, -20, 0.8, 0), Position = UDim2.new(0, 38, 0.1, 0), TextXAlignment = Enum.TextXAlignment.Left, Text = r, TextColor3 = color, strokeThickness = 2 })
+	local time = text(b, { Name = "Time", Size = UDim2.new(0.42, -8, 0.7, 0), Position = UDim2.new(0.58, 0, 0.15, 0), TextXAlignment = Enum.TextXAlignment.Right, Text = "", strokeThickness = 2 })
+	letterRows[r] = { button = b, time = time, name = name, color = color }
+	b.Activated:Connect(function()
+		if (player:GetAttribute("Letter_" .. r) or 1) > 0 then return end
+		-- the server answers with a toast either way
+		pcall(Action.InvokeServer, Action, "callLetter", r)
+	end)
+end
+local function mmss2(s)
+	s = math.max(0, math.floor(s))
+	if s >= 3600 then return ("%dh %02dm"):format(s // 3600, (s % 3600) // 60) end
+	return ("%d:%02d"):format(s // 60, s % 60)
+end
+task.spawn(function()
+	while true do
+		local tier = player:GetAttribute("Tier") or 1
+		for i, spec in LETTERS do
+			local r = spec[1]
+			local row = letterRows[r]
+			local left = player:GetAttribute("Letter_" .. r)
+			-- the rarer letters show once they are within reach
+			row.button.Visible = left ~= nil and (i <= 2 or tier >= i)
+			if left then
+				if left <= 0 then
+					row.time.Text = "CALL!"
+					row.time.TextColor3 = Color3.fromRGB(110, 255, 120)
+					local pulse = 0.5 + 0.5 * math.sin(os.clock() * 6)
+					row.button.BackgroundColor3 = Color3.fromRGB(255, 247, 230):Lerp(row.color, 0.25 + 0.25 * pulse)
+				else
+					row.time.Text = mmss2(left)
+					row.time.TextColor3 = Color3.new(1, 1, 1)
+					row.button.BackgroundColor3 = Color3.fromRGB(255, 247, 230)
+				end
+			end
+		end
+		task.wait(0.2)
+	end
+end)
+
 -- toasts, top centre
 local toastHolder = Instance.new("Frame")
 toastHolder.Name = "Toasts"

@@ -371,10 +371,10 @@ Config.Goals = {
 }
 
 -- special buses
-Config.LateBus = { every = 300, count = 6, minRarity = 3 } -- Rare+
+Config.LateBus = { every = 300, offset = 0, count = 6, minRarity = 3 } -- Rare+, :00 :05 :10 ...
 -- the Honor Roll Bus: the first student off is guaranteed Legendary or better
 Config.HonorBus = { every = 900, offset = 450, count = 5, first = { Legendary = 80, Mythic = 17, Prodigy = 2.5, Secret = 0.5 }, weights = { Epic = 70, Legendary = 25, Mythic = 5 } }
-Config.FieldTrip = { every = 1800, count = 8, weights = { Epic = 60, Legendary = 30, Mythic = 8, Prodigy = 1.8, Secret = 0.2 } }
+Config.FieldTrip = { every = 1800, offset = 750, count = 8, weights = { Epic = 60, Legendary = 30, Mythic = 8, Prodigy = 1.8, Secret = 0.2 } }
 
 ---------------------------------------------------------------------------
 -- tuning
