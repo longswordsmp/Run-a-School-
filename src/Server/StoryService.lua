@@ -355,6 +355,142 @@ local function baron(spot)
 	end)
 end
 
+---------------------------------------------------------------------------
+-- Otis drives every bus: he sits in the parked bus, so every special bus (a clone of it) has him too
+---------------------------------------------------------------------------
+local function otis()
+	local bus = workspace:WaitForChild("Map"):FindFirstChild("SchoolBus")
+	if not bus or bus:FindFirstChild("Otis") then return end
+	local m = Factory.buildTeacher({ id = "Otis", name = "Otis", title = "Bus Driver", mult = 1, outfit = "otis" }, 1)
+	m.Name = "Otis"
+	local ws = bus:FindFirstChild("Windshield")
+	local body = bus.PrimaryPart
+	if not ws or not body then m:Destroy() return end
+	-- in the driver's seat behind the windshield, facing out along the bus; high enough that his
+	-- head and shoulders clear the hood and show through the glass
+	local seat = Vector3.new(ws.Position.X - 2.4, ws.Position.Y - ws.Size.Y / 2 - 0.3, body.Position.Z + 2.6)
+	local hrp = m.PrimaryPart
+	hrp.CFrame = CFrame.lookAt(seat, seat + Vector3.new(1, 0, 0))
+	m.Parent = bus
+	Factory.play(m, "sit")
+end
+
+---------------------------------------------------------------------------
+-- Dr. Vex's limo: every 15 minutes it cruises the street and stops at the poorest school
+---------------------------------------------------------------------------
+local VEX_LINES = {
+	"Cute school. Shame about... everything.",
+	"Tick tock, Principal. Tick. Tock.",
+	"My Homework Factory will go RIGHT THERE.",
+	"Recess is a waste of good homework time.",
+	"Is that a school or a shoebox?",
+	"I'll buy it. I'll buy ALL of it.",
+}
+local function buildLimo()
+	local limo = Instance.new("Model")
+	limo.Name = "VexLimo"
+	local function p(name, size, cf, color, mat, shape)
+		local x = Instance.new("Part")
+		x.Name = name
+		x.Size = size
+		x.CFrame = cf
+		x.Color = color
+		x.Material = mat or Enum.Material.SmoothPlastic
+		x.Anchored = true
+		x.CanCollide = false
+		if shape then x.Shape = shape end
+		x.Parent = limo
+		return x
+	end
+	local black = Color3.fromRGB(20, 20, 26)
+	local body = p("Body", Vector3.new(30, 3.4, 8), CFrame.new(0, 2.6, 0), black, Enum.Material.Metal)
+	limo.PrimaryPart = body
+	p("Cabin", Vector3.new(20, 2.6, 7.4), CFrame.new(-1, 5.4, 0), black, Enum.Material.Metal)
+	for _, z in { -3.75, 3.75 } do
+		p("Windows", Vector3.new(18, 1.8, 0.1), CFrame.new(-1, 5.5, z), Color3.fromRGB(40, 40, 60), Enum.Material.Glass)
+		p("Chrome", Vector3.new(30, 0.25, 0.1), CFrame.new(0, 3.4, z * 1.07), Color3.fromRGB(210, 210, 220), Enum.Material.Metal)
+	end
+	for _, x in { -11, 11 } do
+		for _, z in { -4, 4 } do
+			p("Wheel", Vector3.new(1.4, 3, 3), CFrame.new(x, 1.5, z) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(15, 15, 15), nil, Enum.PartType.Cylinder)
+		end
+	end
+	for _, z in { -2.6, 2.6 } do
+		p("Headlight", Vector3.new(0.3, 0.8, 1.4), CFrame.new(15.1, 3, z), Color3.fromRGB(255, 250, 220), Enum.Material.Neon)
+		p("Taillight", Vector3.new(0.3, 0.8, 1.4), CFrame.new(-15.1, 3, z), Color3.fromRGB(220, 30, 40), Enum.Material.Neon)
+	end
+	local plate = p("Plate", Vector3.new(0.2, 1, 3), CFrame.new(-15.2, 2.2, 0), Color3.fromRGB(250, 250, 240))
+	local g = Instance.new("SurfaceGui")
+	g.Face = Enum.NormalId.Back
+	g.Parent = plate
+	local t = Instance.new("TextLabel")
+	t.Size = UDim2.fromScale(1, 1)
+	t.BackgroundTransparency = 1
+	t.TextScaled = true
+	t.Font = Enum.Font.Arcade
+	t.Text = "VEX 1"
+	t.TextColor3 = Color3.fromRGB(90, 30, 130)
+	t.Parent = g
+	-- underglow
+	p("Underglow", Vector3.new(28, 0.2, 7), CFrame.new(0, 0.7, 0), Color3.fromRGB(170, 60, 255), Enum.Material.Neon)
+	-- Vex stands up through the sunroof
+	local vex = Factory.buildTeacher({ id = "Vex", name = "Dr. Veronica Vex", title = "VexCorp CEO", mult = 1, outfit = "vex" }, 1)
+	vex.Name = "Vex"
+	local so = Factory.standOffset(vex)
+	-- feet just under the roof line (cabin top is y 6.7), so she stands out of the sunroof from the knees up
+	vex.PrimaryPart.CFrame = CFrame.new(3, 5.2 + so, 0) * CFrame.Angles(0, math.rad(-90), 0)
+	p("Sunroof", Vector3.new(3.2, 0.3, 3.2), CFrame.new(3, 6.8, 0), Color3.fromRGB(60, 60, 70), Enum.Material.Metal)
+	vex.Parent = limo
+	nameTag(vex, "Dr. Veronica Vex", "VexCorp CEO", Color3.fromRGB(190, 110, 255))
+	return limo, vex
+end
+
+local function vexDriveBy()
+	local PlotService = require(script.Parent.PlotService)
+	local Data = require(script.Parent.DataService)
+	-- the poorest school with an owner
+	local target, lowest
+	for player in Data.all() do
+		local plot = PlotService.getPlot(player)
+		local inc = player:GetAttribute("BaseIncome") or 0
+		if plot and (not lowest or inc < lowest) then target, lowest = plot, inc end
+	end
+	local limo, vex = buildLimo()
+	-- the sidewalk on the target school's side of the street, clear of the carpet
+	local z = (target and target.Origin.Position.Z < 0) and -19 or 19
+	-- facing along the street; Vex turns to the school when the limo stops
+	local function at(x) return CFrame.new(x, 0, z) end
+	limo:PivotTo(at(-460))
+	limo.Parent = folder
+	local npc = { model = vex }
+	npc.bubble, npc.text = speech(vex)
+	Remotes.Sfx:FireAllClients("BusHorn")
+	local stopX = target and target.Origin.Position.X or 0
+	local function drive(fromX, toX, speed)
+		local dist = math.abs(toX - fromX)
+		local t0, dur = os.clock(), dist / speed
+		while true do
+			local a = math.min(1, (os.clock() - t0) / dur)
+			limo:PivotTo(at(fromX + (toX - fromX) * a))
+			if a >= 1 then break end
+			task.wait()
+		end
+	end
+	drive(-460, stopX, 40)
+	-- stop, turn to the school, deliver a line
+	if target then
+		local vr = vex.PrimaryPart
+		vr.CFrame = CFrame.lookAt(vr.Position, Vector3.new(target.Origin.Position.X, vr.Position.Y, target.Origin.Position.Z))
+	end
+	npc.text.Text = VEX_LINES[math.random(#VEX_LINES)]
+	npc.bubble.Enabled = true
+	Factory.emote(vex, "point")
+	task.wait(6)
+	npc.bubble.Enabled = false
+	drive(stopX, 460, 40)
+	limo:Destroy()
+end
+
 function StoryService.start()
 	folder = workspace:FindFirstChild("StoryNPCs") or Instance.new("Folder")
 	folder.Name = "StoryNPCs"
@@ -385,6 +521,25 @@ function StoryService.start()
 	run(hector)
 	local shack = spotOf("SugarShack")
 	if shack then run(baron, shack) end
+	run(otis)
+	-- Vex every 15 minutes, on the clock (:05, :20, :35, :50 UTC)
+	task.spawn(function()
+		local now = workspace:GetServerTimeNow()
+		local nextAt = 300 + 900 * math.ceil((now - 300) / 900)
+		while true do
+			task.wait(1)
+			if workspace:GetServerTimeNow() >= nextAt then
+				nextAt += 900
+				if #Players:GetPlayers() > 0 then run(vexDriveBy) end
+			end
+		end
+	end)
+end
+
+-- test hook
+function StoryService.debugVex()
+	task.spawn(vexDriveBy)
+	return true
 end
 
 return StoryService

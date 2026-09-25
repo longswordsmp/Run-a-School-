@@ -206,6 +206,9 @@ require(Server.DebugBridge).start({
 		return PatrolService.debugBonkCrumpet(player)
 	end,
 	-- the purchase grant paths without Robux (Studio only)
+	vex = function(player)
+		return StoryService.debugVex()
+	end,
 	quiz = function(player)
 		QuizService.ask()
 		return true

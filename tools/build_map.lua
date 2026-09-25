@@ -127,8 +127,17 @@ part(path, "End", Vector3.new(1, 1, 1), CFrame.new(346, 1, 0), C.trim, nil, HIDD
 ---------------------------------------------------------------------------
 local bus = Instance.new("Model"); bus.Name = "SchoolBus"; bus.Parent = map
 local bx, bz = -345, 0
-local body = part(bus, "Body", Vector3.new(34, 11, 12), CFrame.new(bx - 6, 7.5, bz + 2), C.bus)
+-- the body stops short of the front, leaving an open driver's cab (x bx+7..bx+11) that Otis sits in
+local body = part(bus, "Body", Vector3.new(30, 11, 12), CFrame.new(bx - 8, 7.5, bz + 2), C.bus)
+body.PivotOffset = CFrame.new(2, 0, 0) -- keep the pivot where the full-length body had it
 bus.PrimaryPart = body
+-- cab: dashboard block, the strip under the windshield, and the two pillars (named Body so buses recolor them)
+part(bus, "Body", Vector3.new(4, 5, 12), CFrame.new(bx + 9, 4.5, bz + 2), C.bus)
+part(bus, "Body", Vector3.new(0.3, 1.5, 12), CFrame.new(bx + 11.1, 7.75, bz + 2), C.bus)
+for _, dz in { -5.5, 5.5 } do
+	part(bus, "Body", Vector3.new(0.3, 5.8, 1), CFrame.new(bx + 11.1, 9.9, bz + 2 + dz), C.bus)
+	part(bus, "Body", Vector3.new(4, 5.8, 0.3), CFrame.new(bx + 9, 9.9, bz + 2 + dz * 1.07), C.bus)
+end
 part(bus, "Hood", Vector3.new(6, 6, 11), CFrame.new(bx + 14, 5, bz + 2), C.bus)
 part(bus, "Grille", Vector3.new(0.3, 3, 8), CFrame.new(bx + 17.1, 5, bz + 2), rgb(40, 40, 45))
 for _, z in { bz - 1.5, bz + 5.5 } do
@@ -140,7 +149,7 @@ part(bus, "StripeB", Vector3.new(34.2, 0.6, 12.2), CFrame.new(bx - 6, 8, bz + 2)
 for i = 0, 5 do
 	part(bus, "Window", Vector3.new(4, 3, 12.3), CFrame.new(bx - 20 + i * 5, 10.5, bz + 2), rgb(120, 190, 240), Enum.Material.Glass, { Transparency = 0.2 })
 end
-part(bus, "Windshield", Vector3.new(0.3, 4, 10), CFrame.new(bx + 11.1, 10.5, bz + 2), rgb(120, 190, 240), Enum.Material.Glass, { Transparency = 0.2 })
+part(bus, "Windshield", Vector3.new(0.3, 4, 10), CFrame.new(bx + 11.1, 10.5, bz + 2), rgb(170, 215, 245), Enum.Material.Glass, { Transparency = 0.6 })
 part(bus, "Door", Vector3.new(3.4, 8, 0.4), CFrame.new(bx + 8, 6, bz - 4.1), rgb(40, 40, 40))
 for _, wx in { bx - 16, bx + 12 } do
 	for _, wz in { bz - 4.5, bz + 8.5 } do
@@ -151,7 +160,7 @@ end
 part(bus, "StopArm", Vector3.new(0.4, 2.4, 2.4), CFrame.new(bx - 10, 8, bz - 4.3) * CFrame.Angles(0, math.rad(90), 0), rgb(220, 30, 30), nil, { Shape = Enum.PartType.Cylinder })
 local busSign = part(bus, "Sign", Vector3.new(20, 2.4, 0.2), CFrame.new(bx - 6, 12, bz - 4.1), C.bus)
 signGui(busSign, Enum.NormalId.Front, "SCHOOL BUS", rgb(20, 20, 20), C.bus, Enum.Font.FredokaOne)
-part(map, "BusStop", Vector3.new(1, 1, 1), body.CFrame, C.bus, nil, HIDDEN)
+part(map, "BusStop", Vector3.new(1, 1, 1), CFrame.new(bx - 6, 7.5, bz + 2), C.bus, nil, HIDDEN)
 -- bus shelter
 local shelter = Instance.new("Model"); shelter.Name = "BusShelter"; shelter.Parent = map
 part(shelter, "Roof", Vector3.new(14, 0.6, 6), CFrame.new(-318, 8, -20), rgb(60, 130, 220))
