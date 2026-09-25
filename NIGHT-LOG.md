@@ -69,14 +69,21 @@ work only lives in the repo.** Everything in Studio was pushed from `src/` and c
 | **Daily Requests**: 3 a day (UTC), one free reroll, 25 candy each; all 3 open **Loretta's Lunch Box** (odds shown: 80 candy, or a Rare/Epic/Legendary/Mythic letter). No cash rewards, so pacing is untouched. Red "!" on the Daily button when something is waiting | Real enrolls counted (3/20), a real letter CALL completed one (+25 candy); second reroll and early box refused; box paid 80 candy; second open refused; badge on and off; panel screenshot |
 | **Event Tickets**: during every event, tokens (event colour, icon above, sparkles) pop up around each player; walking into one is a ticket. Shop > Event: letters (15/40/120 tickets), candy, and each event's trophy (40) only during that event. **Trophy case** on the lawn fills 12 slots | Tokens spawned 18-28 studs away and 2 were collected by walking in; trophy bought (102 -> 62), wrong-event and repeat trophies refused, Rare letter filled; screenshots of the tokens, the case (1/12 with ? placeholders) and the Event tab |
 | **Announcements** no longer draw over each other (older ones slide up); the quest DONE toast moved beside the card; "IS NOW AN ELEMENTARY SCHOOL" | Seen in screenshots |
+| **Scrapbook** (Yearbook tab): the story so far in 23 pages, the Board Chair's welcome, each Board promotion and each chapter opening, in order, unlocked by tier | Screenshot at tier 4: "7 / 23 pages of the story" |
+| **Graduation**: hold G at one of your kids' desks and they graduate (cap toss) for Diplomas (Common 1 to Secret 2,000, x grade). **Alumni Hall** (Yearbook tab) opens at Ivy League: Diplomas invite the 5 Alumni back; they walk in and you pay their price. The Board panel now says to graduate before a review (it clears the desks) | Prompt reads "Graduate +125" for a Gifted Legendary (50 x 2.5); graduating removes the kid and banks it; the Hall refuses below Ivy League; an invite took 100,000 Diplomas and $60B and Grandpa took desk 1 ($324M/s at Ivy x18); repeat invite refused; Alumni tab screenshot |
+| **Review of Daily + Tickets** (2 reviewers + verifiers): 6 confirmed, all fixed: an unopened Lunch Box was lost at midnight (now carried over), one action could pay two requests, a stale panel could waste the reroll, the trophy case stood partly on the public sidewalk with fences through it (moved inside the lot), and the case relied on a join poll that can time out | Re-tested: owed box opened the next day; stale reroll refused and kept; case screenshot inside the fence |
 
 ### 100 hours, corrected
 The first figure (103 h) came from a sim that left out events and the Admissions Letters. Adding
 them dropped the median to 73.7 h, so the model was extended with everything that gives kids or
 cash on a schedule: event grades on buses and the event beam, all five letters, chapter letters and
 rewards, the Lunch Box (one per 3 h of play) and ticket letters (30 tickets an event, trophies
-first). Tier cash was then recalibrated. **8-seed check: median 110.9 h to Multiverse University
-(97.5-116.4 h).** With the VIP pass (x2 tuition): median 76.3 h (66.4-88.2 h).
+first). Tier cash was then recalibrated: 8-seed median 110.9 h. Graduation and the Alumni Hall were
+then added to the model (graduating every replaced kid and every kid before a review), and the
+Alumni kids were scaled down to Secret-level earners after they made the endgame too fast.
+**Latest 8-seed check: median 106.5 h to Multiverse University (98.2-112.0 h)**; the first Alumni
+arrives around 32 h, the second around 49 h, the third near the end, the last two after.
+With the VIP pass (x2 tuition, measured before graduation): median 76.3 h (66.4-88.2 h).
 Not modelled, all of which make a real player faster: steals, smuggler buffs, quizzes, playtime
 gifts, daily-streak tuition, Money Rain, offline pay. The sim plays like a strong, always-online
 player; a typical player is slower.
@@ -89,8 +96,10 @@ player; a typical player is slower.
 - Real DataStore saves (Studio uses an in-memory stand-in on an unpublished place). The save/load
   round trip through that stand-in was verified earlier.
 - Game passes and products are built but have no ids yet (see below), so no real purchase has run.
-- docs/DESIGN-v2.md still has unbuilt parts: the Scrapbook, Graduation as a duplicate sink, per-event
-  activities beyond tokens (snowball war etc.), Nemesis / Most Wanted / Gazette, weeklies.
+- docs/DESIGN-v2.md still has unbuilt parts: per-event activities beyond tokens (snowball war etc.),
+  Nemesis / Most Wanted / Gazette, weeklies, the finale.
+- Studio's screenshot tool doesn't draw always-on-top billboards, so the custom prompt pills were
+  checked by reading them on the client (text and offsets), not by a screenshot.
 - Event tokens on a crowded server: spawning is per player (4 live each), not tested with many players.
 
 ## Things only you can do
