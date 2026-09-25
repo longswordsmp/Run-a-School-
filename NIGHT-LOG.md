@@ -83,7 +83,7 @@ then added to the model (graduating every replaced kid and every kid before a re
 Alumni kids were scaled down to Secret-level earners after they made the endgame too fast.
 **Latest 8-seed check: median 106.5 h to Multiverse University (98.2-112.0 h)**; the first Alumni
 arrives around 32 h, the second around 49 h, the third near the end, the last two after.
-With the VIP pass (x2 tuition, measured before graduation): median 76.3 h (66.4-88.2 h).
+With the VIP pass (x2 tuition, same model): median 67.8 h (60.9-81.1 h).
 Not modelled, all of which make a real player faster: steals, smuggler buffs, quizzes, playtime
 gifts, daily-streak tuition, Money Rain, offline pay. The sim plays like a strong, always-online
 player; a typical player is slower.
@@ -115,4 +115,4 @@ player; a typical player is slower.
 3. Should the 2-hourly Principal's Pick ever carry a Secret?
 4. Smuggler bust reward size (now x2 tuition for 20 s + candy).
 5. Weekly update / admin-abuse time: Saturday 15:00/17:00 UTC OK?
-6. VIP (x2 tuition) takes the sim's median from 110.9 h to 76.3 h. Keep x2, or make VIP x1.5?
+6. VIP (x2 tuition) takes the sim's median from 106.5 h to 67.8 h. Keep x2, or make VIP x1.5?
