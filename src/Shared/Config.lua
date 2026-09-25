@@ -58,8 +58,16 @@ Config.Students = {
 	S("BubbleGumBetty", "Bubble Gum Betty", "Common", 120, 4, "Music", "BubbleGum", "tan", rgb(255, 150, 200), rgb(120, 80, 160)),
 	S("PencilChewer", "Pencil Chewer", "Common", 150, 5, "Math", "PencilChewer", "dark", rgb(120, 180, 90), rgb(90, 70, 50)),
 	S("SneezySid", "Sneezy Sid", "Common", 180, 6, "Science", "Tissues", "light", rgb(200, 220, 240), rgb(60, 70, 90)),
+	S("PuddlePip", "Puddle Jumper Pip", "Common", 45, 1.5, "Science", "RainCloud", "light", rgb(255, 215, 40), rgb(60, 110, 200)),
+	S("HomeworkDoug", "Dog-Ate-My-Homework Doug", "Common", 75, 2.5, "English", "Puppy", "tan", rgb(220, 60, 60), rgb(70, 70, 80)),
+	S("RecorderRosie", "Recorder Rosie", "Common", 210, 7, "Music", "Recorder", "brown", rgb(250, 130, 160), rgb(90, 60, 140)),
+	S("FrogFran", "Frog-in-Pocket Fran", "Common", 240, 8, "Science", "Frog", "brown", rgb(250, 140, 170), rgb(60, 120, 80)),
+	S("MimeMimi", "Mime Mimi", "Common", 270, 9, "Drama", "MimeBeret", "light", rgb(245, 245, 245), rgb(25, 25, 30)),
 
 	-- Uncommon
+	S("TattletaleTina", "Tattletale Tina", "Uncommon", 300, 5, "History", "Clipboard", "tan", rgb(150, 90, 200), rgb(60, 60, 80)),
+	S("LooseToothLou", "Loose Tooth Lou", "Uncommon", 360, 6, "Math", "ToothDoor", "brown", rgb(90, 190, 110), rgb(70, 60, 50)),
+	S("CardboardRudy", "Cardboard Robot Rudy", "Uncommon", 420, 7, "Tech", "CardboardBot", "light", rgb(170, 130, 85), rgb(80, 80, 90)),
 	S("ClassClown", "Class Clown", "Uncommon", 480, 8, "Drama", "ClownNose", "light", rgb(240, 60, 180), rgb(60, 180, 240)),
 	S("NerdNed", "Nerd Ned", "Uncommon", 660, 11, "Math", "Glasses", "light", rgb(245, 245, 245), rgb(150, 110, 70)),
 	S("FidgetFred", "Fidget Fred", "Uncommon", 840, 14, "Science", "FidgetSpinner", "brown", rgb(255, 110, 60), rgb(40, 50, 80)),

@@ -26,6 +26,9 @@ src = path.read_text()
 
 
 def sig2(x):
+    # the $9-$24 starters are priced to the dollar; rounding them to $5 steps would undo that
+    if x < 30:
+        return max(1, int(round(x)))
     if x < 100:
         return int(round(x / 5) * 5) or 5
     e = 10 ** (int(math.floor(math.log10(x))) - 1)

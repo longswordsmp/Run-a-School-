@@ -157,7 +157,7 @@ local function buildBillboard(model, def, gradeId)
 	-- rarer students get bigger tags so they read from across the hallway
 	local w = 7.5 + (rarity.order - 1) * 0.7
 	bb.Size = UDim2.new(w, 0, w * 0.58, 0)
-	bb.StudsOffsetWorldSpace = Vector3.new(0, 3.6, 0)
+	bb.StudsOffsetWorldSpace = Vector3.new(0, 3.6 + (model:GetAttribute("TagLift") or 0), 0)
 	bb.MaxDistance = 90
 	bb.LightInfluence = 0
 	bb.Parent = head
@@ -197,7 +197,7 @@ function Factory.setMode(model, mode, extra)
 		price.TextColor3 = Color3.new(1, 1, 1)
 	elseif mode == "owned" then
 		price.Visible = false
-		bb.StudsOffsetWorldSpace = Vector3.new(0, 3, 0)
+		bb.StudsOffsetWorldSpace = Vector3.new(0, 3 + (model:GetAttribute("TagLift") or 0), 0)
 		bb.MaxDistance = 45
 	elseif mode == "carried" then
 		price.Visible = true

@@ -78,6 +78,11 @@ local function wireGlasses(model, head, hs, y, radius, color)
 end
 
 local HAIR = {
+	HomeworkDoug = Color3.fromRGB(120, 80, 50),
+	RecorderRosie = Color3.fromRGB(60, 40, 30),
+	FrogFran = Color3.fromRGB(30, 22, 18),
+	TattletaleTina = Color3.fromRGB(120, 60, 30),
+	LooseToothLou = Color3.fromRGB(20, 16, 14),
 	UntiedTyler = Color3.fromRGB(230, 180, 90),
 	GlueStickGus = Color3.fromRGB(30, 22, 18),
 	DoodleDot = Color3.fromRGB(200, 90, 60),
@@ -138,7 +143,7 @@ local HAIR = {
 	TinyPrincipal = Color3.fromRGB(40, 30, 25),
 }
 -- props that replace the hair entirely
-local NO_HAIR = { ClownNose = true, Football = true, Hoodie = true, Brain = true, MascotHead = true, SlimeDealer = true }
+local NO_HAIR = { ClownNose = true, Football = true, Hoodie = true, Brain = true, MascotHead = true, SlimeDealer = true, RainCloud = true, MimeBeret = true, CardboardBot = true }
 
 function Props.hair(model, def)
 	if NO_HAIR[def.prop] then return end
@@ -672,6 +677,244 @@ B.Hiccups = function(model, head, hs)
 	-- puffed cheeks
 	for _, x in { -1, 1 } do
 		ball(model, head, hs.X * 0.28, CFrame.new(x * hs.X * 0.33, -hs.Y * 0.12, -hs.Z * 0.36), rgb(255, 170, 170))
+	end
+end
+
+-- the second wave of cheap kids (docs/DESIGN-v2.md section 4)
+B.RainCloud = function(model, head, hs)
+	local yellow = rgb(255, 215, 40)
+	blob(model, head, Vector3.new(hs.X * 1.22, hs.Y * 0.9, hs.Z * 1.22), CFrame.new(0, hs.Y * 0.12, hs.Z * 0.08), yellow)
+	blob(model, head, Vector3.new(hs.X, hs.Y * 0.12, hs.Z * 0.5), CFrame.new(0, hs.Y * 0.38, -hs.Z * 0.45), yellow)
+	blob(model, head, Vector3.new(hs.X * 0.8, hs.Y * 0.18, hs.Z * 0.3), CFrame.new(0, hs.Y * 0.24, -hs.Z * 0.36), rgb(200, 130, 70))
+	local lower = part(model, "LowerTorso")
+	local LT = lower.Size
+	cylY(model, lower, LT.X * 1.45, 1.0, CFrame.new(0, -0.3, 0), yellow)
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	for i = 0, 2 do
+		block(model, torso, Vector3.new(0.25, 0.12, 0.08), CFrame.new(0, ts.Y * (0.3 - i * 0.28), -ts.Z * 0.54), rgb(60, 50, 40))
+	end
+	for _, side in { "LeftFoot", "RightFoot" } do
+		local foot = part(model, side)
+		if foot then block(model, foot, Vector3.new(0.95, 1.1, 1.25), CFrame.new(0, 0.3, -0.05), rgb(220, 40, 50)) end
+	end
+	-- his personal raincloud, raining
+	local root = part(model, "HumanoidRootPart")
+	local y = hs.Y * 1.35
+	local grey = rgb(150, 155, 170)
+	ball(model, head, 1.0, CFrame.new(-0.55, y, 0), grey)
+	local mid = ball(model, head, 1.3, CFrame.new(0, y + 0.15, 0), grey)
+	ball(model, head, 0.9, CFrame.new(0.55, y, 0.1), grey)
+	local rain = Instance.new("ParticleEmitter")
+	rain.Name = "Rain"
+	rain.Rate = 25
+	rain.Lifetime = NumberRange.new(0.5)
+	rain.Speed = NumberRange.new(6)
+	rain.Size = NumberSequence.new(0.12)
+	rain.EmissionDirection = Enum.NormalId.Bottom
+	rain.SpreadAngle = Vector2.new(20, 20)
+	rain.Color = ColorSequence.new(rgb(90, 170, 255))
+	rain.LightEmission = 0.3
+	rain.Parent = mid
+	_ = root
+	-- lift his name tag above the cloud
+	model:SetAttribute("TagLift", 1.8)
+end
+
+B.Puppy = function(model, head, hs)
+	-- the homework, with a bite out of it
+	local left = part(model, "LeftHand")
+	local paper = block(model, left, Vector3.new(1.1, 0.7, 0.05), CFrame.new(0, 0.1, -0.35), rgb(250, 250, 250))
+	block(model, left, Vector3.new(0.6, 0.5, 0.05), CFrame.new(-0.25, 0.65, -0.35), rgb(250, 250, 250))
+	for i = 0, 2 do
+		block(model, left, Vector3.new(0.12, 0.12, 0.06), CFrame.new(0.12 + i * 0.13, 0.5, -0.35) * CFrame.Angles(0, 0, math.rad(45)), rgb(250, 250, 250))
+	end
+	local g = Instance.new("SurfaceGui")
+	g.Face = Enum.NormalId.Front
+	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	g.PixelsPerStud = 60
+	g.Parent = paper
+	local t = Instance.new("TextLabel")
+	t.Size = UDim2.fromScale(1, 1)
+	t.BackgroundTransparency = 1
+	t.Text = "HOMEWORK"
+	t.TextScaled = true
+	t.Font = Enum.Font.FredokaOne
+	t.TextColor3 = rgb(40, 90, 200)
+	t.Parent = g
+	-- the puppy at his feet
+	local lower = part(model, "LowerTorso")
+	local tan, dark = rgb(185, 130, 75), rgb(110, 70, 40)
+	local dog = CFrame.new(1.5, -1.9, -0.3)
+	blob(model, lower, Vector3.new(0.9, 0.8, 1.4), dog, tan)
+	local h = dog * CFrame.new(0, 0.55, -0.75)
+	ball(model, lower, 0.85, h, tan)
+	blob(model, lower, Vector3.new(0.45, 0.35, 0.45), h * CFrame.new(0, -0.12, -0.38), rgb(225, 190, 140))
+	ball(model, lower, 0.18, h * CFrame.new(0, -0.02, -0.62), rgb(20, 20, 20))
+	for _, x in { -0.18, 0.18 } do
+		ball(model, lower, 0.13, h * CFrame.new(x, 0.12, -0.38), rgb(20, 20, 20))
+		block(model, lower, Vector3.new(0.18, 0.55, 0.32), h * CFrame.new(x * 2.6, 0.02, 0) * CFrame.Angles(0, 0, math.rad(x > 0 and -20 or 20)), dark)
+	end
+	block(model, lower, Vector3.new(0.18, 0.04, 0.25), h * CFrame.new(0, -0.3, -0.55), rgb(255, 120, 150))
+	for _, x in { -0.3, 0.3 } do
+		for _, z in { -0.45, 0.45 } do
+			cylY(model, lower, 0.22, 0.45, dog * CFrame.new(x, -0.5, z), tan)
+		end
+	end
+	cylY(model, lower, 0.14, 0.55, dog * CFrame.new(0, 0.35, 0.8) * CFrame.Angles(math.rad(-40), 0, 0), tan)
+end
+
+B.Recorder = function(model, head, hs)
+	local c = HAIR.RecorderRosie or rgb(60, 40, 30)
+	for _, x in { -1, 1 } do
+		ball(model, head, hs.X * 0.38, CFrame.new(x * hs.X * 0.62, hs.Y * 0.05, hs.Z * 0.05), c)
+		cylY(model, head, hs.X * 0.2, 0.1, CFrame.new(x * hs.X * 0.5, hs.Y * 0.2, hs.Z * 0.05) * CFrame.Angles(0, 0, math.rad(x * 50)), rgb(255, 120, 170))
+	end
+	-- a big recorder held up in front of her, and a music note floating off it
+	local left = part(model, "LeftHand")
+	local cream = rgb(245, 235, 210)
+	local cf = CFrame.new(0.25, 0.9, -0.45) * CFrame.Angles(math.rad(-35), 0, math.rad(-25))
+	cylY(model, left, 0.3, 2.0, cf, cream)
+	for i = 0, 4 do
+		ball(model, left, 0.1, cf * CFrame.new(0, -0.5 + i * 0.24, -0.14), rgb(20, 20, 20))
+	end
+	cylY(model, left, 0.42, 0.3, cf * CFrame.new(0, -1.05, 0), rgb(150, 100, 60))
+	cylY(model, left, 0.34, 0.25, cf * CFrame.new(0, 1.05, 0), rgb(150, 100, 60))
+end
+
+B.Frog = function(model, head, hs)
+	local green = rgb(90, 200, 80)
+	local f = CFrame.new(0, hs.Y * 0.62, 0)
+	blob(model, head, Vector3.new(hs.X * 0.62, hs.Y * 0.36, hs.Z * 0.58), f, green)
+	blob(model, head, Vector3.new(hs.X * 0.45, hs.Y * 0.2, hs.Z * 0.3), f * CFrame.new(0, -0.05, -hs.Z * 0.18), rgb(200, 235, 170))
+	for _, x in { -1, 1 } do
+		ball(model, head, hs.X * 0.17, f * CFrame.new(x * hs.X * 0.16, hs.Y * 0.16, -hs.Z * 0.16), rgb(250, 250, 250))
+		ball(model, head, hs.X * 0.08, f * CFrame.new(x * hs.X * 0.16, hs.Y * 0.17, -hs.Z * 0.24), rgb(20, 20, 20))
+		blob(model, head, Vector3.new(hs.X * 0.2, hs.Y * 0.14, hs.Z * 0.35), f * CFrame.new(x * hs.X * 0.28, -hs.Y * 0.08, hs.Z * 0.1), green)
+	end
+	block(model, head, Vector3.new(hs.X * 0.3, 0.04, 0.05), f * CFrame.new(0, 0, -hs.Z * 0.29), rgb(30, 100, 40))
+	-- the fly's jar
+	local right = part(model, "RightHand")
+	local jar = cylY(model, right, 0.8, 0.9, CFrame.new(0, 0.2, -0.45), rgb(220, 240, 255), Enum.Material.Glass)
+	jar.Transparency = 0.5
+	cylY(model, right, 0.85, 0.15, CFrame.new(0, 0.7, -0.45), rgb(220, 40, 40))
+	ball(model, right, 0.1, CFrame.new(0.1, 0.25, -0.45), rgb(20, 20, 20))
+end
+
+B.MimeBeret = function(model, head, hs)
+	head.Color = rgb(245, 245, 245)
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	for i = 0, 4 do
+		block(model, torso, Vector3.new(ts.X * 1.02, ts.Y * 0.07, ts.Z * 1.02), CFrame.new(0, ts.Y * (0.38 - i * 0.19), 0), rgb(20, 20, 24))
+	end
+	blob(model, head, Vector3.new(hs.X * 1.2, hs.Y * 0.3, hs.Z * 1.2), CFrame.new(-hs.X * 0.08, hs.Y * 0.5, 0) * CFrame.Angles(0, 0, math.rad(15)), rgb(20, 20, 24))
+	block(model, torso, Vector3.new(0.9, 0.3, 0.9), CFrame.new(0, ts.Y * 0.5, 0), rgb(220, 40, 50))
+	-- painted face: a black tear and red lips
+	block(model, head, Vector3.new(0.06, hs.Y * 0.12, 0.05), CFrame.new(hs.X * 0.22, -hs.Y * 0.05, -hs.Z * 0.51), rgb(20, 20, 24))
+	block(model, head, Vector3.new(hs.X * 0.18, hs.Y * 0.05, 0.05), CFrame.new(0, -hs.Y * 0.2, -hs.Z * 0.51), rgb(210, 30, 40))
+	-- gloves pressed on the invisible box
+	for _, h in { "LeftHand", "RightHand" } do
+		local hand = part(model, h)
+		if hand then hand.Color = rgb(250, 250, 250) end
+	end
+end
+
+B.Clipboard = function(model, head, hs)
+	local c = HAIR.TattletaleTina or rgb(120, 60, 30)
+	for _, x in { -1, 1 } do
+		blob(model, head, Vector3.new(0.35, 0.6, 0.35), CFrame.new(x * hs.X * 0.55, hs.Y * 0.05, hs.Z * 0.1), c)
+		ball(model, head, 0.16, CFrame.new(x * hs.X * 0.5, hs.Y * 0.28, hs.Z * 0.1), rgb(220, 40, 50))
+	end
+	local left = part(model, "LeftHand")
+	local cf = CFrame.new(0, 0.3, -0.3) * CFrame.Angles(math.rad(-20), 0, 0)
+	block(model, left, Vector3.new(1.0, 1.35, 0.08), cf, rgb(150, 100, 60))
+	local paper = block(model, left, Vector3.new(0.86, 1.1, 0.02), cf * CFrame.new(0, -0.05, -0.05), rgb(250, 250, 250))
+	block(model, left, Vector3.new(0.4, 0.15, 0.1), cf * CFrame.new(0, 0.62, -0.04), rgb(200, 200, 210), Enum.Material.Metal)
+	local g = Instance.new("SurfaceGui")
+	g.Face = Enum.NormalId.Front
+	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	g.PixelsPerStud = 80
+	g.Parent = paper
+	local t = Instance.new("TextLabel")
+	t.Size = UDim2.fromScale(1, 1)
+	t.BackgroundTransparency = 1
+	t.Text = "Gus: BAD\nDot: good\nPete: SUS"
+	t.TextScaled = true
+	t.Font = Enum.Font.PermanentMarker
+	t.TextColor3 = rgb(210, 30, 40)
+	t.Parent = g
+	cylY(model, head, 0.1, hs.Y * 0.5, CFrame.new(hs.X * 0.52, hs.Y * 0.05, hs.Z * 0.1) * CFrame.Angles(math.rad(60), 0, 0), rgb(255, 200, 40))
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	cylZ(model, torso, 0.35, 0.06, CFrame.new(-ts.X * 0.22, ts.Y * 0.2, -ts.Z * 0.54), rgb(255, 210, 60), Enum.Material.Neon)
+end
+
+B.ToothDoor = function(model, head, hs)
+	local tooth = block(model, head, Vector3.new(0.12, 0.16, 0.06), CFrame.new(hs.X * 0.05, -hs.Y * 0.18, -hs.Z * 0.53), rgb(250, 250, 245))
+	local lower = part(model, "LowerTorso")
+	local dcf = CFrame.new(0, -0.6, 3) * CFrame.Angles(math.rad(60), 0, 0)
+	local door = block(model, lower, Vector3.new(1.2, 2.0, 0.15), dcf, rgb(150, 95, 55), Enum.Material.Wood)
+	local win = block(model, lower, Vector3.new(0.5, 0.6, 0.17), dcf * CFrame.new(0, 0.45, 0), rgb(200, 230, 255), Enum.Material.Glass)
+	win.Transparency = 0.3
+	local knob = ball(model, lower, 0.16, dcf * CFrame.new(0.42, -0.1, -0.12), rgb(220, 180, 60), Enum.Material.Metal)
+	-- the string from the tooth to the doorknob
+	local a0 = Instance.new("Attachment")
+	a0.Parent = tooth
+	local a1 = Instance.new("Attachment")
+	a1.Parent = knob
+	local beam = Instance.new("Beam")
+	beam.Attachment0, beam.Attachment1 = a0, a1
+	beam.Width0, beam.Width1 = 0.05, 0.05
+	beam.Color = ColorSequence.new(rgb(250, 250, 250))
+	beam.FaceCamera = true
+	beam.Segments = 1
+	beam.Parent = tooth
+	_ = door
+end
+
+B.CardboardBot = function(model, head, hs)
+	local card = rgb(170, 130, 85)
+	local torso = part(model, "UpperTorso")
+	local lower = part(model, "LowerTorso")
+	local ts, LT = torso.Size, lower.Size
+	local box = block(model, torso, Vector3.new(ts.X * 1.55, ts.Y + LT.Y + 0.2, ts.Z * 1.7), CFrame.new(0, -LT.Y * 0.5, 0), card, Enum.Material.Cardboard)
+	local g = Instance.new("SurfaceGui")
+	g.Face = Enum.NormalId.Front
+	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	g.PixelsPerStud = 40
+	g.Parent = box
+	local t = Instance.new("TextLabel")
+	t.Size = UDim2.fromScale(1, 0.35)
+	t.BackgroundTransparency = 1
+	t.Text = "RUDY-3000"
+	t.TextScaled = true
+	t.Font = Enum.Font.PermanentMarker
+	t.TextColor3 = rgb(30, 30, 30)
+	t.Parent = g
+	for i, c in { rgb(220, 40, 40), rgb(40, 90, 220), rgb(40, 180, 70) } do
+		cylZ(model, torso, 0.32, 0.08, CFrame.new(-ts.X * 0.35 + i * ts.X * 0.23, -ts.Y * 0.15, -ts.Z * 0.86), c)
+	end
+	-- an open-front helmet so his face shows
+	block(model, head, Vector3.new(hs.X * 1.2, 0.12, hs.Z * 1.2), CFrame.new(0, hs.Y * 0.58, 0), card, Enum.Material.Cardboard)
+	block(model, head, Vector3.new(hs.X * 1.2, hs.Y * 1.1, 0.12), CFrame.new(0, hs.Y * 0.05, hs.Z * 0.6), card, Enum.Material.Cardboard)
+	for _, x in { -1, 1 } do
+		block(model, head, Vector3.new(0.12, hs.Y * 1.1, hs.Z * 1.2), CFrame.new(x * hs.X * 0.6, hs.Y * 0.05, 0), card, Enum.Material.Cardboard)
+	end
+	block(model, head, Vector3.new(hs.X * 1.2, 0.18, 0.12), CFrame.new(0, hs.Y * 0.42, -hs.Z * 0.6), card, Enum.Material.Cardboard)
+	-- a bendy-straw antenna with a foil ball
+	for i = 0, 3 do
+		cylY(model, head, 0.12, 0.3, CFrame.new(0, hs.Y * 0.72 + i * 0.28, 0) * CFrame.Angles(0, 0, math.rad(i >= 2 and 15 or 0)), i % 2 == 0 and rgb(220, 40, 40) or rgb(250, 250, 250))
+	end
+	ball(model, head, 0.35, CFrame.new(0.15, hs.Y * 0.72 + 1.2, 0), rgb(200, 205, 215), Enum.Material.Foil)
+	-- dryer-hose arms
+	for _, arm in { "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm" } do
+		local a = part(model, arm)
+		if a then
+			for k = -1, 0 do
+				cylY(model, a, 0.55, 0.14, CFrame.new(0, a.Size.Y * (0.25 + k * 0.5), 0), rgb(200, 205, 215), Enum.Material.Foil)
+			end
+		end
 	end
 end
 
