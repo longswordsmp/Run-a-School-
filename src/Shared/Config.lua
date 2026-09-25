@@ -173,16 +173,16 @@ for _, g in Config.Grades do Config.GradeById[g.id] = g end
 Config.Tiers = {
 	{ name = "Kindergarten", cash = 0, needs = nil, mult = 1, floors = 1, lock = 60 },
 	{ name = "Elementary School", cash = 680e3, needs = "HallMonitor", mult = 1.5, floors = 1, lock = 70 },
-	{ name = "Middle School", cash = 59e6, needs = "BandGeek", mult = 2, floors = 2, lock = 75 },
-	{ name = "High School", cash = 910e6, needs = "Quarterback", mult = 3, floors = 2, lock = 80 },
-	{ name = "Prep School", cash = 47e9, needs = "Valedictorian", mult = 4.5, floors = 3, lock = 85 },
-	{ name = "Private Academy", cash = 740e9, needs = "PromKing", mult = 6.5, floors = 3, lock = 90 },
-	{ name = "Community College", cash = 40e12, needs = "KidGenius", mult = 9, floors = 3, lock = 95 },
-	{ name = "State University", cash = 84e12, needs = "NewKid", mult = 13, floors = 3, lock = 100 },
-	{ name = "Ivy League", cash = 420e12, needs = "TinyProfessor", mult = 18, floors = 3, lock = 105 },
-	{ name = "Wizard School", cash = 1.1e15, needs = "PopStarKid", mult = 25, floors = 3, lock = 110 },
-	{ name = "Space Academy", cash = 9e15, needs = "ChildCEO", mult = 35, floors = 3, lock = 115 },
-	{ name = "Multiverse University", cash = 44e15, needs = "Secret", mult = 50, floors = 3, lock = 120 },
+	{ name = "Middle School", cash = 62e6, needs = "BandGeek", mult = 2, floors = 2, lock = 75 },
+	{ name = "High School", cash = 960e6, needs = "Quarterback", mult = 3, floors = 2, lock = 80 },
+	{ name = "Prep School", cash = 49e9, needs = "Valedictorian", mult = 4.5, floors = 3, lock = 85 },
+	{ name = "Private Academy", cash = 780e9, needs = "PromKing", mult = 6.5, floors = 3, lock = 90 },
+	{ name = "Community College", cash = 42e12, needs = "KidGenius", mult = 9, floors = 3, lock = 95 },
+	{ name = "State University", cash = 88e12, needs = "NewKid", mult = 13, floors = 3, lock = 100 },
+	{ name = "Ivy League", cash = 440e12, needs = "TinyProfessor", mult = 18, floors = 3, lock = 105 },
+	{ name = "Wizard School", cash = 1.16e15, needs = "PopStarKid", mult = 25, floors = 3, lock = 110 },
+	{ name = "Space Academy", cash = 9.5e15, needs = "ChildCEO", mult = 35, floors = 3, lock = 115 },
+	{ name = "Multiverse University", cash = 46e15, needs = "Secret", mult = 50, floors = 3, lock = 120 },
 }
 -- what the Board Chair says when approving each tier (the story so far, one line per promotion)
 Config.BoardLines = {
@@ -390,6 +390,110 @@ Config.Goals = {
 	{ text = "Bust a Snack Smuggler", signal = "bustDealer", count = 1, secs = 300, min = 1500 },
 	{ text = "Answer 2 Pop Quizzes right", signal = "quizRight", count = 2, secs = 240, min = 1000 },
 }
+
+---------------------------------------------------------------------------
+-- Principal's Requests: the story spine after the First Day tutorial (which ends at the first Board
+-- review). One chapter per tier from Elementary on. Each has 4 requests (any order) and then "Face the
+-- Board"; each request pays 1 % of the next tier's cash (the tiers from Middle School up cost 5 % more
+-- to pay for it; tools/econ_sim.py models both) plus candy, and a finished chapter fills a letter.
+-- Kinds: supply/hire/build (own that item), iq (reach IQ n), own (n kids of that rarity or better
+-- at once), builds (n Builder items), count (signal fired n times, optionally with a matching arg).
+-- Every request can be done alone, so the chain never stalls on a solo server.
+---------------------------------------------------------------------------
+Config.Chapters = {
+	{ title = "The New Building", host = "Wobblesworth", letter = "Rare",
+		line = "Elementary! Real classrooms, Principal. Let's fill them properly.",
+		steps = {
+			{ kind = "hire", id = "MrChalk" },
+			{ kind = "build", id = "Playground" },
+			{ kind = "iq", n = 150 },
+			{ kind = "count", signal = "busEnroll", arg = "LateBus", count = 1, text = "Enroll a kid off the Late Bus" },
+		} },
+	{ title = "Lockers and Lies", host = "Janitor Stan", letter = "Rare",
+		line = "Middle schoolers. They cheat, they sneak candy, they lose their shoes. Stay sharp.",
+		steps = {
+			{ kind = "build", id = "MascotLockers" },
+			{ kind = "hire", id = "MsHoneycutt" },
+			{ kind = "count", signal = "bustDealer", count = 10, text = "Bust 10 Snack Smugglers" },
+			{ kind = "count", signal = "eagleEye", count = 1, text = "Make an EAGLE EYE catch" },
+		} },
+	{ title = "Friday Night Lights", host = "Hall Monitor Hector", letter = "Epic",
+		line = "High school means a stadium, a coach, and a trophy case worth guarding.",
+		steps = {
+			{ kind = "build", id = "Bleachers" },
+			{ kind = "hire", id = "CoachRex" },
+			{ kind = "count", signal = "busEnroll", arg = "HonorBus", count = 1, text = "Enroll a kid off the Honor Roll Bus" },
+			{ kind = "own", rarity = "Legendary", n = 1 },
+		} },
+	{ title = "Blazers Required", host = "Wobblesworth", letter = "Epic",
+		line = "Prep school parents inspect the windows. Personally. With a magnifying glass.",
+		steps = {
+			{ kind = "build", id = "ArchedWindows" },
+			{ kind = "hire", id = "DrBeaker" },
+			{ kind = "supply", id = "Laptops" },
+			{ kind = "own", rarity = "Legendary", n = 2 },
+		} },
+	{ title = "Vex Makes an Offer", host = "Dr. Veronica Vex", letter = "Legendary",
+		line = "A fountain? How quaint. I'll be draining it when I buy this place.",
+		steps = {
+			{ kind = "build", id = "Fountain" },
+			{ kind = "hire", id = "MadameVerse" },
+			{ kind = "supply", id = "Tablets" },
+			{ kind = "own", rarity = "Mythic", n = 1 },
+		} },
+	{ title = "Campus Life", host = "Lunch Lady Loretta", letter = "Legendary",
+		line = "College kids eat four lunches a day. I've done the math. Please help.",
+		steps = {
+			{ kind = "build", id = "Statue" },
+			{ kind = "hire", id = "ProfTweed" },
+			{ kind = "supply", id = "Smartboards" },
+			{ kind = "count", signal = "quizRight", count = 5, text = "Answer 5 Pop Quizzes right" },
+		} },
+	{ title = "Iron and Glass", host = "Janitor Stan", letter = "Legendary",
+		line = "University. The statue blinked at me last night. I'm not joking.",
+		steps = {
+			{ kind = "build", id = "StainedGlass" },
+			{ kind = "build", id = "IronFence" },
+			{ kind = "hire", id = "DeanMaximus" },
+			{ kind = "supply", id = "VRHeadsets" },
+		} },
+	{ title = "Old Money", host = "Wobblesworth", letter = "Mythic",
+		line = "The Ivy League runs on reputation. And on catching every last cheater.",
+		steps = {
+			{ kind = "build", id = "SolarPanels" },
+			{ kind = "supply", id = "RobotTutors" },
+			{ kind = "count", signal = "catchCheater", count = 40, text = "Catch 40 cheaters" },
+			{ kind = "own", rarity = "Mythic", n = 3 },
+		} },
+	{ title = "The Bell Tolls", host = "Archmage Quill", letter = "Mythic",
+		line = "A school of wizards needs a bell tower. Tradition. Also, the owls insist.",
+		steps = {
+			{ kind = "build", id = "BellTower" },
+			{ kind = "hire", id = "ArchmageQuill" },
+			{ kind = "supply", id = "HoloDesks" },
+			{ kind = "own", rarity = "Prodigy", n = 1 },
+		} },
+	{ title = "Countdown", host = "Otis", letter = "Prodigy",
+		line = "Space Academy. I drove a bus to the moon once. Long story. Buckle up.",
+		steps = {
+			{ kind = "hire", id = "CommanderNova" },
+			{ kind = "supply", id = "QuantumPCs" },
+			{ kind = "count", signal = "bustDealer", count = 50, text = "Bust 50 Snack Smugglers" },
+			{ kind = "own", rarity = "Prodigy", n = 2 },
+		} },
+	{ title = "Every School at Once", host = "Everyone", letter = "Prodigy",
+		line = "The Multiverse. Every school you ever ran, all at the same time. Make it count.",
+		steps = {
+			{ kind = "hire", id = "Omniteacher" },
+			{ kind = "supply", id = "ThinkingCaps" },
+			{ kind = "builds", n = 20 },
+			{ kind = "own", rarity = "Secret", n = 1 },
+		} },
+}
+-- chapter i is played at tier i + 1
+Config.ChapterTier = function(i) return i + 1 end
+Config.ChapterPct = 0.01
+Config.ChapterCandy = { 10, 10, 20, 20 }
 
 ---------------------------------------------------------------------------
 -- Janitor Stan's Confiscation Closet: what Confiscated Candy buys. Decor adds no Reputation (no income

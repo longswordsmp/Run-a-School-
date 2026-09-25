@@ -27,6 +27,7 @@ local RewardService = require(Server.RewardService)
 local StoryService = require(Server.StoryService)
 local LeaderboardService = require(Server.LeaderboardService)
 local QuizService = require(Server.QuizService)
+local ChapterService = require(Server.ChapterService)
 
 Factory.preload()
 PlotService.start()
@@ -45,6 +46,7 @@ RewardService.start()
 StoryService.start()
 LeaderboardService.start()
 QuizService.start()
+ChapterService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -208,6 +210,23 @@ require(Server.DebugBridge).start({
 	-- the purchase grant paths without Robux (Studio only)
 	vex = function(player)
 		return StoryService.debugVex()
+	end,
+	-- jump to a chapter of the Principal's Requests with nothing done
+	chapter = function(player, n)
+		return ChapterService.debugSet(player, n)
+	end,
+	chapterState = function(player)
+		return ChapterService.state(player)
+	end,
+	-- enroll a kid who came off a named special bus (still in the hall)
+	enrollBus = function(player, kind)
+		for _, m in workspace.Hall:GetChildren() do
+			if m:GetAttribute("Bus") == kind and m:GetAttribute("State") == "Hall" then
+				HallService.enroll(player, m)
+				return m:GetAttribute("StudentId")
+			end
+		end
+		return false
 	end,
 	quiz = function(player)
 		QuizService.ask()

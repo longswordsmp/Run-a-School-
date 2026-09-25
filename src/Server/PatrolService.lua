@@ -174,6 +174,7 @@ function PatrolService.sendToOffice(player, slot, by)
 	Remotes.Notify:FireClient(player, (by and (by .. " caught ") or (eagle and "EAGLE EYE! You caught " or "You caught ")) .. def.name .. " cheating! Detention fee +" .. Config.formatCash(fee), "good")
 	Remotes.Sfx:FireClient(player, "WhistleLong")
 	Signals.fire("catchCheater", player, def)
+	if eagle then Signals.fire("eagleEye", player, def) end
 	Walkers.walk(model, pts, 10, function()
 		if not model.Parent then return end
 		-- sit on the bench facing the room

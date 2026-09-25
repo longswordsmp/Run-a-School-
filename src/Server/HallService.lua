@@ -150,6 +150,7 @@ function HallService.enroll(player, model)
 	end
 	Signals.fire("enroll", player, def, grade, firstTime)
 	if model:GetAttribute("OnBench") then Signals.fire("benchEnroll", player, def) end
+	if model:GetAttribute("Bus") then Signals.fire("busEnroll", player, model:GetAttribute("Bus"), def) end
 
 	Factory.setMode(model, "walking", player.DisplayName)
 	Walkers.stop(model)
@@ -299,11 +300,14 @@ function HallService.specialBus(kind, byName)
 	local door = bus.Door.Position
 	for i = 1, spec.count or 6 do
 		local w = (i == 1 and spec.first) or weights
+		local kid
 		if spec.ids then
-			HallService.spawnOne(nil, spec.ids[i], nil, Vector3.new(door.X, 0, door.Z - 3))
+			kid = HallService.spawnOne(nil, spec.ids[i], nil, Vector3.new(door.X, 0, door.Z - 3))
 		else
-			HallService.spawnOne(nil, nil, w, Vector3.new(door.X, 0, door.Z - 3))
+			kid = HallService.spawnOne(nil, nil, w, Vector3.new(door.X, 0, door.Z - 3))
 		end
+		-- which bus they came off (chapter requests like "enroll a kid off the Honor Roll Bus")
+		if kid then kid:SetAttribute("Bus", kind) end
 		task.wait(0.6)
 	end
 	task.wait(1.5)

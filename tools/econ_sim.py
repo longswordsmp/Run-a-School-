@@ -81,6 +81,25 @@ BUILDS = [{"id": m.group(1), "gain": float(m.group(2)), "tier": int(m.group(3)),
           for m in re.finditer(r'\{ id = "(\w+)", name = "[^"]+", icon = "[^"]*", rep = ([\d.]+), tier = (\d+), price = ([\d.e]+)', CFG)]
 PAYBACK = 3600.0
 
+# Principal's Requests (Config.Chapters): chapter k is played at tier index k (Elementary = 1). Each of
+# the 4 requests pays ChapterPct of the next tier's cash when it's done.
+# Shop requests are done when the sim buys that item, IQ at the threshold, owning/counting ones are
+# assumed done 15 minutes into the tier.
+CHAPTERS = []
+_chb = re.search(r"Config\.Chapters = \{(.*?)\n\}\n", CFG, re.S)
+if _chb:
+    for block in re.findall(r"steps = \{(.*?)\n\t\t\}", _chb.group(1), re.S):
+        steps = []
+        for m in re.finditer(r'\{ kind = "(\w+)"(.*?)\}', block):
+            kind, rest = m.group(1), m.group(2)
+            ident = re.search(r'id = "(\w+)"', rest)
+            n = re.search(r'\bn = (\d+)', rest)
+            steps.append({"kind": kind, "id": ident.group(1) if ident else None, "n": int(n.group(1)) if n else None})
+        CHAPTERS.append(steps)
+CHAPTER_PCT = num(r"Config\.ChapterPct = ([\d.]+)", 0.0125)
+CHAPTER_OWN_AFTER = 900.0
+USE_CHAPTERS = "--no-chapters" not in sys.argv
+
 # luck upgrade (Recruitment Office): +2 % per level, 10 levels
 LUCK_COSTS = [10e3 * 4 ** i for i in range(10)]
 LUCK_STEP = 0.02
@@ -128,6 +147,9 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
     next_trip = TRIP_EVERY
     next_honor = HONOR_OFFSET
     next_pick = PICK_OFFSET
+    hired = set()
+    tier_start = 0.0
+    paid = set()
 
     def desks():
         floors = TIERS[tier]["floors"]
@@ -196,6 +218,8 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
                 mark(f"tier {tier} {nxt['name']}")
                 if stop_tier is not None and tier >= stop_tier:
                     return events
+                tier_start = t
+                paid = set()
                 cash = START_CASH * nxt["mult"]
                 seated = []
                 continue
@@ -242,7 +266,29 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
                         rep += it["gain"]; owned_items.add(it["id"])
                     else:
                         teacher[kind[1]] = it["mult"]
+                        hired.add(it["id"])
                     mark(f"buy {it['id']}")
+
+        # chapter requests
+        if USE_CHAPTERS and 1 <= tier <= len(CHAPTERS):
+            nxt_cash = tier_cash[min(tier + 1, len(TIERS) - 1)]
+            for i, st in enumerate(CHAPTERS[tier - 1]):
+                if i in paid:
+                    continue
+                k = st["kind"]
+                if k in ("supply", "build"):
+                    ok = st["id"] in owned_items
+                elif k == "hire":
+                    ok = st["id"] in hired
+                elif k == "iq":
+                    ok = iq >= st["n"]
+                elif k == "builds":
+                    ok = sum(1 for b in BUILDS if b["id"] in owned_items) >= st["n"]
+                else:
+                    ok = t - tier_start >= CHAPTER_OWN_AFTER
+                if ok:
+                    paid.add(i)
+                    cash += CHAPTER_PCT * nxt_cash
 
         # students
         needs = TIERS[tier + 1]["needs"] if tier + 1 < len(TIERS) else None

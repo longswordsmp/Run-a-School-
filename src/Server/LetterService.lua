@@ -346,7 +346,7 @@ function LetterService.start()
 end
 
 -- make a letter ready now; if it already is, bank a second one (rewards, Express products)
-function LetterService.debugReady(player, rarity)
+function LetterService.fill(player, rarity)
 	local p = Data.get(player)
 	if not p then return false end
 	local ls = letters(p)
@@ -358,5 +358,6 @@ function LetterService.debugReady(player, rarity)
 	sync(player, p)
 	return true
 end
+LetterService.debugReady = LetterService.fill
 
 return LetterService

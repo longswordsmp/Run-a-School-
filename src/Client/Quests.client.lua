@@ -266,7 +266,7 @@ local function done(d)
 		Font = UI.BIG,
 		TextColor3 = UI.C.green,
 		AnchorPoint = Vector2.new(0, 0),
-		Position = UDim2.fromOffset(12, 126),
+		Position = UDim2.fromOffset(384, 40),
 		Size = UDim2.fromOffset(360, 44),
 		stroke = 3,
 	})
