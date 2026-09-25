@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local UI = require(Shared:WaitForChild("UI"))
+local Config = require(Shared:WaitForChild("Config"))
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local bus = ReplicatedStorage:WaitForChild("ClientBus", 10)
 
@@ -122,7 +123,7 @@ local function hideHud(on)
 	local pg = player:FindFirstChild("PlayerGui")
 	if not pg then return end
 	if on then
-		for _, name in { "HUD", "Menus", "NowPlaying", "Prompts" } do
+		for _, name in { "HUD", "Menus", "NowPlaying", "Prompts", "Quests" } do
 			local g = pg:FindFirstChild(name)
 			if g and g.Enabled then
 				g.Enabled = false
@@ -185,8 +186,11 @@ local function board(data)
 	sfx("StingParty")
 	local c2 = caption("APPROVED!", UI.C.green, 0.42, 96)
 	local c3 = caption(("Welcome to %s!"):format((data and data.name) or "your new school"), Color3.new(1, 1, 1), 0.56, 48)
+	local line = data and (data.star and Config.BoardLines.star or Config.BoardLines[data.tier])
+	local c4 = line and caption("\"" .. line .. "\"", Color3.fromRGB(255, 230, 150), 0.68, 34)
 	confetti(90)
-	task.wait(1.9)
+	task.wait(2.6)
+	if c4 then c4:Destroy() end
 	fade(0, 0.35)
 	c2:Destroy()
 	c3:Destroy()
@@ -202,8 +206,119 @@ local function board(data)
 	busy = false
 end
 
+---------------------------------------------------------------------------
+-- Intro: the Board Chair welcomes a brand-new principal to an empty school
+---------------------------------------------------------------------------
+local INTRO = {
+	"Ahem! Welcome, new Principal!",
+	"This is your school. It has... zero students. ZERO. The Board is not impressed.",
+	"Kids step off the bus onto the red carpet. Enroll them before another school does!",
+	"Earn tuition, stock supplies, hire teachers... and maybe we'll make you an Elementary School.",
+	"Oh! Here comes the Welcome Bus. Go get 'em!",
+}
+
+local function dialogBox()
+	local box = UI.new("Frame", {
+		Name = "Dialog",
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -24),
+		Size = UDim2.new(0.7, 0, 0, 150),
+		BackgroundColor3 = UI.C.cream,
+		ZIndex = 6,
+		Parent = gui,
+	})
+	UI.new("UISizeConstraint", { MaxSize = Vector2.new(900, 150), Parent = box })
+	UI.corner(box, 18)
+	UI.stroke(box, 4)
+	local portrait = UI.new("Frame", {
+		Size = UDim2.fromOffset(120, 120),
+		Position = UDim2.fromOffset(14, 15),
+		BackgroundColor3 = Color3.fromRGB(80, 60, 140),
+		ZIndex = 7,
+		Parent = box,
+	})
+	UI.corner(portrait, 14)
+	UI.stroke(portrait, 3)
+	local tt = ReplicatedStorage:FindFirstChild("TeacherTemplates")
+	local chair = tt and tt:FindFirstChild("DeanMaximus")
+	if chair then
+		local vp, m = UI.viewport(portrait, chair, { zindex = 8, zoom = 0.55 })
+		-- frame the head and shoulders
+		local cam = vp.CurrentCamera
+		local head = m and m:FindFirstChild("Head")
+		if head and cam then
+			cam.CFrame = CFrame.lookAt(head.Position + Vector3.new(0, 0.1, -4.2), head.Position + Vector3.new(0, -0.3, 0))
+		end
+	end
+	UI.label(box, { Text = "THE BOARD CHAIR", Font = UI.BIG, TextColor3 = UI.C.purple, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -170, 0, 30), Position = UDim2.fromOffset(150, 12), ZIndex = 7, stroke = 2 })
+	local text = UI.label(box, { Text = "", TextColor3 = UI.C.ink, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, TextScaled = false, TextSize = 26, Size = UDim2.new(1, -170, 0, 80), Position = UDim2.fromOffset(150, 48), ZIndex = 7, stroke = 0 })
+	local hint = UI.label(box, { Text = "click to continue", TextColor3 = UI.C.grey, TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.new(0, 200, 0, 18), Position = UDim2.new(1, -212, 1, -24), ZIndex = 7, stroke = 0 })
+	UI.pop(box, 0.6)
+	return box, text, hint
+end
+
+local function intro()
+	if busy then return end
+	busy = true
+	local plotName = player:GetAttribute("Plot")
+	local plot = plotName and workspace:FindFirstChild("Plots") and workspace.Plots:FindFirstChild(plotName)
+	fade(0, 0.3)
+	hideHud(true)
+	letterbox(true)
+	local prevType = camera.CameraType
+	camera.CameraType = Enum.CameraType.Scriptable
+	local look = plot and plot.Origin.Position + Vector3.new(0, 12, 0) or Vector3.new(0, 10, 0)
+	local front = plot and plot.Origin.CFrame * CFrame.new(18, 34, 150) or CFrame.new(0, 40, 60)
+	local near = plot and plot.Origin.CFrame * CFrame.new(10, 16, 82) or CFrame.new(0, 20, 30)
+	camera.CFrame = CFrame.lookAt(front.Position, look)
+	fade(1, 0.5)
+	player:SetAttribute("LocalMusic", "heroes")
+	sfx("StingMorning")
+	TweenService:Create(camera, TweenInfo.new(14, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(near.Position, look) }):Play()
+	local box, text, hint = dialogBox()
+	-- a full-screen button: click to finish the line / go to the next one
+	local skip = UI.new("TextButton", { Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = gui })
+	local clicked = false
+	skip.Activated:Connect(function() clicked = true end)
+	for i, line in INTRO do
+		clicked = false
+		text.Text = ""
+		hint.Visible = false
+		local t0 = os.clock()
+		-- typewriter
+		for c = 1, #line do
+			if clicked then break end
+			text.Text = line:sub(1, c)
+			if c % 3 == 0 then sfx("Coin") end
+			task.wait(0.028)
+		end
+		text.Text = line
+		clicked = false
+		hint.Visible = true
+		local hold = os.clock()
+		while not clicked and os.clock() - hold < 2.2 do task.wait(0.05) end
+		_ = t0
+		if i == #INTRO - 1 then
+			-- the bus arrives on the last line
+			sfx("BusHorn")
+		end
+	end
+	skip:Destroy()
+	box:Destroy()
+	fade(0, 0.35)
+	camera.CameraType = prevType == Enum.CameraType.Scriptable and Enum.CameraType.Custom or prevType
+	letterbox(false)
+	hideHud(false)
+	player:SetAttribute("LocalMusic", nil)
+	task.wait(0.2)
+	fade(1, 0.5)
+	busy = false
+end
+
 Remotes:WaitForChild("Cutscene").OnClientEvent:Connect(function(name, data)
 	if name == "Board" then
 		task.spawn(board, data)
+	elseif name == "Intro" then
+		task.spawn(intro, data)
 	end
 end)

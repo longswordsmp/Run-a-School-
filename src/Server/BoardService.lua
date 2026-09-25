@@ -74,7 +74,7 @@ Actions.register("review", function(player, p)
 	if not hasNeeded(p, n.needs) then return { ok = false, err = "Bring the student the Board asked for" } end
 	busy[player] = true
 	-- the client plays the Board Room cutscene; the school changes while the screen is covered
-	Remotes.Cutscene:FireClient(player, "Board", { name = n.name, star = n.star })
+	Remotes.Cutscene:FireClient(player, "Board", { name = n.name, star = n.star, tier = not n.star and p.tier + 1 or nil })
 	task.wait(4.2)
 	if not player.Parent then
 		busy[player] = nil

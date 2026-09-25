@@ -169,6 +169,21 @@ Config.Tiers = {
 	{ name = "Space Academy", cash = 7.2e15, needs = "ChildCEO", mult = 35, floors = 3, lock = 115 },
 	{ name = "Multiverse University", cash = 22e15, needs = "Secret", mult = 50, floors = 3, lock = 120 },
 }
+-- what the Board Chair says when approving each tier (the story so far, one line per promotion)
+Config.BoardLines = {
+	[2] = "Elementary! Don't let it go to your head, Principal.",
+	[3] = "Middle School. The lunch lady called you 'tolerable'. High praise.",
+	[4] = "High School! Keep the Quarterback out of the trophy case.",
+	[5] = "Prep School. Blazers are mandatory. Even for the class hamster.",
+	[6] = "A Private Academy. The Board has feelings. Good ones.",
+	[7] = "College! Kid Genius says he built this room. We doubt it.",
+	[8] = "A University. We ran out of gold stars. More are on order.",
+	[9] = "Ivy League. The ivy is real. Somebody water it.",
+	[10] = "A Wizard School?! Nobody on this Board can explain it.",
+	[11] = "Space Academy. Please return the Board's chairs from orbit.",
+	[12] = "Multiverse University. There are nine of me now. We ALL approve.",
+	star = "Another star! The Board bows to you, Principal.",
+}
 -- after the last tier, each Prestige star costs the previous requirement x3 and adds +10 %
 Config.PrestigeStep = { cashMult = 3, bonus = 0.1 }
 
@@ -315,6 +330,35 @@ for i, b in Config.Builds do
 	b.order = i
 	Config.BuildById[b.id] = b
 end
+
+---------------------------------------------------------------------------
+-- the Principal's To-Do: the first-session tutorial chain, then repeating goals
+-- guide: "carpet" | "pad" | "lock" | "shop:<tab>" | "panel:<name>" (what the arrow points at)
+---------------------------------------------------------------------------
+Config.Tutorial = {
+	{ id = "enroll1", text = "Enroll a kid off the red carpet", signal = "enroll", count = 1, reward = 40, guide = "carpet" },
+	{ id = "enroll3", text = "Fill 3 more desks", signal = "enroll", count = 3, reward = 80, guide = "carpet" },
+	{ id = "collect", text = "Walk over a glowing desk pad to collect tuition", signal = "collect", count = 1, reward = 60, guide = "pad" },
+	{ id = "pencils", text = "Buy Sharpened Pencils in the Shop", signal = "supply", count = 1, reward = 120, guide = "shop:1" },
+	{ id = "hire", text = "Hire a teacher for Floor 1", signal = "hire", count = 1, reward = 250, guide = "shop:2" },
+	{ id = "name", text = "Give your school a name", signal = "nameSchool", count = 1, reward = 300, guide = "panel:NameSchool" },
+	{ id = "lock", text = "Lock your laser gate (red button by the gate)", signal = "lock", count = 1, reward = 400, guide = "lock" },
+	{ id = "build", text = "Build something in the School Builder", signal = "build", count = 1, reward = 600, guide = "shop:3" },
+	{ id = "rare", text = "Enroll a Rare kid (the Late Bus brings them)", signal = "enrollRare", count = 1, reward = 1500, guide = "carpet" },
+	{ id = "upgrade", text = "Buy an upgrade", signal = "upgrade", count = 1, reward = 2500, guide = "panel:Upgrades" },
+	{ id = "board", text = "Impress the School Board", signal = "review", count = 1, reward = 0, guide = "panel:Board" },
+}
+-- after the tutorial: goals in rotation; reward = max(min, tuition per second x secs)
+Config.Goals = {
+	{ text = "Enroll 10 kids", signal = "enroll", count = 10, secs = 150, min = 500 },
+	{ text = "Collect tuition 20 times", signal = "collect", count = 20, secs = 120, min = 400 },
+	{ text = "Steal a kid from another school", signal = "stole", count = 1, secs = 300, min = 1000 },
+	{ text = "Enroll an Epic kid or better", signal = "enrollEpic", count = 1, secs = 240, min = 1500 },
+	{ text = "Buy something in the Shop", signal = "shopBuy", count = 1, secs = 180, min = 800 },
+	{ text = "Bonk a thief with your Ruler", signal = "bonkSave", count = 1, secs = 300, min = 1000 },
+	{ text = "Lock your gate 3 times", signal = "lock", count = 3, secs = 120, min = 500 },
+	{ text = "Enroll 25 kids", signal = "enroll", count = 25, secs = 300, min = 2000 },
+}
 
 -- special buses
 Config.LateBus = { every = 300, count = 6, minRarity = 3 } -- Rare+

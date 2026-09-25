@@ -237,10 +237,13 @@ local BUSES = {
 	FieldTrip = { label = "FIELD TRIP", color = Color3.fromRGB(150, 80, 255) },
 	Lucky = { label = "LUCKY BUS", color = Color3.fromRGB(60, 220, 110) },
 	HonorBus = { label = "HONOR ROLL", color = Color3.fromRGB(255, 200, 40) },
+	Welcome = { label = "WELCOME BUS", color = Color3.fromRGB(80, 190, 255) },
 }
+-- the Welcome Bus brings the six starter kids when a new principal arrives
+local WELCOME = { count = 6, ids = { "UntiedTyler", "GlueStickGus", "DoodleDot", "LunchboxLucy", "PajamaPete", "HiccupHank" } }
 
 function HallService.specialBus(kind, byName)
-	local spec = kind == "FieldTrip" and Config.FieldTrip or kind == "HonorBus" and Config.HonorBus or Config.LateBus
+	local spec = kind == "FieldTrip" and Config.FieldTrip or kind == "HonorBus" and Config.HonorBus or kind == "Welcome" and WELCOME or Config.LateBus
 	local style = BUSES[kind] or BUSES.LateBus
 	local label, color = style.label, style.color
 	local weights = spec.weights
@@ -265,7 +268,11 @@ function HallService.specialBus(kind, byName)
 	local door = bus.Door.Position
 	for i = 1, spec.count or 6 do
 		local w = (i == 1 and spec.first) or weights
-		HallService.spawnOne(nil, nil, w, Vector3.new(door.X, 0, door.Z - 3))
+		if spec.ids then
+			HallService.spawnOne(nil, spec.ids[i], nil, Vector3.new(door.X, 0, door.Z - 3))
+		else
+			HallService.spawnOne(nil, nil, w, Vector3.new(door.X, 0, door.Z - 3))
+		end
 		task.wait(0.6)
 	end
 	task.wait(1.5)

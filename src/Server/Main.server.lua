@@ -18,6 +18,7 @@ require(Server.BoardService)
 local TeacherService = require(Server.TeacherService)
 local CampusService = require(Server.CampusService)
 local StealService = require(Server.StealService)
+local QuestService = require(Server.QuestService)
 
 Factory.preload()
 PlotService.start()
@@ -27,6 +28,7 @@ HallService.start()
 TeacherService.start()
 CampusService.start()
 StealService.start()
+QuestService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -42,6 +44,17 @@ local function onPlayer(player)
 	UpgradeService.applyAll(player)
 	if p.offlineEarned and p.offlineEarned > 0 then
 		Remotes.Push:FireClient(player, "offline", { amount = p.offlineEarned, away = p.offlineAway })
+	end
+
+	-- a brand-new principal gets the intro and the Welcome Bus
+	if p.tutorial == 1 and p.stats.enrolled == 0 and not p.introSeen then
+		p.introSeen = true
+		task.delay(2.5, function()
+			if not player.Parent then return end
+			Remotes.Cutscene:FireClient(player, "Intro", { name = PlotService.schoolName(player) })
+			task.wait(14)
+			task.spawn(HallService.specialBus, "Welcome")
+		end)
 	end
 
 	local function onChar(char)
