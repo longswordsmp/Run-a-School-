@@ -196,7 +196,7 @@ function PlotService.rebuild(player)
 	SchoolBuilder.decorate(plot, p.supplies)
 	PlotService.refreshSign(player)
 	for slot, e in p.students do
-		if PlotService.isUnlocked(p, slot) and not e.arriving and not e.carried then
+		if PlotService.isUnlocked(p, slot) and not e.arriving and not e.carried and not e.away then
 			PlotService.place(player, slot)
 		end
 	end
@@ -230,6 +230,16 @@ function PlotService.pathTo(plot, slot, from, standOffset)
 		table.insert(pts, base:PointToWorldSpace(Vector3.new(lp.X, lp.Y + so, lp.Z)))
 	end
 	return pts
+end
+
+-- local route points (walking surface) -> world root positions for a rig
+function PlotService.worldPoints(plot, localPts, standOffset)
+	local base = plot.Origin.CFrame
+	local out = {}
+	for _, lp in localPts do
+		table.insert(out, base:PointToWorldSpace(Vector3.new(lp.X, lp.Y + standOffset, lp.Z)))
+	end
+	return out
 end
 
 local function sitCFrame(desk, model)
@@ -356,7 +366,7 @@ function PlotService.sell(player, plot, slot)
 	if plotOf[player] ~= plot then return end
 	local p = Data.get(player)
 	local e = p and p.students[slot]
-	if not e or e.arriving or e.carried then return end
+	if not e or e.arriving or e.carried or e.away then return end
 	local def = Config.StudentById[e.id]
 	local stored = math.floor(e.stored or 0)
 	PlotService.remove(player, slot)
@@ -376,6 +386,11 @@ end
 ---------------------------------------------------------------------------
 -- income
 ---------------------------------------------------------------------------
+-- is this seated entry earning right now? (not walking in, carried off, in detention or cheating)
+function PlotService.earning(e)
+	return not (e.arriving or e.carried or e.away or e.cheating)
+end
+
 function PlotService.tierMult(p)
 	return PlotService.tierOf(p).mult * (1 + Config.PrestigeStep.bonus * (p.stars or 0))
 end
@@ -396,7 +411,7 @@ function PlotService.updateIncome(player)
 	if not p then return end
 	local total = 0
 	for slot, e in p.students do
-		if not e.arriving and not e.carried then total += PlotService.incomeOf(player, e, slot) end
+		if PlotService.earning(e) then total += PlotService.incomeOf(player, e, slot) end
 	end
 	player:SetAttribute("IncomePerSec", total)
 	return total
@@ -449,6 +464,7 @@ function PlotService.assign(player)
 		if plot:GetAttribute("OwnerId") == 0 then
 			plot:SetAttribute("OwnerId", player.UserId)
 			plotOf[player] = plot
+			pcall(function() plot:AddPersistentPlayer(player) end)
 			player:SetAttribute("Plot", plot.Name)
 			local p = Data.get(player)
 			for slot in p.students do
@@ -467,6 +483,7 @@ function PlotService.release(player)
 	local plot = plotOf[player]
 	if not plot then return end
 	plotOf[player] = nil
+	pcall(function() plot:RemovePersistentPlayer(player) end)
 	if seated[plot] then
 		for _, m in seated[plot] do m:Destroy() end
 		seated[plot] = nil
@@ -494,6 +511,9 @@ end
 
 function PlotService.start()
 	for _, plot in plotsFolder:GetChildren() do
+		-- with streaming on, keep each owner's own school loaded for them wherever they are
+		pcall(function() plot.ModelStreamingMode = Enum.ModelStreamingMode.PersistentPerPlayer end)
+		plot:SetAttribute("OriginCF", plot.Origin.CFrame)
 		buildEmpty(plot)
 	end
 	-- tuition tick
@@ -504,7 +524,7 @@ function PlotService.start()
 				local plot = plotOf[player]
 				if plot then
 					for slot, e in p.students do
-						if not e.arriving and not e.carried then
+						if PlotService.earning(e) then
 							e.stored = (e.stored or 0) + PlotService.incomeOf(player, e, slot)
 							PlotService.updatePad(plot, slot, e.stored)
 						end

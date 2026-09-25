@@ -1,0 +1,474 @@
+-- ServerScriptService.Server.PatrolService
+-- Running the school day to day:
+--   Cheaters: now and then a seated kid starts cheating (cheat sheet out, earns nothing). Hold E
+--     on them and they march to the Principal's Office bench for detention, then back to class,
+--     and you collect a detention fee. Miss them for 40s and their desk's cash is gone. A good
+--     teacher (Ms. Honeycutt and up) catches cheaters on their floor by themselves.
+--   Dealers: Sweet Tooth Sal (candy) and Goo Gary (slime) sneak in through an unlocked gate and
+--     deal at a desk; that row earns half. Bust them (hold E, or bonk with the Ruler) and you
+--     confiscate the goods: candy = Sugar Rush (tuition x2 for 60s), slime = Slime Time (luck x2
+--     for 90s). Ignore them and they leave with a cut of that row's cash.
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local Config = require(ReplicatedStorage.Shared.Config)
+local Data = require(script.Parent.DataService)
+local PlotService = require(script.Parent.PlotService)
+local SchoolBuilder = require(script.Parent.SchoolBuilder)
+local Factory = require(script.Parent.StudentFactory)
+local Walkers = require(script.Parent.Walkers)
+local StealService = require(script.Parent.StealService)
+local Remotes = require(script.Parent.Remotes)
+local Signals = require(script.Parent.Signals)
+
+local PatrolService = {}
+
+local CHEAT_EVERY = { 70, 130 }
+local CHEAT_WINDOW = 40
+local TEACHER_CATCH_AFTER = 12
+local DETENTION = 20
+local DEAL_EVERY = { 150, 260 }
+local DEAL_WINDOW = 60
+
+local state = {} -- [player] = { nextCheat, nextDeal, cheating = { [slot] = info }, detention = { [slot] = info }, dealer = info }
+
+local DEALERS = {
+	{ id = "CandyDealer", name = "Sweet Tooth Sal", kind = "candy", rarity = "Common", price = 0, income = 0, prop = "CandyDealer",
+		look = { skin = "tan", shirt = Color3.fromRGB(60, 60, 70), pants = Color3.fromRGB(40, 40, 50) } },
+	{ id = "SlimeDealer", name = "Goo Gary", kind = "slime", rarity = "Common", price = 0, income = 0, prop = "SlimeDealer",
+		look = { skin = "light", shirt = Color3.fromRGB(50, 170, 80), pants = Color3.fromRGB(30, 60, 40) } },
+}
+
+local function now()
+	return os.clock()
+end
+
+local function st(player)
+	local s = state[player]
+	if not s then
+		s = { nextCheat = now() + math.random(CHEAT_EVERY[1], CHEAT_EVERY[2]) * 0.6, nextDeal = now() + math.random(DEAL_EVERY[1], DEAL_EVERY[2]) * 0.7, cheating = {}, detention = {} }
+		state[player] = s
+	end
+	return s
+end
+
+-- a floating tag over a model's head
+local function tag(model, name, text, color)
+	local head = model:FindFirstChild("Head")
+	if not head then return end
+	local bb = Instance.new("BillboardGui")
+	bb.Name = name
+	bb.Size = UDim2.new(7, 0, 1.6, 0)
+	bb.StudsOffsetWorldSpace = Vector3.new(0, 5.2, 0)
+	bb.AlwaysOnTop = true
+	bb.MaxDistance = 80
+	bb.LightInfluence = 0
+	bb.Parent = head
+	local t = Instance.new("TextLabel")
+	t.Name = "Label"
+	t.Size = UDim2.fromScale(1, 1)
+	t.BackgroundTransparency = 1
+	t.Font = Enum.Font.LuckiestGuy
+	t.TextScaled = true
+	t.Text = text
+	t.TextColor3 = color
+	t.Parent = bb
+	local s = Instance.new("UIStroke")
+	s.Thickness = 3
+	s.Parent = t
+	return t
+end
+
+local function prompt(parent, action, color, hold)
+	local pp = Instance.new("ProximityPrompt")
+	pp.ActionText = action
+	pp.HoldDuration = hold or 0.4
+	pp.RequiresLineOfSight = false
+	pp.MaxActivationDistance = 10
+	pp.KeyboardKeyCode = Enum.KeyCode.E
+	pp:SetAttribute("OwnerOnly", true)
+	pp:SetAttribute("Color", color)
+	pp.Parent = parent
+	return pp
+end
+
+---------------------------------------------------------------------------
+-- cheaters and detention
+---------------------------------------------------------------------------
+local function endCheating(player, slot, s)
+	local info = s.cheating[slot]
+	if not info then return end
+	s.cheating[slot] = nil
+	if info.e then info.e.cheating = nil end
+	for _, x in info.parts do
+		if x.Parent then x:Destroy() end
+	end
+end
+
+local function benchSeat(s)
+	local used = {}
+	for _, d in s.detention do used[d.seat] = true end
+	for i = 1, #SchoolBuilder.BENCH_SEATS do
+		if not used[i] then return i end
+	end
+	return nil
+end
+
+function PatrolService.sendToOffice(player, slot, by)
+	local s = st(player)
+	local plot = PlotService.getPlot(player)
+	local p = Data.get(player)
+	local e = p and p.students[slot]
+	if not plot or not e or e.away then return end
+	local seat = benchSeat(s)
+	if not seat then return end
+	endCheating(player, slot, s)
+	local def = Config.StudentById[e.id]
+	local fee = math.floor(PlotService.incomeOf(player, e, slot) * 30) + 5
+	e.away = true
+	PlotService.detachModel(plot, slot)
+	PlotService.updateIncome(player)
+	-- the walk of shame
+	local model = Factory.build(def, e.grade)
+	Factory.setMode(model, "owned")
+	local so = Factory.standOffset(model)
+	local pts = PlotService.worldPoints(plot, SchoolBuilder.officeRoute(slot, seat), so)
+	model.PrimaryPart.CFrame = CFrame.new(pts[1])
+	local folder = plot:FindFirstChild("Students")
+	model.Parent = folder or plot
+	tag(model, "Detention", "TO THE OFFICE!", Color3.fromRGB(255, 90, 90))
+	Factory.play(model, "walk")
+	local d = { model = model, seat = seat, e = e }
+	s.detention[slot] = d
+	Data.addCash(player, fee)
+	Remotes.CashPop:FireClient(player, fee, model.PrimaryPart.Position)
+	Remotes.Notify:FireClient(player, (by and (by .. " caught ") or "You caught ") .. def.name .. " cheating! Detention fee +" .. Config.formatCash(fee), "good")
+	Remotes.Sfx:FireClient(player, "Bell")
+	Signals.fire("catchCheater", player, def)
+	Walkers.walk(model, pts, 10, function()
+		if not model.Parent then return end
+		-- sit on the bench facing the room
+		local b = plot.Origin.CFrame:PointToWorldSpace(SchoolBuilder.BENCH_SEATS[seat])
+		local hrp = model.PrimaryPart
+		local y = b.Y + hrp.Size.Y * 0.5 + model:FindFirstChildOfClass("Humanoid").HipHeight * 0.1
+		-- facing into the office, back to the wall
+		hrp.CFrame = CFrame.new(b.X, y, b.Z) * plot.Origin.CFrame.Rotation * CFrame.Angles(0, math.pi, 0)
+		Factory.play(model, "sit")
+		local label = model.Head:FindFirstChild("Detention") and model.Head.Detention.Label
+		for t = DETENTION, 1, -1 do
+			if not model.Parent or s.detention[slot] ~= d then return end
+			if label then label.Text = ("DETENTION %ds"):format(t) end
+			task.wait(1)
+		end
+		if not model.Parent then return end
+		if label then label.Text = "sorry..." end
+		-- back to class
+		local back = {}
+		for i = #pts, 1, -1 do table.insert(back, pts[i]) end
+		Factory.play(model, "walk")
+		Walkers.walk(model, back, 10, function()
+			model:Destroy()
+			if s.detention[slot] == d then s.detention[slot] = nil end
+			if p.students[slot] == e and PlotService.getPlot(player) == plot then
+				e.away = nil
+				PlotService.place(player, slot)
+				PlotService.updateIncome(player)
+			end
+		end, { flat = false })
+	end, { flat = false })
+end
+
+local function startCheating(player)
+	local s = st(player)
+	local plot = PlotService.getPlot(player)
+	local p = Data.get(player)
+	if not plot or not p or not benchSeat(s) then return end
+	local candidates = {}
+	for slot, e in p.students do
+		if PlotService.earning(e) and not s.cheating[slot] and PlotService.seatedModel(plot, slot) then
+			table.insert(candidates, slot)
+		end
+	end
+	if #candidates < 2 then return end
+	local slot = candidates[math.random(#candidates)]
+	local e = p.students[slot]
+	local model = PlotService.seatedModel(plot, slot)
+	local def = Config.StudentById[e.id]
+	e.cheating = true
+	PlotService.updateIncome(player)
+	local info = { e = e, started = now(), parts = {} }
+	s.cheating[slot] = info
+	-- the cheat sheet, held low, and a shifty look around
+	local hand = model:FindFirstChild("RightHand")
+	if hand then
+		local paper = Instance.new("Part")
+		paper.Name = "CheatSheet"
+		paper.Size = Vector3.new(0.8, 0.05, 1)
+		paper.Color = Color3.fromRGB(255, 255, 240)
+		paper.CanCollide, paper.CanQuery, paper.CanTouch, paper.Massless = false, false, false, true
+		paper.CFrame = hand.CFrame * CFrame.new(0, -0.1, -0.4)
+		local w = Instance.new("WeldConstraint")
+		w.Part0 = hand
+		w.Part1 = paper
+		w.Parent = paper
+		paper.Parent = model
+		table.insert(info.parts, paper)
+	end
+	local label = tag(model, "Cheating", "\u{2757} CHEATING!", Color3.fromRGB(255, 80, 80))
+	if label then table.insert(info.parts, label.Parent) end
+	local pp = prompt(model.PrimaryPart, "Catch Cheater!", Color3.fromRGB(255, 80, 80), 0.4)
+	pp.ObjectText = def.name
+	table.insert(info.parts, pp)
+	pp.Triggered:Connect(function(who)
+		if who == player then PatrolService.sendToOffice(player, slot) end
+	end)
+	-- shifty eyes: the head turns left and right
+	local target, prop = Factory.poseTarget(model:FindFirstChild("Head") and model.Head:FindFirstChild("Neck"))
+	if target then
+		local base = target[prop]
+		task.spawn(function()
+			while s.cheating[slot] == info and target.Parent do
+				TweenService:Create(target, TweenInfo.new(0.25), { [prop] = base * CFrame.Angles(0, math.rad(40), 0) }):Play()
+				task.wait(0.7)
+				TweenService:Create(target, TweenInfo.new(0.25), { [prop] = base * CFrame.Angles(0, math.rad(-40), 0) }):Play()
+				task.wait(0.7)
+			end
+			if target.Parent then target[prop] = base end
+		end)
+	end
+	Remotes.Notify:FireClient(player, "\u{1F440} " .. def.name .. " is cheating! Catch them before they get away with it.", "steal")
+	Remotes.Sfx:FireClient(player, "Scratch2")
+	Signals.fire("cheatStart", player, def)
+end
+
+local function tickCheating(player, s)
+	local p = Data.get(player)
+	for slot, info in s.cheating do
+		local age = now() - info.started
+		-- a good teacher on that floor spots it first
+		if age > TEACHER_CATCH_AFTER and p then
+			local t = p.teachers[PlotService.slotFloor(slot)]
+			local tdef = t and Config.TeacherById[t.id]
+			if tdef and tdef.mult >= 1.5 then
+				PatrolService.sendToOffice(player, slot, tdef.name)
+				continue
+			end
+		end
+		if age > CHEAT_WINDOW then
+			local def = Config.StudentById[info.e.id]
+			info.e.stored = 0
+			PlotService.updatePad(PlotService.getPlot(player), slot, 0)
+			endCheating(player, slot, s)
+			PlotService.updateIncome(player)
+			Remotes.Notify:FireClient(player, def.name .. " got away with cheating! Their desk cash is gone.", "bad")
+			Remotes.Sfx:FireClient(player, "Error")
+		end
+	end
+end
+
+---------------------------------------------------------------------------
+-- dealers
+---------------------------------------------------------------------------
+local function dealerRow(d)
+	return d and d.slot and { floor = PlotService.slotFloor(d.slot), row = PlotService.slotRow(d.slot) }
+end
+
+local function dealerLeave(player, s, busted, by)
+	local d = s.dealer
+	if not d or d.leaving then return end
+	d.leaving = true
+	d.dealing = false
+	if d.prompt then d.prompt:Destroy() end
+	local plot = d.plot
+	PlotService.updateIncome(player)
+	local label = d.model.Head:FindFirstChild("DealerTag") and d.model.Head.DealerTag.Label
+	if busted then
+		if label then label.Text = "BUSTED!" end
+		local p = Data.get(player)
+		local until_ = workspace:GetServerTimeNow() + (d.def.kind == "candy" and 60 or 90)
+		if d.def.kind == "candy" then
+			player:SetAttribute("SugarUntil", until_)
+			Remotes.Announce:FireClient(player, "SUGAR RUSH! TUITION x2 FOR 60s", Color3.fromRGB(255, 110, 190))
+		else
+			player:SetAttribute("SlimeUntil", until_)
+			if p then p.luckMult = 2 end
+			Remotes.Announce:FireClient(player, "SLIME TIME! LUCK x2 FOR 90s", Color3.fromRGB(110, 255, 130))
+		end
+		PlotService.updateIncome(player)
+		Remotes.Sfx:FireClient(player, "StingWhat")
+		Remotes.Notify:FireClient(player, ("%s busted %s! Goods confiscated."):format(by or "You", d.def.name), "good")
+		if p then p.stats.busted = (p.stats.busted or 0) + 1 end
+		Signals.fire("bustDealer", player, d.def)
+	else
+		-- skims a cut of that row's cash on the way out
+		local p = Data.get(player)
+		local row = dealerRow(d)
+		local took = 0
+		if p and row then
+			for slot, e in p.students do
+				if PlotService.slotFloor(slot) == row.floor and PlotService.slotRow(slot) == row.row then
+					local cut = math.floor((e.stored or 0) * 0.2)
+					e.stored = (e.stored or 0) - cut
+					took += cut
+					PlotService.updatePad(plot, slot, e.stored)
+				end
+			end
+		end
+		if label then label.Text = "SEE YA!" end
+		Remotes.Notify:FireClient(player, ("%s got away with %s of your tuition!"):format(d.def.name, Config.formatCash(took)), "bad")
+	end
+	-- run back out the gate
+	local back = {}
+	for i = #d.path, 1, -1 do table.insert(back, d.path[i]) end
+	Factory.play(d.model, "walk")
+	Walkers.walk(d.model, back, busted and 20 or 10, function()
+		d.model:Destroy()
+		if s.dealer == d then s.dealer = nil end
+	end, { flat = false })
+end
+
+local function sendDealer(player, s)
+	local plot = PlotService.getPlot(player)
+	local p = Data.get(player)
+	if not plot or not p or s.dealer then return end
+	if (plot:GetAttribute("LockedUntil") or 0) > workspace:GetServerTimeNow() then return end -- the gate keeps them out
+	local slots = {}
+	for slot, e in p.students do
+		if PlotService.earning(e) then table.insert(slots, slot) end
+	end
+	if #slots < 4 then return end
+	local slot = slots[math.random(#slots)]
+	local def = DEALERS[math.random(#DEALERS)]
+	local model = Factory.build(def, "Normal")
+	model.Name = def.id
+	-- the dealer's tag replaces the student one
+	local old = model.Head:FindFirstChild("Tag")
+	if old then old:Destroy() end
+	local label = tag(model, "DealerTag", def.name:upper() .. (def.kind == "candy" and " \u{1F36C}" or " \u{1F7E2}"), def.kind == "candy" and Color3.fromRGB(255, 120, 200) or Color3.fromRGB(110, 255, 130))
+	local so = Factory.standOffset(model)
+	local entry = plot.Entry.Position
+	local pts = { Vector3.new(entry.X, 0.4 + so, entry.Z) }
+	for _, w in PlotService.worldPoints(plot, SchoolBuilder.aisleRoute(slot), so) do table.insert(pts, w) end
+	model.PrimaryPart.CFrame = CFrame.new(pts[1])
+	model.Parent = plot:FindFirstChild("Students") or plot
+	Factory.play(model, "walk")
+	local d = { model = model, def = def, slot = slot, plot = plot, path = pts, started = now() }
+	s.dealer = d
+	Remotes.Notify:FireClient(player, ("\u{1F6A8} %s snuck into your school! Bust them!"):format(def.name), "steal")
+	Remotes.Sfx:FireClient(player, "StingSitcom")
+	Walkers.walk(model, pts, 8, function()
+		if s.dealer ~= d or d.leaving then return end
+		d.dealing = true
+		d.started = now()
+		Factory.play(model, "idle")
+		if label then label.Text = def.kind == "candy" and "DEALING CANDY!" or "DEALING SLIME!" end
+		PlotService.updateIncome(player)
+		local pp = prompt(model.PrimaryPart, "Bust!", Color3.fromRGB(255, 170, 40), 0.3)
+		pp.ObjectText = def.name
+		d.prompt = pp
+		pp.Triggered:Connect(function(who)
+			if who == player then dealerLeave(player, s, true) end
+		end)
+	end, { flat = false })
+end
+
+---------------------------------------------------------------------------
+function PatrolService.start()
+	-- a dealing dealer halves their row; a Sugar Rush doubles everything
+	table.insert(PlotService.multHooks, function(player, p, e, slot)
+		local m = 1
+		local s = state[player]
+		local d = s and s.dealer
+		if d and d.dealing and PlotService.slotFloor(slot) == PlotService.slotFloor(d.slot) and PlotService.slotRow(slot) == PlotService.slotRow(d.slot) then
+			m *= 0.5
+		end
+		if (player:GetAttribute("SugarUntil") or 0) > workspace:GetServerTimeNow() then
+			m *= 2
+		end
+		return m
+	end)
+
+	-- the Ruler busts dealers too
+	table.insert(StealService.swingHooks, function(player, root)
+		local s = state[player]
+		local d = s and s.dealer
+		if d and not d.leaving and d.model.PrimaryPart and (d.model.PrimaryPart.Position - root.Position).Magnitude < 9 then
+			dealerLeave(player, s, true)
+		end
+	end)
+
+	-- a rebuilt campus (School Board review) sends everyone home
+	table.insert(PlotService.rebuildHooks, function(player)
+		local s = state[player]
+		if not s then return end
+		for slot in s.cheating do endCheating(player, slot, s) end
+		for slot, d in s.detention do
+			d.model:Destroy()
+			if d.e then d.e.away = nil end
+			s.detention[slot] = nil
+		end
+		if s.dealer then
+			s.dealer.model:Destroy()
+			s.dealer = nil
+		end
+	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		local s = state[player]
+		if s then
+			for _, d in s.detention do d.model:Destroy() end
+			if s.dealer then s.dealer.model:Destroy() end
+		end
+		state[player] = nil
+	end)
+
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			local t = now()
+			for player, p in Data.all() do
+				local s = st(player)
+				-- boosts running out
+				if player:GetAttribute("SugarUntil") and player:GetAttribute("SugarUntil") <= workspace:GetServerTimeNow() then
+					player:SetAttribute("SugarUntil", nil)
+					PlotService.updateIncome(player)
+				end
+				if player:GetAttribute("SlimeUntil") and player:GetAttribute("SlimeUntil") <= workspace:GetServerTimeNow() then
+					player:SetAttribute("SlimeUntil", nil)
+				end
+				if not player:GetAttribute("SlimeUntil") and p.luckMult then p.luckMult = nil end
+				if (p.tutorial or 1) >= 3 then -- not during the first steps of the tutorial
+					if t >= s.nextCheat then
+						s.nextCheat = t + math.random(CHEAT_EVERY[1], CHEAT_EVERY[2])
+						pcall(startCheating, player)
+					end
+					if t >= s.nextDeal then
+						s.nextDeal = t + math.random(DEAL_EVERY[1], DEAL_EVERY[2])
+						pcall(sendDealer, player, s)
+					end
+				end
+				tickCheating(player, s)
+				local d = s.dealer
+				if d and d.dealing and not d.leaving and t - d.started > DEAL_WINDOW then
+					dealerLeave(player, s, false)
+				end
+			end
+		end
+	end)
+end
+
+-- test hooks
+PatrolService.debugCheat = startCheating
+function PatrolService.debugDealer(player)
+	local s = st(player)
+	sendDealer(player, s)
+	return s.dealer ~= nil
+end
+function PatrolService.debugBust(player)
+	local s = st(player)
+	if s.dealer then dealerLeave(player, s, true) return true end
+	return false
+end
+
+return PatrolService

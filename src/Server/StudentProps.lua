@@ -138,7 +138,7 @@ local HAIR = {
 	TinyPrincipal = Color3.fromRGB(40, 30, 25),
 }
 -- props that replace the hair entirely
-local NO_HAIR = { ClownNose = true, Football = true, Hoodie = true, Brain = true, MascotHead = true }
+local NO_HAIR = { ClownNose = true, Football = true, Hoodie = true, Brain = true, MascotHead = true, SlimeDealer = true }
 
 function Props.hair(model, def)
 	if NO_HAIR[def.prop] then return end
@@ -525,6 +525,55 @@ local function sparkles(p, color, rate)
 	e.Color = ColorSequence.new(color)
 	e.Parent = p
 	return e
+end
+
+-- Dealers (NPCs that sneak into schools) --------------------------------
+B.CandyDealer = function(model, head, hs)
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	local coat = rgb(130, 95, 60)
+	-- trench coat hanging open, candy pinned to the lining
+	for _, x in { -1, 1 } do
+		block(model, torso, Vector3.new(ts.X * 0.34, ts.Y * 1.05, ts.Z * 1.12), CFrame.new(x * ts.X * 0.36, 0, 0.02), coat)
+		local lower = part(model, "LowerTorso")
+		block(model, lower, Vector3.new(ts.X * 0.34, ts.Y * 1.5, ts.Z * 1.1), CFrame.new(x * ts.X * 0.36, -ts.Y * 0.55, 0.02), coat)
+		for i = 0, 3 do
+			local c = ({ rgb(255, 60, 90), rgb(90, 200, 255), rgb(255, 210, 60), rgb(130, 230, 90) })[(i + (x > 0 and 2 or 0)) % 4 + 1]
+			ball(model, torso, 0.28, CFrame.new(x * ts.X * 0.26, ts.Y * (0.3 - i * 0.28), -ts.Z * 0.6), c)
+		end
+	end
+	block(model, torso, Vector3.new(ts.X * 0.9, ts.Y * 0.14, ts.Z * 1.14), CFrame.new(0, ts.Y * 0.45, 0.02), coat:Lerp(Color3.new(0, 0, 0), 0.2))
+	-- fedora and shades
+	cylY(model, head, hs.X * 1.5, 0.12, CFrame.new(0, hs.Y * 0.42, 0), rgb(50, 40, 35))
+	cylY(model, head, hs.X * 0.95, hs.Y * 0.4, CFrame.new(0, hs.Y * 0.62, 0), rgb(50, 40, 35))
+	cylY(model, head, hs.X * 0.97, hs.Y * 0.1, CFrame.new(0, hs.Y * 0.48, 0), rgb(200, 40, 60))
+	block(model, head, Vector3.new(hs.X * 0.8, hs.Y * 0.16, 0.08), CFrame.new(0, hs.Y * 0.07, -hs.Z * 0.52), rgb(20, 20, 25))
+	-- a giant lollipop
+	local hand = part(model, "RightHand")
+	cylY(model, hand, 0.1, 1.4, CFrame.new(0, 0.6, -0.2), rgb(250, 250, 250))
+	local pop = cylZ(model, hand, 1.1, 0.2, CFrame.new(0, 1.5, -0.2), rgb(255, 80, 170))
+	cylZ(model, hand, 0.6, 0.22, CFrame.new(0, 1.5, -0.2), rgb(255, 255, 255))
+	_ = pop
+end
+
+B.SlimeDealer = function(model, head, hs)
+	local green = rgb(90, 255, 120)
+	-- hoodie up
+	blob(model, head, Vector3.new(hs.X * 1.25, hs.Y * 1.05, hs.Z * 1.25), CFrame.new(0, hs.Y * 0.12, hs.Z * 0.12), rgb(50, 170, 80))
+	block(model, head, Vector3.new(hs.X * 0.3, hs.Y * 0.08, 0.06), CFrame.new(hs.X * 0.05, -hs.Y * 0.22, -hs.Z * 0.5), rgb(40, 40, 40))
+	-- jar of glowing slime
+	local hand = part(model, "RightHand")
+	local jar = cylY(model, hand, 1, 1.1, CFrame.new(0, 0.25, -0.5), rgb(220, 255, 230), Enum.Material.Glass)
+	jar.Transparency = 0.45
+	cylY(model, hand, 0.9, 0.7, CFrame.new(0, 0.1, -0.5), green, Enum.Material.Neon)
+	cylY(model, hand, 1.05, 0.2, CFrame.new(0, 0.85, -0.5), rgb(80, 80, 90))
+	sparkles(jar, rgb(150, 255, 150), 5)
+	-- slime drips on the shoes and a splat on the head
+	for _, side in { "LeftFoot", "RightFoot" } do
+		local f = part(model, side)
+		if f then blob(model, f, Vector3.new(f.Size.X * 0.9, 0.2, f.Size.Z * 0.6), CFrame.new(0, f.Size.Y * 0.45, -f.Size.Z * 0.2), green, Enum.Material.Neon) end
+	end
+	blob(model, head, Vector3.new(hs.X * 0.6, hs.Y * 0.25, hs.X * 0.6), CFrame.new(-hs.X * 0.15, hs.Y * 0.62, 0), green, Enum.Material.Neon)
 end
 
 -- Common ----------------------------------------------------------------

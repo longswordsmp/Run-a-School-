@@ -214,6 +214,15 @@ function Factory.play(model, which)
 	return track
 end
 
+-- what to rotate for a procedural pose on a joint: Motor6D.C0, or on the newer AnimationConstraint
+-- rigs (what CreateHumanoidModelFromDescription builds now) the joint's parent-side attachment
+function Factory.poseTarget(joint)
+	if not joint then return nil end
+	if joint:IsA("Motor6D") then return joint, "C0" end
+	if joint.ClassName == "AnimationConstraint" and joint.Attachment0 then return joint.Attachment0, "CFrame" end
+	return nil
+end
+
 -- height of the root part above the floor when standing
 function Factory.standOffset(model)
 	local hum = model:FindFirstChildOfClass("Humanoid")

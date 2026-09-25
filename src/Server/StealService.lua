@@ -140,6 +140,9 @@ local function complete(thief)
 	Signals.fire("stole", thief, owner, c.def, firstTime)
 end
 
+-- other systems that react to a Ruler swing (dealers): fn(player, root) -> nothing
+StealService.swingHooks = {}
+
 -- Studio tests have one player: this lets them steal from their own desk
 StealService.debugAllowSelf = false
 
@@ -157,7 +160,7 @@ function StealService.begin(thief, plot, slot)
 	end
 	local op, tp = Data.get(owner), Data.get(thief)
 	local e = op and op.students[slot]
-	if not e or e.arriving or e.carried or not tp then return end
+	if not e or e.arriving or e.carried or e.away or not tp then return end
 	if not PlotService.freeSlot(thief) then
 		Remotes.Notify:FireClient(thief, "Your school is full! Sell a student first.", "bad")
 		Remotes.Sfx:FireClient(thief, "Error")
@@ -243,6 +246,9 @@ local function swing(player, tool)
 	local _, root = humanoid(player)
 	if not root then return end
 	Remotes.Sfx:FireAllClients("Swing", root.Position)
+	for _, hook in StealService.swingHooks do
+		task.spawn(hook, player, root)
+	end
 	-- whoever is in front and close gets bonked
 	for _, other in Players:GetPlayers() do
 		if other ~= player then

@@ -87,15 +87,14 @@ end
 -- raise the right arm toward the board and bring it back down
 local function point(model, seconds)
 	local upper = model:FindFirstChild("RightUpperArm")
-	local shoulder = upper and upper:FindFirstChild("RightShoulder")
-	if not shoulder then return end
-	local base = shoulder:GetAttribute("BaseC0") or shoulder.C0
-	shoulder:SetAttribute("BaseC0", base)
-	local up = TweenService:Create(shoulder, TweenInfo.new(0.35, Enum.EasingStyle.Back), { C0 = base * CFrame.Angles(math.rad(100), 0, math.rad(-10)) })
-	up:Play()
+	local target, prop = Factory.poseTarget(upper and upper:FindFirstChild("RightShoulder"))
+	if not target then return end
+	local base = target:GetAttribute("BasePose") or target[prop]
+	target:SetAttribute("BasePose", base)
+	TweenService:Create(target, TweenInfo.new(0.35, Enum.EasingStyle.Back), { [prop] = base * CFrame.Angles(math.rad(100), 0, math.rad(-10)) }):Play()
 	task.wait(seconds)
-	if shoulder.Parent then
-		TweenService:Create(shoulder, TweenInfo.new(0.3), { C0 = base }):Play()
+	if target.Parent then
+		TweenService:Create(target, TweenInfo.new(0.3), { [prop] = base }):Play()
 	end
 end
 

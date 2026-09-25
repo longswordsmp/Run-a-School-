@@ -1191,4 +1191,27 @@ function SchoolBuilder.route(slot)
 	return pts
 end
 
+-- from a desk's chair to the bench in the Principal's Office (floor 1): back the way the kid
+-- came in as far as the lobby, then through the office door
+SchoolBuilder.BENCH_SEATS = { Vector3.new(24.2, F1 + 1.9, DIVIDER_Z + 1.5), Vector3.new(26, F1 + 1.9, DIVIDER_Z + 1.5), Vector3.new(27.8, F1 + 1.9, DIVIDER_Z + 1.5) }
+function SchoolBuilder.officeRoute(slot, seat)
+	local fwd = SchoolBuilder.route(slot)
+	local pts = {}
+	for i = #fwd, 4, -1 do
+		table.insert(pts, fwd[i])
+	end
+	local b = SchoolBuilder.BENCH_SEATS[seat or 2]
+	table.insert(pts, Vector3.new(14, F1, 9.25))
+	table.insert(pts, Vector3.new(22.5, F1, 9.25))
+	table.insert(pts, Vector3.new(b.X, F1, DIVIDER_Z + 3.6))
+	return pts
+end
+
+-- from the gate to the aisle beside a desk (where a dealer stands to deal)
+function SchoolBuilder.aisleRoute(slot)
+	local pts = SchoolBuilder.route(slot)
+	table.remove(pts) -- not into the chair
+	return pts
+end
+
 return SchoolBuilder

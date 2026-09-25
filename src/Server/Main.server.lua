@@ -19,6 +19,7 @@ local TeacherService = require(Server.TeacherService)
 local CampusService = require(Server.CampusService)
 local StealService = require(Server.StealService)
 local QuestService = require(Server.QuestService)
+local PatrolService = require(Server.PatrolService)
 
 Factory.preload()
 PlotService.start()
@@ -29,6 +30,7 @@ TeacherService.start()
 CampusService.start()
 StealService.start()
 QuestService.start()
+PatrolService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -141,6 +143,24 @@ require(Server.DebugBridge).start({
 		StealService.begin(player, PlotService.getPlot(player), slot)
 		StealService.debugAllowSelf = false
 		return { carrying = StealService.isCarrying(player), attr = player:GetAttribute("Carrying"), speed = player.Character.Humanoid.WalkSpeed }
+	end,
+	cheat = function(player)
+		PatrolService.debugCheat(player)
+		local p = Data.get(player)
+		for slot, e in p.students do
+			if e.cheating then return slot end
+		end
+		return false
+	end,
+	catch = function(player, slot)
+		PatrolService.sendToOffice(player, slot)
+		return Data.get(player).students[slot].away == true
+	end,
+	dealer = function(player)
+		return PatrolService.debugDealer(player)
+	end,
+	bust = function(player)
+		return PatrolService.debugBust(player)
 	end,
 	dropCarry = function(player)
 		StealService.drop(player, "debug drop")

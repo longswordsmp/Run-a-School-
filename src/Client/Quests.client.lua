@@ -127,14 +127,15 @@ local function worldTarget()
 		end
 		if best then return best + Vector3.new(0, 3.5, 0) end
 		local plot = myPlot()
-		return plot and Vector3.new(plot.Entry.Position.X, 4, 0) or nil
+		local entry = plot and plot:FindFirstChild("Entry")
+		return entry and Vector3.new(entry.Position.X, 4, 0) or nil
 	elseif g == "pad" then
 		local plot = myPlot()
 		local school = plot and plot:FindFirstChild("School")
 		if not school then return nil end
 		local bestPad, bestD
-		for _, fm in school.Floors:GetChildren() do
-			for _, d in fm.Desks:GetChildren() do
+		for _, fm in school:FindFirstChild("Floors") and school.Floors:GetChildren() or {} do
+			for _, d in fm:FindFirstChild("Desks") and fm.Desks:GetChildren() or {} do
 				local pad = d:FindFirstChild("CollectPad")
 				local label = pad and pad:FindFirstChild("Cash") and pad.Cash:FindFirstChild("Label")
 				if label and label.Text ~= "" then
@@ -146,7 +147,9 @@ local function worldTarget()
 		return bestPad and bestPad.Position + Vector3.new(0, 1.5, 0) or nil
 	elseif g == "lock" then
 		local plot = myPlot()
-		return plot and plot.LockButton.Button.Position + Vector3.new(0, 2, 0) or nil
+		local lock = plot and plot:FindFirstChild("LockButton")
+		local btn = lock and lock:FindFirstChild("Button")
+		return btn and btn.Position + Vector3.new(0, 2, 0) or nil
 	end
 	return nil
 end
