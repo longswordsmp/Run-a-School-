@@ -193,7 +193,7 @@ end)
 
 Actions.register("teleportHome", function(player)
 	if not MonetizationService.has(player, "TeleportHome") then return { ok = false, err = "Needs the Teleport Home pass" } end
-	if player:GetAttribute("Carrying") then return { ok = false, err = "Not while carrying a kid!" } end
+	if (player:GetAttribute("Carrying") or player:GetAttribute("Heist")) then return { ok = false, err = "Not while carrying a kid!" } end
 	local cf = PlotService.spawnCFrame(player)
 	if cf and player.Character then player.Character:PivotTo(cf) end
 	return { ok = true }

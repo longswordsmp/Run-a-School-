@@ -445,11 +445,39 @@ function FactoryService.refresh()
 	for _, hs in heists do
 		if hs.pen.entry then inFlight[hs.pen.entry] = true end
 	end
-	local queue = {}
+	-- fair shares: everyone's tutorial kid first, then each player's kids in turn (oldest first),
+	-- so one player with a pile of captured kids can't take every pen
+	local lists = {}
+	local players = {}
 	for player, p in Data.all() do
+		local list = {}
 		for idx, c in p.captured or {} do
-			if not inFlight[c] then table.insert(queue, { player = player, idx = idx, entry = c }) end
+			if not inFlight[c] then table.insert(list, { player = player, idx = idx, entry = c }) end
 		end
+		if #list > 0 then
+			lists[player] = list
+			table.insert(players, player)
+		end
+	end
+	table.sort(players, function(a, b) return a.UserId < b.UserId end)
+	local queue = {}
+	for _, player in players do
+		for i = #lists[player], 1, -1 do
+			if lists[player][i].entry.story then table.insert(queue, table.remove(lists[player], i)) end
+		end
+	end
+	local round = 1
+	local more = true
+	while more do
+		more = false
+		for _, player in players do
+			local q = lists[player][round]
+			if q then
+				table.insert(queue, q)
+				more = true
+			end
+		end
+		round += 1
 	end
 	local qi = 1
 	for i, pen in pens do
@@ -596,6 +624,7 @@ local function chase(g, player, reaction)
 	Walkers.stop(g.model)
 	g.state = "chase"
 	g.target = player
+	g.slow = nil
 	g.seenAt = now()
 	g.reactUntil = now() + (reaction or H.reaction)
 	guardTag(g, "!", rgb(255, 70, 70))
@@ -706,10 +735,12 @@ local function escaped(player)
 		end
 		pen.kind, pen.owner, pen.entry = nil, nil, nil
 		clearPenKid(pen)
+		pen.label.Text = ""
+		pen.model:SetAttribute("OwnerId", nil)
 		if not LetterService.deliver(player, hs.def, true, hs.grade) then
-			-- the bench is full of gifts: they'll be there next time
+			-- the bench is full of gifts: they'll be there next time (as they were)
 			p.pendingBench = p.pendingBench or {}
-			table.insert(p.pendingBench, hs.def.id)
+			table.insert(p.pendingBench, { id = hs.def.id, grade = hs.grade })
 		end
 		Remotes.Push:FireClient(player, "heist", { state = "rescued", name = hs.def.name })
 		Remotes.Notify:FireClient(player, ("You rescued %s! They're walking home to your Waiting Bench."):format(hs.def.name), "good")
@@ -780,7 +811,7 @@ local function takeKid(player, i)
 	w.Parent = kid.PrimaryPart
 	kid.Parent = char
 	Factory.play(kid, "sit")
-	heists[player] = { pen = pen, kid = kid, def = def, grade = grade }
+	heists[player] = { pen = pen, kid = kid, def = def, grade = grade, lastPos = proot.Position, lastT = now() }
 	local shown = prize and "Vex's captive" or def.name
 	player:SetAttribute("Heist", shown)
 	setCarrySpeed(player, true)
@@ -912,10 +943,20 @@ local function tick(dt)
 		local proot = char and char:FindFirstChild("HumanoidRootPart")
 		if not proot then
 			dropHeist(player)
-		elseif not inLot(proot.Position) then
+			continue
+		end
+		-- faster than a carrier can run (with some slack for lag) means a teleport: drop the kid
+		local t = now()
+		local moved = Vector3.new(proot.Position.X - hs.lastPos.X, 0, proot.Position.Z - hs.lastPos.Z).Magnitude
+		local allowed = H.carrySpeed * 1.8 * (t - hs.lastT) + 6
+		if moved > allowed then
+			dropHeist(player, "You dropped them!")
+			continue
+		end
+		if t - hs.lastT >= 0.25 then hs.lastPos, hs.lastT = proot.Position, t end
+		if not inLot(proot.Position) then
 			escaped(player)
 		end
-		_ = hs
 	end
 end
 
@@ -963,12 +1004,24 @@ function FactoryService.start()
 	Signals.on("questStep", function(player, id)
 		if id == "rescue" then FactoryService.tutorialCapture(player) end
 	end)
+	local function watch(player)
+		local function onChar(char)
+			if heists[player] then dropHeist(player) end
+			local hum = char:WaitForChild("Humanoid", 10)
+			if hum then
+				hum.Died:Connect(function()
+					if heists[player] then dropHeist(player, "You fainted! The kid went back in the pen.") end
+				end)
+			end
+		end
+		player.CharacterAdded:Connect(onChar)
+		if player.Character then task.spawn(onChar, player.Character) end
+	end
 	Players.PlayerAdded:Connect(function(player)
 		task.delay(6, FactoryService.refresh)
-		player.CharacterAdded:Connect(function()
-			if heists[player] then dropHeist(player) end
-		end)
+		watch(player)
 	end)
+	for _, player in Players:GetPlayers() do watch(player) end
 	Players.PlayerRemoving:Connect(function(player)
 		dropHeist(player)
 		stunUntil[player] = nil

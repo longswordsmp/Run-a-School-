@@ -42,6 +42,8 @@ local function setSpeed(player)
 	if c then
 		local p = Data.get(player)
 		hum.WalkSpeed = Config.CarrySpeed * (p and UpgradeService.carrySpeedMult(p) or 1)
+	elseif player:GetAttribute("Heist") then
+		hum.WalkSpeed = Config.Heist.carrySpeed -- carrying a kid out of the Factory
 	else
 		hum.WalkSpeed = BASE_SPEED
 	end

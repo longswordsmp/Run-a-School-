@@ -301,9 +301,11 @@ function LetterService.start()
 						local list = p.pendingBench
 						p.pendingBench = nil
 						task.delay(6, function()
-							for _, id in list do
+							for _, entry in list do
+								local id, grade = entry, nil
+								if type(entry) == "table" then id, grade = entry.id, entry.grade end
 								local def = Config.StudentById[id]
-								if def and player.Parent then LetterService.deliver(player, def, true) end
+								if def and player.Parent then LetterService.deliver(player, def, true, grade) end
 							end
 						end)
 					end
