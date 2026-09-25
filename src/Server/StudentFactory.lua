@@ -20,6 +20,12 @@ Factory.Anims = {
 	walk = "rbxassetid://507777826",
 	idle = "rbxassetid://507766388",
 	sit = "rbxassetid://2506281703",
+	-- default R15 emotes (loaded in Studio: wave 1.75s, point 1.79s, cheer 2.5s, laugh 3.29s, dance 1.08s)
+	wave = "rbxassetid://507770239",
+	point = "rbxassetid://507770453",
+	cheer = "rbxassetid://507770677",
+	laugh = "rbxassetid://507770818",
+	dance = "rbxassetid://507771019",
 }
 
 -- templates live in ReplicatedStorage so the client can render them in viewports (Yearbook, shop)
@@ -221,6 +227,20 @@ function Factory.poseTarget(joint)
 	if joint:IsA("Motor6D") then return joint, "C0" end
 	if joint.ClassName == "AnimationConstraint" and joint.Attachment0 then return joint.Attachment0, "CFrame" end
 	return nil
+end
+
+-- a one-shot gesture over whatever the rig is doing (wave, cheer, laugh, point, dance)
+function Factory.emote(model, which)
+	local hum = model:FindFirstChildOfClass("Humanoid")
+	local animator = hum and hum:FindFirstChildOfClass("Animator")
+	if not animator or not Factory.Anims[which] then return end
+	local a = Instance.new("Animation")
+	a.AnimationId = Factory.Anims[which]
+	local track = animator:LoadAnimation(a)
+	track.Looped = false
+	track.Priority = Enum.AnimationPriority.Action2
+	track:Play(0.2)
+	return track
 end
 
 -- height of the root part above the floor when standing

@@ -127,8 +127,9 @@ local function complete(thief)
 	tp.index[key] = true
 	tp.stats.stolen += 1
 	op.stats.lost += 1
-	PlotService.place(thief, slot)
+	local seatedModel = PlotService.place(thief, slot)
 	PlotService.updateIncome(thief)
+	if seatedModel then Factory.emote(seatedModel, "cheer") end
 	Remotes.Notify:FireClient(thief, "You stole " .. c.def.name .. "!", "good")
 	Remotes.Sfx:FireClient(thief, "Cheer")
 	Remotes.Notify:FireClient(owner, thief.DisplayName .. " stole your " .. c.def.name .. "!", "bad")

@@ -143,8 +143,9 @@ function HallService.enroll(player, model)
 		model:Destroy()
 		local e = p.students[slot]
 		if e and e.arriving and PlotService.getPlot(player) == plot then
-			PlotService.place(player, slot)
+			local seatedModel = PlotService.place(player, slot)
 			PlotService.updateIncome(player)
+			if seatedModel then Factory.emote(seatedModel, "cheer") end
 		end
 	end, { flat = false })
 end
