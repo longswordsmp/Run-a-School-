@@ -709,6 +709,159 @@ local function fence(parent, L, style, look)
 	run(-59, -74, 59, -74)
 end
 
+-- the front windows of every floor, as { x, floor top } (same layout buildFloor cuts)
+local function frontWindows(floors)
+	local out = {}
+	for f = 1, floors or 1 do
+		for _, wx in (f == 1 and { -30, -18, 18, 30 } or { -30, -18, 0, 18, 30 }) do
+			table.insert(out, { x = wx, ft = floorTop(f) })
+		end
+	end
+	return out
+end
+local WIN_W, WIN_SILL, WIN_TOP = 7, 3.5, 11
+
+-- a school nobody has fixed up yet: planks nailed across the front windows
+function SchoolBuilder.boards(parent, L, floors)
+	local wood = rgb(150, 105, 60)
+	local z = ZF + WT / 2 + 0.3
+	for _, w in frontWindows(floors) do
+		local cy = w.ft + (WIN_SILL + WIN_TOP) / 2
+		for _, a in { 28, -28 } do
+			part(parent, "Board", Vector3.new(WIN_W + 1.5, 0.9, 0.25), L(w.x, cy, z) * CFrame.Angles(0, 0, math.rad(a)), wood, Enum.Material.Wood)
+		end
+		part(parent, "Board", Vector3.new(WIN_W + 1, 0.9, 0.25), L(w.x, cy + 2.2, z + 0.1), wood:Lerp(Color3.new(0, 0, 0), 0.1), Enum.Material.Wood)
+	end
+end
+
+-- curtains tied back inside every front window, a pot with a red flower on every sill
+Items.Curtains = function(parent, L, look, roofY, floors)
+	local inside = ZF - WT / 2 - 0.45
+	local outside = ZF + WT / 2 + 0.45
+	for _, w in frontWindows(floors) do
+		local cy = w.ft + (WIN_SILL + WIN_TOP) / 2
+		for _, side in { -1, 1 } do
+			part(parent, "Curtain", Vector3.new(1.7, WIN_TOP - WIN_SILL + 0.6, 0.2), L(w.x + side * 2.8, cy, inside), look.sign, Enum.Material.Fabric)
+			part(parent, "TieBack", Vector3.new(1.8, 0.3, 0.25), L(w.x + side * 2.8, cy - 0.8, inside - 0.05), WHITE)
+		end
+		part(parent, "Valance", Vector3.new(WIN_W + 0.6, 0.9, 0.25), L(w.x, w.ft + WIN_TOP - 0.3, inside), look.sign:Lerp(WHITE, 0.25), Enum.Material.Fabric)
+		cyl(parent, "Pot", 0.9, 0.8, L(w.x, w.ft + WIN_SILL + 0.4, outside) * CFrame.Angles(0, 0, math.rad(90)), rgb(200, 100, 60))
+		part(parent, "Stem", Vector3.new(0.12, 0.7, 0.12), L(w.x, w.ft + WIN_SILL + 1.1, outside), rgb(60, 150, 60))
+		ball(parent, "Flower", 0.6, L(w.x, w.ft + WIN_SILL + 1.55, outside), rgb(230, 40, 60))
+	end
+end
+
+-- a striped awning over the doors and a welcome mat with the school's initial
+Items.Awning = function(parent, L, look, roofY, floors, school, name)
+	local y = F1 + 11.9
+	for i = -3, 3 do
+		local c = i % 2 == 0 and WHITE or look.sign
+		part(parent, "Stripe", Vector3.new(2, 0.2, 6.2), L(i * 2, y, ZF + WT / 2 + 3) * CFrame.Angles(math.rad(-18), 0, 0), c, Enum.Material.Fabric)
+		part(parent, "Flap", Vector3.new(2, 0.9, 0.15), L(i * 2, y - 1.4, ZF + WT / 2 + 5.95), c, Enum.Material.Fabric)
+	end
+	local mat = part(parent, "WelcomeMat", Vector3.new(7, 0.12, 3), L(0, 0.62, ZF + WT / 2 + 6.2), look.sign, Enum.Material.Fabric)
+	local letter = (name or "S"):match("%a") or "S"
+	surfaceText(mat, Enum.NormalId.Top, letter:upper(), WHITE, nil, Enum.Font.LuckiestGuy)
+end
+
+-- a letter board by the front walk; CampusService keeps its message fresh
+Items.Marquee = function(parent, L, look, roofY, floors, school, name)
+	for _, x in { 10.2, 19.8 } do
+		part(parent, "Post", Vector3.new(0.6, 8, 0.6), L(x, 4, 44), rgb(60, 60, 70), Enum.Material.Metal)
+	end
+	part(parent, "Frame", Vector3.new(10.4, 5.4, 0.8), L(15, 6, 44), look.sign)
+	local board = part(parent, "Board", Vector3.new(9.6, 4.6, 0.3), L(15, 6, 44.3), rgb(20, 20, 26))
+	local t = surfaceText(board, Enum.NormalId.Back, (name or "WELCOME"):upper(), WHITE, nil, Enum.Font.Arcade)
+	t.Name = "MarqueeText"
+	for i = 0, 4 do
+		ball(parent, "Bulb", 0.4, L(10.6 + i * 2.2, 8.9, 44.5), rgb(255, 235, 150), Enum.Material.Neon)
+	end
+end
+
+Items.LowBrickWall = function(parent, L, look)
+	local function run(ax, az, bx, bz)
+		local len = math.sqrt((bx - ax) ^ 2 + (bz - az) ^ 2)
+		local yaw = math.atan2(bx - ax, bz - az)
+		local cx, cz = (ax + bx) / 2, (az + bz) / 2
+		part(parent, "Wall", Vector3.new(1, 3, len), L(cx, 1.9, cz) * CFrame.Angles(0, yaw, 0), rgb(175, 80, 60), Enum.Material.Brick)
+		part(parent, "Cap", Vector3.new(1.4, 0.4, len), L(cx, 3.6, cz) * CFrame.Angles(0, yaw, 0), WHITE)
+	end
+	run(-59, 74, -11, 74)
+	run(11, 74, 59, 74)
+	run(-59, 74, -59, -74)
+	run(59, 74, 59, -74)
+	run(-59, -74, 59, -74)
+	for _, x in { -11.5, 11.5 } do
+		part(parent, "LanternPost", Vector3.new(0.4, 1.4, 0.4), L(x, 4.5, 74), rgb(40, 40, 45), Enum.Material.Metal)
+		local lamp = part(parent, "Lantern", Vector3.new(1, 1.2, 1), L(x, 5.6, 74), rgb(255, 230, 160), Enum.Material.Neon)
+		light(lamp, 12, 0.5)
+	end
+end
+
+-- the lobby lockers repainted in the school colour, with the school's initial on every other door
+Items.MascotLockers = function(parent, L, look, roofY, floors, school, name)
+	local letter = ((name or "S"):match("%a") or "S"):upper()
+	local n = 0
+	for _, fm in school.Floors:GetChildren() do
+		local lockers = fm:FindFirstChild("Lockers")
+		for _, lk in lockers and lockers:GetChildren() or {} do
+			if lk.Name == "Locker" then
+				n += 1
+				local panel = part(parent, "LockerPaint", Vector3.new(1.7, 5.4, 0.06), lk.CFrame * CFrame.new(0, -0.2, -0.73), look.sign, Enum.Material.SmoothPlastic)
+				if n % 2 == 0 then
+					local badge = part(parent, "LockerBadge", Vector3.new(1, 1, 0.07), lk.CFrame * CFrame.new(0, 0.9, -0.76), WHITE, Enum.Material.SmoothPlastic)
+					surfaceText(badge, Enum.NormalId.Front, letter, look.sign, nil, Enum.Font.LuckiestGuy)
+				end
+				_ = panel
+			end
+		end
+	end
+end
+
+-- two lunch tables in the ground-floor lobby, with trays
+Items.Cafeteria = function(parent, L, look)
+	for _, tx in { -24, -13 } do
+		part(parent, "TableTop", Vector3.new(7, 0.4, 2.6), L(tx, F1 + 2.5, 5.2), rgb(230, 230, 235))
+		part(parent, "TableLeg", Vector3.new(6, 2.1, 0.4), L(tx, F1 + 1.25, 5.2), rgb(120, 125, 135), Enum.Material.Metal)
+		for _, bz in { 3.4, 7 } do
+			part(parent, "Bench", Vector3.new(7, 0.4, 1.1), L(tx, F1 + 1.4, bz), look.chair or rgb(60, 132, 232))
+			part(parent, "BenchLeg", Vector3.new(6, 1.2, 0.3), L(tx, F1 + 0.6, bz), rgb(120, 125, 135), Enum.Material.Metal)
+		end
+		for _, dx in { -2, 1.5 } do
+			part(parent, "Tray", Vector3.new(1.8, 0.12, 1.3), L(tx + dx, F1 + 2.76, 5.2), rgb(170, 175, 185), Enum.Material.Metal)
+			ball(parent, "Apple", 0.45, L(tx + dx - 0.4, F1 + 3.05, 5.1), rgb(220, 30, 40))
+			part(parent, "Milk", Vector3.new(0.4, 0.6, 0.4), L(tx + dx + 0.45, F1 + 3.12, 5.3), WHITE)
+		end
+	end
+	part(parent, "LunchSign", Vector3.new(6, 1.4, 0.2), L(-18.5, F1 + 9, DIVIDER_Z + 0.55), look.sign)
+end
+
+-- pointed arches over the front windows and painted shutters
+Items.ArchedWindows = function(parent, L, look, roofY, floors)
+	local z = ZF + WT / 2 + 0.25
+	for _, w in frontWindows(floors) do
+		for _, side in { -1, 1 } do
+			wedge(parent, "Arch", Vector3.new(0.5, 2, WIN_W / 2 + 0.5), L(w.x + side * (WIN_W / 4 + 0.25), w.ft + WIN_TOP + 1.25, z) * CFrame.Angles(0, math.rad(-side * 90), 0), look.cap)
+			part(parent, "Shutter", Vector3.new(1.6, WIN_TOP - WIN_SILL, 0.25), L(w.x + side * (WIN_W / 2 + 1.3), w.ft + (WIN_SILL + WIN_TOP) / 2, z), look.door or look.sign)
+		end
+	end
+end
+
+-- stained glass: four coloured panes over every front window
+Items.StainedGlass = function(parent, L, look, roofY, floors)
+	local colors = { rgb(220, 50, 60), rgb(60, 110, 230), rgb(250, 200, 50), rgb(70, 190, 90) }
+	local z = ZF + WT / 2 + 0.15
+	for _, w in frontWindows(floors) do
+		local i = 0
+		for _, dx in { -1, 1 } do
+			for _, dy in { -1, 1 } do
+				i += 1
+				part(parent, "Pane", Vector3.new(WIN_W / 2 - 0.3, (WIN_TOP - WIN_SILL) / 2 - 0.3, 0.1), L(w.x + dx * WIN_W / 4, w.ft + (WIN_SILL + WIN_TOP) / 2 + dy * (WIN_TOP - WIN_SILL) / 4, z), colors[i], Enum.Material.Glass, { Transparency = 0.25 })
+			end
+		end
+	end
+end
+
 Items.PicketFence = function(parent, L, look) fence(parent, L, "picket", look) end
 Items.BrickWall = function(parent, L, look) fence(parent, L, "brick", look) end
 Items.IronFence = function(parent, L, look) fence(parent, L, "iron", look) end
@@ -1105,29 +1258,88 @@ function SchoolBuilder.build(plot, opts)
 	return school
 end
 
--- (re)build the School Builder items on an existing campus
-function SchoolBuilder.setItems(plot, owned)
+-- the item just bought drops into place: parts fall from above with a bounce, staggered, then dust
+local TweenService = game:GetService("TweenService")
+local function buildIn(folder)
+	local parts = {}
+	for _, p in folder:GetDescendants() do
+		if p:IsA("BasePart") then table.insert(parts, p) end
+	end
+	local center = Vector3.zero
+	for i, p in parts do
+		local target = p.CFrame
+		local finalT = p.Transparency
+		center += target.Position
+		p.CFrame = target + Vector3.new(0, 6, 0)
+		p.Transparency = 1
+		task.delay(math.min(i * 0.03, 2), function()
+			if not p.Parent then return end
+			TweenService:Create(p, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { CFrame = target, Transparency = finalT }):Play()
+		end)
+	end
+	if #parts > 0 then
+		center /= #parts
+		local puff = Instance.new("Part")
+		puff.Anchored, puff.CanCollide, puff.CanQuery, puff.CanTouch = true, false, false, false
+		puff.Transparency = 1
+		puff.Size = Vector3.one
+		puff.Position = center
+		puff.Parent = folder
+		local e = Instance.new("ParticleEmitter")
+		e.Texture = "rbxasset://textures/particles/smoke_main.dds"
+		e.Color = ColorSequence.new(rgb(200, 195, 185))
+		e.Size = NumberSequence.new(2, 5)
+		e.Transparency = NumberSequence.new(0.3, 1)
+		e.Lifetime = NumberRange.new(0.8, 1.4)
+		e.Speed = NumberRange.new(6, 12)
+		e.SpreadAngle = Vector2.new(180, 30)
+		e.Rate = 0
+		e.Parent = puff
+		task.delay(math.min(#parts * 0.03, 2) + 0.3, function()
+			if e.Parent then e:Emit(20) end
+			task.wait(2)
+			puff:Destroy()
+		end)
+	end
+end
+
+-- (re)build the School Builder items on an existing campus; animate = the id just bought
+function SchoolBuilder.setItems(plot, owned, animate)
 	local school = plot:FindFirstChild("School")
 	if not school then return end
 	local old = school:FindFirstChild("Items")
 	if old then old:Destroy() end
 	local look = Config.TierLooks[school:GetAttribute("Tier") or 2] or Config.TierLooks[2]
 	local roofY = school:GetAttribute("RoofY") or 17
+	local floors = school:GetAttribute("Floors") or 1
+	local band = school:FindFirstChild("Exterior") and school.Exterior:FindFirstChild("NameBand")
+	local gui = band and band:FindFirstChildOfClass("SurfaceGui")
+	local name = gui and gui:FindFirstChild("SchoolName") and gui.SchoolName.Text or "School"
 	local base = plot.Origin.CFrame
 	local function L(x, y, z) return base * CFrame.new(x, y, z) end
 	local items = Instance.new("Folder")
 	items.Name = "Items"
-	for id in ownedItems(owned) do
+	local show = ownedItems(owned)
+	for id in show do
 		local fn = Items[id]
 		if fn then
 			local f = Instance.new("Folder")
 			f.Name = id
 			f.Parent = items
-			local ok, err = pcall(fn, f, L, look, roofY)
+			local ok, err = pcall(fn, f, L, look, roofY, floors, school, name)
 			if not ok then warn("[SchoolBuilder] item", id, err) end
 		end
 	end
+	-- until someone buys curtains, the front windows stay boarded up
+	if not (owned and owned.Curtains) then
+		local f = Instance.new("Folder")
+		f.Name = "Boards"
+		f.Parent = items
+		SchoolBuilder.boards(f, L, floors)
+	end
 	items.Parent = school
+	local fresh = animate and items:FindFirstChild(animate)
+	if fresh then task.spawn(buildIn, fresh) end
 end
 
 function SchoolBuilder.setName(plot, name)

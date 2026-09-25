@@ -6,6 +6,7 @@ stands tonight, not against the older GAME-PLAN snapshot.
 
 **Status of everything in this file:** design only. Nothing here has been built or play-tested unless
 it is tagged **[EXISTS]**, and [EXISTS] only means "I read it in the repo at about 21:10 tonight".
+Section 0.4 lists what was built from this doc while it was being written, based on the commit messages.
 Several of those systems were committed or edited in the last hour, and some are uncommitted.
 Whether they have been play-tested is recorded in GAME-PLAN.md Status, not here.
 
@@ -124,6 +125,34 @@ Each one tagged [SIM] needs a sim hook before tuning.
 - econ_sim assumes a student spends 50 s on the carpet.
 - The real carpet is 664 studs (-318 to 346) at `Config.WalkSpeed` 9, which is 74 s.
 - This doc does not change that, but it makes the sim slightly pessimistic about choice.
+
+## 0.4 Built while this doc was being written (commit messages, not re-checked by me)
+The repo moved while this doc was written. Everything below comes from the commit messages and a read
+of the code at about 21:30. I did not run any of it.
+
+| Commit | What it did | Play evidence claimed in the commit |
+|---|---|---|
+| 762b786 | EventService: 5 events (Snow Day, Science Fair, Picture Day, Halloween, Space Camp), each 10 min, one every 30 min. EventFX. Admin panel: buses, events, rare spawns, Money Rain, server luck, recess. | "Snow Day snow + HUD row + Jingle Bells music, admin panel renders, Money Rain drops 80 bills and pays on touch" |
+| f40c5c0 | `Ambient.client.lua`: client-side gestures (wave, hand up, look around, laugh, nod, dozing). Default R15 emote ids added to `StudentFactory.Anims`. | "8 gestures over 16s across 12 seated kids" |
+| c2d9612 | This doc's build-order step 1. Snack Smugglers wording, 60 s catch fee with Eagle Eye x1.5, First Catch $100, kids keep paying in detention, Reformed +10 %, an F and spread on a miss (no cash wipe), strict teachers only, Sugar Rush x2 for 20 s, Slime Time 60 s, Confiscated Candy. | "Mathlete (80/s) caught instantly paid 7305 = 80*60*1.5+5+100; income stays 92 during detention" |
+| abbcd19 | This doc's step 2. Plots at x = ±95 and ±285 (70-stud gaps), wider ground and sidewalk, trees moved, luck strip widened. | "Rebuilt in Studio and previewed" |
+
+**Where the code and this doc still differ at 21:30:**
+1. **Sugar Rush scope.**
+   - Code: `SugarUntil` is set on the *player*, so x2 applies to the whole school for 20 s (row F, 88.7 h).
+   - This doc: only the row the smuggler was working (row G, 92.4 h).
+   - To do: store the row on the smuggler and apply x2 only to those 4 slots.
+2. **Cheat frequency.**
+   - Code: `CHEAT_EVERY = { 90, 150 }`.
+   - This doc: 120-180 s, which is what the cheater stand-in in row C measured.
+3. **Event cadence.**
+   - Code: one of 5 events for 10 min every 30 min, rotating.
+   - This doc (section 9): one **featured event per week**, with 5-min Surges at :20 and :50 UTC, shops
+     and currency.
+4. **Admin.**
+   - Code: `EventService.isAdmin` = UserId 1331076401, the place creator, or anyone in Studio.
+   - Section 10 adds the hardening: panel code only on admin clients, AdminLog, the `adminGranted` flag,
+     moderation, and the abuse events.
 
 ---
 
@@ -261,8 +290,8 @@ After the finale:
      within 13 s would park two buses on the same `PARK` spot.
 3. **PatrolService:** the first cheater is the scripted one below. **No dealer is sent before tutorial
    step 11.**
-4. Replace `Config.Tutorial` with the 11 steps in the script below. The old pencils, hire, build, rare
-   and upgrade steps move into Chapter 1 (section 12), after minute 5.
+4. Replace `Config.Tutorial` with the 11 steps listed after the script. The old pencils, hire, build
+   and upgrade steps move into Chapter 1, and "rare" into Chapter 2 (section 12). They come after minute 5.
 
 ### Rules for the script
 - A new verb or a reward every 10-15 s.
@@ -657,6 +686,13 @@ Conventions (the same as `StudentProps`):
 
 ## 5. Catching cheaters
 
+> **Progress (from the c2d9612 commit message; not re-checked by me):**
+> - Done: changes 1-5 below.
+> - Frequency is 90-150 s in code; this doc now asks for 120-180 s.
+> - Still to do: change 7, the three tells, the Wall of Shame, titles and streaks, the victory dance and
+>   the steal link.
+> - The "what already exists" paragraph below describes the code before that commit.
+
 ### What already exists and what changes
 **[EXISTS]** `PatrolService` (uncommitted):
 - Every 70-130 s one seated kid starts cheating. A cheat sheet appears in their hand, a "❗ CHEATING!" tag,
@@ -685,9 +721,11 @@ Conventions (the same as `StudentProps`):
    It happens at 12 s and pays **half** the fee with no Reformed.
    - Today every teacher from Ms. Honeycutt up catches, which turns the minigame off for everyone past
      Middle School.
-6. **Frequency:** every **90-150 s** per school instead of 70-130. Only while the owner is in the
-   server and moved in the last 60 s, and halved if they are more than 150 studs from their gate.
-   Never during the tutorial, except the scripted one.
+6. **Frequency:** every **120-180 s** per school instead of 70-130. That is the cycle the sim stand-in
+   measured, and the player judge asked for fewer interruptions.
+   - Only while the owner is in the server and moved in the last 60 s.
+   - Halved if the owner is more than 150 studs from their gate.
+   - Never during the tutorial, except the scripted one.
 7. **At most one active cheat per floor.** The office bench seats 3.
 
 ### What cheating looks like (3 tells at launch)
@@ -774,8 +812,15 @@ Answer Key (x5, Exam Week).
 
 - Code names (`sendDealer`, `DEALERS`) can stay.
 
+> **Progress (from the c2d9612 commit message and a read of `PatrolService` at 21:30; not re-checked by me):**
+> - Done: the wording, 🍬 per bust (8 and 12), Sugar Rush x2 for 20 s but **on the whole school**, and
+>   Slime Time 60 s.
+> - Still to do: the row-only scope, the lurk-spot approach and chase, busting on public ground, the
+>   Golden Smuggler, the freeze and trip gags, Stan's Closet, the Detention march and the Sugar Baron.
+> - The "what already exists" paragraph below describes the code before that commit.
+
 ### What already exists and what changes
-**[EXISTS]** `PatrolService` (uncommitted):
+**[EXISTS]** `PatrolService` (uncommitted at the time):
 - Every 150-260 s, one smuggler per player: **Sweet Tooth Sal** (candy) or **Goo Gary** (slime).
 - He enters that player's school through an unlocked gate. A locked gate keeps him out.
 - He "deals" at a row, and that row earns half for up to 60 s.
@@ -963,7 +1008,10 @@ server-side C0 change replicates. The server keeps only the position and a `Teac
 ## 8. School Builder
 
 ### 8.1 The space between schools [CHANGE, `tools/build_map.lua`]
-**Today** (read from build_map.lua):
+**Done in commit abbcd19** (plots at x = ±95 and ±285, gaps 70 studs, luck strip widened). The layout
+below is what that commit implements. The **landmarks in the gaps are still to do.**
+
+**Before** (read from build_map.lua earlier tonight):
 - Lots are 120 x 150 at X = -225, -75, 75, 225 and Z = ±103.
 - That leaves **30-stud gaps**. Buildings (80 wide) sit 70 studs apart.
 - The carpet runs from -318 to 346 and the bus is at x = -345.
@@ -1070,6 +1118,18 @@ look (`Config.TierLooks`, 12 buildings) is still the biggest visual upgrade. The
 ## 9. Events
 
 ### Structure
+**[EXISTS] (762b786)** `EventService`:
+- 5 events (Snow Day, Science Fair, Picture Day, Halloween, Space Camp), 10 minutes each.
+- One starts every 30 min, rotating through `ORDER`.
+- Each sets `HallService.eventGrades` for its grade, and `EventFX.client` dresses the map (snow, dusk,
+  sparkles, flashes, night sky) and plays the music.
+
+**[CHANGE]** The rotation becomes the weekly structure below:
+- The 30-minute slots become the featured event's **Surges**: `EVENT_LEN` goes from 600 to 300 and the
+  slots are aligned to :20 and :50 UTC.
+- Shops, currency and the 7 new events are added on top.
+- The existing EventFX looks are kept for their 5 events.
+
 - **One featured event per week.** It starts with the weekly update on **Saturday 15:00 UTC** and runs
   until the next Saturday 14:00.
 - **Pinned dates:**
@@ -1098,8 +1158,8 @@ look (`Config.TierLooks`, 12 buildings) is still the biggest visual upgrade. The
   - They sit at a desk and pay tuition **only from State University (tier 8) onward**.
   - Otherwise a 250M/s Alumni would break every early tier.
   - **Even at State University, one Alumni roughly doubles a strong player's income [SIM].** 250M/s x13
-    tier x2.4 teacher x2.6 IQ x1.5 Rep is about 30B/s. In row G the whole school makes about 21B/s at the
-    end of that tier.
+    tier x2.4-2.7 teacher x2.6-2.9 IQ x1.5-1.6 Rep is about 30-40B/s. In row G the whole school makes
+    about 21B/s at the end of that tier.
   - So each event shop sells **one** Alumni per player. Add an Alumni hook to econ_sim before a second
     event ships.
 - **Always-on moments:**
@@ -1159,8 +1219,18 @@ That makes 18 grades. The Yearbook becomes 70 students x 18 grades = 1,260 entri
 
 ## 10. Admin panel
 
+**[EXISTS] (762b786)**
+- `EventService.isAdmin`: UserId 1331076401, `game.CreatorId`, or anyone in Studio.
+- The `admin` Action re-checks on the server.
+- The ADMIN PANEL (`Menus.client.lua`) can call any bus, start and end events, spawn rare kids, run
+  Money Rain, set server luck x2 or x3, and start Recess.
+- The side button shows only when the `Admin` attribute is set, but **the panel code ships to every client.**
+
+**[CHANGE]** Everything below is added on top of that.
+
 ### Access and security
-- `Config.Admins = { [<owner UserId>] = "Owner" }`, plus an optional group rank of 254 or higher.
+- `Config.Admins = { [1331076401] = "Owner" }`: the id already in EventService, moved into Config.
+  Plus an optional group rank of 254 or higher. Studio stays admin for testing.
 - **The panel ScreenGui lives in ServerStorage** and is cloned into PlayerGui only for admins. Other
   players never receive its code.
 - **One `AdminRequest` RemoteFunction:**
@@ -1227,7 +1297,13 @@ That makes 18 grades. The Yearbook becomes 70 students x 18 grades = 1,260 entri
 - Base tracks are played by `Factory.play`: walk, idle, sit (`Factory.Anims`). GAME-PLAN Status records
   the walk animation as seen in a play test.
 
-**[NEW] Client `Puppet` module** (StarterPlayerScripts):
+**[EXISTS] (f40c5c0)** `Ambient.client.lua` already plays client-side gestures on NPCs near you:
+- Seated kids wave, raise a hand, look around, laugh, nod while writing, and doze.
+- Kids on the carpet wave and cheer.
+- A kid whose pad you collect cheers.
+- Kids in detention hang their heads.
+
+**[NEW] Grow Ambient into the `Puppet` module** (same file, or split out):
 - It reads attributes the server sets on models, for example `Emote = "Cheer"`, `Gag = "Trip"`,
   `CheatStage = 2`, `TeacherAction = "Point"`.
 - It plays default emote tracks locally and applies procedural offsets to **Motor6D C0** in one
@@ -1243,8 +1319,13 @@ That makes 18 grades. The Yearbook becomes 70 students x 18 grades = 1,260 entri
     Lounge teachers, and the crowd in cutscenes.
 
 ### 11.2 Default R15 animations
-walk, idle and sit are the ids in `Factory.Anims`. The others are from memory of the default R15 Animate
-script. **Copy them from a Play-mode character's Animate script before shipping.**
+These ids are in `StudentFactory.Anims` and `Ambient.client.lua`:
+- walk, idle and sit.
+- wave, point, cheer, laugh and dance (added in f40c5c0).
+
+The Ambient header says those were "loaded and timed in Studio". run, jump, fall, climb, dance2 and
+dance3 are from memory of the default R15 Animate script. **Check those against a Play-mode character
+before using them.**
 
 | Use | Id |
 |---|---|
@@ -1404,7 +1485,7 @@ and check its TimeLength before adding it to `Sounds.lua`:
 | Every | What |
 |---|---|
 | 2.2 s | A kid off the bus |
-| 90-150 s | A cheater |
+| 2-3 min | A cheater |
 | ~3-4 min | A smuggler |
 | 5 min | Late Bus (Rare+) |
 | 6 min | Rare Letter |
@@ -1598,13 +1679,14 @@ evidence, before the next one starts** (CLAUDE.md rule). Any step that touches i
 `tools/econ_sim.py 150 20`.
 
 1. **Kid-safety strings and the smuggler and cheater economics.**
-   - Rename "DEALING", "dealer" and "Bust a candy or slime dealer".
-   - Kids keep paying during detention, a 60 s fee, no pad wipe, strict-teacher auto-catch only.
-   - Sugar Rush x2 for 20 s on the targeted row only.
-   - These are small edits to PatrolService and Config, and they fix the two things that feel bad
-     today (catching costs money; the bust buff is +29 %).
-2. **Map widening** (build_map.lua: `plotXs`, trees, ground, the luck strip) with blockout landmarks in
-   the six gaps. This is the owner's complaint #1, and it has to land before anything gets placed in the gaps.
+   - Mostly done in c2d9612 (see 0.4).
+   - **Still to do:**
+     - Sugar Rush x2 on the targeted row only, not the whole school (row F to row G).
+     - `CHEAT_EVERY` from 90-150 to 120-180.
+2. **Map widening.**
+   - Done in abbcd19 (see 0.4).
+   - **Still to do:** blockout landmarks in the six gaps (the Hub fountain and Lunch Cart, Teachers'
+     Lounge, Confiscation Closet, Recess Commons, District Office, Sugar Shack), lurk spots and tent spots.
 3. **Builder facade:** the 8 new `Config.Builds`, boarded windows until `Curtains`, the `BrickWall`
    replaces chain, and the build-in animation (scaffold, drop, dust). Owner's complaint #1.
 4. **Guarantees:** UTC offsets in `HallService.start`, the Waiting Bench, Admissions Letters, the Pocket
@@ -1632,9 +1714,12 @@ evidence, before the next one starts** (CLAUDE.md rule). Any step that touches i
 
 ## Open questions for the owner
 
-1. **Your Roblox UserId** (and a group id, if you have one), for `Config.Admins`.
-2. **The map rebuild:** widening the gaps from 30 to 70 studs moves every plot and means re-running
-   `build_map.lua` in Studio. OK to do?
+1. **Admins:** EventService lists UserId 1331076401, plus the place creator and anyone in Studio.
+   - Is 1331076401 your account?
+   - Should anyone else (a Roblox group rank) get the panel and the Saturday admin-abuse hour?
+2. **Villain:** the story uses Dr. Veronica Vex (a corporate villain who hates recess and becomes a kid
+   in the finale), with Crumpet the butler. Keep her, or would you rather the rival be another principal
+   (P3's Headmaster Snootsworth)?
 3. **Principal's Pick:** Prodigy 95 % / Secret 5 % (this doc, about +7 % Secret supply), or a guaranteed
    Secret every 2 hours (more hype, about +77 % Secret supply, so Secrets feel less rare)?
 4. **Smuggler rewards:** as built, busting gives x2 tuition on the whole school for 60 s. The sim puts

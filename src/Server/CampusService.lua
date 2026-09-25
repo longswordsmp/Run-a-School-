@@ -78,7 +78,7 @@ Actions.register("buyBuild", function(player, p, id)
 	if not pay(player, p, def.price) then return { ok = false, err = "Not enough cash" } end
 	p.builds[id] = true
 	local plot = PlotService.getPlot(player)
-	if plot then SchoolBuilder.setItems(plot, p.builds) end
+	if plot then SchoolBuilder.setItems(plot, p.builds, id) end
 	sync(player, p)
 	PlotService.updateIncome(player)
 	Remotes.Sfx:FireClient(player, "Buy")
@@ -104,7 +104,36 @@ Actions.register("hireTeacher", function(player, p, floor, id)
 	return { ok = true }
 end)
 
+-- the Marquee letter board shows the school's name, live tuition and the latest brag
+local brag = {}
+Signals.on("enroll", function(player, def)
+	local order = Config.RarityById[def.rarity].order
+	if order >= 5 then brag[player] = ("CONGRATS TO OUR NEW %s!"):format(def.rarity:upper()) end
+end)
+local function refreshMarquees()
+	for player, p in Data.all() do
+		if p.builds and p.builds.Marquee then
+			local plot = PlotService.getPlot(player)
+			local school = plot and plot:FindFirstChild("School")
+			local items = school and school:FindFirstChild("Items")
+			local m = items and items:FindFirstChild("Marquee")
+			local board = m and m:FindFirstChild("Board")
+			local g = board and board:FindFirstChildOfClass("SurfaceGui")
+			local label = g and g:FindFirstChild("MarqueeText")
+			if label then
+				label.Text = ("%s\n%s/s TUITION\n%s"):format(PlotService.schoolName(player):upper(), Config.formatCash(player:GetAttribute("IncomePerSec") or 0), brag[player] or "ENROLL TODAY!")
+			end
+		end
+	end
+end
+
 function CampusService.start()
+	task.spawn(function()
+		while true do
+			task.wait(5)
+			pcall(refreshMarquees)
+		end
+	end)
 	table.insert(PlotService.multHooks, function(player, p, e, slot)
 		return CampusService.iq(p) / 100 * (1 + CampusService.rep(p) / 100) * CampusService.teacherMult(p, PlotService.slotFloor(slot))
 	end)

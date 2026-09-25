@@ -308,8 +308,16 @@ end
 -- tools/econ_sim.py reads these lines; keep one per line.
 ---------------------------------------------------------------------------
 Config.Builds = {
+	{ id = "Curtains", name = "Curtains & Flower Pots", icon = "\u{1FA9F}", rep = 1, tier = 1, price = 800 },
 	{ id = "FlowerBeds", name = "Flower Beds", icon = "\u{1F337}", rep = 2, tier = 1, price = 1.5e3 },
+	{ id = "Awning", name = "Striped Awning & Welcome Mat", icon = "\u{26F1}\u{FE0F}", rep = 1, tier = 1, price = 2.5e3 },
 	{ id = "PicketFence", name = "Picket Fence", icon = "\u{1FAB5}", rep = 2, tier = 1, price = 5e3 },
+	{ id = "Marquee", name = "Marquee Letter Board", icon = "\u{1FAA7}", rep = 1, tier = 2, price = 120e3 },
+	{ id = "LowBrickWall", name = "Low Brick Wall", icon = "\u{1F9F1}", rep = 2, tier = 3, price = 3e6, replaces = "PicketFence" },
+	{ id = "MascotLockers", name = "Mascot Lockers", icon = "\u{1F510}", rep = 1, tier = 3, price = 4e6 },
+	{ id = "Cafeteria", name = "Cafeteria Corner", icon = "\u{1F37D}\u{FE0F}", rep = 2, tier = 3, price = 7e6 },
+	{ id = "ArchedWindows", name = "Arched Windows & Shutters", icon = "\u{1F3DB}\u{FE0F}", rep = 2, tier = 5, price = 3e9, replaces = "WindowBoxes" },
+	{ id = "StainedGlass", name = "Stained-Glass Windows", icon = "\u{1F308}", rep = 2, tier = 8, price = 300e9, replaces = "ArchedWindows" },
 	{ id = "PathLights", name = "Path Lights", icon = "\u{1F4A1}", rep = 2, tier = 2, price = 50e3 },
 	{ id = "WindowBoxes", name = "Window Boxes", icon = "\u{1F33C}", rep = 2, tier = 2, price = 150e3 },
 	{ id = "Playground", name = "Playground", icon = "\u{1F6DD}", rep = 4, tier = 2, price = 350e3 },
@@ -317,7 +325,7 @@ Config.Builds = {
 	{ id = "Court", name = "Basketball Court", icon = "\u{1F3C0}", rep = 5, tier = 3, price = 9e6 },
 	{ id = "Garden", name = "School Garden", icon = "\u{1F955}", rep = 3, tier = 4, price = 160e6 },
 	{ id = "Bleachers", name = "Bleachers", icon = "\u{1F3DF}\u{FE0F}", rep = 3, tier = 4, price = 160e6 },
-	{ id = "BrickWall", name = "Brick Wall", icon = "\u{1F9F1}", rep = 3, tier = 5, price = 2.1e9, replaces = "PicketFence" },
+	{ id = "BrickWall", name = "Brick Wall", icon = "\u{1F9F1}", rep = 3, tier = 5, price = 2.1e9, replaces = "LowBrickWall" },
 	{ id = "Fountain", name = "Fountain", icon = "\u{26F2}", rep = 6, tier = 5, price = 4.2e9 },
 	{ id = "Banners", name = "School Banners", icon = "\u{1F6A9}", rep = 3, tier = 6, price = 13e9 },
 	{ id = "Statue", name = "Founder's Statue", icon = "\u{1F5FF}", rep = 7, tier = 7, price = 120e9 },
