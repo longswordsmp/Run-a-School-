@@ -78,6 +78,12 @@ local function wireGlasses(model, head, hs, y, radius, color)
 end
 
 local HAIR = {
+	UntiedTyler = Color3.fromRGB(230, 180, 90),
+	GlueStickGus = Color3.fromRGB(30, 22, 18),
+	DoodleDot = Color3.fromRGB(200, 90, 60),
+	LunchboxLucy = Color3.fromRGB(25, 20, 18),
+	PajamaPete = Color3.fromRGB(150, 100, 60),
+	HiccupHank = Color3.fromRGB(90, 60, 40),
 	SleepySam = Color3.fromRGB(120, 80, 50),
 	CrayonEater = Color3.fromRGB(230, 170, 80),
 	BackpackKid = Color3.fromRGB(30, 22, 18),
@@ -522,6 +528,104 @@ local function sparkles(p, color, rate)
 end
 
 -- Common ----------------------------------------------------------------
+-- starter students (the cheapest on the bus)
+B.Shoelaces = function(model, head, hs)
+	-- bright sneakers with long untied laces trailing on the floor
+	for _, side in { "Left", "Right" } do
+		local foot = part(model, side .. "Foot")
+		if foot then
+			local fs = foot.Size
+			block(model, foot, Vector3.new(fs.X * 1.1, fs.Y * 0.6, fs.Z * 1.15), CFrame.new(0, -fs.Y * 0.2, -fs.Z * 0.05), rgb(250, 250, 250))
+			block(model, foot, Vector3.new(fs.X * 1.12, fs.Y * 0.2, fs.Z * 1.17), CFrame.new(0, -fs.Y * 0.42, -fs.Z * 0.05), rgb(230, 60, 60))
+			local x = side == "Left" and -1 or 1
+			for i = 0, 1 do
+				block(model, foot, Vector3.new(0.05, 0.05, 0.9), CFrame.new(x * fs.X * (0.2 + i * 0.25), -fs.Y * 0.45, -fs.Z * 0.9) * CFrame.Angles(0, math.rad(x * (10 + i * 25)), 0), rgb(255, 255, 255))
+			end
+		end
+	end
+	-- a plaster on the knee from the last trip
+	local leg = part(model, "RightLowerLeg")
+	if leg then block(model, leg, Vector3.new(leg.Size.X * 0.6, leg.Size.Y * 0.2, 0.06), CFrame.new(0, leg.Size.Y * 0.3, -leg.Size.Z * 0.52), rgb(245, 200, 160)) end
+end
+
+B.GlueStick = function(model, head, hs)
+	local hand = part(model, "RightHand")
+	cylY(model, hand, 0.45, 1.3, CFrame.new(0, 0.35, -0.25), rgb(150, 70, 220))
+	cylY(model, hand, 0.47, 0.35, CFrame.new(0, 1.1, -0.25), rgb(250, 250, 250))
+	cylY(model, hand, 0.38, 0.15, CFrame.new(0, 1.33, -0.25), rgb(240, 240, 230))
+	-- glue on his fingers and his chin
+	blob(model, hand, Vector3.new(0.5, 0.2, 0.5), CFrame.new(0, -0.3, 0), rgb(245, 245, 235))
+	blob(model, head, Vector3.new(hs.X * 0.25, hs.Y * 0.1, 0.08), CFrame.new(-hs.X * 0.1, -hs.Y * 0.3, -hs.Z * 0.5), rgb(245, 245, 235))
+end
+
+B.Sketchbook = function(model, head, hs)
+	local hand = part(model, "LeftHand")
+	block(model, hand, Vector3.new(1.1, 1.3, 0.1), CFrame.new(0, 0.2, -0.3), rgb(40, 40, 50))
+	block(model, hand, Vector3.new(1, 1.2, 0.11), CFrame.new(0, 0.2, -0.32), rgb(252, 250, 240))
+	for i = 0, 2 do
+		block(model, hand, Vector3.new(0.6 - i * 0.12, 0.05, 0.12), CFrame.new(0, 0.5 - i * 0.25, -0.34) * CFrame.Angles(0, 0, math.rad(i * 20 - 15)), ({ rgb(230, 60, 60), rgb(60, 120, 230), rgb(60, 180, 90) })[i + 1])
+	end
+	-- pencil tucked behind the ear
+	cylY(model, head, 0.1, hs.Y * 0.5, CFrame.new(hs.X * 0.52, hs.Y * 0.05, hs.Z * 0.1) * CFrame.Angles(math.rad(60), 0, 0), rgb(255, 200, 40))
+	-- doodles up her arm
+	local arm = part(model, "LeftLowerArm")
+	if arm then
+		for i = 0, 2 do
+			ball(model, arm, 0.14, CFrame.new(arm.Size.X * 0.2 * (i - 1), arm.Size.Y * (0.25 - i * 0.2), -arm.Size.Z * 0.5), rgb(40, 90, 200))
+		end
+	end
+end
+
+B.Lunchbox = function(model, head, hs)
+	local hand = part(model, "RightHand")
+	local box = block(model, hand, Vector3.new(0.5, 1, 1.3), CFrame.new(0, -0.75, 0), rgb(220, 50, 50))
+	block(model, hand, Vector3.new(0.52, 0.12, 1.32), CFrame.new(0, -0.45, 0), rgb(250, 210, 60))
+	block(model, hand, Vector3.new(0.12, 0.35, 0.7), CFrame.new(0, -0.15, 0), rgb(40, 40, 45))
+	-- a sandwich poking out of her pocket, crusts cut off
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	block(model, torso, Vector3.new(0.45, 0.45, 0.12), CFrame.new(ts.X * 0.25, -ts.Y * 0.2, -ts.Z * 0.55) * CFrame.Angles(0, 0, math.rad(45)), rgb(250, 230, 180))
+	_ = box
+end
+
+B.Pajamas = function(model, head, hs)
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	for i = 0, 3 do
+		block(model, torso, Vector3.new(ts.X * 1.02, ts.Y * 0.08, ts.Z * 1.02), CFrame.new(0, ts.Y * (0.35 - i * 0.25), 0), rgb(250, 250, 255))
+	end
+	for _, s in { "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg" } do
+		local l = part(model, s)
+		if l then block(model, l, Vector3.new(l.Size.X * 1.02, l.Size.Y * 0.12, l.Size.Z * 1.02), CFrame.new(0, 0, 0), rgb(250, 250, 255)) end
+	end
+	-- teddy bear under the arm
+	local hand = part(model, "LeftHand")
+	local body = ball(model, hand, 0.8, CFrame.new(0.1, 0.35, -0.35), rgb(170, 110, 60))
+	ball(model, hand, 0.6, CFrame.new(0.1, 0.95, -0.35), rgb(170, 110, 60))
+	for _, x in { -0.22, 0.22 } do
+		ball(model, hand, 0.24, CFrame.new(0.1 + x, 1.22, -0.35), rgb(150, 95, 50))
+	end
+	ball(model, hand, 0.2, CFrame.new(0.1, 0.9, -0.64), rgb(230, 190, 150))
+	_ = body
+	-- bed hair
+	blob(model, head, Vector3.new(hs.X * 0.4, hs.Y * 0.35, hs.X * 0.4), CFrame.new(hs.X * 0.2, hs.Y * 0.62, 0) * CFrame.Angles(0, 0, math.rad(-35)), HAIR.PajamaPete or rgb(120, 80, 50))
+end
+
+B.Hiccups = function(model, head, hs)
+	local hand = part(model, "RightHand")
+	cylY(model, hand, 0.45, 0.8, CFrame.new(0, 0.2, -0.25), rgb(40, 170, 90), Enum.Material.Metal)
+	cylY(model, hand, 0.4, 0.06, CFrame.new(0, 0.62, -0.25), rgb(200, 200, 210), Enum.Material.Metal)
+	-- "hic!" bubbles rising off his head
+	for i = 1, 3 do
+		local b = ball(model, head, 0.2 + i * 0.1, CFrame.new(hs.X * (0.35 + i * 0.12), hs.Y * (0.4 + i * 0.25), -hs.Z * 0.2), rgb(200, 240, 255), Enum.Material.Glass)
+		b.Transparency = 0.45
+	end
+	-- puffed cheeks
+	for _, x in { -1, 1 } do
+		ball(model, head, hs.X * 0.28, CFrame.new(x * hs.X * 0.33, -hs.Y * 0.12, -hs.Z * 0.36), rgb(255, 170, 170))
+	end
+end
+
 B.JuiceBox = function(model, head, hs)
 	local hand = part(model, "RightHand")
 	local box = block(model, hand, Vector3.new(0.5, 0.75, 0.32), CFrame.new(0, 0.05, -0.3), rgb(255, 150, 30))

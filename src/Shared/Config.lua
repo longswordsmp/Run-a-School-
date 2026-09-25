@@ -44,7 +44,13 @@ local function S(id, name, rarity, price, income, subject, prop, skin, shirt, pa
 end
 
 Config.Students = {
-	-- Common
+	-- Common (the first six are the starter kids: cheap enough to fill the first desks in a minute)
+	S("UntiedTyler", "Untied Tyler", "Common", 9, 0.3, "Gym", "Shoelaces", "light", rgb(90, 160, 230), rgb(60, 60, 80)),
+	S("GlueStickGus", "Glue Stick Gus", "Common", 12, 0.4, "Art", "GlueStick", "brown", rgb(250, 160, 60), rgb(70, 90, 140)),
+	S("DoodleDot", "Doodle Dot", "Common", 15, 0.5, "Art", "Sketchbook", "tan", rgb(250, 220, 240), rgb(90, 80, 140)),
+	S("LunchboxLucy", "Lunchbox Lucy", "Common", 18, 0.6, "Lunch", "Lunchbox", "dark", rgb(255, 210, 70), rgb(200, 60, 80)),
+	S("PajamaPete", "Pajama Pete", "Common", 21, 0.7, "Music", "Pajamas", "light", rgb(120, 170, 240), rgb(120, 170, 240)),
+	S("HiccupHank", "Hiccup Hank", "Common", 24, 0.8, "Science", "Hiccups", "tan", rgb(120, 200, 120), rgb(80, 70, 60)),
 	S("SleepySam", "Sleepy Sam", "Common", 30, 1, "Music", "Nightcap", "light", rgb(140, 170, 230), rgb(80, 90, 140)),
 	S("CrayonEater", "Crayon Eater", "Common", 60, 2, "Art", "Crayon", "tan", rgb(255, 120, 60), rgb(60, 60, 70)),
 	S("BackpackKid", "Backpack Kid", "Common", 90, 3, "Gym", "Backpack", "brown", rgb(90, 200, 120), rgb(50, 70, 120)),
@@ -331,6 +337,11 @@ Config.SellFraction = 0.5
 Config.CarrySpeed = 11
 
 function Config.formatCash(n)
+	-- small fractional amounts (starter students earn $0.3/s) keep one decimal
+	if math.abs(n) < 100 and math.abs(n - math.floor(n)) >= 0.05 then
+		local s = string.format("%.1f", n)
+		return "$" .. (s:gsub("%.0$", ""))
+	end
 	n = math.floor(n)
 	local suffixes = { "", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc" }
 	local i = 1
