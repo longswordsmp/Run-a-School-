@@ -73,6 +73,10 @@ work only lives in the repo.** Everything in Studio was pushed from `src/` and c
 | **Graduation**: hold G at one of your kids' desks and they graduate (cap toss) for Diplomas (Common 1 to Secret 2,000, x grade). **Alumni Hall** (Yearbook tab) opens at Ivy League: Diplomas invite the 5 Alumni back; they walk in and you pay their price. The Board panel now says to graduate before a review (it clears the desks) | Prompt reads "Graduate +125" for a Gifted Legendary (50 x 2.5); graduating removes the kid and banks it; the Hall refuses below Ivy League; an invite took 100,000 Diplomas and $60B and Grandpa took desk 1 ($324M/s at Ivy x18); repeat invite refused; Alumni tab screenshot |
 | **Board reviews tell the story**: Kevin (age 10, propeller beanie, milk moustache, cereal bowl) sits on the Board; each promotion plays that tier's beat in the dialog box with the speaker's portrait (Kevin's waterslide and the Board's "No.", the Sugar Baron at the window, Vex's schemes, Stan's blinking statue, Kevin unmasked as the Sugar Baron, Otis's "...Home.") | Screenshot of Kevin at the Board table and of his portrait mid-line; camera sampled in the Board Room (y~407) during the beat |
 | **Graduation Day finale**, once, after the first promotion to Multiverse University: dusk, three shots of your school, the whole cast (Otis explains the bus, Vex's machine backfires and shrinks her, Kevin's last waterslide), end card PRINCIPAL OF THE MULTIVERSE; Tiny Vex then waits on your bench for free | Every speaker played in order with the camera on the plot; Tiny Vex found on the bench (reserved, free); screenshot of the dusk shot with Otis's line |
+| **Golden event token** every 90 s during an event: a big gold coin worth 10 tickets, announced to the server, first to touch it wins | Screenshot (gold coin with "x10" under Halloween dusk); walking in took tickets 0 -> 10 and removed it |
+| **Weekly Requests** (Monday 00:00 UTC): 3 bigger requests, 100 candy each, all 3 open the **Weekly Chest** (a Legendary letter + 30 tickets); TODAY / THIS WEEK toggle in the Daily panel | Early chest refused; finishing paid 3 x 100 candy + the Daily candy; chest gave the Legendary letter (5387 s -> ready) and 30 tickets; second open refused; screenshot with real progress (Graduate 25 kids 3/25) |
+| **Phones**: every ScreenGui scales with the screen height (0.5-1, desktop 1:1) so nothing overlaps on a short screen | Screenshots at 1152 px and at a faked 420 px (DebugViewportY): HUD, side bar, chapter card and the Shop all fit |
+| **Review of Alumni + story** (2 reviewers + verifiers): 8 confirmed, all fixed. The serious one: the finale was marked seen before it played, so leaving mid-finale lost it and Tiny Vex for good; it now stays pending until she's delivered and replays on rejoin | Tested: pending=true while playing, seen=true after; invite during a real review refused with Diplomas intact |
 | **Review of Daily + Tickets** (2 reviewers + verifiers): 6 confirmed, all fixed: an unopened Lunch Box was lost at midnight (now carried over), one action could pay two requests, a stale panel could waste the reroll, the trophy case stood partly on the public sidewalk with fences through it (moved inside the lot), and the case relied on a join poll that can time out | Re-tested: owed box opened the next day; stale reroll refused and kept; case screenshot inside the fence |
 
 ### 100 hours, corrected
@@ -99,7 +103,9 @@ player; a typical player is slower.
   round trip through that stand-in was verified earlier.
 - Game passes and products are built but have no ids yet (see below), so no real purchase has run.
 - docs/DESIGN-v2.md still has unbuilt parts: per-event activities beyond tokens (snowball war etc.),
-  Nemesis / Most Wanted / Gazette, weeklies, the Yearbook Parade credits.
+  Nemesis / Most Wanted / Gazette, the Yearbook Parade credits.
+- Phone layout was checked by faking a short screen in Studio, not on a real phone or the
+  device emulator; touch targets are about 39 px at the smallest scale.
 - Studio's screenshot tool sometimes renders the player camera instead of a cutscene's scripted
   camera; where that happened the camera position was sampled on the client instead.
 - Studio's screenshot tool doesn't draw always-on-top billboards, so the custom prompt pills were
