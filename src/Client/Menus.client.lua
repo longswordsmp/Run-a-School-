@@ -567,17 +567,56 @@ end
 -- Yearbook
 ---------------------------------------------------------------------------
 do
-	local panel = UI.panel(gui, { name = "Yearbook", title = "YEARBOOK", color = UI.C.purple, size = UDim2.fromOffset(760, 520) })
+	local panel = UI.panel(gui, { name = "Yearbook", title = "YEARBOOK", color = UI.C.purple, size = UDim2.fromOffset(760, 560) })
 	panels.Yearbook = panel
 	local count = UI.label(panel.body, {
 		Name = "Count",
 		Text = "",
 		TextColor3 = UI.C.navy,
 		Size = UDim2.new(1, 0, 0, 28),
+		Position = UDim2.fromOffset(0, 50),
 		ZIndex = 12,
 		stroke = 0,
 	})
-	local holder = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -34), Position = UDim2.fromOffset(0, 34), ZIndex = 11, Parent = panel.body })
+	local holder = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -84), Position = UDim2.fromOffset(0, 84), ZIndex = 11, Parent = panel.body })
+	-- the Scrapbook: the story so far, one page per moment, in the order they happen
+	local scrapPage = UI.new("Frame", { Name = "Scrapbook", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -84), Position = UDim2.fromOffset(0, 84), Visible = false, ZIndex = 11, Parent = panel.body })
+	local scrapList = scrollList(scrapPage)
+	local pages = {}
+	local function scrapEntry(order, kind, title, speaker, text, unlockAt)
+		local color = kind == "intro" and UI.C.blue or kind == "board" and UI.C.purple or UI.C.orange
+		local f = UI.new("Frame", { Name = "Page" .. order, Size = UDim2.new(1, -6, 0, 104), BackgroundColor3 = UI.C.white, LayoutOrder = order, ZIndex = 12, Parent = scrapList })
+		UI.corner(f, 12)
+		UI.stroke(f, 3)
+		local bar = UI.new("Frame", { Size = UDim2.new(0, 12, 1, -12), Position = UDim2.fromOffset(6, 6), BackgroundColor3 = color, ZIndex = 13, Parent = f })
+		UI.corner(bar, 6)
+		local t = UI.label(f, { Text = title, Font = UI.BIG, TextColor3 = color, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -40, 0, 28), Position = UDim2.fromOffset(28, 6), ZIndex = 13, stroke = 1 })
+		local q = UI.label(f, { Text = "", TextColor3 = UI.C.ink, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Size = UDim2.new(1, -44, 0, 62), Position = UDim2.fromOffset(28, 36), ZIndex = 13, stroke = 0 })
+		local cap = Instance.new("UITextSizeConstraint")
+		cap.MaxTextSize = 20
+		cap.Parent = q
+		table.insert(pages, { title = t, quote = q, full = title, speaker = speaker, text = text, unlockAt = unlockAt })
+	end
+	scrapEntry(1, "intro", "Day One", "The Board Chair", table.concat(Config.IntroLines, " "), 1)
+	for tier = 2, #Config.Tiers do
+		scrapEntry(tier * 2, "board", Config.Tiers[tier].name .. "!", "The School Board", Config.BoardLines[tier] or "", tier)
+		local i = tier - 1
+		local ch = Config.Chapters[i]
+		if ch then
+			scrapEntry(tier * 2 + 1, "chapter", ("Chapter %d: %s"):format(i, ch.title), ch.host, ch.line, Config.ChapterTier(i))
+		end
+	end
+	local function refreshScrapbook(tier)
+		local n = 0
+		for _, pg in pages do
+			local open = tier >= pg.unlockAt
+			if open then n += 1 end
+			pg.title.Text = open and pg.full or "???"
+			pg.quote.Text = open and (pg.speaker .. ': "' .. pg.text .. '"') or "Keep growing your school to unlock this page."
+			pg.quote.TextColor3 = open and UI.C.ink or UI.C.grey
+		end
+		return n
+	end
 	local grid = UI.grid(holder, UDim2.fromOffset(128, 168), UDim2.fromOffset(10, 10))
 	local built = false
 	local cards = {}
@@ -599,9 +638,31 @@ do
 		end
 	end
 
+	local yearTab = 1
+	local refreshStudents
+	local selectYearTab = tabs(panel.body, {
+		{ "\u{1F4D6} Students", UI.C.purple, 220 },
+		{ "\u{1F4DC} Scrapbook", UI.C.orange, 220 },
+	}, function(i)
+		yearTab = i
+		holder.Visible = i == 1
+		scrapPage.Visible = i == 2
+		if refreshStudents then refreshStudents() end
+	end)
 	panel.onOpen = function()
+		selectYearTab(yearTab)
+	end
+	panel.select = function(i)
+		selectYearTab(i)
+	end
+	refreshStudents = function()
 		if not built then build() end
 		local profile = call("profile")
+		if yearTab == 2 then
+			local n = refreshScrapbook(profile and profile.tier or 1)
+			count.Text = ("%d / %d pages of the story"):format(n, #pages)
+			return
+		end
 		local owned = {}
 		for _, key in (profile and profile.index) or {} do
 			owned[key:match("^[^|]+")] = true

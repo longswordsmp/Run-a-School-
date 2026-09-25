@@ -199,6 +199,14 @@ Config.BoardLines = {
 	[12] = "Multiverse University. There are nine of me now. We ALL approve.",
 	star = "Another star! The Board bows to you, Principal.",
 }
+-- the Board Chair's welcome for a brand-new principal (the intro cutscene, and page 1 of the Scrapbook)
+Config.IntroLines = {
+	"Ahem! Welcome, new Principal!",
+	"This is your school. It has... zero students. ZERO. The Board is not impressed.",
+	"Kids step off the bus onto the red carpet. Enroll them before another school does!",
+	"Earn tuition, stock supplies, hire teachers... and maybe we'll make you an Elementary School.",
+	"Oh! Here comes the Welcome Bus. Go get 'em!",
+}
 -- after the last tier, each Prestige star costs the previous requirement x3 and adds +10 %
 Config.PrestigeStep = { cashMult = 3, bonus = 0.1 }
 

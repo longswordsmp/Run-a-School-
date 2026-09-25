@@ -211,13 +211,7 @@ end
 ---------------------------------------------------------------------------
 -- Intro: the Board Chair welcomes a brand-new principal to an empty school
 ---------------------------------------------------------------------------
-local INTRO = {
-	"Ahem! Welcome, new Principal!",
-	"This is your school. It has... zero students. ZERO. The Board is not impressed.",
-	"Kids step off the bus onto the red carpet. Enroll them before another school does!",
-	"Earn tuition, stock supplies, hire teachers... and maybe we'll make you an Elementary School.",
-	"Oh! Here comes the Welcome Bus. Go get 'em!",
-}
+local INTRO = Config.IntroLines
 
 local function dialogBox()
 	local box = UI.new("Frame", {
