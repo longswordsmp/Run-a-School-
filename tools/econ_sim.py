@@ -116,6 +116,23 @@ CHAPTER_PCT = num(r"Config\.ChapterPct = ([\d.]+)", 0.0125)
 CHAPTER_OWN_AFTER = 900.0
 USE_CHAPTERS = "--no-chapters" not in sys.argv
 
+# guaranteed kids (src/Server/LetterService.lua): each letter fills every `every` s of play and hands you
+# a kid of that rarity you can afford (the Board's required kid weighted x3); it restarts when called.
+# Extra letters: a finished chapter, Loretta's Lunch Box (one per LUNCH_EVERY of play, i.e. a day's
+# session), and Event Tickets (TICKETS_PER_EVENT a event: trophies first, then Legendary letters).
+_lt_src = (ROOT / "src" / "Server" / "LetterService.lua").read_text(encoding="utf-8")
+LETTERS = [(m.group(1), float(m.group(2)), float(m.group(3) or m.group(2)))
+           for m in re.finditer(r'\{ rarity = "(\w+)", every = (\d+)(?:, first = (\d+))? \}', _lt_src)]
+BENCH_HOLD = 600.0
+CHAPTER_LETTERS = re.findall(r'letter = "(\w+)"', _chb.group(1)) if _chb else []
+LUNCH = [(m.group(1), float(m.group(2))) for m in re.finditer(r'\{ id = "(\w+)", weight = ([\d.]+), text = ', CFG)]
+LUNCH_EVERY = 3 * 3600.0
+TICKETS_PER_EVENT = 30
+TROPHIES = 12
+TROPHY_TICKETS = num(r"Config\.TrophyTickets = (\d+)", 40)
+EVENT_LEGENDARY = num(r'id = "LetterLegendary"[^\n]*tickets = (\d+)', 120)
+USE_LETTERS = "--no-letters" not in sys.argv
+
 # luck upgrade (Recruitment Office): +2 % per level, 10 levels
 LUCK_COSTS = [10e3 * 4 ** i for i in range(10)]
 LUCK_STEP = 0.02
@@ -167,6 +184,12 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
     next_honor = HONOR_OFFSET
     next_pick = PICK_OFFSET
     hired = set()
+    letter_next = {r: first for r, every, first in LETTERS}
+    credits = {}
+    tickets = 0.0
+    trophies_left = TROPHIES
+    next_lunch = LUNCH_EVERY
+    last_ev = None
     ev_first = rng.randrange(len(EVENT_ORDER)) if EVENT_ORDER else 0
     beams = {}  # event index -> beams used
     next_beam = 0.0
@@ -202,6 +225,17 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
         k = int(t // EVENT_EVERY)
         if USE_EVENTS and EVENT_ORDER and k >= 1 and t - k * EVENT_EVERY < EVENT_LEN:
             event = EVENTS.get(EVENT_ORDER[(ev_first + k) % len(EVENT_ORDER)])
+            if USE_LETTERS and k != last_ev:
+                last_ev = k
+                tickets += TICKETS_PER_EVENT
+                if trophies_left > 0:
+                    if tickets >= TROPHY_TICKETS:
+                        tickets -= TROPHY_TICKETS
+                        trophies_left -= 1
+                else:
+                    while tickets >= EVENT_LEGENDARY:
+                        tickets -= EVENT_LEGENDARY
+                        credits["Legendary"] = credits.get("Legendary", 0) + 1
             if event and t >= next_beam:
                 next_beam = t + 60
                 if beams.get(k, 0) < BEAM_CAP and rng.random() < BEAM_CHANCE:
@@ -241,6 +275,29 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
                 s, g = roll(rng, luck, TRIP_WEIGHTS, event=event)
                 hall.append((t + WALK, s, g))
             next_trip += TRIP_EVERY
+        if USE_LETTERS:
+            for r, every, first in LETTERS:
+                if t >= letter_next[r]:
+                    credits[r] = credits.get(r, 0) + 1
+                    letter_next[r] = math.inf  # restarts when called
+            if t >= next_lunch:
+                next_lunch += LUNCH_EVERY
+                r = weighted(rng, LUNCH)
+                if r in RARITY_ORDER:
+                    credits[r] = credits.get(r, 0) + 1
+            needs_id = TIERS[tier + 1]["needs"] if tier + 1 < len(TIERS) else None
+            for r in list(credits):
+                if credits[r] <= 0:
+                    continue
+                pool = [(x, 3 if x["id"] == needs_id else 1) for x in BY_RARITY.get(r, []) if x["price"] <= cash]
+                if pool:
+                    kid = weighted(rng, pool)
+                    grades = [(m, w) for _, m, w in GRADES] + ([event] if event else [])
+                    hall.append((t + BENCH_HOLD, kid, weighted(rng, grades)))
+                    credits[r] -= 1
+                    for rr, every, first in LETTERS:
+                        if rr == r and letter_next[rr] == math.inf:
+                            letter_next[rr] = t + every
         hall = [h for h in hall if h[0] > t]
 
         # School Board review
@@ -250,6 +307,9 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
             has = needs is None or any(
                 (s["rarity"] == "Secret") if needs == "Secret" else (s["id"] == needs) for _, s, _ in seated)
             if cash >= tier_cash[tier + 1] and has:
+                if USE_LETTERS and USE_CHAPTERS and 1 <= tier <= len(CHAPTERS) and len(paid) == len(CHAPTERS[tier - 1]):
+                    r = CHAPTER_LETTERS[tier - 1]
+                    credits[r] = credits.get(r, 0) + 1
                 events[f"income@{tier}"] = inc
                 tier += 1
                 mark(f"tier {tier} {nxt['name']}")

@@ -173,16 +173,16 @@ for _, g in Config.Grades do Config.GradeById[g.id] = g end
 Config.Tiers = {
 	{ name = "Kindergarten", cash = 0, needs = nil, mult = 1, floors = 1, lock = 60 },
 	{ name = "Elementary School", cash = 680e3, needs = "HallMonitor", mult = 1.5, floors = 1, lock = 70 },
-	{ name = "Middle School", cash = 62e6, needs = "BandGeek", mult = 2, floors = 2, lock = 75 },
-	{ name = "High School", cash = 960e6, needs = "Quarterback", mult = 3, floors = 2, lock = 80 },
-	{ name = "Prep School", cash = 49e9, needs = "Valedictorian", mult = 4.5, floors = 3, lock = 85 },
-	{ name = "Private Academy", cash = 780e9, needs = "PromKing", mult = 6.5, floors = 3, lock = 90 },
-	{ name = "Community College", cash = 42e12, needs = "KidGenius", mult = 9, floors = 3, lock = 95 },
-	{ name = "State University", cash = 88e12, needs = "NewKid", mult = 13, floors = 3, lock = 100 },
-	{ name = "Ivy League", cash = 440e12, needs = "TinyProfessor", mult = 18, floors = 3, lock = 105 },
-	{ name = "Wizard School", cash = 1.16e15, needs = "PopStarKid", mult = 25, floors = 3, lock = 110 },
-	{ name = "Space Academy", cash = 9.5e15, needs = "ChildCEO", mult = 35, floors = 3, lock = 115 },
-	{ name = "Multiverse University", cash = 46e15, needs = "Secret", mult = 50, floors = 3, lock = 120 },
+	{ name = "Middle School", cash = 67e6, needs = "BandGeek", mult = 2, floors = 2, lock = 75 },
+	{ name = "High School", cash = 1.8e9, needs = "Quarterback", mult = 3, floors = 2, lock = 80 },
+	{ name = "Prep School", cash = 100e9, needs = "Valedictorian", mult = 4.5, floors = 3, lock = 85 },
+	{ name = "Private Academy", cash = 1.2e12, needs = "PromKing", mult = 6.5, floors = 3, lock = 90 },
+	{ name = "Community College", cash = 100e12, needs = "KidGenius", mult = 9, floors = 3, lock = 95 },
+	{ name = "State University", cash = 190e12, needs = "NewKid", mult = 13, floors = 3, lock = 100 },
+	{ name = "Ivy League", cash = 600e12, needs = "TinyProfessor", mult = 18, floors = 3, lock = 105 },
+	{ name = "Wizard School", cash = 6.6e15, needs = "PopStarKid", mult = 25, floors = 3, lock = 110 },
+	{ name = "Space Academy", cash = 17e15, needs = "ChildCEO", mult = 35, floors = 3, lock = 115 },
+	{ name = "Multiverse University", cash = 120e15, needs = "Secret", mult = 50, floors = 3, lock = 120 },
 }
 -- what the Board Chair says when approving each tier (the story so far, one line per promotion)
 Config.BoardLines = {
