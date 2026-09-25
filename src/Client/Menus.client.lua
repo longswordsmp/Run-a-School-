@@ -21,6 +21,7 @@ local gui = UI.new("ScreenGui", {
 	DisplayOrder = 5,
 	Parent = player:WaitForChild("PlayerGui"),
 })
+local uiRoot, uiScale = UI.autoScale(gui)
 
 local function call(action, ...)
 	local ok, res = pcall(Action.InvokeServer, Action, action, ...)

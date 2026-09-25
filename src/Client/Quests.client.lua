@@ -21,6 +21,7 @@ local gui = UI.new("ScreenGui", {
 	DisplayOrder = 4,
 	Parent = player:WaitForChild("PlayerGui"),
 })
+local uiRoot, uiScale = UI.autoScale(gui)
 
 ---------------------------------------------------------------------------
 -- the card
@@ -180,7 +181,7 @@ local function menuTarget()
 	if not kind then return nil end
 	local caption = ({ Shop = "Shop", Upgrades = "Upgrades", Board = "Board", NameSchool = "Name" })[kind == "shop" and "Shop" or arg]
 	local menus = player.PlayerGui:FindFirstChild("Menus")
-	local bar = menus and menus:FindFirstChild("SideBar")
+	local bar = menus and menus:FindFirstChild("SideBar", true)
 	return bar and bar:FindFirstChild(caption), kind, arg
 end
 

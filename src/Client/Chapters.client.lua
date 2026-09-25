@@ -19,6 +19,7 @@ local gui = UI.new("ScreenGui", {
 	DisplayOrder = 4,
 	Parent = player:WaitForChild("PlayerGui"),
 })
+local uiRoot, uiScale = UI.autoScale(gui)
 
 local W, ROW, TOP = 340, 30, 54
 local LEFT = Enum.TextXAlignment.Left
@@ -164,7 +165,7 @@ end
 -- card folded to the next request, unless the player unfolded it
 local function hudBottom()
 	local hud = player.PlayerGui:FindFirstChild("HUD")
-	local box = hud and hud:FindFirstChild("Letters")
+	local box = hud and hud:FindFirstChild("Letters", true)
 	if not box then return 480 end
 	local bottom = box.AbsolutePosition.Y
 	for _, c in box:GetChildren() do
@@ -176,13 +177,13 @@ local function hudBottom()
 end
 local function fit()
 	local vp = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1920, 1080)
-	local top = hudBottom() + 10
-	fitScale = vp.Y < 700 and 0.72 or 1
-	scale.Scale = fitScale
+	-- the whole gui is scaled by uiScale (UI.autoScale); positions below are in its units
+	local s = uiScale.Scale
+	local top = hudBottom() / s + 10
 	-- fold to the next request when the whole card won't fit under the letters (clear of the
 	-- bottom bar); the card always sits under the letters, never over them
-	local full = (TOP + 5 * ROW + 30) * fitScale
-	local fold = top + full > vp.Y - 110
+	local full = TOP + 5 * ROW + 30
+	local fold = top + full > vp.Y / s - 110
 	if not userToggled and collapsed ~= fold then
 		collapsed = fold
 		layout()

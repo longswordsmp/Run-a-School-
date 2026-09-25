@@ -17,6 +17,8 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
+-- scales down on phones (UI.autoScale)
+require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("UI")).autoScale(gui)
 
 local FONT = Enum.Font.FredokaOne
 

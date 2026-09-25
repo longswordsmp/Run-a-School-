@@ -375,4 +375,40 @@ function UI.card(parent, opts)
 	return card
 end
 
+-- One scale for a whole ScreenGui, so the game fits a phone. Everything the script puts in the gui
+-- is moved into a root frame that is 1/s the size of the screen and scaled by s: edge-anchored
+-- layouts stay on their edges while everything shrinks on short screens (s = height / 1000,
+-- between 0.5 and 1; desktops stay 1:1). Returns the root and its UIScale.
+-- A player attribute DebugViewportY pretends the screen is that tall (Studio layout checks).
+function UI.autoScale(gui)
+	local root = Instance.new("Frame")
+	root.Name = "Root"
+	root.BackgroundTransparency = 1
+	root.Size = UDim2.fromScale(1, 1)
+	local sc = Instance.new("UIScale")
+	sc.Parent = root
+	root.Parent = gui
+	local player = game:GetService("Players").LocalPlayer
+	local function fit()
+		local cam = workspace.CurrentCamera
+		local y = (player and player:GetAttribute("DebugViewportY")) or (cam and cam.ViewportSize.Y) or 1000
+		local s = math.clamp(y / 1000, 0.5, 1)
+		sc.Scale = s
+		root.Size = UDim2.fromScale(1 / s, 1 / s)
+	end
+	fit()
+	if workspace.CurrentCamera then
+		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fit)
+	end
+	if player then player:GetAttributeChangedSignal("DebugViewportY"):Connect(fit) end
+	local function adopt(c)
+		if c ~= root and c:IsA("GuiObject") and c.Parent == gui then c.Parent = root end
+	end
+	for _, c in gui:GetChildren() do adopt(c) end
+	gui.ChildAdded:Connect(function(c)
+		task.defer(adopt, c)
+	end)
+	return root, sc
+end
+
 return UI

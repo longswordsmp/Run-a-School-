@@ -23,6 +23,7 @@ local gui = UI.new("ScreenGui", {
 	DisplayOrder = 50,
 	Parent = player:WaitForChild("PlayerGui"),
 })
+local uiRoot, uiScale = UI.autoScale(gui)
 local black = UI.new("Frame", {
 	Name = "Black",
 	BackgroundColor3 = Color3.new(0, 0, 0),
@@ -350,7 +351,7 @@ local function safely(fn, data)
 	letterbox(false)
 	hideHud(false)
 	player:SetAttribute("LocalMusic", nil)
-	local d = gui:FindFirstChild("Dialog")
+	local d = gui:FindFirstChild("Dialog", true)
 	if d then d:Destroy() end
 	fade(1, 0.3)
 	busy = false

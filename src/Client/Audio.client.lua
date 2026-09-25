@@ -109,6 +109,7 @@ local gui = Instance.new("ScreenGui")
 gui.Name = "NowPlaying"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
+require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("UI")).autoScale(gui)
 local tag = Instance.new("TextLabel")
 tag.BackgroundTransparency = 1
 tag.AnchorPoint = Vector2.new(0, 1)
