@@ -39,7 +39,7 @@ work only lives in the repo.** Everything in Studio was pushed from `src/` and c
 | **Admin panel**: call any bus, start/end events, spawn rare kids, Money Rain, server luck, recess | Panel screenshot; Money Rain dropped 80 bills and paid on touch |
 | **6 cheap starter kids** ($9-$24) with props | Lineup screenshot |
 | **NPC life**: seated kids wave, put a hand up, look around, laugh, nod, doze; hall kids wave/cheer; kids cheer arriving at a desk | 8 gestures counted in 16 s across 12 kids |
-| **100 hours** | `tools/econ_sim.py 150 5`: median 98.1 h to Multiverse University (93-104), with supplies, teachers and builds in the sim. Adding the Principal's Pick dropped it to 89.5 h; tier cash 6-11 recalibrated (see the end of this log) |
+| **100 hours** | `tools/econ_sim.py 150 5`: median 98.1 h to Multiverse University (93-104), with supplies, teachers and builds in the sim. Adding the Principal's Pick dropped it to 89.5 h; tier cash 6-11 recalibrated: **final 5-seed median 103.0 h** (92.9-132.2 h) |
 
 ### Later in the night
 | Feature | Evidence |
@@ -53,6 +53,7 @@ work only lives in the repo.** Everything in Studio was pushed from `src/` and c
 | **8 more starter kids** (70 students) with signature gags (hops, hiccups, sneezes, barks, recorder, robot, mime, Tina pointing at cheaters) | Lineup screenshots; all 8 gags observed within 20 s |
 | **12 events** (7 new: Field Day, Prom Night, Throwback, Wizard Week, Candy Carnival, Hostile Takeover, Graduation) with map dressing and the **event beam** (a seated kid gains the event grade) | Prom Night and Wizard Week screenshots; forced beams: 3 kids Enchanted, 4th refused (cap), income x5 |
 | **Robux store**: 6 passes, 8 products, idempotent receipts | Grant paths tested (VIP x2 income, tuition pack, server luck). **Pass/product ids are 0 until you create them on the Creator Dashboard** (Config.Passes / Config.Products) |
+| **Pop Quiz** every 10 min (30 questions, 10 s, pays 60 s of tuition) | Quiz card screenshot; right answer paid, second try refused |
 | **Retention**: 7-day login streak (day 7 = free Epic), playtime gifts at 5-120 min | Claim, re-claim refused, streak reset after a gap, day-7 Epic on the bench, 5- and 10-minute gifts |
 | **Candy Closet**: spend Confiscated Candy on a Jawbreaker Trap and candy decor | Trap tripped a carrier at the gate (6 -> 5 uses); decor screenshot |
 | **Leaderboards** (this server + all-servers Hall of Fame) | Board screenshot; the Hall of Fame needs a published game |
