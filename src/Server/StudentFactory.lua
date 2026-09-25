@@ -20,6 +20,9 @@ Factory.Anims = {
 	walk = "rbxassetid://507777826",
 	idle = "rbxassetid://507766388",
 	sit = "rbxassetid://2506281703",
+	-- default R15 run and fall (loaded in Studio: run 0.625 s, fall 0.79 s)
+	run = "rbxassetid://913376220",
+	fall = "rbxassetid://507767968",
 	-- default R15 emotes (loaded in Studio: wave 1.75s, point 1.79s, cheer 2.5s, laugh 3.29s, dance 1.08s)
 	wave = "rbxassetid://507770239",
 	point = "rbxassetid://507770453",

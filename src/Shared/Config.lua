@@ -401,7 +401,7 @@ Config.Tutorial = {
 	{ id = "collect", text = "Walk over a glowing desk pad to collect tuition", signal = "collect", count = 1, reward = 60, guide = "pad" },
 	{ id = "catch", text = "A kid is CHEATING! Catch them (hold E)", signal = "catchCheater", count = 1, reward = 100, guide = "cheater" },
 	{ id = "pencils", text = "Buy Sharpened Pencils in the Shop", signal = "supply", count = 1, reward = 120, guide = "shop:1" },
-	{ id = "bonk", text = "Crumpet is stealing a kid! Bonk him with your Ruler", signal = "bonkSave", count = 1, reward = 150, guide = "thief" },
+	{ id = "bonk", text = "Crumpet grabbed a kid! Chase him and click to bonk him with your Ruler", signal = "bonkSave", count = 1, reward = 150, guide = "thief" },
 	{ id = "lock", text = "Lock your laser gate (red button by the gate)", signal = "lock", count = 1, reward = 400, guide = "lock" },
 	{ id = "name", text = "Give your school a name", signal = "nameSchool", count = 1, reward = 300, guide = "panel:NameSchool" },
 	{ id = "scholarship", text = "A Scholarship student is waiting on your bench! Enroll them (free)", signal = "benchEnroll", count = 1, reward = 200, guide = "bench" },
@@ -621,6 +621,29 @@ Config.AlumniShop = {
 	{ id = "HeadPrefect", diplomas = 400000 },
 	{ id = "TheFounder", diplomas = 800000 },
 	{ id = "TinyPrincipal", diplomas = 1600000 },
+}
+
+---------------------------------------------------------------------------
+-- VexCorp raids (RaidService): the van pulls up, goons run in, grab kids and run for it.
+-- Speeds are studs/second (players walk at 16): a goon outruns you going in, you outrun a goon
+-- carrying a kid. Rewards are seconds of base tuition with a floor; the real prize is keeping the kid.
+---------------------------------------------------------------------------
+Config.Raids = {
+	first = 150, -- after the tutorial
+	every = { 180, 300 },
+	minKids = 3,
+	goonsByTier = { 1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3 },
+	hpByTier = { 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3 },
+	runSpeed = 17,
+	carrySpeed = 11,
+	fleeSpeed = 20,
+	tutorialCarrySpeed = 7,
+	stun = 1.4,
+	hitRange = 9,
+	lockWait = 15,
+	saveSecs = 10, saveFloor = 60,
+	koSecs = 5, koFloor = 30,
+	defendSecs = 15, defendFloor = 120,
 }
 
 ---------------------------------------------------------------------------

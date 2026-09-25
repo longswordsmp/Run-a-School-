@@ -1,0 +1,711 @@
+-- ServerScriptService.Server.RaidService
+-- VexCorp raids, the game's solo action. Every few minutes a purple VexCorp van screeches up at your
+-- gate and 1-3 goons run into your school. Each grabs a kid and runs for the van, slower now than you
+-- are. Bonk a goon with your Ruler: a carrier drops the kid (it's back at its desk), gets knocked
+-- flying and flees; tougher goons take more hits before they're out cold. A goon who makes it back
+-- to the van takes the kid to the VexCorp Factory, where you can break in and rescue them.
+-- A locked laser gate keeps goons out: they bang on it and give up.
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local Config = require(ReplicatedStorage.Shared.Config)
+local Data = require(script.Parent.DataService)
+local Remotes = require(script.Parent.Remotes)
+local Signals = require(script.Parent.Signals)
+local PlotService = require(script.Parent.PlotService)
+local SchoolBuilder = require(script.Parent.SchoolBuilder)
+local Factory = require(script.Parent.StudentFactory)
+local Walkers = require(script.Parent.Walkers)
+local StealService = require(script.Parent.StealService)
+
+local RaidService = {}
+
+local R = Config.Raids
+local GOON = { id = "VexGoon", name = "VexCorp Goon", title = "Goon", mult = 1, outfit = "goon" }
+local CRUMPET = { id = "Crumpet", name = "Crumpet", title = "Butler", mult = 1, outfit = "butler" }
+
+local folder
+local raids = {} -- [player] = raid
+local nextRaid = {} -- [player] = os.clock() of the next raid
+local lastMove = {} -- [player] = os.clock() they last moved (no raids on someone who's away)
+local lastPos = {}
+
+local function now() return os.clock() end
+
+---------------------------------------------------------------------------
+-- small helpers
+---------------------------------------------------------------------------
+local function tierOf(p)
+	return math.clamp(p.tier or 1, 1, #R.goonsByTier)
+end
+
+local function reward(player, secs, floor)
+	local inc = player:GetAttribute("BaseIncome") or 0
+	return math.floor(math.max(floor, inc * secs))
+end
+
+local function goonSay(g, text)
+	local label = g.model:FindFirstChild("Head") and g.model.Head:FindFirstChild("GoonTag") and g.model.Head.GoonTag.Label
+	if not label then return end
+	label.Text = text
+	g.said = (g.said or 0) + 1
+	local n = g.said
+	task.delay(2.5, function()
+		if label.Parent and g.said == n then label.Text = "" end
+	end)
+end
+
+local function tagGoon(model, text, color)
+	local head = model:FindFirstChild("Head")
+	if not head then return end
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "GoonTag"
+	bb.Size = UDim2.fromOffset(220, 40)
+	bb.StudsOffsetWorldSpace = Vector3.new(0, 2.6, 0)
+	bb.MaxDistance = 90
+	bb.LightInfluence = 0
+	bb.Parent = head
+	local t = Instance.new("TextLabel")
+	t.Name = "Label"
+	t.Size = UDim2.fromScale(1, 1)
+	t.BackgroundTransparency = 1
+	t.Font = Enum.Font.FredokaOne
+	t.TextScaled = true
+	t.TextColor3 = color
+	t.Text = text
+	t.Parent = bb
+	local s = Instance.new("UIStroke")
+	s.Thickness = 2.5
+	s.Parent = t
+end
+
+-- the outline you can see through walls, so a goon carrying your kid is never lost
+local function outline(model, color, fill)
+	local h = model:FindFirstChild("RaidOutline") or Instance.new("Highlight")
+	h.Name = "RaidOutline"
+	h.OutlineColor = color
+	h.FillColor = color
+	h.FillTransparency = fill or 1
+	h.OutlineTransparency = 0
+	h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	h.Parent = model
+	return h
+end
+
+local function burst(pos, color, n)
+	local p = Instance.new("Part")
+	p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
+	p.Transparency = 1
+	p.Size = Vector3.one * 0.2
+	p.Position = pos
+	p.Parent = folder
+	local e = Instance.new("ParticleEmitter")
+	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	e.Color = ColorSequence.new(color)
+	e.LightEmission = 0.8
+	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.9), NumberSequenceKeypoint.new(1, 0) })
+	e.Speed = NumberRange.new(10, 18)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Lifetime = NumberRange.new(0.35, 0.6)
+	e.Drag = 4
+	e.Rate = 0
+	e.Parent = p
+	e:Emit(n or 24)
+	game:GetService("Debris"):AddItem(p, 1)
+end
+
+---------------------------------------------------------------------------
+-- the van
+---------------------------------------------------------------------------
+-- parked alongside the curb in front of the plot; its length runs along the street (lot X)
+local VAN_PARK = Vector3.new(18, 0, 89)
+local function buildVan()
+	local van = Instance.new("Model")
+	van.Name = "VexVan"
+	local function p(name, size, cf, color, mat)
+		local x = Instance.new("Part")
+		x.Name = name
+		x.Size = size
+		x.CFrame = cf
+		x.Color = color
+		x.Material = mat or Enum.Material.SmoothPlastic
+		x.Anchored, x.CanCollide, x.CanQuery = true, false, false
+		x.TopSurface, x.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+		x.Parent = van
+		return x
+	end
+	local purple, dark = Color3.fromRGB(105, 45, 150), Color3.fromRGB(35, 30, 45)
+	p("Body", Vector3.new(16, 6.2, 7.6), CFrame.new(-1, 4.4, 0), purple, Enum.Material.Metal)
+	p("Cab", Vector3.new(4.2, 4.6, 7.4), CFrame.new(8.9, 3.6, 0), purple, Enum.Material.Metal)
+	p("Windshield", Vector3.new(0.2, 2.2, 6.6), CFrame.new(11, 4.6, 0), Color3.fromRGB(40, 45, 70), Enum.Material.Glass)
+	for _, z in { -3.85, 3.85 } do
+		p("SideWindow", Vector3.new(2.6, 1.8, 0.1), CFrame.new(9.2, 4.7, z), Color3.fromRGB(40, 45, 70), Enum.Material.Glass)
+		p("Stripe", Vector3.new(16.2, 0.45, 0.1), CFrame.new(-1, 2.7, z * 1.005), Color3.fromRGB(200, 150, 255), Enum.Material.Neon)
+	end
+	p("Bumper", Vector3.new(0.5, 0.8, 7.8), CFrame.new(11.2, 1.7, 0), dark, Enum.Material.Metal)
+	p("RearBumper", Vector3.new(0.5, 0.8, 7.8), CFrame.new(-9.2, 1.7, 0), dark, Enum.Material.Metal)
+	for _, z in { -2.6, 2.6 } do
+		p("Headlight", Vector3.new(0.2, 0.7, 1.3), CFrame.new(11.1, 2.9, z), Color3.fromRGB(255, 250, 220), Enum.Material.Neon)
+		p("Taillight", Vector3.new(0.2, 0.9, 1), CFrame.new(-9.1, 3.2, z), Color3.fromRGB(230, 30, 50), Enum.Material.Neon)
+	end
+	for _, x in { -6, 7.5 } do
+		for _, z in { -3.7, 3.7 } do
+			local w = p("Wheel", Vector3.new(1.3, 2.8, 2.8), CFrame.new(x, 1.4, z) * CFrame.Angles(0, math.rad(90), 0), Color3.fromRGB(20, 20, 22), Enum.Material.SmoothPlastic)
+			w.Shape = Enum.PartType.Cylinder
+		end
+	end
+	-- the sliding door on the kerb side (-Z faces the school) and the VexCorp logo on both sides
+	p("Door", Vector3.new(4.2, 5, 0.12), CFrame.new(2.6, 4, -3.86), Color3.fromRGB(85, 35, 125), Enum.Material.Metal)
+	for _, face in { { z = -3.87, n = Enum.NormalId.Front }, { z = 3.87, n = Enum.NormalId.Back } } do
+		local logo = p("Logo", Vector3.new(7, 2.6, 0.08), CFrame.new(-4.2, 4.9, face.z), purple, Enum.Material.Metal)
+		logo.Transparency = 1
+		local g = Instance.new("SurfaceGui")
+		g.Face = face.n
+		g.LightInfluence = 0.2
+		g.Parent = logo
+		local t = Instance.new("TextLabel")
+		t.Size = UDim2.fromScale(1, 1)
+		t.BackgroundTransparency = 1
+		t.Font = Enum.Font.LuckiestGuy
+		t.TextScaled = true
+		t.Text = "VEXCORP"
+		t.TextColor3 = Color3.fromRGB(250, 245, 255)
+		t.Parent = g
+		local s = Instance.new("UIStroke")
+		s.Thickness = 3
+		s.Color = Color3.fromRGB(40, 15, 60)
+		s.Parent = t
+	end
+	-- a rooftop siren bar that flashes while the raid is on
+	local bar = p("Siren", Vector3.new(1, 0.5, 3.6), CFrame.new(3, 7.75, 0), Color3.fromRGB(255, 50, 80), Enum.Material.Neon)
+	local l = Instance.new("PointLight")
+	l.Color = Color3.fromRGB(255, 60, 90)
+	l.Range = 16
+	l.Brightness = 2
+	l.Parent = bar
+	-- the pivot sits on the road under the middle of the van, so PivotTo puts the wheels on the ground
+	van.WorldPivot = CFrame.new()
+	return van
+end
+
+local function vanCF(plot, x)
+	-- facing along the street toward -X of the lot (drives in from +X)
+	return plot.Origin.CFrame * CFrame.new(x, 0, VAN_PARK.Z) * CFrame.Angles(0, math.pi, 0)
+end
+
+local function driveVan(van, from, to, dur)
+	local v = Instance.new("CFrameValue")
+	v.Value = from
+	v.Changed:Connect(function(cf)
+		if van.Parent then van:PivotTo(cf) end
+	end)
+	local tw = TweenService:Create(v, TweenInfo.new(dur, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Value = to })
+	tw:Play()
+	tw.Completed:Wait()
+	v:Destroy()
+end
+
+---------------------------------------------------------------------------
+-- goons
+---------------------------------------------------------------------------
+local raidEnded -- forward
+
+local function spinStars(g)
+	-- three little stars circling the head while stunned
+	local head = g.model:FindFirstChild("Head")
+	if not head then return end
+	local stars = {}
+	for i = 1, 3 do
+		local s = Instance.new("Part")
+		s.Name = "Star"
+		s.Shape = Enum.PartType.Ball
+		s.Size = Vector3.one * 0.45
+		s.Color = Color3.fromRGB(255, 225, 80)
+		s.Material = Enum.Material.Neon
+		s.Anchored, s.CanCollide, s.CanQuery, s.CanTouch = true, false, false, false
+		s.Parent = g.model
+		stars[i] = s
+	end
+	local t0 = now()
+	local conn
+	conn = RunService.Heartbeat:Connect(function()
+		if not head.Parent or now() > g.stunUntil then
+			conn:Disconnect()
+			for _, s in stars do s:Destroy() end
+			return
+		end
+		local t = (now() - t0) * 7
+		for i, s in stars do
+			local a = t + i * (math.pi * 2 / 3)
+			s.Position = head.Position + Vector3.new(math.cos(a) * 1.3, 1.2 + math.sin(t * 1.5 + i) * 0.15, math.sin(a) * 1.3)
+		end
+	end)
+end
+
+-- knocked flying: along dir, a hop, a spin, landing on the ground
+local function knockback(g, dir, dist, height, dur)
+	local root = g.model.PrimaryPart
+	if not root then return end
+	Walkers.stop(g.model)
+	Factory.play(g.model, "fall")
+	local start = root.CFrame
+	local y0 = start.Position.Y
+	local flat = Vector3.new(dir.X, 0, dir.Z)
+	flat = flat.Magnitude > 1e-3 and flat.Unit or -start.LookVector
+	local t0 = now()
+	local conn
+	conn = RunService.Heartbeat:Connect(function()
+		local a = math.min(1, (now() - t0) / dur)
+		if not root.Parent then conn:Disconnect() return end
+		local pos = start.Position + flat * dist * a + Vector3.new(0, math.sin(a * math.pi) * height, 0)
+		root.CFrame = CFrame.new(pos.X, math.max(y0, pos.Y), pos.Z) * (start - start.Position) * CFrame.Angles(0, a * math.pi * 2, 0)
+		if a >= 1 then conn:Disconnect() end
+	end)
+	task.wait(dur)
+end
+
+-- the kid goes back to their desk
+local function giveBack(player, g)
+	if not g.kid then return end
+	g.kid:Destroy()
+	g.kid = nil
+	local p = Data.get(player)
+	if p and p.students[g.slot] == g.e then
+		g.e.carried = nil
+		PlotService.place(player, g.slot)
+		PlotService.updateIncome(player)
+		local plot = PlotService.getPlot(player)
+		local desk = plot and PlotService.seatedModel(plot, g.slot)
+		if desk and desk.PrimaryPart then burst(desk.PrimaryPart.Position, Color3.fromRGB(120, 255, 140), 20) end
+	end
+end
+
+local function removeGoon(raid, g)
+	g.gone = true
+	if g.kid then g.kid:Destroy() g.kid = nil end
+	if g.model.Parent then g.model:Destroy() end
+	local left = false
+	for _, o in raid.goons do
+		if not o.gone then left = true end
+	end
+	if not left then task.spawn(raidEnded, raid) end
+end
+
+-- run back to the van (with or without a kid) and get in
+local function runToVan(raid, g, speed)
+	local root = g.model.PrimaryPart
+	if not root then return end
+	local back = {}
+	-- retrace the way in from wherever along it we are
+	local best, bestD = #g.path, math.huge
+	for i, pt in g.path do
+		local d = (pt - root.Position).Magnitude
+		if d < bestD then best, bestD = i, d end
+	end
+	for i = best, 1, -1 do table.insert(back, g.path[i]) end
+	Factory.play(g.model, "run")
+	Walkers.walk(g.model, back, speed, function()
+		if g.gone then return end
+		if g.kid and raid.tutorial then
+			-- the tutorial thief waits at the van, daring you to stop him
+			goonSay(g, "Well? Aren't you going to stop me?")
+			g.waiting = true
+			Factory.play(g.model, "idle")
+			return
+		end
+		if g.kid then
+			-- got away: the kid goes to the VexCorp Factory
+			local player = raid.player
+			local p = Data.get(player)
+			local def = Config.StudentById[g.e.id]
+			g.kid:Destroy()
+			g.kid = nil
+			if p and p.students[g.slot] == g.e then
+				PlotService.remove(player, g.slot)
+				p.captured = p.captured or {}
+				table.insert(p.captured, { id = g.e.id, grade = g.e.grade })
+				raid.lost += 1
+				Remotes.Notify:FireClient(player, ("\u{1F6A8} They got away with %s! Rescue them from the VexCorp Factory."):format(def.name), "bad")
+				Signals.fire("kidCaptured", player, def)
+			end
+		end
+		removeGoon(raid, g)
+	end, { flat = false })
+end
+
+local function lift(raid, g)
+	local player = raid.player
+	local p = Data.get(player)
+	local plot = PlotService.getPlot(player)
+	local e = p and p.students[g.slot]
+	if not plot or e ~= g.e or not PlotService.earning(e) then
+		-- the kid moved, was sold or is already gone: go home empty-handed
+		goonSay(g, "Huh. Nobody here.")
+		runToVan(raid, g, R.fleeSpeed)
+		return
+	end
+	e.carried = true
+	PlotService.detachModel(plot, g.slot)
+	PlotService.updateIncome(player)
+	local def = Config.StudentById[e.id]
+	local kid = Factory.build(def, e.grade)
+	Factory.setMode(kid, "carried")
+	for _, bp in kid:GetDescendants() do
+		if bp:IsA("BasePart") then
+			bp.Anchored = false
+			bp.Massless = true
+			bp.CanCollide = false
+		end
+	end
+	local root = g.model.PrimaryPart
+	local off = 3.4 + Factory.standOffset(kid) * 0.9
+	kid.PrimaryPart.CFrame = root.CFrame * CFrame.new(0, off, 0)
+	local w = Instance.new("Weld")
+	w.Part0, w.Part1 = root, kid.PrimaryPart
+	w.C0 = CFrame.new(0, off, 0) * CFrame.Angles(0, 0, math.rad(8))
+	w.Parent = kid.PrimaryPart
+	kid.Parent = g.model
+	Factory.play(kid, "sit")
+	g.kid = kid
+	outline(g.model, Color3.fromRGB(255, 60, 80))
+	goonSay(g, "Got one! Run!")
+	g.model:SetAttribute("Carrying", true)
+	Remotes.Notify:FireClient(player, ("\u{1F6A8} A goon grabbed %s! Chase him down and bonk him!"):format(def.name), "bad")
+	runToVan(raid, g, raid.tutorial and R.tutorialCarrySpeed or R.carrySpeed)
+end
+
+local function sendGoon(raid, g)
+	local plot = raid.plot
+	Factory.play(g.model, "run")
+	-- to the gate first: a locked laser keeps them out
+	Walkers.walk(g.model, { g.path[1], g.path[2] }, R.runSpeed, function()
+		if g.gone then return end
+		local lockedUntil = plot:GetAttribute("LockedUntil") or 0
+		if lockedUntil > workspace:GetServerTimeNow() then
+			goonSay(g, "It's LOCKED?! Ugh.")
+			Factory.play(g.model, "idle")
+			Factory.emote(g.model, "point")
+			task.delay(math.min(R.lockWait, lockedUntil - workspace:GetServerTimeNow()), function()
+				if g.gone or not g.model.Parent then return end
+				if (plot:GetAttribute("LockedUntil") or 0) > workspace:GetServerTimeNow() then
+					goonSay(g, "Forget it. We'll be back!")
+					raid.repelled += 1
+					runToVan(raid, g, R.fleeSpeed)
+				else
+					sendGoon(raid, g) -- the lock ran out while he waited
+				end
+			end)
+			return
+		end
+		local rest = {}
+		for i = 2, #g.path do table.insert(rest, g.path[i]) end
+		Walkers.walk(g.model, rest, R.runSpeed, function()
+			if g.gone then return end
+			lift(raid, g)
+		end, { flat = false })
+	end, { flat = false })
+end
+
+---------------------------------------------------------------------------
+-- the Ruler
+---------------------------------------------------------------------------
+local function hitGoon(player, raid, g, root)
+	local groot = g.model.PrimaryPart
+	if not groot or g.gone or now() < g.stunUntil then return end
+	local dir = groot.Position - root.Position
+	g.hp -= 1
+	Remotes.Sfx:FireClient(player, "Bonk")
+	Remotes.Push:FireClient(player, "hit", { pos = groot.Position + Vector3.new(0, 2, 0), ko = g.hp <= 0 })
+	burst(groot.Position + Vector3.new(0, 1.5, 0), Color3.fromRGB(255, 230, 120), 26)
+	-- a white flash on the whole goon
+	local flash = outline(g.model, Color3.new(1, 1, 1), 0.2)
+	task.delay(0.12, function()
+		if flash.Parent then
+			if g.kid then outline(g.model, Color3.fromRGB(255, 60, 80)) else outline(g.model, Color3.fromRGB(170, 90, 255)) end
+		end
+	end)
+	local hadKid = g.kid ~= nil
+	local def = hadKid and Config.StudentById[g.e.id]
+	if hadKid then
+		giveBack(player, g)
+		g.model:SetAttribute("Carrying", nil)
+		raid.saved += 1
+		local cash = reward(player, R.saveSecs, R.saveFloor)
+		Data.addCash(player, cash)
+		Remotes.CashPop:FireClient(player, cash, groot.Position)
+		Remotes.Notify:FireClient(player, ("You saved %s! +%s"):format(def.name, Config.formatCash(cash)), "good")
+		Signals.fire("bonkSave", player, nil, def, player)
+	end
+	g.waiting = nil
+	task.spawn(function()
+		if g.hp <= 0 then
+			-- out cold: a big tumble, lie there, then off to Detention in a puff
+			goonSay(g, "Ow ow OW...")
+			knockback(g, dir, 9, 4, 0.5)
+			if g.gone or not groot.Parent then return end
+			groot.CFrame = groot.CFrame * CFrame.Angles(math.rad(-80), 0, 0)
+			g.stunUntil = now() + 1.4
+			spinStars(g)
+			task.wait(1.4)
+			if g.gone then return end
+			burst(groot.Position, Color3.fromRGB(230, 230, 240), 40)
+			raid.ko += 1
+			local cash = reward(player, R.koSecs, R.koFloor)
+			Data.addCash(player, cash)
+			Remotes.CashPop:FireClient(player, cash, groot.Position)
+			Signals.fire("goonKO", player)
+			removeGoon(raid, g)
+			return
+		end
+		goonSay(g, hadKid and "OW! Fine, keep it!" or "OW!")
+		knockback(g, dir, 6, 2.5, 0.35)
+		if g.gone or not groot.Parent then return end
+		g.stunUntil = now() + R.stun
+		spinStars(g)
+		Factory.play(g.model, "idle")
+		task.wait(R.stun)
+		if g.gone or not groot.Parent then return end
+		if hadKid or g.fleeing then
+			g.fleeing = true
+			goonSay(g, "RUN!")
+			runToVan(raid, g, R.fleeSpeed)
+		else
+			-- he shakes it off and tries again
+			goonSay(g, "You'll have to do better than that!")
+			local rest = {}
+			local best, bestD = 1, math.huge
+			for i, pt in g.path do
+				local d = (pt - groot.Position).Magnitude
+				if d < bestD then best, bestD = i, d end
+			end
+			for i = best, #g.path do table.insert(rest, g.path[i]) end
+			Factory.play(g.model, "run")
+			Walkers.walk(g.model, rest, R.runSpeed, function()
+				if g.gone then return end
+				lift(raid, g)
+			end, { flat = false })
+		end
+	end)
+end
+
+local function onSwing(player, root)
+	local look = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
+	look = look.Magnitude > 1e-3 and look.Unit or Vector3.new(0, 0, -1)
+	-- your own raid's goons, and anyone else's (helping a friend counts)
+	for _, raid in raids do
+		for _, g in raid.goons do
+			local groot = not g.gone and g.model.PrimaryPart
+			if groot then
+				local d = groot.Position - root.Position
+				local flat = Vector3.new(d.X, 0, d.Z)
+				if flat.Magnitude < R.hitRange and math.abs(d.Y) < 7 and (flat.Magnitude < 3.5 or flat.Unit:Dot(look) > 0.25) then
+					hitGoon(player, raid, g, root)
+					return -- one goon per swing
+				end
+			end
+		end
+	end
+end
+
+---------------------------------------------------------------------------
+-- a raid
+---------------------------------------------------------------------------
+local function targets(player, plot, p, n)
+	local list = {}
+	for slot, e in p.students do
+		if PlotService.earning(e) and not e.away and not e.carried and PlotService.seatedModel(plot, slot) then
+			table.insert(list, slot)
+		end
+	end
+	-- the most valuable kids first, but not always the same ones
+	table.sort(list, function(a, b)
+		return PlotService.incomeOf(player, p.students[a], a) > PlotService.incomeOf(player, p.students[b], b)
+	end)
+	local out = {}
+	for i = 1, math.min(n, #list) do
+		local pickFrom = math.min(#list, i + 2)
+		local k = math.random(i, pickFrom)
+		list[i], list[k] = list[k], list[i]
+		table.insert(out, list[i])
+	end
+	return out
+end
+
+raidEnded = function(raid)
+	if raid.ended then return end
+	raid.ended = true
+	local player = raid.player
+	task.wait(0.8)
+	if raid.van.Parent then
+		local plot = raid.plot
+		driveVan(raid.van, raid.van:GetPivot(), vanCF(plot, -150), 2.2)
+		raid.van:Destroy()
+	end
+	raids[player] = nil
+	nextRaid[player] = now() + math.random(R.every[1], R.every[2])
+	player:SetAttribute("Raid", nil)
+	if not player.Parent then return end
+	if raid.lost == 0 and not raid.tutorial and (raid.saved > 0 or raid.ko > 0 or raid.repelled > 0) then
+		local cash = reward(player, R.defendSecs, R.defendFloor)
+		Data.addCash(player, cash)
+		Remotes.Push:FireClient(player, "raidOver", { defended = true, cash = cash, saved = raid.saved, ko = raid.ko })
+		Signals.fire("raidDefended", player)
+	else
+		Remotes.Push:FireClient(player, "raidOver", { defended = raid.lost == 0, lost = raid.lost })
+	end
+end
+
+function RaidService.start_raid(player, opts)
+	opts = opts or {}
+	if raids[player] then return false end
+	local plot = PlotService.getPlot(player)
+	local p = Data.get(player)
+	if not plot or not p or p.reviewing then return false end
+	local n = opts.goons or R.goonsByTier[tierOf(p)]
+	local slots = targets(player, plot, p, n)
+	if #slots == 0 then return false end
+	local raid = {
+		player = player, plot = plot, goons = {}, van = buildVan(),
+		saved = 0, lost = 0, ko = 0, repelled = 0, tutorial = opts.tutorial,
+	}
+	raids[player] = raid
+	player:SetAttribute("Raid", #slots)
+	raid.van:PivotTo(vanCF(plot, 150))
+	raid.van.Parent = folder
+	Remotes.Push:FireClient(player, "raid", { goons = #slots, tutorial = opts.tutorial })
+	driveVan(raid.van, vanCF(plot, 150), vanCF(plot, VAN_PARK.X), 2.4)
+	if not player.Parent or raids[player] ~= raid then
+		raid.van:Destroy()
+		return false
+	end
+	local hp = opts.hp or R.hpByTier[tierOf(p)]
+	local base = plot.Origin.CFrame
+	for i, slot in slots do
+		task.delay((i - 1) * 0.6, function()
+			if raid.ended or not player.Parent then return end
+			local e = p.students[slot]
+			if not e then return end
+			local spec = opts.tutorial and CRUMPET or GOON
+			local model = Factory.buildTeacher(spec, 1)
+			model.Name = opts.tutorial and "Crumpet" or "Goon"
+			model:SetAttribute("RaidGoon", true)
+			model:SetAttribute("PlotName", plot.Name)
+			tagGoon(model, "", Color3.fromRGB(230, 200, 255))
+			outline(model, Color3.fromRGB(170, 90, 255))
+			local so = Factory.standOffset(model)
+			local door = base:PointToWorldSpace(Vector3.new(VAN_PARK.X - 2 + (i - 1) * 1.5, so, VAN_PARK.Z - 5))
+			local entry = plot.Entry.Position
+			local path = { door, Vector3.new(entry.X, 0.4 + so, entry.Z) }
+			for _, w in PlotService.worldPoints(plot, SchoolBuilder.aisleRoute(slot), so) do table.insert(path, w) end
+			model.PrimaryPart.CFrame = CFrame.lookAt(door, path[2])
+			model.Parent = folder
+			local g = { model = model, slot = slot, e = e, path = path, hp = hp, stunUntil = 0 }
+			table.insert(raid.goons, g)
+			if opts.tutorial then goonSay(g, "Terribly sorry. Just passing through.") end
+			sendGoon(raid, g)
+		end)
+	end
+	return true
+end
+
+-- the tutorial's thief: Crumpet, slow, and he never actually leaves with the kid
+function RaidService.tutorialRaid(player)
+	return RaidService.start_raid(player, { goons = 1, hp = 1, tutorial = true })
+end
+
+local function cleanup(player)
+	local raid = raids[player]
+	if not raid then return end
+	raid.ended = true
+	for _, g in raid.goons do
+		if g.kid then
+			g.kid:Destroy()
+			g.kid = nil
+			if g.e then g.e.carried = nil end
+		end
+		if g.model.Parent then g.model:Destroy() end
+		g.gone = true
+	end
+	if raid.van.Parent then raid.van:Destroy() end
+	raids[player] = nil
+	if player.Parent then player:SetAttribute("Raid", nil) end
+end
+
+function RaidService.start()
+	folder = workspace:FindFirstChild("Raids") or Instance.new("Folder")
+	folder.Name = "Raids"
+	folder.Parent = workspace
+	table.insert(StealService.swingHooks, onSwing)
+	-- a School Board review rebuilds the school: the goons leave (kids come back via the rebuild)
+	table.insert(PlotService.rebuildHooks, function(player)
+		local raid = raids[player]
+		if raid then
+			cleanup(player)
+			nextRaid[player] = now() + math.random(R.every[1], R.every[2])
+		end
+	end)
+	Players.PlayerRemoving:Connect(function(player)
+		cleanup(player)
+		nextRaid[player], lastMove[player], lastPos[player] = nil, nil, nil
+	end)
+	task.spawn(function()
+		while true do
+			task.wait(1)
+			for player, p in Data.all() do
+				local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				if root and (not lastPos[player] or (root.Position - lastPos[player]).Magnitude > 3) then
+					lastPos[player] = root.Position
+					lastMove[player] = now()
+				end
+				local tutorialDone = (p.tutorial or 1) > #Config.Tutorial
+				if not nextRaid[player] then nextRaid[player] = now() + R.first end
+				if tutorialDone and not raids[player] and now() >= nextRaid[player] and not p.reviewing and not p.finalePending
+					and lastMove[player] and now() - lastMove[player] < 90 then
+					local kids = 0
+					for _, e in p.students do
+						if PlotService.earning(e) then kids += 1 end
+					end
+					if kids >= R.minKids then
+						task.spawn(RaidService.start_raid, player)
+					else
+						nextRaid[player] = now() + 30
+					end
+				end
+			end
+		end
+	end)
+end
+
+-- Studio
+function RaidService.debugRaid(player, goons, hp)
+	nextRaid[player] = nil
+	return RaidService.start_raid(player, { goons = goons, hp = hp })
+end
+function RaidService.debugState(player)
+	local raid = raids[player]
+	if not raid then return { active = false } end
+	local out = { active = true, saved = raid.saved, lost = raid.lost, ko = raid.ko, repelled = raid.repelled, goons = {} }
+	for _, g in raid.goons do
+		local root = g.model.PrimaryPart
+		table.insert(out.goons, { gone = g.gone == true, carrying = g.kid ~= nil, hp = g.hp, pos = root and { math.floor(root.Position.X), math.floor(root.Position.Z) } or nil })
+	end
+	return out
+end
+-- hit the nearest goon as if the player swung at it from right behind
+function RaidService.debugHit(player)
+	local raid = raids[player]
+	if not raid then return false end
+	for _, g in raid.goons do
+		local groot = not g.gone and g.model.PrimaryPart
+		if groot then
+			local fake = { Position = groot.Position - groot.CFrame.LookVector * 3, CFrame = groot.CFrame }
+			hitGoon(player, raid, g, fake)
+			return true
+		end
+	end
+	return false
+end
+
+return RaidService

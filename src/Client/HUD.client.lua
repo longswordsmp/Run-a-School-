@@ -161,7 +161,7 @@ refreshChips()
 local toastHolder = Instance.new("Frame")
 toastHolder.Name = "Toasts"
 toastHolder.AnchorPoint = Vector2.new(0.5, 0)
-toastHolder.Position = UDim2.new(0.5, 0, 0, 10)
+toastHolder.Position = UDim2.new(0.5, 0, 0, 62)
 toastHolder.Size = UDim2.fromOffset(520, 200)
 toastHolder.BackgroundTransparency = 1
 toastHolder.Parent = gui

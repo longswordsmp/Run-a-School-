@@ -31,6 +31,7 @@ local ChapterService = require(Server.ChapterService)
 local DailyService = require(Server.DailyService)
 local TicketService = require(Server.TicketService)
 local AlumniService = require(Server.AlumniService)
+local RaidService = require(Server.RaidService)
 
 Factory.preload()
 PlotService.start()
@@ -53,6 +54,7 @@ ChapterService.start()
 DailyService.start()
 TicketService.start()
 AlumniService.start()
+RaidService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -214,7 +216,16 @@ require(Server.DebugBridge).start({
 		return false
 	end,
 	bonkCrumpet = function(player)
-		return PatrolService.debugBonkCrumpet(player)
+		return RaidService.debugHit(player)
+	end,
+	raid = function(player, goons, hp)
+		return RaidService.debugRaid(player, goons, hp)
+	end,
+	raidState = function(player)
+		return RaidService.debugState(player)
+	end,
+	raidHit = function(player)
+		return RaidService.debugHit(player)
 	end,
 	-- the purchase grant paths without Robux (Studio only)
 	vex = function(player)

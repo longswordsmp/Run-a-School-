@@ -33,7 +33,6 @@ local DETENTION = 20
 local DEAL_EVERY = { 150, 260 }
 local DEAL_WINDOW = 60
 
-local bonkCrumpet -- defined with Crumpet below; the Ruler hook in start() calls it
 local state = {} -- [player] = { nextCheat, nextDeal, cheating = { [slot] = info }, detention = { [slot] = info }, dealer = info }
 
 local DEALERS = {
@@ -484,20 +483,13 @@ function PatrolService.start()
 		if id == "catch" then
 			pcall(startCheating, player)
 		elseif id == "bonk" then
-			task.delay(2, function() pcall(PatrolService.crumpet, player) end)
+			task.delay(2, function() pcall(require(script.Parent.RaidService).tutorialRaid, player) end)
 		elseif id == "bust" then
 			pcall(sendDealer, player, s, true)
 		end
 	end)
 
 	-- the Ruler busts dealers too
-	table.insert(StealService.swingHooks, function(player, root)
-		local s0 = state[player]
-		local c = s0 and s0.crumpet
-		if c and not c.done and c.model.PrimaryPart and (c.model.PrimaryPart.Position - root.Position).Magnitude < 9 then
-			bonkCrumpet(player, s0)
-		end
-	end)
 	table.insert(StealService.swingHooks, function(player, root)
 		local s = state[player]
 		local d = s and s.dealer
@@ -520,11 +512,6 @@ function PatrolService.start()
 			s.dealer.model:Destroy()
 			s.dealer = nil
 		end
-		if s.crumpet then
-			s.crumpet.done = true
-			s.crumpet.model:Destroy()
-			s.crumpet = nil
-		end
 	end)
 
 	Players.PlayerRemoving:Connect(function(player)
@@ -532,7 +519,6 @@ function PatrolService.start()
 		if s then
 			for _, d in s.detention do d.model:Destroy() end
 			if s.dealer then s.dealer.model:Destroy() end
-			if s.crumpet then s.crumpet.model:Destroy() end
 		end
 		state[player] = nil
 	end)
@@ -584,166 +570,12 @@ function PatrolService.start()
 	end)
 end
 
----------------------------------------------------------------------------
--- Crumpet, Vex's butler: the tutorial thief. He walks in, lifts a kid over his head and strolls
--- out; one Ruler bonk and the kid runs back to their desk. He never actually gets away with it.
----------------------------------------------------------------------------
-local CRUMPET = { id = "Crumpet", name = "Crumpet", title = "Butler", mult = 1, outfit = "butler" }
-
-local function crumpetSay(c, text)
-	local label = c.model.Head:FindFirstChild("ThiefTag") and c.model.Head.ThiefTag.Label
-	if label then label.Text = text end
-end
-
-local function crumpetGiveBack(player, s, c)
-	if c.done then return end
-	c.done = true
-	local lifted = c.carried ~= nil
-	if c.carried then c.carried:Destroy() end
-	local p = Data.get(player)
-	-- only the kid he actually lifted goes back to the desk
-	if lifted and p and p.students[c.slot] == c.e then
-		c.e.carried = nil
-		PlotService.place(player, c.slot)
-		PlotService.updateIncome(player)
-	end
-end
-
--- Crumpet walks off the lot and goes away; while the bonk step is still open he comes back later
-local function crumpetLeave(player, s, c, path)
-	local back = {}
-	for i = #path, 1, -1 do table.insert(back, path[i]) end
-	Factory.play(c.model, "walk")
-	Walkers.walk(c.model, back, 12, function()
-		c.model:Destroy()
-		if s.crumpet == c then s.crumpet = nil end
-		local pp = Data.get(player)
-		local step = pp and pp.tutorial and Config.Tutorial[pp.tutorial]
-		if player.Parent and step and step.id == "bonk" then task.delay(8, function() PatrolService.crumpet(player) end) end
-	end, { flat = false })
-end
-
-function PatrolService.crumpet(player)
-	local s = st(player)
-	if s.crumpet then return end
-	local plot = PlotService.getPlot(player)
-	local p = Data.get(player)
-	if not plot or not p then return end
-	local slot
-	for sl, e in p.students do
-		if PlotService.earning(e) and not e.away and PlotService.seatedModel(plot, sl) and (not slot or sl < slot) then slot = sl end
-	end
-	if not slot then return end
-	local model = Factory.buildTeacher(CRUMPET, 1)
-	model.Name = "Crumpet"
-	tag(model, "ThiefTag", "Terribly sorry...", Color3.fromRGB(255, 90, 90))
-	local so = Factory.standOffset(model)
-	local entry = plot.Entry.Position
-	local path = { Vector3.new(entry.X, 0.4 + so, entry.Z) }
-	for _, w in PlotService.worldPoints(plot, SchoolBuilder.aisleRoute(slot), so) do table.insert(path, w) end
-	model.PrimaryPart.CFrame = CFrame.new(path[1])
-	model.Parent = plot:FindFirstChild("Students") or plot
-	Factory.play(model, "walk")
-	local c = { model = model, slot = slot, e = p.students[slot], path = path }
-	s.crumpet = c
-	Remotes.Notify:FireClient(player, "\u{1F3A9} A butler just walked into your school...", "steal")
-	Walkers.walk(model, path, 10, function()
-		if c.done or not model.Parent then return end
-		local e = p.students[slot]
-		if e ~= c.e or not PlotService.earning(e) then
-			crumpetGiveBack(player, s, c)
-			crumpetSay(c, "Ah. Wrong child. Terribly sorry.")
-			crumpetLeave(player, s, c, path)
-			return
-		end
-		-- lift the kid over his head
-		e.carried = true
-		PlotService.detachModel(plot, slot)
-		PlotService.updateIncome(player)
-		local def = Config.StudentById[e.id]
-		local kid = Factory.build(def, e.grade)
-		Factory.setMode(kid, "carried")
-		for _, bp in kid:GetDescendants() do
-			if bp:IsA("BasePart") then
-				bp.Anchored = false
-				bp.Massless = true
-				bp.CanCollide = false
-			end
-		end
-		local off = 3.4 + Factory.standOffset(kid) * 0.9
-		kid.PrimaryPart.CFrame = model.PrimaryPart.CFrame * CFrame.new(0, off, 0)
-		local w = Instance.new("Weld")
-		w.Part0, w.Part1 = model.PrimaryPart, kid.PrimaryPart
-		w.C0 = CFrame.new(0, off, 0) * CFrame.Angles(0, 0, math.rad(8))
-		w.Parent = kid.PrimaryPart
-		kid.Parent = model
-		Factory.play(kid, "sit")
-		c.carried = kid
-		crumpetSay(c, "I'm taking this child. BONK ME!")
-		Remotes.Announce:FireClient(player, "CRUMPET IS STEALING " .. def.name:upper() .. "!", Color3.fromRGB(255, 90, 90))
-		Remotes.Sfx:FireClient(player, "Alarm")
-		Factory.play(model, "walk")
-		local back = {}
-		for i = #path, 1, -1 do table.insert(back, path[i]) end
-		Walkers.walk(model, back, 5, function()
-			if c.done then return end
-			-- out on the street: he thinks better of it
-			crumpetSay(c, "Madam says I must return this child.")
-			crumpetGiveBack(player, s, c)
-			task.delay(2, function()
-				model:Destroy()
-				if s.crumpet == c then s.crumpet = nil end
-				local pp = Data.get(player)
-				local step = pp and pp.tutorial and Config.Tutorial[pp.tutorial]
-				if step and step.id == "bonk" then task.delay(8, function() PatrolService.crumpet(player) end) end
-			end)
-		end, { flat = false })
-	end, { flat = false })
-end
-
-bonkCrumpet = function(player, s)
-	local c = s.crumpet
-	if not c or c.done or not c.carried then return end
-	local had = c.carried ~= nil
-	local def = Config.StudentById[c.e.id]
-	crumpetGiveBack(player, s, c)
-	Walkers.stop(c.model)
-	crumpetSay(c, "Most irregular.")
-	Remotes.Sfx:FireClient(player, "Bonk")
-	task.delay(0.3, function() Remotes.Sfx:FireClient(player, "SlideWhistle") end)
-	if had then
-		Remotes.Notify:FireClient(player, "You saved " .. def.name .. "! +DEFENDED", "good")
-		Signals.fire("bonkSave", player, nil, def, player)
-	end
-	-- a spin, then off he goes
-	local root = c.model.PrimaryPart
-	task.spawn(function()
-		for i = 1, 12 do
-			if not root.Parent then return end
-			root.CFrame = root.CFrame * CFrame.Angles(0, math.rad(60), 0)
-			task.wait(0.03)
-		end
-		local back = {}
-		for i = #c.path, 1, -1 do table.insert(back, c.path[i]) end
-		Factory.play(c.model, "walk")
-		Walkers.walk(c.model, back, 18, function()
-			c.model:Destroy()
-			if s.crumpet == c then s.crumpet = nil end
-		end, { flat = false })
-	end)
-end
-
 -- test hooks
 PatrolService.debugCheat = startCheating
 function PatrolService.debugDealer(player)
 	local s = st(player)
 	sendDealer(player, s)
 	return s.dealer ~= nil
-end
-function PatrolService.debugBonkCrumpet(player)
-	local s = st(player)
-	if s.crumpet and s.crumpet.carried then bonkCrumpet(player, s) return true end
-	return false
 end
 function PatrolService.debugBust(player)
 	local s = st(player)

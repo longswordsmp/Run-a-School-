@@ -2013,6 +2013,60 @@ T.vex = function(model, head, hs, torso, ts)
 	block(model, hand, Vector3.new(0.95, 1.3, 0.11), CFrame.new(0, 0.3, -0.37), rgb(120, 220, 255), Enum.Material.Neon)
 end
 
+-- VexCorp goon: the raiders. Purple coveralls with a VexCorp V on the chest, a black beanie,
+-- wraparound shades, a sack slung over one shoulder, black gloves and boots
+Props.TeacherLooks.goon = { skin = "tan", shirt = Color3.fromRGB(110, 50, 165), pants = Color3.fromRGB(38, 36, 48), torso = Color3.fromRGB(110, 50, 165) }
+T.goon = function(model, head, hs, torso, ts)
+	local black = rgb(22, 22, 28)
+	local purple = rgb(95, 45, 140)
+	local lilac = rgb(200, 150, 255)
+	-- beanie: a cap, a folded brim and a pom
+	blob(model, head, Vector3.new(hs.X * 1.1, hs.Y * 0.5, hs.Z * 1.12), CFrame.new(0, hs.Y * 0.33, 0), black)
+	block(model, head, Vector3.new(hs.X * 1.12, hs.Y * 0.16, hs.Z * 1.14), CFrame.new(0, hs.Y * 0.14, 0), rgb(45, 45, 55))
+	ball(model, head, hs.X * 0.28, CFrame.new(0, hs.Y * 0.62, 0), lilac)
+	-- wraparound shades with a lilac glint
+	block(model, head, Vector3.new(hs.X * 0.96, hs.Y * 0.2, 0.08), CFrame.new(0, hs.Y * 0.03, -hs.Z * 0.52), black, Enum.Material.Glass)
+	block(model, head, Vector3.new(hs.X * 0.18, hs.Y * 0.05, 0.09), CFrame.new(-hs.X * 0.25, hs.Y * 0.08, -hs.Z * 0.53), lilac, Enum.Material.Neon)
+	for _, x in { -1, 1 } do
+		block(model, head, Vector3.new(0.08, hs.Y * 0.16, hs.Z * 0.5), CFrame.new(x * hs.X * 0.5, hs.Y * 0.03, -hs.Z * 0.28), black)
+	end
+	-- stubble and a smirk
+	block(model, head, Vector3.new(hs.X * 0.6, hs.Y * 0.22, 0.04), CFrame.new(0, -hs.Y * 0.3, -hs.Z * 0.505), rgb(120, 90, 70))
+	block(model, head, Vector3.new(hs.X * 0.24, hs.Y * 0.05, 0.05), CFrame.new(hs.X * 0.06, -hs.Y * 0.22, -hs.Z * 0.52) * CFrame.Angles(0, 0, math.rad(-10)), rgb(60, 30, 30))
+	-- coverall details: zip, collar, the V badge, a utility belt with a buckle
+	block(model, torso, Vector3.new(0.06, ts.Y * 0.9, 0.05), CFrame.new(0, 0, -ts.Z * 0.52), rgb(200, 200, 210), Enum.Material.Metal)
+	for _, x in { -1, 1 } do
+		block(model, torso, Vector3.new(ts.X * 0.3, 0.12, ts.Z * 0.3), CFrame.new(x * ts.X * 0.2, ts.Y * 0.46, -ts.Z * 0.4) * CFrame.Angles(0, 0, math.rad(x * -18)), rgb(75, 32, 115))
+	end
+	local badge = block(model, torso, Vector3.new(ts.X * 0.3, ts.Y * 0.3, 0.06), CFrame.new(ts.X * 0.24, ts.Y * 0.18, -ts.Z * 0.53), rgb(250, 250, 250))
+	for _, x in { -1, 1 } do
+		block(model, torso, Vector3.new(0.07, ts.Y * 0.24, 0.07), CFrame.new(ts.X * 0.24 + x * ts.X * 0.05, ts.Y * 0.18, -ts.Z * 0.56) * CFrame.Angles(0, 0, math.rad(x * 20)), purple)
+	end
+	_ = badge
+	local lower = part(model, "LowerTorso")
+	if lower then
+		block(model, lower, Vector3.new(ts.X * 1.04, 0.3, ts.Z * 1.06), CFrame.new(0, 0.05, 0), black)
+		block(model, lower, Vector3.new(0.4, 0.26, 0.08), CFrame.new(0, 0.05, -ts.Z * 0.55), rgb(200, 200, 210), Enum.Material.Metal)
+		block(model, lower, Vector3.new(0.35, 0.4, 0.25), CFrame.new(ts.X * 0.42, -0.05, -ts.Z * 0.35), rgb(40, 40, 48))
+	end
+	-- the loot sack over the left shoulder, with a drawstring
+	local sack = blob(model, torso, Vector3.new(ts.X * 0.75, ts.Y * 0.9, ts.Z * 0.85), CFrame.new(-ts.X * 0.35, ts.Y * 0.2, ts.Z * 0.62), rgb(200, 180, 140))
+	sack.Material = Enum.Material.Fabric
+	block(model, torso, Vector3.new(0.1, ts.Y * 1.1, 0.06), CFrame.new(-ts.X * 0.2, 0, -ts.Z * 0.52) * CFrame.Angles(0, 0, math.rad(30)), rgb(120, 95, 60))
+	-- gloves and boots
+	for _, n in { "LeftHand", "RightHand" } do
+		local h = part(model, n)
+		if h then h.Color = black end
+	end
+	for _, n in { "LeftFoot", "RightFoot" } do
+		local f = part(model, n)
+		if f then
+			f.Color = black
+			block(model, f, Vector3.new(f.Size.X * 1.1, 0.12, f.Size.Z * 1.15), CFrame.new(0, -f.Size.Y * 0.45, -0.05), rgb(40, 40, 45))
+		end
+	end
+end
+
 -- Otis the bus driver: big grey beard, flat cap, mirrored aviators, hi-vis vest
 Props.TeacherLooks.otis = { skin = "tan", shirt = Color3.fromRGB(90, 110, 140), pants = Color3.fromRGB(50, 55, 70) }
 T.otis = function(model, head, hs, torso, ts)

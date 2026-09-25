@@ -146,13 +146,23 @@ local function worldTarget()
 			end
 		end
 		return bestPad and bestPad.Position + Vector3.new(0, 1.5, 0) or nil
-	elseif g == "cheater" or g == "thief" or g == "smuggler" then
+	elseif g == "thief" then
+		local raids = workspace:FindFirstChild("Raids")
+		local best, bestScore
+		for _, m in raids and raids:GetChildren() or {} do
+			if m:GetAttribute("RaidGoon") and m:GetAttribute("PlotName") == player:GetAttribute("Plot") and m.PrimaryPart then
+				local d = root and (m.PrimaryPart.Position - root.Position).Magnitude or 0
+				local score = d - (m:GetAttribute("Carrying") and 1000 or 0)
+				if not best or score < bestScore then best, bestScore = m, score end
+			end
+		end
+		return best and best.PrimaryPart.Position + Vector3.new(0, 4, 0) or nil
+	elseif g == "cheater" or g == "smuggler" then
 		local plot = myPlot()
 		local students = plot and plot:FindFirstChild("Students")
 		for _, m in students and students:GetChildren() or {} do
 			local head = m:FindFirstChild("Head")
 			local hit = (g == "cheater" and head and head:FindFirstChild("Cheating"))
-				or (g == "thief" and m.Name == "Crumpet")
 				or (g == "smuggler" and (m.Name == "CandyDealer" or m.Name == "SlimeDealer"))
 			if hit and m.PrimaryPart then return m.PrimaryPart.Position + Vector3.new(0, 4, 0) end
 		end
