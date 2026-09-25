@@ -604,6 +604,56 @@ do
 end
 
 ---------------------------------------------------------------------------
+-- Admin (only for admins): buses, events, spawns, money rain, server luck
+---------------------------------------------------------------------------
+do
+	local panel = UI.panel(gui, { name = "Admin", title = "ADMIN PANEL", color = UI.C.red, size = UDim2.fromOffset(760, 520) })
+	panels.Admin = panel
+	local list = scrollList(panel.body, 10)
+	local function section(order, title, buttons)
+		local holder = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 110), LayoutOrder = order, ZIndex = 11, Parent = list })
+		UI.label(holder, { Text = title, Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = UI.C.navy, Size = UDim2.new(1, 0, 0, 28), ZIndex = 12, stroke = 0 })
+		local row = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 72), Position = UDim2.fromOffset(0, 32), ZIndex = 11, Parent = holder })
+		UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), Wraps = true, Parent = row })
+		for i, spec in buttons do
+			local b = UI.button(row, { text = spec[1], color = spec[2], size = UDim2.fromOffset(spec[5] or 110, 56), layoutOrder = i, onClick = function()
+				local res = call("admin", spec[3], spec[4])
+				sfx(res and res.ok and "Ding" or "Error")
+			end })
+			lift(b.button, 12)
+		end
+	end
+	section(1, "\u{1F68C} BUSES", {
+		{ "Late Bus", UI.C.orange, "bus", "LateBus" },
+		{ "Honor Roll", UI.C.yellow, "bus", "HonorBus" },
+		{ "Field Trip", UI.C.purple, "bus", "FieldTrip" },
+		{ "Lucky Bus", UI.C.green, "bus", "Lucky" },
+		{ "Welcome", UI.C.blue, "bus", "Welcome" },
+	})
+	section(2, "\u{1F389} EVENTS", {
+		{ "Snow Day", Color3.fromRGB(120, 190, 255), "event", "SnowDay" },
+		{ "Science Fair", UI.C.green, "event", "ScienceFair" },
+		{ "Picture Day", UI.C.grey, "event", "PictureDay" },
+		{ "Halloween", UI.C.orange, "event", "Halloween" },
+		{ "Space Camp", UI.C.purple, "event", "SpaceCamp" },
+		{ "End Event", UI.C.red, "event", "stop" },
+	})
+	section(3, "\u{2728} SPAWN 3 KIDS", {
+		{ "Legendary", Color3.fromRGB(255, 170, 30), "spawn", "Legendary" },
+		{ "Mythic", Color3.fromRGB(255, 50, 90), "spawn", "Mythic" },
+		{ "Prodigy", Color3.fromRGB(90, 200, 255), "spawn", "Prodigy" },
+		{ "Secret", Color3.fromRGB(40, 40, 50), "spawn", "Secret" },
+	})
+	section(4, "\u{1F4B8} SERVER", {
+		{ "Money Rain", UI.C.green, "money" },
+		{ "Luck x2", UI.C.blue, "luck", 2 },
+		{ "Luck x3", UI.C.purple, "luck", 3 },
+		{ "Recess Now", UI.C.orange, "recess" },
+		{ "+$1B (me)", UI.C.grey, "cash", 1e9 },
+	})
+end
+
+---------------------------------------------------------------------------
 -- welcome back: what the school earned while you were away
 ---------------------------------------------------------------------------
 do
@@ -677,6 +727,15 @@ sideButton(3, "\u{1F3DB}\u{FE0F}", "Board", UI.C.purple, panels.Board)
 sideButton(4, "\u{1F4D6}", "Yearbook", UI.C.pink, panels.Yearbook)
 sideButton(5, "\u{270F}\u{FE0F}", "Name", UI.C.blue, panels.NameSchool)
 sideButton(6, "\u{2699}\u{FE0F}", "Settings", UI.C.navy, panels.Settings)
+-- the admin button appears only for admins
+local adminButton
+local function refreshAdmin()
+	if player:GetAttribute("Admin") and not adminButton then
+		adminButton = sideButton(7, "\u{1F6E0}\u{FE0F}", "Admin", UI.C.red, panels.Admin)
+	end
+end
+player:GetAttributeChangedSignal("Admin"):Connect(refreshAdmin)
+refreshAdmin()
 
 -- other scripts (tutorial, prompts) can open a panel by name
 local openBus = bus and (bus:FindFirstChild("OpenPanel") or (function()

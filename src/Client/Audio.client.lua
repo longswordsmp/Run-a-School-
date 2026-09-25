@@ -190,8 +190,8 @@ local function wantedContext()
 		alarm = player:GetAttribute("AlarmUntil") ~= nil and player:GetAttribute("AlarmUntil") > now,
 		recess = (workspace:GetAttribute("RecessUntil") or 0) > now,
 		heroes = local_ == "heroes",
-		snow = workspace:GetAttribute("Event") == "snow",
-		halloween = workspace:GetAttribute("Event") == "halloween",
+		snow = workspace:GetAttribute("Event") == "SnowDay",
+		halloween = workspace:GetAttribute("Event") == "Halloween",
 	}
 	for _, key in Sounds.ContextOrder do
 		if candidates[key] then return key end

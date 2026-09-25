@@ -135,7 +135,7 @@ local timers = Instance.new("Frame")
 timers.Name = "Timers"
 timers.AnchorPoint = Vector2.new(1, 0)
 timers.Position = UDim2.new(1, -12, 0, 8)
-timers.Size = UDim2.fromOffset(270, 200)
+timers.Size = UDim2.fromOffset(270, 280)
 timers.BackgroundTransparency = 1
 timers.Parent = gui
 local tlist = Instance.new("UIListLayout")
@@ -147,6 +147,14 @@ local TIMERS = {
 	{ attr = "LateBusAt", icon = "\u{1F68C}", label = "Late Bus", sub = "Rare+", color = Color3.fromRGB(255, 130, 40) },
 	{ attr = "FieldTripAt", icon = "\u{1F392}", label = "Field Trip", sub = "Epic+", color = Color3.fromRGB(160, 90, 255) },
 	{ attr = "RecessAt", icon = "\u{1F514}", label = "Recess", sub = "Luck x2", color = Color3.fromRGB(60, 200, 110) },
+	{ attr = "NextEventAt", icon = "\u{1F389}", label = "Next Event", sub = "Special grades", color = Color3.fromRGB(255, 90, 170) },
+}
+local EVENT_NAMES = {
+	SnowDay = { "\u{2744}\u{FE0F} SNOW DAY", "Snow Day kids x3" },
+	ScienceFair = { "\u{1F9EA} SCIENCE FAIR", "Radioactive kids x4" },
+	PictureDay = { "\u{1F4F8} PICTURE DAY", "Picture Perfect x2" },
+	Halloween = { "\u{1F383} HALLOWEEN", "Spooky kids x3.5" },
+	SpaceCamp = { "\u{1F680} SPACE CAMP", "Cosmic kids x7" },
 }
 local rows = {}
 for i, spec in TIMERS do
@@ -178,7 +186,16 @@ task.spawn(function()
 			local at = workspace:GetAttribute(attr)
 			r.frame.Visible = at ~= nil
 			if at then
-				if attr == "RecessAt" and (workspace:GetAttribute("RecessUntil") or 0) > now then
+				local ev = workspace:GetAttribute("Event")
+				if attr == "NextEventAt" and ev and EVENT_NAMES[ev] then
+					r.name.Text = EVENT_NAMES[ev][1]
+					r.frame.Sub.Text = EVENT_NAMES[ev][2]
+					r.time.Text = mmss((workspace:GetAttribute("EventUntil") or now) - now)
+				elseif attr == "NextEventAt" then
+					r.frame.Sub.Text = r.spec.sub
+					r.name.Text = r.spec.icon .. " " .. r.spec.label
+					r.time.Text = mmss(at - now)
+				elseif attr == "RecessAt" and (workspace:GetAttribute("RecessUntil") or 0) > now then
 					r.name.Text = "\u{1F514} RECESS! Luck x2"
 					r.time.Text = mmss(workspace:GetAttribute("RecessUntil") - now)
 				else
