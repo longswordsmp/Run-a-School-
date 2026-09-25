@@ -216,8 +216,10 @@ local function board(data)
 	local c1 = caption("THE SCHOOL BOARD IS IN SESSION", Color3.fromRGB(255, 225, 120), 0.8, 54)
 	sfx("Gavel")
 	-- slow push toward the table
-	TweenService:Create(camera, TweenInfo.new(1.6, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(room.CameraA.Position:Lerp(target, 0.35), target) }):Play()
+	local push = TweenService:Create(camera, TweenInfo.new(1.6, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(room.CameraA.Position:Lerp(target, 0.35), target) })
+	push:Play()
 	task.wait(1.5)
+	push:Cancel()
 	c1:Destroy()
 	-- close on the chair and the gavel
 	camera.CFrame = CFrame.lookAt(room.CameraB.Position, room.Gavel.Position + Vector3.new(-2, 1.5, 0))
@@ -244,7 +246,8 @@ local function board(data)
 		local kevin = room:FindFirstChild("Members") and room.Members:FindFirstChild("BoardKevin")
 		local head = kevin and kevin:FindFirstChild("Head")
 		if b[2] == "Kevin" and head then
-			camera.CFrame = CFrame.lookAt(head.Position + Vector3.new(0, 0.6, -5.5), head.Position)
+			-- in front of him, across the table
+			camera.CFrame = CFrame.lookAt(head.Position + head.CFrame.LookVector * 5.5 + Vector3.new(0, 0.6, 0), head.Position)
 		else
 			camera.CFrame = CFrame.lookAt(room.CameraA.Position:Lerp(target, 0.25), target)
 		end
@@ -389,11 +392,14 @@ local function finale(data)
 	local title = caption("GRADUATION DAY", Color3.fromRGB(255, 215, 90), 0.2, 72)
 	task.wait(1.6)
 	title:Destroy()
+	local move
 	for i, line in Config.FinaleLines do
 		local shot = shots[math.min(#shots, math.ceil(i / 4))]
 		if i % 4 == 1 then
+			if move then move:Cancel() end
 			camera.CFrame = CFrame.lookAt(shot.from, shot.to)
-			TweenService:Create(camera, TweenInfo.new(10, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(shot.push, shot.to) }):Play()
+			move = TweenService:Create(camera, TweenInfo.new(10, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(shot.push, shot.to) })
+			move:Play()
 		end
 		if line[3] == "NO." then sfx("GavelBig") end
 		sayLine(line[1], line[2], line[3])
@@ -409,7 +415,9 @@ local function finale(data)
 	c1:Destroy()
 	c2:Destroy()
 	c3:Destroy()
-	Lighting.ClockTime = clock0
+	if move then move:Cancel() end
+	-- put the time of day back unless an event changed it meanwhile
+	if math.abs(Lighting.ClockTime - 17.9) < 0.01 then Lighting.ClockTime = clock0 end
 	camera.CameraType = prevType
 	camera.CFrame = prevCF
 	letterbox(false)

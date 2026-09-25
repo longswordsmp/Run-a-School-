@@ -70,6 +70,9 @@ local function onPlayer(player)
 		Remotes.Push:FireClient(player, "offline", { amount = p.offlineEarned, away = p.offlineAway })
 	end
 
+	-- a finale that was cut short (they left) plays again
+	if p.finalePending then require(Server.BoardService).finale(player, 12) end
+
 	-- a brand-new principal gets the intro and the Welcome Bus
 	-- (Studio tests can skip it with the ServerStorage attribute SkipIntro)
 	local skip = game:GetService("RunService"):IsStudio() and game.ServerStorage:GetAttribute("SkipIntro")
@@ -239,6 +242,18 @@ require(Server.DebugBridge).start({
 	finale = function(player)
 		require(Server.BoardService).finale(player)
 		return true
+	end,
+	-- the finale as a promotion starts it (pending until Tiny Vex is on the bench)
+	finalePending = function(player, delay)
+		local p = Data.get(player)
+		p.finaleSeen = nil
+		p.finalePending = true
+		require(Server.BoardService).finale(player, delay or 0)
+		return true
+	end,
+	flags = function(player)
+		local p = Data.get(player)
+		return { finalePending = p.finalePending, finaleSeen = p.finaleSeen, diplomas = p.diplomas, alumni = p.alumni, reviewing = p.reviewing, pendingBench = p.pendingBench }
 	end,
 	graduate = function(player, slot)
 		AlumniService.graduate(player, PlotService.getPlot(player), slot)

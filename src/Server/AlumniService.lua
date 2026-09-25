@@ -120,11 +120,18 @@ Actions.register("inviteAlumni", function(player, p, id)
 	if p.cash < def.price then return { ok = false, err = "You need " .. Config.formatCash(def.price) .. " to enroll them" } end
 	if not PlotService.freeSlot(player) then return { ok = false, err = "Free a desk first" } end
 	local HallService = require(script.Parent.HallService)
+	local model = HallService.spawnOne(nil, id, nil, nil, true)
+	if model then
+		model:SetAttribute("ReservedFor", player.UserId)
+		HallService.enroll(player, model)
+	end
+	if not model or model:GetAttribute("State") ~= "Enrolled" then
+		if model and model.Parent then model:Destroy() end
+		return { ok = false, err = "They couldn't enroll right now. Try again!" }
+	end
 	p.diplomas -= item.diplomas
 	p.alumni[id] = true
 	syncDiplomas(player, p)
-	local model = HallService.spawnOne(nil, id)
-	if model then HallService.enroll(player, model) end
 	Remotes.Announce:FireClient(player, ("%s IS BACK!"):format(def.name:upper()), Color3.fromRGB(255, 200, 90))
 	Remotes.Sfx:FireClient(player, "Rare")
 	return AlumniService.state(player)

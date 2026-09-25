@@ -8,7 +8,8 @@ local Data = require(script.Parent.DataService)
 
 local Actions = {}
 -- actions that spend or move cash, refused while a School Board review is running
-local SPENDING = { buyUpgrade = true, buyRow = true, buySupply = true, buyBuild = true, hireTeacher = true, callLetter = true }
+local SPENDING = { buyUpgrade = true, buyRow = true, buySupply = true, buyBuild = true, hireTeacher = true, callLetter = true,
+	inviteAlumni = true, buyTicket = true, buyCandy = true }
 local handlers = {}
 local budget = {}
 

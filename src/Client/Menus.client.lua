@@ -629,10 +629,12 @@ do
 		row.buy.button.Activated:Connect(function()
 			if not row.buy.button.Active then return end
 			local res = call("inviteAlumni", a.id)
+			refreshAlumni()
 			if res and res.ok == false then
 				UI.punch(row.frame, 1.04)
+				if res.err then count.Text = "\u{26A0} " .. res.err end
+				sfx("Error")
 			end
-			refreshAlumni()
 		end)
 		alumniRows[a.id] = row
 	end

@@ -106,21 +106,30 @@ Actions.register("review", function(player, p)
 	busy[player] = nil
 	-- the top of the ladder: Graduation Day, once
 	if not n.star and p.tier == #Config.Tiers and not p.finaleSeen then
-		p.finaleSeen = true
+		p.finalePending = true
 		BoardService.finale(player)
 	end
 	return { ok = true, tier = p.tier, stars = p.stars }
 end)
 
 -- Graduation Day: the finale cutscene after the Board's own, then Tiny Vex waits on the bench (free)
-function BoardService.finale(player)
-	task.delay(8, function()
+-- (p.finalePending is saved, so leaving mid-finale plays it again on the next join)
+function BoardService.finale(player, delay)
+	task.delay(delay or 8, function()
 		if not player.Parent then return end
 		Remotes.Cutscene:FireClient(player, "Finale", { name = PlotService.schoolName(player) })
 		task.wait(#Config.FinaleLines * 3.4 + 8)
-		if not player.Parent then return end
+		local p = Data.get(player)
+		if not player.Parent or not p then return end
 		local def = Config.StudentById.HomeworkReminder
-		if def then require(script.Parent.LetterService).deliver(player, def, true) end
+		local model = def and require(script.Parent.LetterService).deliver(player, def, true)
+		if def and not model then
+			-- no free bench seat: she waits for the next visit
+			p.pendingBench = p.pendingBench or {}
+			table.insert(p.pendingBench, def.id)
+		end
+		p.finalePending = nil
+		p.finaleSeen = true
 		Remotes.Announce:FireClient(player, "PRINCIPAL OF THE MULTIVERSE!", Color3.fromRGB(255, 215, 90))
 		Signals.fire("finale", player)
 	end)

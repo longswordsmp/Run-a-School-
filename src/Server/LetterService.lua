@@ -193,7 +193,10 @@ function LetterService.deliver(player, def, free)
 		end
 		Factory.play(model, "sit")
 		Factory.emote(model, "wave")
-		task.delay(BENCH_HOLD, function() release(player, model) end)
+		-- a gift (scholarship, daily Epic, Tiny Vex) waits until it's enrolled
+		if not model:GetAttribute("Free") then
+			task.delay(BENCH_HOLD, function() release(player, model) end)
+		end
 	end, { flat = false })
 	return model
 end

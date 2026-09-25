@@ -180,7 +180,7 @@ function HallService.enroll(player, model)
 end
 
 -- put one student on the carpet; from = optional start position (a special bus door)
-function HallService.spawnOne(forceRarity, forceId, weights, from)
+function HallService.spawnOne(forceRarity, forceId, weights, from, quiet)
 	if not forceRarity and not forceId and not weights and #hall:GetChildren() >= Config.MaxHallStudents then return end
 	local def, grade = HallService.roll(forceRarity, forceId, weights)
 	local model = Factory.build(def, grade)
@@ -197,7 +197,9 @@ function HallService.spawnOne(forceRarity, forceId, weights, from)
 
 	-- the whole server hears about the rare ones
 	local rarity = Config.RarityById[def.rarity]
-	if rarity.order >= 7 then
+	if quiet then
+		-- an invited kid (Alumni Hall): nobody else can enroll them, so no server-wide alert
+	elseif rarity.order >= 7 then
 		Remotes.Announce:FireAllClients(("A %s STUDENT IS ON THE CARPET!"):format(rarity.id:upper()), Config.rarityAccent(def.rarity))
 		Remotes.Sfx:FireAllClients(rarity.id == "Prodigy" and "Choir" or "RecordScratch")
 	elseif rarity.order == 6 then
