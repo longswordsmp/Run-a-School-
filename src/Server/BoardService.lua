@@ -104,7 +104,26 @@ Actions.register("review", function(player, p)
 	Remotes.Announce:FireAllClients(("%s IS NOW %s %s!"):format(PlotService.schoolName(player):upper(), an, n.name:upper()), Color3.fromRGB(255, 214, 51))
 	Signals.fire("review", player, p.tier, p.stars)
 	busy[player] = nil
+	-- the top of the ladder: Graduation Day, once
+	if not n.star and p.tier == #Config.Tiers and not p.finaleSeen then
+		p.finaleSeen = true
+		BoardService.finale(player)
+	end
 	return { ok = true, tier = p.tier, stars = p.stars }
 end)
+
+-- Graduation Day: the finale cutscene after the Board's own, then Tiny Vex waits on the bench (free)
+function BoardService.finale(player)
+	task.delay(8, function()
+		if not player.Parent then return end
+		Remotes.Cutscene:FireClient(player, "Finale", { name = PlotService.schoolName(player) })
+		task.wait(#Config.FinaleLines * 3.4 + 8)
+		if not player.Parent then return end
+		local def = Config.StudentById.HomeworkReminder
+		if def then require(script.Parent.LetterService).deliver(player, def, true) end
+		Remotes.Announce:FireClient(player, "PRINCIPAL OF THE MULTIVERSE!", Color3.fromRGB(255, 215, 90))
+		Signals.fire("finale", player)
+	end)
+end
 
 return BoardService

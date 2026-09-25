@@ -161,7 +161,8 @@ local function dialogBox(speaker, templateId)
 	UI.corner(portrait, 14)
 	UI.stroke(portrait, 3)
 	local tt = ReplicatedStorage:FindFirstChild("TeacherTemplates")
-	local chair = tt and tt:FindFirstChild(templateId or "DeanMaximus")
+	local st = ReplicatedStorage:FindFirstChild("StudentTemplates")
+	local chair = (tt and tt:FindFirstChild(templateId or "DeanMaximus")) or (st and templateId and st:FindFirstChild(templateId))
 	if chair then
 		local vp, m = UI.viewport(portrait, chair, { zindex = 8, zoom = 0.55 })
 		-- frame the head and shoulders
@@ -355,8 +356,73 @@ local function safely(fn, data)
 	busy = false
 end
 
+-- Graduation Day: dusk over your own school, the whole cast, then the end card
+local function finale(data)
+	-- after the Board's own cutscene, however long it ran
+	local t0 = os.clock()
+	while busy and os.clock() - t0 < 30 do task.wait(0.2) end
+	if busy then return end
+	busy = true
+	local plotName = player:GetAttribute("Plot")
+	local plot = plotName and workspace:FindFirstChild("Plots") and workspace.Plots:FindFirstChild(plotName)
+	local origin = plot and plot:FindFirstChild("Origin")
+	if not origin then busy = false return end
+	local o = origin.CFrame
+	local function at(x, y, z) return o:PointToWorldSpace(Vector3.new(x, y, z)) end
+	fade(0, 0.5)
+	hideHud(true)
+	letterbox(true)
+	player:SetAttribute("LocalMusic", "heroes")
+	local Lighting = game:GetService("Lighting")
+	local clock0 = Lighting.ClockTime
+	Lighting.ClockTime = 17.9
+	local prevType, prevCF = camera.CameraType, camera.CFrame
+	camera.CameraType = Enum.CameraType.Scriptable
+	-- three slow shots of your Multiverse University
+	local shots = {
+		{ from = at(0, 14, 120), to = at(0, 22, 0), push = at(0, 12, 95) },
+		{ from = at(-70, 20, 95), to = at(0, 12, 30), push = at(-55, 16, 80) },
+		{ from = at(8, 7, 60), to = at(0, 9, 12), push = at(4, 7, 45) },
+	}
+	fade(1, 0.8)
+	local title = caption("GRADUATION DAY", Color3.fromRGB(255, 215, 90), 0.2, 72)
+	task.wait(1.6)
+	title:Destroy()
+	for i, line in Config.FinaleLines do
+		local shot = shots[math.min(#shots, math.ceil(i / 4))]
+		if i % 4 == 1 then
+			camera.CFrame = CFrame.lookAt(shot.from, shot.to)
+			TweenService:Create(camera, TweenInfo.new(10, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(shot.push, shot.to) }):Play()
+		end
+		if line[3] == "NO." then sfx("GavelBig") end
+		sayLine(line[1], line[2], line[3])
+	end
+	-- the end card
+	sfx("StingParty")
+	local c1 = caption("PRINCIPAL OF THE MULTIVERSE", Color3.fromRGB(255, 215, 90), 0.4, 72)
+	local c2 = caption((data and data.name or "Your school") .. " is the greatest school in every universe.", Color3.new(1, 1, 1), 0.52, 34)
+	local c3 = caption("Tiny Vex is waiting on your bench. Prestige stars are open.", Color3.fromRGB(200, 255, 200), 0.6, 28)
+	confetti(140)
+	task.wait(4)
+	fade(0, 0.5)
+	c1:Destroy()
+	c2:Destroy()
+	c3:Destroy()
+	Lighting.ClockTime = clock0
+	camera.CameraType = prevType
+	camera.CFrame = prevCF
+	letterbox(false)
+	hideHud(false)
+	player:SetAttribute("LocalMusic", nil)
+	task.wait(0.4)
+	fade(1, 0.6)
+	busy = false
+end
+
 Remotes:WaitForChild("Cutscene").OnClientEvent:Connect(function(name, data)
-	if name == "Board" then
+	if name == "Finale" then
+		task.spawn(safely, finale, data)
+	elseif name == "Board" then
 		task.spawn(safely, board, data)
 	elseif name == "Intro" then
 		task.spawn(safely, intro, data)

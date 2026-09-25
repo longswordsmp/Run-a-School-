@@ -213,6 +213,19 @@ Config.BoardBeats = {
 	[11] = { { "OTIS", "Otis", "(looking at the stars) ...Home." } },
 	[12] = { { "THE WHOLE BOARD", "DeanMaximus", "Motion... APPROVED... in EVERY universe." } },
 }
+-- Graduation Day: the finale, once, after the first promotion to Multiverse University
+Config.FinaleLines = {
+	{ "OTIS", "Otis", "Forty years I've been drivin' kids from every universe to this street, lookin' for a school big enough for all of 'em." },
+	{ "OTIS", "Otis", "Took you long enough, Principal." },
+	{ "DR. VERONICA VEX", "Vex", "If I can't have the multiverse, NOBODY gets recess! Homework Machine: FIRE!" },
+	{ "JANITOR STAN", "Stan", "Told you that statue blinked. Look at it swing that ruler!" },
+	{ "MR. WOBBLESWORTH", "Wobblesworth", "Oh my. The beam bounced right back. Veronica is... ten?" },
+	{ "TINY VEX", "HomeworkReminder", "...Can I still enroll?" },
+	{ "KEVIN, AGE 10", "Kevin", "Can SHE get a waterslide?" },
+	{ "THE WHOLE BOARD", "DeanMaximus", "NO." },
+	{ "MR. WOBBLESWORTH", "Wobblesworth", "Splendid, Principal. Simply splendid." },
+	{ "OTIS", "Otis", "Doors closin'!" },
+}
 -- the Board Chair's welcome for a brand-new principal (the intro cutscene, and page 1 of the Scrapbook)
 Config.IntroLines = {
 	"Ahem! Welcome, new Principal!",

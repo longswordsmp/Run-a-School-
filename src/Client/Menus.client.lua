@@ -658,6 +658,14 @@ do
 		return 1
 	end
 
+	do
+		local lines = {}
+		for _, l in Config.FinaleLines do
+			local who = l[1]:gsub("(%a)([%w']*)", function(a, rest) return a:upper() .. rest:lower() end)
+			table.insert(lines, ("%s: \"%s\""):format(who, l[3]))
+		end
+		scrapEntry(100, "intro", "Graduation Day", nil, table.concat(lines, "  "), #Config.Tiers)
+	end
 	local function refreshScrapbook(tier)
 		local n = 0
 		for _, pg in pages do

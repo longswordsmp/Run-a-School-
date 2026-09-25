@@ -233,6 +233,10 @@ require(Server.DebugBridge).start({
 	diplomas = function(player, n)
 		return AlumniService.debugGive(player, n)
 	end,
+	finale = function(player)
+		require(Server.BoardService).finale(player)
+		return true
+	end,
 	graduate = function(player, slot)
 		AlumniService.graduate(player, PlotService.getPlot(player), slot)
 		return { diplomas = player:GetAttribute("Diplomas"), still = Data.get(player).students[slot] ~= nil }
