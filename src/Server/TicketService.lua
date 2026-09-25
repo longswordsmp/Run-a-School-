@@ -69,18 +69,21 @@ local function groundNear(root)
 	return nil
 end
 
-local function spawnToken(player, eventId)
+-- golden: the rare one (every GOLDEN_EVERY s during an event, near a random player, announced to the
+-- whole server), worth GOLDEN_VALUE tickets to whoever gets there first
+local GOLDEN_EVERY, GOLDEN_VALUE = 90, 10
+local function spawnToken(player, eventId, golden)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if not root then return end
 	local pos = groundNear(root)
 	if not pos then return end
-	local color = EVENT_COLORS[eventId] or Color3.new(1, 1, 1)
+	local color = golden and Color3.fromRGB(255, 205, 60) or EVENT_COLORS[eventId] or Color3.new(1, 1, 1)
 	local info = Config.EventInfo[eventId]
 	local t = Instance.new("Part")
-	t.Name = "EventToken"
+	t.Name = golden and "GoldenToken" or "EventToken"
 	t.Shape = Enum.PartType.Cylinder
-	t.Size = Vector3.new(0.45, 2.8, 2.8)
-	t.CFrame = CFrame.new(pos + Vector3.new(0, 2.4, 0))
+	t.Size = golden and Vector3.new(0.6, 4.2, 4.2) or Vector3.new(0.45, 2.8, 2.8)
+	t.CFrame = CFrame.new(pos + Vector3.new(0, golden and 3.2 or 2.4, 0))
 	t.Color = color
 	t.Material = Enum.Material.SmoothPlastic
 	t.Reflectance = 0.15
@@ -105,7 +108,7 @@ local function spawnToken(player, eventId)
 	sp.LightEmission = 1
 	sp.Size = NumberSequence.new(0.35, 0)
 	sp.Lifetime = NumberRange.new(0.6, 1)
-	sp.Rate = 7
+	sp.Rate = golden and 30 or 7
 	sp.Speed = NumberRange.new(1, 2)
 	sp.SpreadAngle = Vector2.new(180, 180)
 	sp.Parent = t
@@ -115,9 +118,18 @@ local function spawnToken(player, eventId)
 	l.Brightness = 0.8
 	l.Parent = t
 	CollectionService:AddTag(t, "EventToken")
+	if golden then
+		t.Material = Enum.Material.Neon
+		icon.Text = (info and info.icon or "") .. " x" .. GOLDEN_VALUE
+		bb.Size = UDim2.fromOffset(110, 64)
+		Remotes.Announce:FireAllClients(("A GOLDEN %s TOKEN! (near %s)"):format(info and info.name:upper() or "EVENT", player.DisplayName), color)
+		Remotes.Sfx:FireAllClients("Rare")
+	end
 	t.Parent = folder
-	live[player] = live[player] or {}
-	table.insert(live[player], t)
+	if not golden then
+		live[player] = live[player] or {}
+		table.insert(live[player], t)
+	end
 	local taken = false
 	t.Touched:Connect(function(hit)
 		if taken then return end
@@ -125,9 +137,12 @@ local function spawnToken(player, eventId)
 		local p = who and Data.get(who)
 		if not p then return end
 		taken = true
-		p.tickets = (p.tickets or 0) + Config.TicketsPerToken
+		p.tickets = (p.tickets or 0) + (golden and GOLDEN_VALUE or Config.TicketsPerToken)
 		syncTickets(who, p)
-		Remotes.Sfx:FireClient(who, "Coin", t.Position)
+		Remotes.Sfx:FireClient(who, golden and "Cheer" or "Coin", t.Position)
+		if golden then
+			Remotes.Notify:FireAllClients(("%s grabbed the golden token! +%d tickets"):format(who.DisplayName, GOLDEN_VALUE), "steal")
+		end
 		Signals.fire("ticket", who, eventId)
 		t:Destroy()
 	end)
@@ -233,6 +248,9 @@ function TicketService.start()
 			local ev = workspace:GetAttribute("Event")
 			if not ev then
 				if next(live) then clearTokens() end
+			elseif clock % GOLDEN_EVERY == 0 then
+				local players = Players:GetPlayers()
+				if #players > 0 then pcall(spawnToken, players[math.random(#players)], ev, true) end
 			elseif clock % SPAWN_EVERY == 0 then
 				for _, player in Players:GetPlayers() do
 					local list = live[player] or {}
@@ -245,6 +263,14 @@ function TicketService.start()
 			end
 		end
 	end)
+end
+
+-- Studio: a golden token near the player now
+function TicketService.debugGolden(player)
+	local ev = workspace:GetAttribute("Event")
+	if not ev then return false end
+	spawnToken(player, ev, true)
+	return true
 end
 
 -- Studio: tickets for testing

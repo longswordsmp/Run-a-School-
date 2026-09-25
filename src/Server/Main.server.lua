@@ -230,6 +230,9 @@ require(Server.DebugBridge).start({
 	tickets = function(player, n)
 		return TicketService.debugGive(player, n)
 	end,
+	golden = function(player)
+		return TicketService.debugGolden(player)
+	end,
 	diplomas = function(player, n)
 		return AlumniService.debugGive(player, n)
 	end,
