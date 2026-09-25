@@ -28,6 +28,7 @@ local StoryService = require(Server.StoryService)
 local LeaderboardService = require(Server.LeaderboardService)
 local QuizService = require(Server.QuizService)
 local ChapterService = require(Server.ChapterService)
+local DailyService = require(Server.DailyService)
 
 Factory.preload()
 PlotService.start()
@@ -47,6 +48,7 @@ StoryService.start()
 LeaderboardService.start()
 QuizService.start()
 ChapterService.start()
+DailyService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -217,6 +219,9 @@ require(Server.DebugBridge).start({
 	end,
 	chapterState = function(player)
 		return ChapterService.state(player)
+	end,
+	dailyFinish = function(player, n)
+		return DailyService.debugFinish(player, n)
 	end,
 	-- enroll a kid who came off a named special bus (still in the hall)
 	enrollBus = function(player, kind)

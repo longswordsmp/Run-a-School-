@@ -496,6 +496,38 @@ Config.ChapterPct = 0.01
 Config.ChapterCandy = { 10, 10, 20, 20 }
 
 ---------------------------------------------------------------------------
+-- Daily Requests: 3 a day (UTC) from this pool, the same 3 for a player all day; one free reroll.
+-- Each pays candy; all 3 open Loretta's Lunch Box. No cash rewards, so the 100-hour pacing
+-- (tools/econ_sim.py) is untouched. Every request can be done alone at any tier.
+-- signal = a Signals name; rarity = only enrolls of that rarity or rarer count.
+---------------------------------------------------------------------------
+Config.DailyPool = {
+	{ id = "catch8", text = "Catch 8 cheaters", signal = "catchCheater", count = 8 },
+	{ id = "catch15", text = "Catch 15 cheaters", signal = "catchCheater", count = 15 },
+	{ id = "bust3", text = "Bust 3 Snack Smugglers", signal = "bustDealer", count = 3 },
+	{ id = "bust6", text = "Bust 6 Snack Smugglers", signal = "bustDealer", count = 6 },
+	{ id = "enroll20", text = "Enroll 20 kids", signal = "enroll", count = 20 },
+	{ id = "enroll50", text = "Enroll 50 kids", signal = "enroll", count = 50 },
+	{ id = "rare3", text = "Enroll 3 Rare kids (or rarer)", signal = "enroll", rarity = "Rare", count = 3 },
+	{ id = "epic1", text = "Enroll an Epic kid (or rarer)", signal = "enroll", rarity = "Epic", count = 1 },
+	{ id = "quiz3", text = "Answer 3 Pop Quizzes right", signal = "quizRight", count = 3 },
+	{ id = "collect30", text = "Collect tuition 30 times", signal = "collect", count = 30 },
+	{ id = "letter1", text = "CALL an Admissions Letter", signal = "letter", count = 1 },
+	{ id = "lock5", text = "Lock your gate 5 times", signal = "lock", count = 5 },
+	{ id = "bus2", text = "Enroll 2 kids off special buses", signal = "busEnroll", count = 2 },
+	{ id = "eagle2", text = "Make 2 EAGLE EYE catches", signal = "eagleEye", count = 2 },
+}
+Config.DailyCandy = 25
+-- Loretta's Lunch Box, opened when all 3 are done. Odds are shown in the panel.
+Config.LunchBox = {
+	{ id = "candy", weight = 40, text = "80 Candy" },
+	{ id = "Rare", weight = 30, text = "Rare Letter, ready now" },
+	{ id = "Epic", weight = 18, text = "Epic Letter, ready now" },
+	{ id = "Legendary", weight = 9, text = "Legendary Letter, ready now" },
+	{ id = "Mythic", weight = 3, text = "Mythic Letter, ready now" },
+}
+
+---------------------------------------------------------------------------
 -- Janitor Stan's Confiscation Closet: what Confiscated Candy buys. Decor adds no Reputation (no income
 -- effect); traps protect your school. Candy is never sold for Robux.
 ---------------------------------------------------------------------------

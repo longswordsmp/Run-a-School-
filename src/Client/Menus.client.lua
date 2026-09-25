@@ -47,7 +47,12 @@ end
 ---------------------------------------------------------------------------
 -- big centre announcements
 ---------------------------------------------------------------------------
+local liveAnnounce = {}
 local function announce(text, color)
+	-- ones still on screen slide up to make room instead of drawing over each other
+	for _, old in liveAnnounce do
+		TweenService:Create(old, TweenInfo.new(0.2), { Position = old.Position - UDim2.fromOffset(0, 76) }):Play()
+	end
 	local t = UI.label(gui, {
 		Name = "Announce",
 		Text = text,
@@ -61,10 +66,12 @@ local function announce(text, color)
 	})
 	UI.new("UISizeConstraint", { MaxSize = Vector2.new(900, 70), Parent = t })
 	UI.pop(t, 0.2)
+	table.insert(liveAnnounce, t)
 	task.delay(2.2, function()
-		TweenService:Create(t, TweenInfo.new(0.4), { TextTransparency = 1, Position = UDim2.fromScale(0.5, 0.24) }):Play()
+		TweenService:Create(t, TweenInfo.new(0.4), { TextTransparency = 1, Position = t.Position - UDim2.fromScale(0, 0.06) }):Play()
 		TweenService:Create(t.UIStroke, TweenInfo.new(0.4), { Transparency = 1 }):Play()
 		task.wait(0.45)
+		table.remove(liveAnnounce, table.find(liveAnnounce, t))
 		t:Destroy()
 	end)
 end
@@ -638,7 +645,7 @@ end
 -- Daily reward: a 7-day streak
 ---------------------------------------------------------------------------
 do
-	local panel = UI.panel(gui, { name = "Daily", title = "DAILY REWARD", color = UI.C.orange, size = UDim2.fromOffset(780, 380) })
+	local panel = UI.panel(gui, { name = "Daily", title = "DAILY", color = UI.C.orange, size = UDim2.fromOffset(780, 640) })
 	panels.Daily = panel
 	local streakText = UI.label(panel.body, { Text = "", TextColor3 = UI.C.navy, Size = UDim2.new(1, 0, 0, 28), ZIndex = 12, stroke = 0 })
 	local row = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 170), Position = UDim2.fromOffset(0, 36), ZIndex = 11, Parent = panel.body })
@@ -654,8 +661,75 @@ do
 		local txt = UI.label(t, { Name = "Text", Text = "", TextWrapped = true, TextColor3 = UI.C.navy, Size = UDim2.new(1, -10, 0, 60), Position = UDim2.fromOffset(5, 92), ZIndex = 13, stroke = 0 })
 		tiles[i] = { frame = t, text = txt, grad = grad }
 	end
-	local claim = UI.button(panel.body, { text = "CLAIM!", color = UI.C.green, size = UDim2.fromOffset(260, 62), position = UDim2.new(0.5, 0, 1, -4), anchor = Vector2.new(0.5, 1), font = UI.BIG })
+	local claim = UI.button(panel.body, { text = "CLAIM!", color = UI.C.green, size = UDim2.fromOffset(240, 50), position = UDim2.new(0.5, 0, 0, 204), anchor = Vector2.new(0.5, 0), font = UI.BIG })
 	lift(claim.button, 12)
+
+	-- Daily Requests (DailyService): three rows, one free reroll, then Loretta's Lunch Box
+	UI.label(panel.body, { Text = "\u{1F4CB} TODAY'S REQUESTS", Font = UI.BIG, TextColor3 = UI.C.orange, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(0.6, 0, 0, 28), Position = UDim2.fromOffset(4, 266), ZIndex = 12, stroke = 2 })
+	local resetText = UI.label(panel.body, { Text = "", TextColor3 = UI.C.grey, TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.new(0.4, -8, 0, 22), Position = UDim2.new(0.6, 0, 0, 270), ZIndex = 12, stroke = 0 })
+	local qRows = {}
+	for i = 1, 3 do
+		local r = UI.new("Frame", { Name = "Request" .. i, Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 298 + (i - 1) * 50), BackgroundColor3 = UI.C.white, ZIndex = 12, Parent = panel.body })
+		UI.corner(r, 12)
+		UI.stroke(r, 3)
+		local text = UI.label(r, { Text = "", TextColor3 = UI.C.ink, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(0, 330, 0, 28), Position = UDim2.fromOffset(12, 8), ZIndex = 13, stroke = 0 })
+		local barBg = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(70, 70, 80), Size = UDim2.fromOffset(200, 20), Position = UDim2.fromOffset(352, 12), ZIndex = 13, Parent = r })
+		UI.corner(barBg, 10)
+		local fill = UI.new("Frame", { BackgroundColor3 = UI.C.green, Size = UDim2.fromScale(0, 1), ZIndex = 14, Parent = barBg })
+		UI.corner(fill, 10)
+		local count = UI.label(barBg, { Text = "", Size = UDim2.fromScale(1, 1), ZIndex = 15, stroke = 2 })
+		local reward = UI.label(r, { Text = "", TextColor3 = UI.C.pink, Font = UI.BIG, Size = UDim2.fromOffset(80, 28), Position = UDim2.fromOffset(562, 8), ZIndex = 13, stroke = 1 })
+		local reroll = UI.button(r, { text = "\u{1F504}", color = UI.C.blue, size = UDim2.fromOffset(84, 34), position = UDim2.new(1, -6, 0.5, 0), anchor = Vector2.new(1, 0.5), font = UI.BIG, radius = 10 })
+		lift(reroll.button, 13)
+		qRows[i] = { frame = r, text = text, fill = fill, count = count, reward = reward, reroll = reroll }
+	end
+	local box = UI.button(panel.body, { text = "\u{1F371} OPEN LUNCH BOX", color = UI.C.orange, size = UDim2.fromOffset(300, 60), position = UDim2.fromOffset(0, 456), font = UI.BIG })
+	lift(box.button, 12)
+	local boxNote = UI.label(panel.body, { Text = "Finish all 3 to open Loretta's Lunch Box", TextColor3 = UI.C.navy, TextWrapped = true, Size = UDim2.fromOffset(300, 34), Position = UDim2.fromOffset(0, 520), ZIndex = 12, stroke = 0 })
+	local oddsText = UI.label(panel.body, { Text = "", TextColor3 = UI.C.navy, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextScaled = false, TextSize = 17, Size = UDim2.new(1, -330, 0, 100), Position = UDim2.fromOffset(322, 456), ZIndex = 12, stroke = 0 })
+	local qState
+	local function showRequests(q)
+		if not q or q.ok == false then return end
+		qState = q
+		for i, r in qRows do
+			local it = q.requests[i]
+			r.frame.Visible = it ~= nil
+			if it then
+				r.text.Text = (it.done and "\u{2714} " or "") .. it.text
+				r.text.TextColor3 = it.done and Color3.fromRGB(40, 150, 70) or UI.C.ink
+				r.fill.Size = UDim2.fromScale(math.clamp(it.progress / it.count, 0, 1), 1)
+				r.count.Text = ("%d / %d"):format(it.progress, it.count)
+				r.reward.Text = it.done and "DONE" or ("+%d \u{1F36C}"):format(q.candy)
+				r.reroll.button.Visible = q.canReroll and not it.done and it.progress == 0
+			end
+		end
+		box.setEnabled(q.boxReady == true)
+		box.setText(q.boxOpened and "OPENED TODAY" or "\u{1F371} OPEN LUNCH BOX")
+		boxNote.Text = q.prize and ("You got: " .. q.prize .. "!") or (q.boxOpened and "Come back tomorrow for 3 new requests")
+			or (q.boxReady and "Ready! Open it!" or "Finish all 3 to open Loretta's Lunch Box")
+		local lines = { "Lunch Box odds:" }
+		for _, o in q.odds do table.insert(lines, ("%s%%  %s"):format(tostring(o.pct), o.text)) end
+		oddsText.Text = table.concat(lines, "\n")
+		local h = math.floor(q.resetIn / 3600)
+		resetText.Text = ("New requests in %dh %dm"):format(h, math.floor(q.resetIn % 3600 / 60))
+	end
+	for i, r in qRows do
+		r.reroll.button.Activated:Connect(function()
+			local res = call("rerollDaily", i)
+			if res and res.ok then
+				sfx("Whoosh")
+				showRequests(res)
+			end
+		end)
+	end
+	box.button.Activated:Connect(function()
+		if not box.button.Active then return end
+		local res = call("openLunchBox")
+		if res and res.ok then showRequests(res) end
+	end)
+	Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
+		if kind == "dailyQ" then showRequests(data) end
+	end)
 	local state
 	function panel.refresh()
 		state = call("daily")
@@ -674,6 +748,7 @@ do
 		end
 		claim.setEnabled(not state.claimed)
 		claim.setText(state.claimed and "CLAIMED" or "CLAIM!")
+		showRequests(call("dailyQ"))
 	end
 	claim.button.Activated:Connect(function()
 		if not claim.button.Active then return end
@@ -988,7 +1063,25 @@ sideButton(4, "\u{1F4D6}", "Yearbook", UI.C.pink, panels.Yearbook)
 sideButton(5, "\u{270F}\u{FE0F}", "Name", UI.C.blue, panels.NameSchool)
 sideButton(6, "\u{2699}\u{FE0F}", "Settings", UI.C.navy, panels.Settings)
 sideButton(0, "\u{1F48E}", "Store", Color3.fromRGB(40, 190, 90), panels.Store)
-sideButton(9, "\u{1F4C5}", "Daily", UI.C.orange, panels.Daily)
+local dailyButton = sideButton(9, "\u{1F4C5}", "Daily", UI.C.orange, panels.Daily)
+-- a red "!" when today's streak reward or the Lunch Box is waiting (DailyService sets DailyReady)
+do
+	local badge = UI.new("Frame", { Name = "Badge", Size = UDim2.fromOffset(26, 26), Position = UDim2.new(1, 4, 0, -4), AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = UI.C.red, ZIndex = 6, Visible = false, Parent = dailyButton.button })
+	UI.corner(badge, 13)
+	UI.stroke(badge, 2)
+	UI.label(badge, { Text = "!", Font = UI.BIG, Size = UDim2.fromScale(1, 1), ZIndex = 7, stroke = 2 })
+	local function refresh()
+		badge.Visible = player:GetAttribute("DailyReady") == true
+	end
+	player:GetAttributeChangedSignal("DailyReady"):Connect(refresh)
+	refresh()
+	task.spawn(function()
+		while true do
+			if badge.Visible then UI.punch(badge, 1.25) end
+			task.wait(1.6)
+		end
+	end)
+end
 -- Teleport Home pass: a home button once you own it
 local homeButton
 local function refreshHome()
