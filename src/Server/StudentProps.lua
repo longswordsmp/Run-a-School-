@@ -532,6 +532,35 @@ local function sparkles(p, color, rate)
 	return e
 end
 
+-- Head Hall Monitor Hector, age 11: a sash far too big, a head-sized badge, a whistle, a STOP sign
+B.HectorSash = function(model, head, hs)
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	block(model, torso, Vector3.new(ts.X * 0.35, ts.Y * 1.5, ts.Z * 1.08), CFrame.new(0, -ts.Y * 0.1, 0) * CFrame.Angles(0, 0, math.rad(35)), rgb(255, 150, 30))
+	local badge = ball(model, torso, 1.1, CFrame.new(-ts.X * 0.2, ts.Y * 0.2, -ts.Z * 0.75), rgb(255, 210, 50), Enum.Material.Metal)
+	_ = badge
+	for r = 0, 4 do
+		block(model, torso, Vector3.new(0.1, 0.45, 0.08), CFrame.new(-ts.X * 0.2, ts.Y * 0.2, -ts.Z * 0.75 - 0.52) * CFrame.Angles(0, 0, math.rad(r * 72)), rgb(200, 60, 30))
+	end
+	block(model, torso, Vector3.new(0.3, 0.18, 0.35), CFrame.new(ts.X * 0.25, ts.Y * 0.35, -ts.Z * 0.62), rgb(200, 200, 210), Enum.Material.Metal)
+	local hand = part(model, "RightHand")
+	cylY(model, hand, 0.14, 2.2, CFrame.new(0, 0.9, -0.2), rgb(120, 120, 130), Enum.Material.Metal)
+	local stop = cylZ(model, hand, 1.6, 0.12, CFrame.new(0, 2.2, -0.2), rgb(220, 30, 40))
+	local g = Instance.new("SurfaceGui")
+	g.Face = Enum.NormalId.Right -- the cylinder's round face, turned to face forward
+	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	g.PixelsPerStud = 60
+	g.Parent = stop
+	local t = Instance.new("TextLabel")
+	t.Size = UDim2.fromScale(1, 1)
+	t.BackgroundTransparency = 1
+	t.Text = "STOP"
+	t.TextScaled = true
+	t.Font = Enum.Font.LuckiestGuy
+	t.TextColor3 = rgb(255, 255, 255)
+	t.Parent = g
+end
+
 -- Dealers (NPCs that sneak into schools) --------------------------------
 B.CandyDealer = function(model, head, hs)
 	local torso = part(model, "UpperTorso")
@@ -1865,6 +1894,95 @@ T.omni = function(model, head, hs, torso, ts)
 	end
 	blob(model, part(model, "LowerTorso"), Vector3.new(ts.X * 1.25, ts.Y * 1.6, ts.Z * 1.4), CFrame.new(0, -ts.Y * 0.6, 0), rgb(40, 30, 90))
 	sparkles(part(model, "HumanoidRootPart"), rgb(200, 180, 255), 10)
+end
+
+---------------------------------------------------------------------------
+-- story characters (docs/DESIGN-v2.md section 1)
+---------------------------------------------------------------------------
+-- Mr. Wobblesworth, the retired principal: bald with white side tufts, a walrus moustache, round
+-- glasses, a tweed cardigan, a green bow tie and a giant yellow pencil for a cane
+Props.TeacherLooks.wobble = { skin = "light", shirt = Color3.fromRGB(150, 110, 70), pants = Color3.fromRGB(90, 80, 70) }
+T.wobble = function(model, head, hs, torso, ts)
+	local white = rgb(240, 240, 242)
+	for _, x in { -1, 1 } do
+		blob(model, head, Vector3.new(hs.X * 0.3, hs.Y * 0.45, hs.Z * 0.8), CFrame.new(x * hs.X * 0.5, hs.Y * 0.05, hs.Z * 0.1), white)
+		blob(model, head, Vector3.new(hs.X * 0.55, hs.Y * 0.2, hs.Z * 0.3), CFrame.new(x * hs.X * 0.24, -hs.Y * 0.2, -hs.Z * 0.48) * CFrame.Angles(0, 0, math.rad(x * -12)), white)
+	end
+	wireGlasses(model, head, hs, 0.06, 0.16)
+	for _, x in { -1, 1 } do
+		block(model, torso, Vector3.new(ts.X * 0.14, ts.Y * 0.12, 0.08), CFrame.new(x * ts.X * 0.08, ts.Y * 0.42, -ts.Z * 0.55) * CFrame.Angles(0, 0, math.rad(x * 20)), rgb(40, 150, 70))
+	end
+	for i = 0, 3 do
+		ball(model, torso, 0.14, CFrame.new(0, ts.Y * (0.25 - i * 0.2), -ts.Z * 0.55), rgb(90, 60, 40))
+	end
+	-- the pencil cane
+	local hand = part(model, "RightHand")
+	cylY(model, hand, 0.45, 4.5, CFrame.new(0.15, -1.6, -0.25), rgb(255, 205, 50))
+	cylY(model, hand, 0.47, 0.5, CFrame.new(0.15, 0.55, -0.25), rgb(255, 150, 170))
+	cylY(model, hand, 0.46, 0.25, CFrame.new(0.15, 0.2, -0.25), rgb(200, 200, 210), Enum.Material.Metal)
+	cylY(model, hand, 0.25, 0.4, CFrame.new(0.15, -3.95, -0.25), rgb(240, 210, 170))
+end
+
+-- Janitor Stan: blue overalls, a grey cap, a ring of keys and a mop
+Props.TeacherLooks.stan = { skin = "tan", shirt = Color3.fromRGB(200, 200, 205), pants = Color3.fromRGB(50, 80, 150), torso = Color3.fromRGB(50, 80, 150) }
+T.stan = function(model, head, hs, torso, ts)
+	blob(model, head, Vector3.new(hs.X * 1.08, hs.Y * 0.45, hs.Z * 1.1), CFrame.new(0, hs.Y * 0.36, 0), rgb(110, 110, 120))
+	block(model, head, Vector3.new(hs.X * 0.9, 0.12, hs.Z * 0.5), CFrame.new(0, hs.Y * 0.28, -hs.Z * 0.58), rgb(110, 110, 120))
+	blob(model, head, Vector3.new(hs.X * 0.7, hs.Y * 0.3, hs.Z * 0.35), CFrame.new(0, -hs.Y * 0.35, -hs.Z * 0.35), rgb(90, 70, 55))
+	for _, x in { -1, 1 } do
+		block(model, torso, Vector3.new(0.18, ts.Y * 0.95, 0.06), CFrame.new(x * ts.X * 0.25, 0, -ts.Z * 0.53), rgb(40, 65, 130))
+	end
+	local lower = part(model, "LowerTorso")
+	for i = 0, 5 do
+		block(model, lower, Vector3.new(0.12, 0.35, 0.05), CFrame.new(ts.X * 0.45, -0.1 - (i % 2) * 0.08, -0.3 + i * 0.12) * CFrame.Angles(0, 0, math.rad(i * 15)), rgb(200, 200, 205), Enum.Material.Metal)
+	end
+	local hand = part(model, "RightHand")
+	cylY(model, hand, 0.18, 5.2, CFrame.new(0, -1.3, -0.35) * CFrame.Angles(math.rad(20), 0, 0), rgb(150, 110, 70), Enum.Material.Wood)
+	for i = 0, 5 do
+		block(model, hand, Vector3.new(0.12, 1.1, 0.12), CFrame.new(-0.3 + i * 0.12, -3.9, -1.2) * CFrame.Angles(math.rad(20), 0, math.rad((i - 2.5) * 6)), rgb(240, 240, 235))
+	end
+end
+
+-- Lunch Lady Loretta: pink apron, a purple beehive under a hairnet, oven mitts and a giant ladle
+Props.TeacherLooks.loretta = { skin = "brown", shirt = Color3.fromRGB(250, 250, 250), pants = Color3.fromRGB(80, 80, 90) }
+T.loretta = function(model, head, hs, torso, ts)
+	local hair = rgb(150, 80, 200)
+	blob(model, head, Vector3.new(hs.X * 1.05, hs.Y * 0.6, hs.Z * 1.08), CFrame.new(0, hs.Y * 0.28, hs.Z * 0.05), hair)
+	blob(model, head, Vector3.new(hs.X * 0.85, hs.Y * 0.9, hs.Z * 0.85), CFrame.new(0, hs.Y * 0.8, hs.Z * 0.05), hair)
+	local net = blob(model, head, Vector3.new(hs.X * 0.9, hs.Y * 0.95, hs.Z * 0.9), CFrame.new(0, hs.Y * 0.8, hs.Z * 0.05), rgb(250, 250, 255), Enum.Material.ForceField)
+	net.Transparency = 0.4
+	block(model, torso, Vector3.new(ts.X * 0.75, ts.Y * 0.95, 0.06), CFrame.new(0, -ts.Y * 0.05, -ts.Z * 0.53), rgb(255, 150, 190))
+	local lower = part(model, "LowerTorso")
+	block(model, lower, Vector3.new(ts.X * 0.8, 2.2, 0.06), CFrame.new(0, -0.8, -lower.Size.Z * 0.55), rgb(255, 150, 190))
+	for _, h in { "LeftHand", "RightHand" } do
+		local hand = part(model, h)
+		if hand then blob(model, hand, Vector3.new(0.7, 0.7, 0.7), CFrame.new(), rgb(230, 60, 60)) end
+	end
+	local hand = part(model, "RightHand")
+	cylY(model, hand, 0.14, 2.6, CFrame.new(0, 0.9, -0.3) * CFrame.Angles(math.rad(-15), 0, 0), rgb(200, 200, 210), Enum.Material.Metal)
+	ball(model, hand, 0.9, CFrame.new(0, 2.25, -0.65), rgb(200, 200, 210), Enum.Material.Metal)
+end
+
+-- the Sugar Baron: trench coat, a top hat made of cake, glowing pink eyes, face in shadow
+Props.TeacherLooks.baron = { skin = "dark", shirt = Color3.fromRGB(120, 60, 90), pants = Color3.fromRGB(40, 30, 40) }
+T.baron = function(model, head, hs, torso, ts)
+	head.Color = rgb(40, 30, 40)
+	for _, x in { -0.2, 0.2 } do
+		ball(model, head, hs.X * 0.16, CFrame.new(hs.X * x, hs.Y * 0.05, -hs.Z * 0.5), rgb(255, 80, 200), Enum.Material.Neon)
+	end
+	cylY(model, head, hs.X * 1.5, 0.15, CFrame.new(0, hs.Y * 0.42, 0), rgb(120, 70, 40))
+	cylY(model, head, hs.X * 1.05, hs.Y * 0.9, CFrame.new(0, hs.Y * 0.9, 0), rgb(120, 70, 40))
+	for i = 0, 1 do
+		cylY(model, head, hs.X * 1.07, 0.12, CFrame.new(0, hs.Y * (0.7 + i * 0.35), 0), rgb(250, 250, 245))
+	end
+	ball(model, head, 0.4, CFrame.new(0, hs.Y * 1.45, 0), rgb(220, 20, 40))
+	local lower = part(model, "LowerTorso")
+	blob(model, lower, Vector3.new(ts.X * 1.3, ts.Y * 1.6, ts.Z * 1.4), CFrame.new(0, -ts.Y * 0.6, 0), rgb(120, 60, 90))
+	local hand = part(model, "RightHand")
+	cylY(model, hand, 0.18, 3.5, CFrame.new(0, -1, -0.3), rgb(250, 250, 250))
+	for i = 0, 5 do
+		block(model, hand, Vector3.new(0.2, 0.1, 0.2), CFrame.new(0, -2.5 + i * 0.5, -0.3) * CFrame.Angles(0, 0, math.rad(35)), rgb(230, 30, 50))
+	end
 end
 
 -- Crumpet, Vex's butler: tailcoat, white gloves, slicked hair, a silver tray and a feather duster
