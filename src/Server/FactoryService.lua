@@ -17,6 +17,7 @@ local Signals = require(script.Parent.Signals)
 local PlotService = require(script.Parent.PlotService)
 local Factory = require(script.Parent.StudentFactory)
 local Walkers = require(script.Parent.Walkers)
+local Stealth = require(script.Parent.Stealth)
 local StealService = require(script.Parent.StealService)
 
 local FactoryService = {}
@@ -703,35 +704,36 @@ local function chase(g, player, reaction)
 	Factory.play(g.model, "idle")
 end
 
+-- (the one rule every guard uses: sneaking, sprinting, the Cardboard Box, smoke; see Stealth)
+local SIGHT = { sight = H.sightRange, angle = H.sightAngle, hear = H.hearRange }
 local function canSee(g, char)
-	local root = g.model.PrimaryPart
-	local proot = char and char:FindFirstChild("HumanoidRootPart")
-	if not root or not proot then return false end
-	local d = proot.Position - root.Position
-	local flat = Vector3.new(d.X, 0, d.Z)
-	if flat.Magnitude < H.hearRange then return true end
-	if flat.Magnitude > H.sightRange then return false end
-	local look = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z).Unit
-	if flat.Unit:Dot(look) < math.cos(math.rad(H.sightAngle / 2)) then return false end
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = { guardsFolder, char, root.Parent }
-	local eye = root.Position + Vector3.new(0, 1.5, 0)
-	local hit = workspace:Raycast(eye, (proot.Position + Vector3.new(0, 1, 0)) - eye, params)
-	return hit == nil or hit.Instance:IsDescendantOf(char)
+	return Stealth.canSee(g.model.PrimaryPart, char, SIGHT, { guardsFolder, g.model })
+end
+
+-- a noise (a Whoopee Cushion): the guard jogs over, looks around, and goes back to his rounds
+local function investigate(g, pos)
+	g.state = "investigate"
+	g.target = nil
+	guardTag(g, "?", rgb(255, 230, 90))
+	Factory.play(g.model, "run")
+	local to = Vector3.new(math.clamp(pos.X, B.x0 + 2, B.x1 - 2), 0.55 + g.so, math.clamp(pos.Z, B.z0 + 2, B.z1 - 2))
+	Walkers.walk(g.model, { to }, 11, function()
+		if g.state ~= "investigate" then return end
+		Factory.play(g.model, "idle")
+		guardTag(g, "Huh?", rgb(255, 230, 90))
+		task.delay(3.5, function()
+			if g.state == "investigate" then patrol(g) end
+		end)
+	end, { flat = true })
 end
 
 ---------------------------------------------------------------------------
 -- the heist
 ---------------------------------------------------------------------------
+-- (StealService.setSpeed knows the Factory carry speed from the Heist attribute, and adds sprint/sneak)
 local function setCarrySpeed(player, on)
-	local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-	if not hum then return end
-	if on then
-		hum.WalkSpeed = H.carrySpeed
-	else
-		StealService.setSpeed(player)
-	end
+	_ = on
+	StealService.setSpeed(player)
 end
 
 local function alarm(on)
@@ -782,10 +784,12 @@ local function thrownOut(player)
 	dropHeist(player, "Security caught you and threw you out!")
 	char:PivotTo(CFrame.lookAt(Vector3.new(math.random(-5, 5), 3.5, LOT.z0 - 6), Vector3.new(0, 3.5, 0)))
 	stunUntil[player] = now() + H.caughtStun
-	local hum = char:FindFirstChildOfClass("Humanoid")
-	if hum then hum.WalkSpeed = 0 end
+	player:SetAttribute("Stunned", true)
+	StealService.setSpeed(player)
 	task.delay(H.caughtStun, function()
-		if player.Parent then StealService.setSpeed(player) end
+		if not player.Parent then return end
+		player:SetAttribute("Stunned", nil)
+		StealService.setSpeed(player)
 	end)
 end
 
@@ -1017,6 +1021,15 @@ end
 -- the loop: guards look, chase, catch; carriers escape
 ---------------------------------------------------------------------------
 local function tick(dt)
+	-- who's being chased (the client shows SPOTTED / HIDDEN)
+	local chased = {}
+	for _, g in guards do
+		if g.state == "chase" and g.target then chased[g.target] = true end
+	end
+	for _, player in Players:GetPlayers() do
+		local was = player:GetAttribute("Spotted") == true
+		if chased[player] ~= was then player:SetAttribute("Spotted", chased[player] or nil) end
+	end
 	for _, g in guards do
 		local root = g.model.PrimaryPart
 		if not root then continue end
@@ -1029,7 +1042,7 @@ local function tick(dt)
 			end
 			continue
 		end
-		if g.state == "patrol" then
+		if g.state == "patrol" or g.state == "investigate" then
 			for _, player in Players:GetPlayers() do
 				local char = player.Character
 				local proot = char and char:FindFirstChild("HumanoidRootPart")
@@ -1137,6 +1150,33 @@ function FactoryService.start()
 		patrol(g)
 	end
 	table.insert(StealService.swingHooks, onSwing)
+	-- Heist Gear: a smoke bomb blinds the guards around it (they cough) and every guard after that
+	-- player loses them; a whoopee cushion in the Factory brings the patrols running
+	local GearService = require(script.Parent.GearService)
+	table.insert(GearService.smokeHooks, function(player, pos)
+		for _, g in guards do
+			local r = g.model.PrimaryPart
+			if r and (r.Position - pos).Magnitude < 18 then
+				Walkers.stop(g.model)
+				g.target = nil
+				g.state = "stunned"
+				g.stunUntil = now() + 3
+				guardTag(g, "*cough cough*", rgb(220, 220, 230))
+				Factory.play(g.model, "idle")
+			elseif g.target == player then
+				patrol(g)
+			end
+		end
+	end)
+	table.insert(GearService.noiseHooks, function(pos)
+		if not inLot(pos) then return end
+		for _, g in guards do
+			local r = g.model.PrimaryPart
+			if r and (g.state == "patrol" or g.state == "investigate") and (r.Position - pos).Magnitude < 45 then
+				investigate(g, pos)
+			end
+		end
+	end)
 	RunService.Heartbeat:Connect(function(dt)
 		local ok, err = pcall(tick, dt)
 		if not ok then warn("[Factory]", err) end

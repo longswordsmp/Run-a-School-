@@ -36,6 +36,8 @@ local FactoryService = require(Server.FactoryService)
 local MissionService = require(Server.MissionService)
 local StreetService = require(Server.StreetService)
 local UnlockService = require(Server.UnlockService)
+local MoveService = require(Server.MoveService)
+local GearService = require(Server.GearService)
 
 Factory.preload()
 PlotService.start()
@@ -63,6 +65,8 @@ FactoryService.start()
 MissionService.start_service()
 StreetService.start()
 UnlockService.start()
+MoveService.start()
+GearService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -249,6 +253,9 @@ require(Server.DebugBridge).start({
 	street = function(player, n)
 		player:SetAttribute("DebugChapter", n)
 		return true
+	end,
+	gear = function(player, id, n)
+		return GearService.give(player, id, n or 1)
 	end,
 	mission = function(player, id)
 		return MissionService.debugStart(player, id)

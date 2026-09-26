@@ -795,6 +795,36 @@ for i, c in Config.CandyShop do
 end
 
 ---------------------------------------------------------------------------
+-- Heist Gear (GearService): Janitor Stan sells it out of the back of his Closet, for cash. Prices are
+-- "secs" seconds of your school's tuition (so they keep up with your school), never under "floor".
+--   kind "perk"   kept forever, works on its own
+--   kind "tool"   kept forever, a tool in your backpack
+--   kind "use"    one use each, a tool in your backpack showing how many are left
+---------------------------------------------------------------------------
+Config.Gear = {
+	{ id = "CardboardBox", name = "Cardboard Box", icon = "\u{1F4E6}", kind = "tool", secs = 240, floor = 300,
+		desc = "Equip it and stand still: guards walk right past. Move slowly and they might not notice..." },
+	{ id = "SmokeBomb", name = "Smoke Bomb", icon = "\u{1F4A8}", kind = "use", secs = 45, floor = 120,
+		desc = "Poof! Guards nearby lose you and cough for 3 seconds" },
+	{ id = "WhoopeeCushion", name = "Whoopee Cushion", icon = "\u{1F4A9}", kind = "use", secs = 30, floor = 80,
+		desc = "Drop it and walk away: in 2 seconds it goes off and guards run over to check" },
+	{ id = "EnergyDrink", name = "Energy Drink", icon = "\u{26A1}", kind = "use", secs = 30, floor = 90,
+		desc = "20 seconds of sprinting that never runs out, a little faster too" },
+	{ id = "SilentSneakers", name = "Silent Sneakers", icon = "\u{1F45F}", kind = "perk", secs = 480, floor = 600,
+		desc = "Sneak 35% faster" },
+	{ id = "RunningShoes", name = "Running Shoes", icon = "\u{1F3BD}", kind = "perk", secs = 420, floor = 500,
+		desc = "50% more stamina, and it comes back faster" },
+	{ id = "LockpickSet", name = "Lockpick Set", icon = "\u{1F511}", kind = "perk", secs = 600, floor = 800,
+		desc = "Grab kids out of pens and desks twice as fast" },
+}
+Config.GearById = {}
+for i, g in Config.Gear do
+	g.order = i
+	Config.GearById[g.id] = g
+end
+Config.GearUse = { max = 9 } -- the most of one kind of "use" gear you can carry
+
+---------------------------------------------------------------------------
 -- Robux store (docs/DESIGN-v2.md section 13). Create each pass/product on the Creator Dashboard and
 -- paste its id here; id = 0 shows as "SOON" in the store and can't be bought.
 -- Fairness: nothing is ever prompted automatically; paid random items show their odds.

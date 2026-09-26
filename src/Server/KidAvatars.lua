@@ -78,7 +78,7 @@ KidAvatars.Kids = {
 	SkaterKid = { body = "boy", head = F.grin, hair = "140529327476591", hat = "15300251849", shirt = 7521968242, pants = 6092090926 },
 	Mathlete = { body = "boy", head = F.smile, hair = "100565153355098", shirt = 82600713548981, pants = 72395991071341 },
 	BandGeek = { body = "boy", head = F.grin, hair = "105034447346251", hat = "10293177181", shirt = 94509788673764, pants = 8741031594 },
-	CheerCaptain = { body = "girl", head = F.excited, hair = "128343067484017", shirt = 93409420221556, pants = 6212699685, prop = "hands" },
+	CheerCaptain = { body = "girl", head = F.excited, hair = "128343067484017", shirt = 6266326685, pants = 6212699685, prop = "hands" },
 	ArtsyAva = { body = "girl", head = F.lashes, hair = "11180024054", hat = "12344374178", shirt = 6176966134, pants = 6958133488, prop = "hands" },
 	ChessChampion = { body = "boy", head = F.smile, hair = "13743108491", shirt = 14478025982, pants = 72395991071341 },
 	-- Epic

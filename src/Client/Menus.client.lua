@@ -193,7 +193,7 @@ do
 	panels.Shop = panel
 	local info = UI.label(panel.body, { Name = "Info", Text = "", TextColor3 = UI.C.navy, Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 52), ZIndex = 12, stroke = 0 })
 	local pages = {}
-	for i = 1, 5 do
+	for i = 1, 6 do
 		pages[i] = UI.new("Frame", { Name = "Page" .. i, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -86), Position = UDim2.fromOffset(0, 84), Visible = false, ZIndex = 11, Parent = panel.body })
 	end
 	local profile
@@ -314,6 +314,23 @@ do
 		end)
 	end
 
+	-- Heist Gear (GearService): Janitor Stan's stall outside the Closet
+	local gearList = scrollList(pages[6])
+	local gearRows = {}
+	for i, g in Config.Gear do
+		gearRows[g.id] = shopRow(gearList, i, {
+			name = g.id, icon = g.icon, title = g.name, desc = g.desc,
+			sub = g.kind == "use" and "One use each, in your backpack" or (g.kind == "tool" and "Yours to keep, in your backpack" or "Yours to keep, always on"),
+			iconBg = Color3.fromRGB(235, 225, 255),
+		})
+		gearRows[g.id].buy.button.Activated:Connect(function()
+			if not gearRows[g.id].buy.button.Active then return end
+			local res = call("buyGear", g.id)
+			if res and res.ok == false then UI.punch(gearRows[g.id].frame, 1.04) end
+			panel.refresh()
+		end)
+	end
+
 	local function show(row, state, price, lockText)
 		setState(row, state, price, lockText)
 		priced[row] = { state = state, price = price }
@@ -357,6 +374,23 @@ do
 				else
 					show(row, "buy", t.price)
 					row.buy.setText("HIRE " .. Config.formatCash(t.price))
+				end
+			end
+		elseif current == 6 then
+			local st = call("gearShop")
+			if not st or st.ok == false then return end
+			info.Text = "\u{1F977} Sneak past guards, grab the kid, get out. Hold SHIFT to sprint, C to sneak."
+			for _, it in st.items do
+				local row = gearRows[it.id]
+				if row then
+					if it.owned then
+						show(row, "owned")
+					elseif it.count and it.count >= st.max then
+						show(row, "locked", nil, ("x%d FULL"):format(it.count))
+					else
+						show(row, "buy", it.price)
+						if it.count and it.count > 0 then row.buy.setText(("%s (x%d)"):format(Config.formatCash(it.price), it.count)) end
+					end
 				end
 			end
 		elseif current == 5 then
@@ -417,11 +451,12 @@ do
 	end
 
 	local selectTab = tabs(panel.body, {
-		{ "\u{270F}\u{FE0F} Supplies", UI.C.blue, 142 },
-		{ "\u{1F9D1}\u{200D}\u{1F3EB} Teachers", UI.C.orange, 142 },
-		{ "\u{1F3D7}\u{FE0F} Builder", UI.C.green, 142 },
-		{ "\u{1F36C} Candy", UI.C.pink, 142 },
-		{ "\u{1F39F}\u{FE0F} Event", Color3.fromRGB(255, 165, 40), 142 },
+		{ "\u{270F}\u{FE0F} Supplies", UI.C.blue, 122 },
+		{ "\u{1F9D1}\u{200D}\u{1F3EB} Teachers", UI.C.orange, 122 },
+		{ "\u{1F3D7}\u{FE0F} Builder", UI.C.green, 122 },
+		{ "\u{1F36C} Candy", UI.C.pink, 110 },
+		{ "\u{1F39F}\u{FE0F} Event", Color3.fromRGB(255, 165, 40), 110 },
+		{ "\u{1F392} Gear", UI.C.purple, 110 },
 	}, function(i)
 		current = i
 		for j, pg in pages do pg.Visible = j == i end
@@ -1358,6 +1393,15 @@ do
 		if not gpe and input.KeyCode == Enum.KeyCode.H and home.button.Visible then goHome() end
 	end)
 end
+-- the server opens a panel (a prompt in the world, like Stan's gear stall)
+Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
+	if kind ~= "openPanel" or type(data) ~= "table" then return end
+	local p = panels[data.name]
+	if not p then return end
+	p.open()
+	if data.tab and p.select then p.select(data.tab) end
+end)
+
 -- a button unlocking gets a NEW! badge and a toast
 Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
 	if kind ~= "unlock" or type(data) ~= "table" then return end

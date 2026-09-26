@@ -31,22 +31,26 @@ local function humanoid(player)
 	return char and char:FindFirstChildOfClass("Humanoid"), char and char:FindFirstChild("HumanoidRootPart")
 end
 
+-- every speed goes through here: stunned, carrying, the Factory carry, walking; then sprint or
+-- sneak on top (MoveService)
 local function setSpeed(player)
 	local hum = humanoid(player)
 	if not hum then return end
-	if stunned[player] and stunned[player] > os.clock() then
+	if (stunned[player] and stunned[player] > os.clock()) or player:GetAttribute("Stunned") then
 		hum.WalkSpeed = 0
 		return
 	end
 	local c = carrying[player]
+	local speed
 	if c then
 		local p = Data.get(player)
-		hum.WalkSpeed = Config.CarrySpeed * (p and UpgradeService.carrySpeedMult(p) or 1)
+		speed = Config.CarrySpeed * (p and UpgradeService.carrySpeedMult(p) or 1)
 	elseif player:GetAttribute("Heist") then
-		hum.WalkSpeed = Config.Heist.carrySpeed -- carrying a kid out of the Factory
+		speed = Config.Heist.carrySpeed -- carrying a kid out of the Factory
 	else
-		hum.WalkSpeed = BASE_SPEED
+		speed = BASE_SPEED
 	end
+	hum.WalkSpeed = speed * require(script.Parent.MoveService).mult(player)
 end
 
 -- put the carried student over the thief's head
