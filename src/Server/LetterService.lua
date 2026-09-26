@@ -124,8 +124,9 @@ local function release(player, model)
 	Walkers.walk(model, pts, Config.WalkSpeed, function() model:Destroy() end, { flat = false })
 end
 
--- deliver a reserved kid to the owner's Waiting Bench
-function LetterService.deliver(player, def, free, gradeOverride)
+-- deliver a reserved kid to the owner's Waiting Bench. note: the line under their name while they
+-- walk and wait (default "FREE! (Scholarship)" for a free kid)
+function LetterService.deliver(player, def, free, gradeOverride, note)
 	local plot = PlotService.getPlot(player)
 	if not plot then return nil end
 	local seat = freeSeat(player)
@@ -155,7 +156,7 @@ function LetterService.deliver(player, def, free, gradeOverride)
 	local bb = model.Head:FindFirstChild("Tag")
 	local price = bb and bb:FindFirstChild("Price")
 	if price then
-		price.Text = free and "FREE! (Scholarship)" or ("RESERVED \u{2022} " .. Config.formatCash(def.price))
+		price.Text = note or (free and "FREE! (Scholarship)" or ("RESERVED \u{2022} " .. Config.formatCash(def.price)))
 		price.TextColor3 = free and Color3.fromRGB(120, 255, 120) or Color3.fromRGB(255, 220, 90)
 	end
 	local so = Factory.standOffset(model)

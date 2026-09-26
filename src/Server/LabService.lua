@@ -623,7 +623,7 @@ local function escaped(player)
 	StealService.setSpeed(player)
 	local p = Data.get(player)
 	local LetterService = require(script.Parent.LetterService)
-	if p and not LetterService.deliver(player, c.def, true, "Mutated") then
+	if p and not LetterService.deliver(player, c.def, true, "Mutated", "RESCUED from the Lab!") then
 		p.pendingBench = p.pendingBench or {}
 		table.insert(p.pendingBench, { id = c.def.id, grade = "Mutated" })
 	end

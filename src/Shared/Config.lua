@@ -922,10 +922,17 @@ for i, s in Config.SecretMissions do
 end
 Config.SecretCooldown = 150 -- seconds between Stan's jobs
 
+-- Vex Prep Academy (RivalService): VexCorp's own school, full of kids to steal
+Config.Rival = {
+	restock = 75, -- seconds before a desk has a new kid
+	revengeAfter = 70, -- after you steal from them, their goons raid your school within this many seconds
+}
+
 -- places with guards: the client shows the HIDDEN / SPOTTED eye and the sneak keys inside them
 Config.SecureZones = {
 	{ name = "factory", x0 = -33, x1 = 33, z0 = 34, z1 = 134 },
 	{ name = "lab", x0 = -474, x1 = -366, z0 = 42, z1 = 150 },
+	{ name = "rival", x0 = 372, x1 = 482, z0 = -170, z1 = -45 },
 }
 
 ---------------------------------------------------------------------------

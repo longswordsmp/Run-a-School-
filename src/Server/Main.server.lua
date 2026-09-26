@@ -41,6 +41,7 @@ local GearService = require(Server.GearService)
 local LabService = require(Server.LabService)
 local FilesService = require(Server.FilesService)
 local SecretService = require(Server.SecretService)
+local RivalService = require(Server.RivalService)
 
 Factory.preload()
 PlotService.start()
@@ -73,6 +74,7 @@ GearService.start()
 LabService.start()
 FilesService.start()
 SecretService.start_service()
+RivalService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -274,6 +276,12 @@ require(Server.DebugBridge).start({
 	end,
 	lab = function(player)
 		return LabService.debugState()
+	end,
+	rivalTake = function(player, i)
+		return RivalService.debugTake(player, i)
+	end,
+	rivalCalm = function(player, secs)
+		return RivalService.debugCalm(secs)
 	end,
 	labCalm = function(player, secs)
 		return LabService.debugCalm(secs)

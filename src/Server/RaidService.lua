@@ -672,6 +672,12 @@ function RaidService.start_raid(player, opts)
 end
 
 -- the tutorial's thief: Crumpet, slow, and he never actually leaves with the kid
+-- someone just stole from Vex Prep: their goons come for this player's school soon
+function RaidService.soon(player, secs)
+	local at = now() + secs
+	if not nextRaid[player] or nextRaid[player] > at then nextRaid[player] = at end
+end
+
 function RaidService.tutorialRaid(player)
 	return RaidService.start_raid(player, { goons = 1, hp = 1, tutorial = true })
 end
