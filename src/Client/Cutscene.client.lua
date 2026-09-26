@@ -166,10 +166,8 @@ local function dialogBox(speaker, templateId)
 	})
 	UI.corner(portrait, 14)
 	UI.stroke(portrait, 3)
-	local tt = ReplicatedStorage:FindFirstChild("TeacherTemplates")
-	local st = ReplicatedStorage:FindFirstChild("StudentTemplates")
-	local chair = (tt and tt:FindFirstChild(templateId or "DeanMaximus")) or (st and templateId and st:FindFirstChild(templateId))
-	if chair then
+	local function fill(chair)
+		if not chair or not portrait.Parent then return end
 		local vp, m = UI.viewport(portrait, chair, { zindex = 8, zoom = 0.55 })
 		-- frame the head and shoulders
 		local cam = vp.CurrentCamera
@@ -177,6 +175,24 @@ local function dialogBox(speaker, templateId)
 		if head and cam then
 			cam.CFrame = CFrame.lookAt(head.Position + Vector3.new(0, 0.1, -4.2), head.Position + Vector3.new(0, -0.3, 0))
 		end
+	end
+	local tt = ReplicatedStorage:FindFirstChild("TeacherTemplates")
+	local st = ReplicatedStorage:FindFirstChild("StudentTemplates")
+	local chair = (tt and tt:FindFirstChild(templateId or "DeanMaximus")) or (st and templateId and st:FindFirstChild(templateId))
+	if chair then
+		fill(chair)
+	else
+		-- (the very first cutscene can beat the templates to the client: fill in when they land)
+		task.spawn(function()
+			local id = templateId or "DeanMaximus"
+			local tf = ReplicatedStorage:WaitForChild("TeacherTemplates", 8)
+			local found = tf and tf:WaitForChild(id, templateId and 2 or 8)
+			if not found then
+				local sf = ReplicatedStorage:WaitForChild("StudentTemplates", 4)
+				found = sf and sf:FindFirstChild(id)
+			end
+			fill(found)
+		end)
 	end
 	UI.label(box, { Text = speaker or "THE BOARD CHAIR", Font = UI.BIG, TextColor3 = UI.C.purple, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -170, 0, 30), Position = UDim2.fromOffset(150, 12), ZIndex = 7, stroke = 2 })
 	local text = UI.label(box, { Text = "", TextColor3 = UI.C.ink, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, TextScaled = false, TextSize = 26, Size = UDim2.new(1, -170, 0, 80), Position = UDim2.fromOffset(150, 48), ZIndex = 7, stroke = 0 })

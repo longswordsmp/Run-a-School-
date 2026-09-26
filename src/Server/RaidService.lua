@@ -901,6 +901,7 @@ function RaidService.start()
 				local tutorialDone = (p.tutorial or 1) > #Config.Tutorial or QuestService.pastStep(player, "k08_crew")
 				if not nextRaid[player] then nextRaid[player] = now() + R.first end
 				if tutorialDone and not raids[player] and now() >= nextRaid[player] and not p.reviewing and not p.finalePending
+					and not player:GetAttribute("Mission")
 					and lastMove[player] and now() - lastMove[player] < 90 then
 					local kids = 0
 					for _, e in p.students do

@@ -48,8 +48,6 @@ end
 function AreaService.isOpen(player, id)
 	local area = Config.AreaById[id]
 	if not area then return true end
-	-- (Chapter 1's Vex Prep Job: in through the office floor, SewerHeist sets this)
-	if id == "VexPrep" and player:GetAttribute("VexPrepHeist") then return true end
 	local own = Data.own(player)
 	if own and own.areas and own.areas[id] then return true end
 	return earned(player, area)
@@ -111,7 +109,9 @@ local function guard()
 		if root and not player:GetAttribute("AdminBypass") then
 			local pos = root.Position
 			for _, area in Config.Areas do
-				if inBox(pos, area.box) and not AreaService.isOpen(player, area.id) then
+				-- (Chapter 1's Vex Prep Job comes up through the office floor: SewerHeist's pass)
+				local pass = area.id == "VexPrep" and player:GetAttribute("VexPrepHeist")
+				if inBox(pos, area.box) and not pass and not AreaService.isOpen(player, area.id) then
 					local to = area.id == "Lair" and Vector3.new(560, 6, 0) or outside(area)
 					player.Character:PivotTo(CFrame.new(to))
 					Remotes.Notify:FireClient(player, ("\u{1F512} %s is locked. %s to open it."):format(area.name, area.hint), "bad")

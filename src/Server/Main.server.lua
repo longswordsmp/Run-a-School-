@@ -630,6 +630,12 @@ require(Server.DebugBridge).start({
 			return require(Server.SewerHeist).debugDo(player, arg)
 		elseif what == "boss" then
 			return require(Server.QuestGoons).debugHitBoss(player)
+		elseif what == "demo" then
+			return RaidService.lockDemo(player)
+		elseif what == "plans" then
+			return FactoryService.debugTakePlans(player)
+		elseif what == "calm" then
+			return { factory = FactoryService.debugCalm(arg or 40), vexprep = RivalService.debugCalm(arg or 40) }
 		elseif what == "bench" then
 			for _, m in workspace.Hall:GetChildren() do
 				if m:GetAttribute("ReservedFor") == player.UserId and m:GetAttribute("OnBench") and m:GetAttribute("State") == "Hall" and (not arg or m:GetAttribute("StudentId") == arg) then

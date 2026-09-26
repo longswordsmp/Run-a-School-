@@ -122,7 +122,8 @@ local function show(s)
 		layout()
 		return
 	end
-	title.Text = ("\u{1F4D6} CHAPTER %d/%d"):format(s.n, s.total)
+	-- (Chapter 1 is Kindergarten, on the To-Do card: these are Chapter 2 on)
+	title.Text = ("\u{1F4D6} CHAPTER %d/%d"):format(s.n + 1, s.total + 1)
 	sub.Text = s.title
 	for i, r in rows do
 		local st = s.steps[i]
@@ -265,7 +266,7 @@ local function chapterStart(d)
 	local band = UI.new("Frame", { Size = UDim2.new(1, 0, 0, 44), BackgroundColor3 = UI.C.white, Parent = f })
 	UI.corner(band, 18)
 	UI.gradient(band, UI.lighten(ORANGE, 0.3), ORANGE)
-	UI.label(band, { Text = ("\u{1F4D6} CHAPTER %d"):format(d.n), Font = UI.BIG, Size = UDim2.new(1, -20, 1, -8), Position = UDim2.fromOffset(10, 4), stroke = 3 })
+	UI.label(band, { Text = ("\u{1F4D6} CHAPTER %d"):format(d.n + 1), Font = UI.BIG, Size = UDim2.new(1, -20, 1, -8), Position = UDim2.fromOffset(10, 4), stroke = 3 })
 	UI.label(f, { Text = d.title, Font = UI.BIG, TextColor3 = UI.C.ink, Size = UDim2.new(1, -30, 0, 40), Position = UDim2.fromOffset(15, 50), stroke = 0 })
 	UI.label(f, {
 		Text = ("%s: \"%s\""):format(d.host, d.line),

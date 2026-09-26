@@ -138,10 +138,11 @@ local DONE = {
 	-- (locked right now: the goons are about to walk into it. An old lock that ran out doesn't count,
 	-- but the step clears the cooldown when it starts, so the button always works)
 	-- (and nobody's kid still in a goon's arms: locked too late, you bonk them first)
+	-- (a lock made on this step counts even if it ran out while you chased the goons)
 	lock = function(player, p)
 		local plot = plotOf(player)
 		local locked = plot and (plot:GetAttribute("LockedUntil") or 0) > workspace:GetServerTimeNow()
-		return yes(locked and require(script.Parent.RaidService).holding(player) == 0)
+		return yes((locked or did(p, "lockOnStep") > 0) and require(script.Parent.RaidService).holding(player) == 0)
 	end,
 	rescue = function(_, p) return did(p, "rescued") end,
 	desks = function(_, p) return yes((p.rows[1] or 0) >= 3) end,
@@ -384,7 +385,12 @@ function QuestService.start()
 	end)
 	-- what the tutorial remembers
 	Signals.on("collect", function(player) remember(player, "collect") end)
-	Signals.on("lock", function(player) remember(player, "lock") end)
+	Signals.on("lock", function(player)
+		remember(player, "lock")
+		local p = Data.get(player)
+		local st = p and Config.Tutorial[p.tutorial or 1]
+		if st and st.id == "lock" then remember(player, "lockOnStep") end
+	end)
 	Signals.on("rescued", function(player, _, prize)
 		if not prize then remember(player, "rescued") end
 	end)

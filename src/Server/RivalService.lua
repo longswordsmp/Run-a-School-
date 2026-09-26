@@ -91,10 +91,11 @@ local function sign(p, face, text, color, font, stroke)
 	return t
 end
 local function inBox(pos, b) return pos.X > b.x0 and pos.X < b.x1 and pos.Z > b.z0 and pos.Z < b.z1 end
-local function inLot(pos) return inBox(pos, LOT) end
+-- (above ground only: the storm sewer runs right under the lot, and the monitors don't go down there)
+local function inLot(pos) return pos.Y > -20 and inBox(pos, LOT) end
 local function guardArea(pos)
 	-- (the Great Hall; not the headmaster's office behind the partition at z -146: monitors don't go in)
-	return pos.X > B.x0 + 2 and pos.X < B.x1 - 2 and pos.Z > -145 and pos.Z < B.z1 - 2
+	return pos.Y > -20 and pos.X > B.x0 + 2 and pos.X < B.x1 - 2 and pos.Z > -145 and pos.Z < B.z1 - 2
 end
 
 ---------------------------------------------------------------------------

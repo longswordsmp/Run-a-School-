@@ -1314,6 +1314,16 @@ function FactoryService.debugState()
 	for player, hs in heists do out.heists[player.Name] = hs.def.name end
 	return out
 end
+-- Studio: every guard stands dazed for a while (to test a carry path without being caught)
+function FactoryService.debugCalm(secs)
+	for _, g in guards do
+		g.stunUntil = now() + (secs or 30)
+		Walkers.stop(g.model)
+		g.state = "stunned"
+		g.target = nil
+	end
+	return #guards
+end
 function FactoryService.debugTakePlans(player)
 	takePlans(player)
 	return heists[player] ~= nil

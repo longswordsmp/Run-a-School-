@@ -188,31 +188,29 @@ end
 -- the Headmaster's hoverboard, dropped where he went down
 local function dropBoard(job, at)
 	local GearService = require(script.Parent.GearService)
-	local deck = Instance.new("Part")
-	deck.Name = "DroppedHoverboard"
-	deck.Size = Vector3.new(1.5, 0.3, 4.4)
-	deck.Color = Color3.fromRGB(120, 60, 200)
-	deck.Material = Enum.Material.SmoothPlastic
-	deck.Anchored, deck.CanCollide = true, false
-	deck.CFrame = CFrame.new(at.X, FLOOR + 1.2, at.Z) * CFrame.Angles(0, math.rad(90), 0)
-	local glow = Instance.new("Part")
-	glow.Name = "Glow"
-	glow.Size = Vector3.new(1.2, 0.1, 3.8)
-	glow.Color = Color3.fromRGB(120, 230, 255)
-	glow.Material = Enum.Material.Neon
-	glow.Anchored, glow.CanCollide = true, false
-	glow.CFrame = deck.CFrame * CFrame.new(0, -0.2, 0)
-	glow.Parent = deck
-	local light = Instance.new("PointLight")
-	light.Color = Color3.fromRGB(120, 230, 255)
-	light.Range = 10
-	light.Parent = glow
-	deck.Parent = workspace
-	job.board = deck
+	-- (the same board you ride, hovering over the floor and turning slowly, so it reads as a prize)
+	local board = GearService.buildBoard()
+	board.Name = "DroppedHoverboard"
+	for _, b in board:GetDescendants() do
+		if b:IsA("BasePart") then b.Anchored = true end
+	end
+	local base = CFrame.new(at.X, FLOOR + 1.6, at.Z)
+	board:PivotTo(base)
+	board.Parent = workspace
+	job.board = board
+	local deck = board.PrimaryPart
+	task.spawn(function()
+		local t0 = os.clock()
+		while board.Parent do
+			local t = os.clock() - t0
+			board:PivotTo(base * CFrame.new(0, math.sin(t * 2.4) * 0.25, 0) * CFrame.Angles(0, t * 1.2, 0))
+			task.wait()
+		end
+	end)
 	local pp = prompt(deck, "Take the hoverboard", "Headmaster's Hoverboard", 0.5, Color3.fromRGB(150, 110, 255))
 	pp.Triggered:Connect(function(who)
 		if who ~= job.player then return end
-		deck:Destroy()
+		board:Destroy()
 		GearService.give(who, "Hoverboard")
 		Remotes.Announce:FireClient(who, "\u{1F6F9} HOVERBOARD!", Color3.fromRGB(150, 110, 255))
 		Remotes.Notify:FireClient(who, "It's yours to keep: equip it to ride 60% faster. Now find that student!", "good")

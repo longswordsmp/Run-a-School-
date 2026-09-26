@@ -410,7 +410,8 @@ local function buildBoard()
 	local deck = bp("Deck", Vector3.new(1.5, 0.28, 4.4), CFrame.new(), rgb(120, 60, 200))
 	m.PrimaryPart = deck
 	for _, z in { -2.05, 2.05 } do
-		bp("Nose", Vector3.new(1.5, 0.28, 1.5), CFrame.new(0, 0, z) * CFrame.Angles(0, 0, math.rad(90)), rgb(120, 60, 200), nil, Enum.PartType.Cylinder)
+		-- (rounded ends: a flat disc, the cylinder's axis turned upright; X is its thickness)
+		bp("Nose", Vector3.new(0.28, 1.5, 1.5), CFrame.new(0, 0, z) * CFrame.Angles(0, 0, math.rad(90)), rgb(120, 60, 200), nil, Enum.PartType.Cylinder)
 	end
 	bp("Grip", Vector3.new(1.3, 0.05, 3.8), CFrame.new(0, 0.16, 0), rgb(30, 30, 36))
 	bp("Stripe", Vector3.new(0.3, 0.06, 3.6), CFrame.new(0, 0.17, 0), rgb(255, 200, 60))
@@ -430,6 +431,7 @@ local function buildBoard()
 	return m
 end
 
+GearService.buildBoard = buildBoard
 local LIFT = 1.3
 local function ride(player, on)
 	local char = player.Character
