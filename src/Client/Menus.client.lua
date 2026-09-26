@@ -911,7 +911,7 @@ end
 -- Settings
 ---------------------------------------------------------------------------
 do
-	local panel = UI.panel(gui, { name = "Settings", title = "SETTINGS", color = UI.C.navy, size = UDim2.fromOffset(460, 300) })
+	local panel = UI.panel(gui, { name = "Settings", title = "SETTINGS", color = UI.C.navy, size = UDim2.fromOffset(460, 400) })
 	panels.Settings = panel
 	local list = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 11, Parent = panel.body })
 	UI.new("UIListLayout", { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder, Parent = list })
@@ -938,6 +938,8 @@ do
 	end
 	toggle(1, "\u{1F3B5} Music", "MusicOn", "music")
 	toggle(2, "\u{1F50A} Sound effects", "SfxOn", "sfx")
+	toggle(3, "\u{1F9ED} Guide arrow & trail", "GuideOn", "guide")
+	UI.label(list, { Text = "Press H (or the eye, bottom right) to hide everything", TextColor3 = UI.C.navy, Size = UDim2.new(1, 0, 0, 24), LayoutOrder = 4, ZIndex = 12, stroke = 0 })
 end
 
 ---------------------------------------------------------------------------

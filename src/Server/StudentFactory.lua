@@ -407,6 +407,17 @@ end
 -- above the head. (It used to float a couple of studs over the head with the carrier's arms at his
 -- sides.) ageScale: the kid's size at its school (Config.AgeScale), so it doesn't grow or shrink
 -- when picked up. The arms come down again when the kid is taken away.
+-- a carried kid touches nothing: a Humanoid turns collision back on for its character's head and
+-- torso every frame, so CanCollide = false alone let the kid over your head catch on door frames and
+-- jam you in doorways. The "Carried" collision group collides with nothing at all.
+local PhysicsService = game:GetService("PhysicsService")
+pcall(function()
+	PhysicsService:RegisterCollisionGroup("Carried")
+	for _, g in PhysicsService:GetRegisteredCollisionGroups() do
+		PhysicsService:CollisionGroupSetCollidable("Carried", g.name, false)
+	end
+end)
+
 function Factory.carryOverhead(carrier, kid, tilt, ageScale)
 	local root = carrier:FindFirstChild("HumanoidRootPart") or carrier.PrimaryPart
 	if not (root and kid.PrimaryPart) then return end
@@ -417,7 +428,15 @@ function Factory.carryOverhead(carrier, kid, tilt, ageScale)
 			bp.Massless = true
 			bp.CanCollide = false
 			bp.CanQuery = false
+			bp.CanTouch = false
+			bp.CollisionGroup = "Carried"
 		end
+	end
+	-- (and the kid's own Humanoid stops running physics states: it would fight the carrier's)
+	local kh = kid:FindFirstChildOfClass("Humanoid")
+	if kh then
+		kh.EvaluateStateMachine = false
+		kh.PlatformStand = true
 	end
 	local head = carrier:FindFirstChild("Head")
 	local top = head and (root.CFrame:PointToObjectSpace(head.Position).Y + head.Size.Y / 2) or 2.3

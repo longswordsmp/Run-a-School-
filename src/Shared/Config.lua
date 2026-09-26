@@ -439,6 +439,8 @@ Config.Tutorial = {
 	{ id = "k05_janitor", part = "ch1", icon = "\u{1F9F9}", short = "Janitor's Cart", text = "Upgrades > Janitor's Cart: it collects tuition for you", count = 1, secs = 90, min = 3000, guide = "panel:Upgrades" },
 	{ id = "k06_thief", part = "ch1", icon = "\u{1F451}", short = "Stop, thief!", text = "Mr. Wobblesworth at the fountain needs you", count = 1, secs = 90, min = 5000, guide = "npc:Wobblesworth", mission = "k_tiara" },
 	{ id = "k07_row4", part = "ch1", icon = "\u{1FA91}", short = "Fill 16 desks", text = "Build the last row of desks in your classroom", count = 1, secs = 120, min = 10000, guide = "ghostrow" },
+	-- (the game's real loop: a full school grows by swapping weak kids for better ones)
+	{ id = "k07_swap", part = "ch1", icon = "\u{1F504}", short = "Swap up!", text = "Hold F on your weakest kid to sell them, then enroll a better one from the carpet", count = 1, secs = 90, min = 8000, guide = "weakest" },
 	{ id = "k08_crew", part = "ch1", icon = "\u{1F690}", short = "Crumpet's Crew", text = "Mr. Wobblesworth has news about Vex's goons", count = 1, secs = 120, min = 10000, guide = "npc:Wobblesworth", mission = "k_crew" },
 	{ id = "k09_map", part = "ch1", icon = "\u{1F5FA}\u{FE0F}", short = "Steal the map", text = "Janitor Stan by the Confiscation Closet has a job", count = 1, secs = 120, min = 10000, guide = "npc:JanitorStan", mission = "k_map" },
 	{ id = "k10_peek", part = "ch1", icon = "\u{1F440}", short = "Scout Vex Prep", text = "Walk up to the Vex Prep gate at the east end of the street", count = 1, secs = 60, min = 10000, guide = "place:VexPrepLookout" },

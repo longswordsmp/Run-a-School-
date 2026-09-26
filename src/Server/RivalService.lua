@@ -262,6 +262,21 @@ local function buildHall(m)
 		_ = r
 	end
 	part(m, "Ridge", Vector3.new(W + 3, 1, 1.2), CFrame.new(cx, FLOOR + H + 11.6, cz), rgb(40, 40, 50), Enum.Material.Metal)
+	-- the gable ends: stone triangles closing each end of the pitched roof (without them you saw
+	-- straight in under the slates from either side)
+	for _, x in { B.x0, B.x1 } do
+		for _, s in { -1, 1 } do
+			local g = Instance.new("WedgePart")
+			g.Name = "Gable"
+			g.Anchored = true
+			g.Size = Vector3.new(1.6, 11, D / 2)
+			-- (a wedge's tall side is its +Z face: turned to stand at the middle, sloping to the eaves)
+			g.CFrame = CFrame.new(x, FLOOR + H + 5.5, cz + s * D / 4) * CFrame.Angles(0, s > 0 and math.pi or 0, 0)
+			g.Color = STONE
+			g.Material = Enum.Material.Brick
+			g.Parent = m
+		end
+	end
 	-- the clock tower
 	local tx, tz = CX, B.z1 - 6
 	part(m, "Tower", Vector3.new(10, 22, 10), CFrame.new(tx, FLOOR + H + 11, tz), STONE, Enum.Material.Brick)

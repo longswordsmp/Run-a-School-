@@ -11,10 +11,13 @@
 --     2. Headmaster Grindle wakes up on his hoverboard: a boss (QuestGoons.boss); knocked out, he drops
 --        the board: take it (GearService Hoverboard, yours to keep). He stays down for the rest of it
 --     3. through the office door into the Great Hall: at Desk 5 sits one of the two stars you passed on
---        in the First Morning, now in a Vex Prep blazer. Hold E to take them. If a hall monitor sees you
---        while you carry them, the bell rings: you're back in the office and they're back at the desk
---     4. back down the grate and out of the pothole with them: won. Vex finds the empty desk
---        ("PRINCIPAAAAL!"), and the kid waits on your bench until after the School Board review
+--        in the First Morning, now in a Vex Prep blazer. Hold E to take them. A monitor who spots you
+--        gives chase; if one catches you, you're back in the office and they're back at the desk (the
+--        monitors never come into the office)
+--     4. out with them: back down the grate and up out of the pothole, or straight out of the grounds.
+--        Won. Vex finds the empty desk ("PRINCIPAAAAL!"), and the kid waits on your bench until after the
+--        School Board review
+-- Every stage sets the player's MissionTarget, which the guide's arrow and trail point at.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -35,6 +38,12 @@ local OFFICE_LADDER = Vector3.new(Sewer.EXIT.X, Sewer.Y + 3.2, Sewer.EXIT.Z + 3)
 local IN_OFFICE = Vector3.new(Sewer.GRATE.X, FLOOR + 3, Sewer.GRATE.Z + 2.5) -- standing by the grate
 local BOSS_AT = Vector3.new(427, FLOOR, -150.5) -- in front of the office desk
 local TARGET_DESK = 5 -- (Vex Prep's Desk 5: x 397, z -130)
+-- where the guide points at each stage
+local AT_POTHOLE = Vector3.new(Sewer.POTHOLE.X, 0.8, Sewer.POTHOLE.Z)
+local AT_OFFICE_LADDER = Vector3.new(Sewer.EXIT.X, Sewer.Y + 1, Sewer.EXIT.Z - 4)
+local AT_POTHOLE_LADDER = Vector3.new(Sewer.ENTRY.X, Sewer.Y + 1, Sewer.ENTRY.Z + 2)
+local AT_GRATE = Vector3.new(Sewer.GRATE.X, FLOOR + 0.5, Sewer.GRATE.Z)
+local AT_DESK = Vector3.new(397, FLOOR + 2, -127.6)
 
 local jobs = {} -- [player] = the Vex Prep Job in progress
 local rootOf = function(player)
@@ -145,8 +154,8 @@ function SewerHeist.take(job)
 	job.carried = kid
 	player:SetAttribute("Heist", def.name)
 	require(script.Parent.StealService).setSpeed(player)
-	Remotes.Notify:FireClient(player, ("You've got %s! Back to the grate, and don't let a monitor see you!"):format(def.name), "good")
-	phase(player, "Carry them back through the office and down the grate. Stay out of sight!")
+	Remotes.Notify:FireClient(player, ("You've got %s! Get them out: back to the grate in the office, or out of the grounds!"):format(def.name), "good")
+	phase(player, "Get them out! Back through the office door to the grate. Stay out of the monitors' sight!")
 end
 
 -- a monitor saw you (or caught you): back to the office, the kid back at the desk
@@ -180,6 +189,7 @@ local function endJob(player, won)
 	if player.Parent then
 		player:SetAttribute("VexPrepHeist", nil)
 		player:SetAttribute("Heist", nil)
+		player:SetAttribute("MissionTarget", nil)
 		require(script.Parent.StealService).setSpeed(player)
 	end
 	if job.done then job.done(won) end
@@ -214,7 +224,7 @@ local function dropBoard(job, at)
 		GearService.give(who, "Hoverboard")
 		Remotes.Announce:FireClient(who, "\u{1F6F9} HOVERBOARD!", Color3.fromRGB(150, 110, 255))
 		Remotes.Notify:FireClient(who, "It's yours to keep: equip it to ride 60% faster. Now find that student!", "good")
-		phase(who, "Sneak into the Great Hall. Desk 5, on the left. Don't let the monitors see you!")
+		phase(who, "Sneak into the Great Hall: Desk 5, on the left. Monitors who see you give chase!")
 		job.hasBoard = true
 	end)
 end
@@ -276,37 +286,40 @@ local function grateDown(player)
 	end
 end
 
+-- out with the kid: the Job is done
+local function escape(job)
+	local player = job.player
+	local def = Config.StudentById[job.kidId] or Config.StudentById.ChessChampion
+	clearKid(job)
+	player:SetAttribute("Heist", nil)
+	player:SetAttribute("VexPrepHeist", nil)
+	require(script.Parent.StealService).setSpeed(player)
+	local LetterService = require(script.Parent.LetterService)
+	local host = Data.hostOf(player)
+	local model = LetterService.deliver(host, def, true, "Normal", "NEW KID: after the Board!")
+	if model then
+		model:SetAttribute("HoldUntilTier", 2)
+	else
+		local p = Data.get(host)
+		if p then
+			p.pendingBench = p.pendingBench or {}
+			table.insert(p.pendingBench, { id = def.id, grade = "Normal" })
+		end
+	end
+	Remotes.Cutscene:FireClient(player, "VexPA", { name = def.name })
+	endJob(player, true)
+	task.delay(7, function()
+		if player.Parent then
+			Remotes.Announce:FireClient(player, "CHAPTER 1 COMPLETE!", Color3.fromRGB(255, 170, 60))
+			Remotes.Notify:FireClient(player, "Now face the School Board: the Board button is waiting!", "good")
+		end
+	end)
+end
+
 local function potholeUp(player)
 	tp(player, UP_ROAD, Vector3.new(0, 0, 1))
 	local job = jobs[player]
-	if job and job.carried then
-		-- out! The Job is done
-		local def = Config.StudentById[job.kidId] or Config.StudentById.ChessChampion
-		clearKid(job)
-		player:SetAttribute("Heist", nil)
-		player:SetAttribute("VexPrepHeist", nil)
-		require(script.Parent.StealService).setSpeed(player)
-		local LetterService = require(script.Parent.LetterService)
-		local host = Data.hostOf(player)
-		local model = LetterService.deliver(host, def, true, "Normal", "NEW KID: after the Board!")
-		if model then
-			model:SetAttribute("HoldUntilTier", 2)
-		else
-			local p = Data.get(host)
-			if p then
-				p.pendingBench = p.pendingBench or {}
-				table.insert(p.pendingBench, { id = def.id, grade = "Normal" })
-			end
-		end
-		Remotes.Cutscene:FireClient(player, "VexPA", { name = def.name })
-		endJob(player, true)
-		task.delay(7, function()
-			if player.Parent then
-				Remotes.Announce:FireClient(player, "CHAPTER 1 COMPLETE!", Color3.fromRGB(255, 170, 60))
-				Remotes.Notify:FireClient(player, "Now face the School Board: the Board button is waiting!", "good")
-			end
-		end)
-	end
+	if job and job.carried then escape(job) end
 end
 
 local function potholeDown(player)
@@ -408,8 +421,38 @@ function SewerHeist.start_service()
 				end
 			end
 			local job = jobs[player]
-			if job and job.carried and pos.Y > -10 and RivalService.inLot(pos) and RivalService.seenByMonitor(player) then
-				caught(job)
+			if job then
+				local above = pos.Y > -10
+				-- out of the grounds with the kid (the front way): that's out
+				if job.carried and above and not RivalService.inLot(pos) then
+					escape(job)
+					continue
+				end
+				-- a monitor has seen you with the kid: a warning, once per sighting (a catch sends you back)
+				local spotted = job.carried and above and player:GetAttribute("Spotted") == true
+				if spotted and not job.warned then
+					job.warned = true
+					Remotes.Sfx:FireClient(player, "Bell")
+					Remotes.Notify:FireClient(player, "\u{1F514} A monitor spotted you! Run for the office: they can't follow you in there!", "bad")
+				elseif not spotted then
+					job.warned = nil
+				end
+				-- what the guide points at now
+				local goal
+				if job.carried then
+					goal = above and AT_GRATE or AT_POTHOLE_LADDER
+				elseif not player:GetAttribute("VexPrepHeist") then
+					goal = above and AT_POTHOLE or AT_OFFICE_LADDER
+				elseif not above then
+					goal = AT_OFFICE_LADDER
+				elseif not job.bossDown then
+					goal = BOSS_AT + Vector3.new(0, 2, 0)
+				elseif job.board and job.board.Parent then
+					goal = job.board:GetPivot().Position
+				else
+					goal = AT_DESK
+				end
+				if player:GetAttribute("MissionTarget") ~= goal then player:SetAttribute("MissionTarget", goal) end
 			end
 		end
 	end)

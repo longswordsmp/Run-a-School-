@@ -76,7 +76,7 @@ Actions.register("setting", function(player, p, key, value)
 		player:SetAttribute("Device", value)
 		return { ok = true }
 	end
-	if key ~= "music" and key ~= "sfx" then return { ok = false } end
+	if key ~= "music" and key ~= "sfx" and key ~= "guide" then return { ok = false } end
 	p.settings[key] = value == true
 	return { ok = true }
 end)

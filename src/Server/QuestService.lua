@@ -154,6 +154,7 @@ local DONE = {
 	k05_janitor = function(_, p) return yes((p.upgrades and p.upgrades.Janitor or 0) >= 1) end,
 	k06_thief = function(_, p) return yes(won(p, "k_tiara") and seatedKid(p, "DramaQueen")) end,
 	k07_row4 = function(_, p) return yes((p.rows[1] or 0) >= 4) end,
+	k07_swap = function(_, p) return did(p, "swapped") end,
 	k08_crew = function(_, p) return yes(won(p, "k_crew")) end,
 	k09_map = function(_, p) return yes(won(p, "k_map")) end,
 	k10_peek = function(_, p) return yes(p.rivalSeen) end,
@@ -194,6 +195,12 @@ function QuestService.state(player)
 	local n, total
 	if kind == "tutorial" then n, total = partPos(p.tutorial) end
 	local short, text, guide = q.short, q.text, q.guide
+	-- "Swap up!": first the weakest kid (sell), then the carpet (a better one)
+	if q.id == "k07_swap" and kind == "tutorial" and did(p, "sold") > 0 then
+		short = "Enroll a better kid"
+		text = "Now pick a kid who earns more than the one you sold"
+		guide = "carpet"
+	end
 	if q.id == "lock" and kind == "tutorial" then
 		local ok, holding = pcall(function() return require(script.Parent.RaidService).holding(player) end)
 		if ok and holding > 0 then
@@ -385,6 +392,16 @@ function QuestService.start()
 	end)
 	-- what the tutorial remembers
 	Signals.on("collect", function(player) remember(player, "collect") end)
+	-- (swapping up: a sale, then an enroll after it)
+	Signals.on("sell", function(player)
+		if typeof(player) ~= "Instance" then return end
+		remember(player, "sold")
+		task.defer(QuestService.push, player)
+	end)
+	Signals.on("enroll", function(player)
+		local p = Data.get(player)
+		if p and p.tutDid and p.tutDid.sold then remember(player, "swapped") end
+	end)
 	Signals.on("lock", function(player)
 		remember(player, "lock")
 		local p = Data.get(player)

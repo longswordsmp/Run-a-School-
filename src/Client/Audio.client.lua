@@ -154,5 +154,6 @@ task.spawn(function()
 	if ok and type(profile) == "table" and profile.settings then
 		player:SetAttribute("MusicOn", profile.settings.music ~= false)
 		player:SetAttribute("SfxOn", profile.settings.sfx ~= false)
+		player:SetAttribute("GuideOn", profile.settings.guide ~= false) -- (Quests.client's arrow and trail)
 	end
 end)

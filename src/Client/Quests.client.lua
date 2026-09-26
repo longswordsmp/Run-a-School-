@@ -447,6 +447,16 @@ local function worldTarget()
 			end
 		end
 		return nearest(picks, root)
+	elseif g == "weakest" then
+		-- the seated kid who earns the least (to sell)
+		local plot = myPlot()
+		local folder = plot and plot:FindFirstChild("Students")
+		local best, low
+		for _, m in folder and folder:GetChildren() or {} do
+			local def = Config.StudentById[m:GetAttribute("StudentId") or ""]
+			if def and m.PrimaryPart and (not low or def.income < low) then best, low = m, def.income end
+		end
+		return best
 	elseif g == "ghostrow" then
 		-- the next row of see-through desks (they carry the "Build 4 desks" prompt)
 		local plot = myPlot()
@@ -533,7 +543,8 @@ local lastTarget
 local goalFor, goalPos -- (the target's position, and the ground under it)
 RunService.RenderStepped:Connect(function(dt)
 	t0 += dt
-	local target = gui.Enabled and card.Visible and worldTarget() or nil
+	-- (the guide can be switched off in Settings; hiding the HUD with H turns this whole screen off too)
+	local target = gui.Enabled and card.Visible and player:GetAttribute("GuideOn") ~= false and worldTarget() or nil
 	if typeof(target) == "Instance" and not target.Parent then target = nil end
 	local cam = workspace.CurrentCamera
 	-- (an NPC who already has the bouncing "!" over his head doesn't get the arrow on top of it)

@@ -4,7 +4,7 @@
 -- reached (player attribute "Chapter": 1-11, 12 once the story's done), so every player sees their
 -- own story on the street.
 --   Posters       ch 1-11   VexCorp posters on the lamp posts
---   ForSale       ch 5-11   Vex's limo parked at the plaza, a SOLD SOON sign, the fountain drained
+--   ForSale       ch 5-11   Vex's limo parked at the plaza, a FOR SALE sign, the fountain drained
 --   Searchlights  ch 7-11   searchlights sweeping from the Factory roof
 --   MachineBuild  ch 9      the Homework Machine going up on the Factory roof (scaffold, crane)
 --   Machine       ch 10-11  the Homework Machine, awake (core, gears, a pencil arm, lightning)
@@ -104,7 +104,7 @@ end
 local POSTERS = {
 	{ "VEXCORP\nNOW HIRING:\nGOONS", LILAC, DEEP },
 	{ "HOMEWORK\nIS THE\nFUTURE", rgb(255, 255, 255), PURPLE },
-	{ "RECESS IS\nCANCELLED", rgb(255, 90, 110), rgb(24, 12, 34) },
+	{ "EXTRA\nHOMEWORK\nFOR ALL!", rgb(255, 90, 110), rgb(24, 12, 34) },
 	{ "WANTED:\nKIDS WHO\nLOVE TESTS", PURPLE, rgb(225, 205, 255) },
 }
 local function buildPosters(folder)
@@ -133,7 +133,7 @@ local function buildPosters(folder)
 end
 
 ---------------------------------------------------------------------------
--- Vex's offer: the limo parked at the back of the plaza, and a SOLD SOON sign out front
+-- Vex's offer: the limo parked at the back of the plaza, and a FOR SALE sign out front
 ---------------------------------------------------------------------------
 local function buildForSale(folder)
 	local m = stage(folder, "ForSale", 5, 11)
@@ -160,8 +160,6 @@ local function buildForSale(folder)
 	local board = part(m, "SignBoard", Vector3.new(5.4, 3.2, 0.2), face * CFrame.new(0, 4.9, 0), rgb(250, 248, 240))
 	sign(board, Enum.NormalId.Front, "FOR SALE", PURPLE, nil, Enum.Font.LuckiestGuy)
 	sign(board, Enum.NormalId.Back, "FOR SALE", PURPLE, nil, Enum.Font.LuckiestGuy)
-	local band = part(m, "SoldBand", Vector3.new(6.4, 1.1, 0.06), face * CFrame.new(0, 4.9, -0.14) * CFrame.Angles(0, 0, math.rad(-16)), rgb(220, 40, 60))
-	sign(band, Enum.NormalId.Front, "SOLD SOON!", rgb(255, 255, 255), nil, Enum.Font.LuckiestGuy)
 	local small = part(m, "Realty", Vector3.new(5.4, 0.7, 0.2), face * CFrame.new(0, 2.9, 0), DEEP)
 	sign(small, Enum.NormalId.Front, "VEXCORP REALTY", LILAC, nil, Enum.Font.FredokaOne)
 	-- the drained fountain: dried sludge where the water was (the client hides the water)
@@ -284,7 +282,7 @@ local function buildMachineBuild(folder)
 	part(m, "HangingPlate", Vector3.new(9, 6, 0.6), CFrame.new(cx - 24, jibY - 19, cz) * CFrame.Angles(0, math.rad(25), 0), PURPLE, Enum.Material.Metal)
 	-- the sign the builders put up, high on the scaffold facing the street
 	local board = part(m, "BuildSign", Vector3.new(22, 5, 0.4), CFrame.new(MX, top + 9, MZ - 11), rgb(250, 250, 245)) -- (in front of the planks)
-	sign(board, Enum.NormalId.Front, "COMING SOON: THE HOMEWORK MACHINE", PURPLE, nil, Enum.Font.LuckiestGuy)
+	sign(board, Enum.NormalId.Front, "VEXCORP: THE HOMEWORK MACHINE", PURPLE, nil, Enum.Font.LuckiestGuy)
 	for _, x in { -1, 1 } do
 		local b = part(m, "Beacon", Vector3.new(0.9, 0.9, 0.9), CFrame.new(MX + x * 11, top + 12.4, MZ - 9), rgb(255, 140, 40), Enum.Material.Neon, { Shape = Enum.PartType.Ball })
 		b:SetAttribute("Blink", true)

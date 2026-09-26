@@ -56,11 +56,11 @@ local function mapEdits(n)
 	-- the Vex billboard behind the Sugar Shack
 	setText(shack and shack:FindFirstChild("VexBillboard"), (n >= 12 and "CLOSED!\nRECESS IS BACK.\n(thanks, Principal)")
 		or (n >= 10 and "THE MACHINE IS AWAKE.\nHOMEWORK. FOREVER.\n- Dr. V. Vex")
-		or (n >= 3 and "NOW OPEN:\nVEX HOMEWORK FACTORY\n\"Recess is cancelled.\"")
+		or (n >= 3 and "VEXCORP\nHOMEWORK FACTORY\n\"Homework is the future.\"")
 		or nil)
 	-- the Sugar Baron was Kevin all along (chapter 8's mission): the shack's his now, and the Baron
 	-- is gone from its roof (hidden for you only: he's everyone's NPC)
-	setText(shack and shack:FindFirstChild("Sign"), n >= 9 and "KEVIN'S WATERSLIDE (SOON)" or nil)
+	setText(shack and shack:FindFirstChild("Sign"), n >= 9 and "KEVIN'S SNACK SHACK" or nil)
 	local npcs = workspace:FindFirstChild("StoryNPCs")
 	local baron = npcs and npcs:FindFirstChild("SugarBaron")
 	if baron then

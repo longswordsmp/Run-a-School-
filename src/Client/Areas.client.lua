@@ -86,7 +86,11 @@ local function makeBarrier(area)
 	end
 	line("\u{1F512} " .. area.name:upper(), 0.42, Color3.new(1, 1, 1))
 	line(area.hint .. " to open it", 0.28, Color3.fromRGB(255, 220, 140), Enum.Font.FredokaOne)
-	line("or UNLOCK NOW", 0.22, Color3.fromRGB(120, 255, 140), Enum.Font.FredokaOne)
+	-- (the Robux shortcut only once its product exists: an id of 0 isn't set up yet, and a sign
+	-- promising something that says "coming soon" when you try it reads as unfinished)
+	local product = productOf[area.id]
+	local buyable = product and product.id and product.id ~= 0
+	if buyable then line("or UNLOCK NOW", 0.22, Color3.fromRGB(120, 255, 140), Enum.Font.FredokaOne) end
 	for _, dx in { -5, 5 } do
 		local post = Instance.new("Part")
 		post.Anchored = true
@@ -97,8 +101,7 @@ local function makeBarrier(area)
 		post.Parent = m
 	end
 	-- UNLOCK NOW: the Robux shortcut
-	local product = productOf[area.id]
-	if product then
+	if buyable then
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.Name = "UnlockPrompt"
 		prompt.ActionText = ("Unlock now (R$%d)"):format(product.robux)
@@ -109,11 +112,7 @@ local function makeBarrier(area)
 		prompt:SetAttribute("Color", Color3.fromRGB(80, 220, 120))
 		prompt.Parent = board
 		prompt.Triggered:Connect(function()
-			if product.id and product.id ~= 0 then
-				MarketplaceService:PromptProductPurchase(player, product.id)
-			else
-				toast("Unlocking early is coming soon! " .. area.hint .. " to open it.", "info")
-			end
+			MarketplaceService:PromptProductPurchase(player, product.id)
 		end)
 	end
 	m.Parent = folder
