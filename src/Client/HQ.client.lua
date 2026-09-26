@@ -273,11 +273,55 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
+---------------------------------------------------------------------------
+-- the Server Farm (floor 4): the cameras turn (Shared/HQCams, the same clock as the server's eyes)
+-- and the rack LEDs twinkle
+---------------------------------------------------------------------------
+local HQCams = require(Shared:WaitForChild("HQCams"))
+local camHeads, leds
+local function findFloor4()
+	local town = workspace:FindFirstChild("Town")
+	local f = town and town:FindFirstChild("VexCorpHQ")
+	f = f and f:FindFirstChild("Floor4")
+	if not f then return end
+	camHeads, leds = {}, {}
+	for _, d in f:GetDescendants() do
+		if d:IsA("BasePart") then
+			if d:GetAttribute("Cam") then table.insert(camHeads, { part = d, pos = d.Position }) end
+			if d:GetAttribute("HQLed") then table.insert(leds, { part = d, color = d.Color }) end
+		end
+	end
+end
+local ledClock = 0
+RunService.RenderStepped:Connect(function(dt)
+	if player:GetAttribute("HQFloor") ~= 4 then return end
+	if not camHeads or #camHeads == 0 then findFloor4() end
+	if not camHeads then return end
+	local t = workspace:GetServerTimeNow()
+	for _, c in camHeads do
+		if c.part.Parent then c.part.CFrame = HQCams.cf(c.pos, c.part, t) end
+	end
+	ledClock += dt
+	if ledClock > 0.25 then
+		ledClock = 0
+		for _ = 1, 24 do
+			local l = leds[math.random(#leds)]
+			if l and l.part.Parent then
+				l.part.Color = l.part.Color == l.color and Color3.fromRGB(20, 22, 28) or l.color
+			end
+		end
+	end
+end)
+
 -- a zap: a red flash
 local flash = UI.new("Frame", { BackgroundColor3 = RED, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 50, Parent = gui })
 
 Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
-	if kind == "hqZap" then
+	if kind == "hqSpotted" then
+		flash.BackgroundTransparency = 0.35
+		TweenService:Create(flash, TweenInfo.new(0.9), { BackgroundTransparency = 1 }):Play()
+		banner("\u{1F4F7} SPOTTED!", "SECURITY IS ON ITS WAY", RED)
+	elseif kind == "hqZap" then
 		flash.BackgroundTransparency = 0.25
 		TweenService:Create(flash, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
 		message("\u{26A1} ZAPPED! Back to the start of this section.", "bad")

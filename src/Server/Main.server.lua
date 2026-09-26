@@ -332,6 +332,9 @@ require(Server.DebugBridge).start({
 	hqPull = function(player, color)
 		return HQService.debugPull(player, color)
 	end,
+	hqHack = function(player, name)
+		return HQService.debugHack(player, name)
+	end,
 	hqState = function(player)
 		return HQService.debugState(player)
 	end,

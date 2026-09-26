@@ -102,6 +102,8 @@ function HQService.arrive(player, n)
 	elseif n == 3 then
 		s.lever = 0
 		s.zapUntil = os.clock() + 2
+	elseif n == 4 then
+		s.spotUntil = os.clock() + 2.5
 	end
 	player:SetAttribute("HQFloor", n)
 	Remotes.Push:FireClient(player, "hqArrive", { floor = n, name = HQ.FLOORS[n].name, cleared = HQService.cleared(player, n) })
@@ -369,6 +371,120 @@ local function laserTick()
 	end
 end
 
+---------------------------------------------------------------------------
+-- floor 4: the Server Farm
+---------------------------------------------------------------------------
+local Stealth = require(script.Parent.Stealth)
+local HQCams = require(ReplicatedStorage.Shared.HQCams)
+local cams4 = {} -- { head, eye, eyePos }
+local camFolder4, eyeFolder4
+local terms4 = {} -- name -> screen part
+local door4, download4
+
+local function setScreen(screen, text, color)
+	local label = screen:FindFirstChildWhichIsA("SurfaceGui", true)
+	label = label and label:FindFirstChildWhichIsA("TextLabel")
+	if label then
+		label.Text = text
+		label.TextColor3 = color
+	end
+end
+
+local function spotted(player)
+	local s = state[player]
+	if not s or (s.spotUntil or 0) > os.clock() then return end
+	s.spotUntil = os.clock() + 3
+	Remotes.Push:FireClient(player, "hqSpotted", {})
+	Remotes.Sfx:FireClient(player, "Error")
+	task.wait(0.9)
+	if player.Character and player:GetAttribute("HQFloor") == 4 then
+		Remotes.Push:FireClient(player, "elevator", { dir = "caught" })
+		task.wait(0.6)
+		player.Character:PivotTo(HQ.arrival(4))
+	end
+end
+
+local function hack(player, name)
+	local s = state[player]
+	if not s or player:GetAttribute("HQFloor") ~= 4 then return end
+	s.hacked = s.hacked or {}
+	if s.hacked[name] then
+		msg(player, "Already hacked. Find the others!", "info")
+		return
+	end
+	s.hacked[name] = true
+	local n = 0
+	for _ in s.hacked do n += 1 end
+	Remotes.Sfx:FireClient(player, "Collect")
+	if terms4[name] then setScreen(terms4[name], "PROJECT H.M.\nHACKED \u{2714}", Color3.fromRGB(90, 255, 160)) end
+	if download4 then
+		local bar = string.rep("\u{2588}", n * 3) .. string.rep(" ", 9 - n * 3)
+		setScreen(download4, ("DOWNLOAD: HOMEWORK MACHINE BLUEPRINTS\n[%s] %d%%"):format(bar, math.floor(n / 3 * 100)), Color3.fromRGB(90, 255, 160))
+	end
+	if n >= 3 then
+		msg(player, "\u{1F4BE} DOWNLOAD COMPLETE! The DATA CENTER door is open (east wall).", "good")
+		if door4 then openDoor(door4) end
+		HQService.clear(player, 4)
+	else
+		msg(player, ("\u{1F4BE} Terminal hacked! %d of 3."):format(n), "good")
+	end
+end
+
+local function setupFloor4(folder)
+	camFolder4 = folder:FindFirstChild("Cameras")
+	eyeFolder4 = Instance.new("Folder")
+	eyeFolder4.Name = "CamEyes"
+	eyeFolder4.Parent = folder
+	for _, d in folder:GetDescendants() do
+		if d:IsA("BasePart") then
+			if d:GetAttribute("Cam") then
+				-- the eye sits below the head so the racks block its view across rows
+				local eye = Instance.new("Part")
+				eye.Name = "Eye"
+				eye.Size = Vector3.new(0.2, 0.2, 0.2)
+				eye.Transparency = 1
+				eye.Anchored, eye.CanCollide, eye.CanQuery, eye.CanTouch = true, false, false, false
+				eye.Parent = eyeFolder4
+				table.insert(cams4, { head = d, eye = eye, eyePos = d.Position - Vector3.new(0, 4, 0) })
+			elseif d:GetAttribute("HQTerminal") then
+				local name = d:GetAttribute("HQTerminal")
+				terms4[name] = d
+				local p = floorPrompt(d, "Hack", "Terminal " .. name, 2.5, Color3.fromRGB(90, 255, 160))
+				p.MaxActivationDistance = 9
+				p.Triggered:Connect(function(player) hack(player, name) end)
+			elseif d:GetAttribute("HQDoor") == 4 then
+				door4 = d
+			elseif d:GetAttribute("HQDownload") then
+				download4 = d
+			end
+		end
+	end
+end
+
+local function camTick()
+	local anyone = false
+	for _, pl in Players:GetPlayers() do
+		if pl:GetAttribute("HQFloor") == 4 then anyone = true break end
+	end
+	if not anyone then return end
+	local t = workspace:GetServerTimeNow()
+	for _, c in cams4 do
+		c.eye.CFrame = HQCams.cf(c.eyePos, c.head, t)
+	end
+	for _, player in Players:GetPlayers() do
+		local char = player.Character
+		if player:GetAttribute("HQFloor") == 4 and char then
+			for _, c in cams4 do
+				local range = c.head:GetAttribute("Range") or 44
+				if Stealth.canSee(c.eye, char, { sight = range, angle = c.head:GetAttribute("Angle") or 34, hear = 0 }, { camFolder4, eyeFolder4 }) then
+					task.spawn(spotted, player)
+					break
+				end
+			end
+		end
+	end
+end
+
 -- where the story quest's beam should point while you work on floor n
 function HQService.target(player, n)
 	local on = player:GetAttribute("HQFloor")
@@ -378,6 +494,17 @@ function HQService.target(player, n)
 		return LOBBY + Vector3.new(-3, 3, 0)
 	end
 	local s = state[player]
+	if n == 4 then
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local best, bestD
+		for name, screen in terms4 do
+			if not (s and s.hacked and s.hacked[name]) then
+				local d = root and (root.Position - screen.Position).Magnitude or 0
+				if not best or d < bestD then best, bestD = screen.Position + Vector3.new(0, 2, 0), d end
+			end
+		end
+		return best or (door4 and door4.Position + Vector3.new(-2, 2, 0))
+	end
 	if n == 3 then
 		-- through the course to the levers
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -425,6 +552,11 @@ function HQService.debugPull(player, color)
 	return { order = ORDER, step = state[player] and state[player].lever }
 end
 
+function HQService.debugHack(player, name)
+	hack(player, name)
+	return state[player] and state[player].hacked
+end
+
 function HQService.debugState(player)
 	local s = state[player]
 	return { office = s and s.office, keycard = s and s.keycard, floor = player:GetAttribute("HQFloor"), cleared = hqOf(player).cleared }
@@ -464,6 +596,15 @@ function HQService.start(townRoot)
 	if f2 then setupFloor2(f2) end
 	local f3 = hqRoot and hqRoot:FindFirstChild("Floor3")
 	if f3 then setupFloor3(f3) end
+	local f4 = hqRoot and hqRoot:FindFirstChild("Floor4")
+	if f4 then setupFloor4(f4) end
+	task.spawn(function()
+		while true do
+			task.wait(0.1)
+			local ok, err = pcall(camTick)
+			if not ok then warn("[HQ cams]", err) end
+		end
+	end)
 	RunService.Heartbeat:Connect(function()
 		local ok, err = pcall(laserTick)
 		if not ok then warn("[HQ lasers]", err) end

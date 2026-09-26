@@ -474,6 +474,127 @@ function HQ.build(town, Kit)
 		end
 	end
 
+	---------------------------------------------------------------------------
+	-- FLOOR 4: THE SERVER FARM
+	--   dark; six rows of glowing server racks (x -48..48, a cross aisle at x = 0), five aisles
+	--   between them; ceiling cameras at the aisle ends sweep along them (spotlight cones show where
+	--   they look); three terminals to hack (hold E) in the aisles; the DATA CENTER door (east wall)
+	--   opens once all three are hacked
+	---------------------------------------------------------------------------
+	do
+		local m, at = shell(4, {
+			-- (a light floor, so the cameras' red pools show where they're looking)
+			floor = rgb(110, 114, 128), floorMat = Enum.Material.Concrete, wall = rgb(28, 30, 40), ceiling = rgb(18, 20, 26),
+			noWindows = true, noLights = true,
+		})
+		local rng = Random.new(44)
+		local racks = Kit.folder(m, "Racks")
+		local LED = { rgb(60, 255, 120), rgb(60, 200, 255), rgb(255, 200, 60), rgb(255, 70, 70) }
+		local ROWS = { -50, -30, -10, 10, 30, 50 }
+		for _, rz in ROWS do
+			for _, side in { -1, 1 } do
+				for k = 0, 10 do
+					local rx = side * (6 + k * 4 + 2) -- racks from x 6 to 50 on each side of the cross aisle
+					local unit = part(racks, "Rack", Vector3.new(3.8, 9, 3), at(rx, 4.5, rz), rgb(34, 36, 46), Enum.Material.Metal)
+					-- front and back: a glowing grill and a column of LEDs
+					for _, face in { -1, 1 } do
+						part(racks, "Grill", Vector3.new(3.2, 7.6, 0.1), at(rx, 4.6, rz + face * 1.52), rgb(20, 60, 90), Enum.Material.Neon, { Transparency = 0.35, CanCollide = false })
+						for l = 0, 5 do
+							local led = part(racks, "LED", Vector3.new(0.3, 0.3, 0.12), at(rx - 1.2 + (l % 3) * 1.2, 7.6 - math.floor(l / 3) * 0.7 - rng:NextInteger(0, 6) * 0.6, rz + face * 1.58), LED[rng:NextInteger(1, #LED)], Enum.Material.Neon, { CanCollide = false })
+							led:SetAttribute("HQLed", true)
+						end
+					end
+					_ = unit
+				end
+				-- cable trays over each row
+				part(racks, "CableTray", Vector3.new(46, 0.4, 2), at(side * 28, 10.2, rz), rgb(60, 62, 70), Enum.Material.Metal)
+			end
+		end
+		-- cold blue light down each aisle and pools of green at the ends
+		for _, az in { -40, -20, 0, 20, 40 } do
+			for _, ax in { -30, 0, 30 } do
+				local l = part(m, "AisleLight", Vector3.new(6, 0.3, 1.2), at(ax, HQ.HEIGHT - 0.2, az), rgb(120, 170, 255), Enum.Material.Neon, { CanCollide = false })
+				local sl = Instance.new("SurfaceLight")
+				sl.Face = Enum.NormalId.Bottom
+				sl.Range = 26
+				sl.Brightness = 0.9
+				sl.Angle = 110
+				sl.Color = rgb(110, 150, 255)
+				sl.Parent = l
+			end
+		end
+		for _, z in { -60, 60 } do
+			local l = part(m, "LaneLight", Vector3.new(30, 0.3, 1.2), at(0, HQ.HEIGHT - 0.2, z), rgb(90, 255, 160), Enum.Material.Neon, { CanCollide = false })
+			Kit.light(l, 36, 0.8, rgb(90, 255, 160))
+		end
+		local lobbyLight = part(m, "LobbyLight", Vector3.new(4, 0.3, 20), at(-64, HQ.HEIGHT - 0.2, 0), rgb(250, 250, 255), Enum.Material.Neon, { CanCollide = false })
+		Kit.light(lobbyLight, 30, 1.4, rgb(230, 240, 255))
+		-- the cameras: on arms from the end walls, looking along the aisles
+		local cams = Kit.folder(m, "Cameras")
+		local function camera(x, z, yaw, sweep, period, phase)
+			part(cams, "CamArm", Vector3.new(0.5, 0.5, 3), at(x, 12.5, z) * CFrame.new(0, 0, 0), rgb(40, 40, 48), Enum.Material.Metal)
+			local head = part(cams, "CamHead", Vector3.new(1.6, 1.2, 2.4), at(x, 11.8, z), rgb(230, 230, 236), Enum.Material.SmoothPlastic, { CanCollide = false, CanQuery = false })
+			head:SetAttribute("Cam", true)
+			head:SetAttribute("Yaw", yaw)
+			head:SetAttribute("Sweep", sweep)
+			head:SetAttribute("Period", period)
+			head:SetAttribute("Phase", phase)
+			head:SetAttribute("Range", 44)
+			head:SetAttribute("Angle", 34)
+			local lens = part(cams, "CamLens", Vector3.new(0.9, 0.9, 0.2), head.CFrame * CFrame.new(0, 0, -1.25), rgb(255, 40, 50), Enum.Material.Neon, { CanCollide = false, CanQuery = false })
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0, weld.Part1 = head, lens
+			weld.Parent = lens
+			lens.Anchored = false
+			-- the light hangs just in front of the lens (inside the head its own shadow would block it)
+			local beamAt = Instance.new("Attachment")
+			beamAt.Name = "Beam"
+			beamAt.Position = Vector3.new(0, 0, -1.5)
+			beamAt.Parent = head
+			local spot = Instance.new("SpotLight")
+			spot.Face = Enum.NormalId.Front
+			spot.Angle = 34
+			spot.Range = 50
+			spot.Brightness = 10
+			spot.Color = rgb(255, 60, 60)
+			spot.Shadows = true
+			spot.Parent = beamAt
+			return head
+		end
+		camera(-52, -40, 0, 30, 5.5, 0)
+		camera(-52, 0, 0, 30, 5.5, 1.8)
+		camera(-52, 40, 0, 30, 5.5, 3.6)
+		camera(52, -20, 180, 30, 6, 0.9)
+		camera(52, 20, 180, 30, 6, 2.7)
+		camera(0, 72, -90, 25, 7, 0)
+		camera(0, -72, 90, 25, 7, 3.5)
+		-- the terminals
+		local function terminal(name, x, z, faceX)
+			local t = Kit.folder(m, "Terminal")
+			part(t, "TermDesk", Vector3.new(2.4, 3.2, 4), at(x, 1.6, z), rgb(40, 42, 52), Enum.Material.Metal)
+			local screen = part(t, "TermScreen", Vector3.new(0.3, 3, 4.4), at(x - faceX * 0.3, 5, z) * CFrame.Angles(0, 0, math.rad(faceX * -12)), rgb(20, 30, 40), Enum.Material.Neon)
+			screen:SetAttribute("HQTerminal", name)
+			Kit.sign(screen, faceX > 0 and Enum.NormalId.Left or Enum.NormalId.Right, "PROJECT H.M.\nLOCKED", rgb(255, 80, 80), rgb(20, 30, 40), Enum.Font.Arcade)
+			part(t, "TermKeys", Vector3.new(1.4, 0.2, 3), at(x - faceX * 0.6, 3.3, z), rgb(20, 20, 26))
+			return screen
+		end
+		terminal("A", 24, -20, -1)
+		terminal("B", -24, 20, 1)
+		terminal("C", 40, 40, -1)
+		-- the DATA CENTER door on the east wall, the service elevator behind it
+		part(m, "DoorFrame", Vector3.new(1.2, 12, 12), at(74.4, 6, 0), rgb(40, 34, 56), Enum.Material.Metal)
+		local door = part(m, "DataDoor", Vector3.new(0.8, 10, 9), at(73.6, 5, 0), rgb(60, 64, 80), Enum.Material.DiamondPlate)
+		door:SetAttribute("HQDoor", 4)
+		local ds = part(m, "DoorSign", Vector3.new(0.2, 1.6, 12), at(73.9, 12.6, 0), rgb(10, 12, 18))
+		Kit.sign(ds, Enum.NormalId.Left, "DATA CENTER \u{2022} 3 KEYS REQUIRED", rgb(90, 255, 160), rgb(10, 12, 18), Enum.Font.Arcade)
+		local svc = part(m, "ServiceElevator", Vector3.new(0.3, 9.6, 8), at(74.9, 4.8, 0), rgb(255, 240, 200), Enum.Material.Neon)
+		svc:SetAttribute("HQElevator", 4)
+		-- a big wall screen over the lobby: the download bar
+		local big = part(m, "DownloadScreen", Vector3.new(0.3, 7, 22), at(-74.4, 22, 0), rgb(10, 12, 18), Enum.Material.Neon)
+		big:SetAttribute("HQDownload", true)
+		Kit.sign(big, Enum.NormalId.Right, "DOWNLOAD: HOMEWORK MACHINE BLUEPRINTS\n[          ] 0%", rgb(90, 255, 160), rgb(10, 12, 18), Enum.Font.Arcade)
+	end
+
 	return root
 end
 
