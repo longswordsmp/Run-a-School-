@@ -506,6 +506,18 @@ local function buildFloor(school, L, f, floors, look, isRoof)
 	return fm
 end
 
+-- the front windows of every floor, as { x, floor top } (same layout buildFloor cuts)
+local function frontWindows(floors)
+	local out = {}
+	for f = 1, floors or 1 do
+		for _, wx in (f == 1 and { -30, -18, 18, 30 } or { -30, -18, 0, 18, 30 }) do
+			table.insert(out, { x = wx, ft = floorTop(f) })
+		end
+	end
+	return out
+end
+local WIN_W, WIN_SILL, WIN_TOP = 7, 3.5, 11
+
 ---------------------------------------------------------------------------
 -- facade, roof and tier features
 ---------------------------------------------------------------------------
@@ -618,6 +630,64 @@ local function buildFacade(school, L, floors, look, tierIndex, name)
 		end
 		part(roof, "PortalCore", Vector3.new(15, 15, 0.4), L(0, roofY + 12, -20), rgb(120, 60, 255), Enum.Material.ForceField, { Transparency = 0.2 })
 	end
+
+	-- the details every school gets, whatever its tier: a base course, corner pilasters, a band at
+	-- each floor, stone sills and lintels on the front windows, framed windows along the long sides,
+	-- lamps by the doors and along the walk, downpipes, a cornerstone
+	local det = Instance.new("Folder")
+	det.Name = "Details"
+	det.Parent = ext
+	local base, iron = look.foundation, rgb(44, 46, 54)
+	local FO, SO, BO = ZF + WT / 2, BX + WT / 2, ZB - WT / 2 -- the outer faces: front, sides, back
+	for _, span in { { -BX - 1, -7.6 }, { 7.6, BX + 1 } } do
+		part(det, "BaseCourse", Vector3.new(span[2] - span[1], 2, 0.5), L((span[1] + span[2]) / 2, 1.4, FO + 0.2), base)
+	end
+	part(det, "BaseCourse", Vector3.new(BX * 2 + 2, 2, 0.5), L(0, 1.4, BO - 0.2), base)
+	for _, s in { -1, 1 } do
+		part(det, "BaseCourse", Vector3.new(0.5, 2, ZF - ZB + 2), L(s * (SO + 0.2), 1.4, (ZF + ZB) / 2), base)
+		for _, z in { FO, BO } do
+			part(det, "Pilaster", Vector3.new(2.2, roofY, 2.2), L(s * (SO - 0.3), roofY / 2, z + (z > 0 and -0.3 or 0.3)), trim)
+		end
+		-- a downpipe down each front corner
+		part(det, "Downpipe", Vector3.new(0.5, roofY, 0.5), L(s * (BX - 2.2), roofY / 2, FO + 0.3), rgb(150, 152, 160), Enum.Material.Metal)
+	end
+	for f = 2, floors do
+		local y = floorTop(f) - 0.3
+		part(det, "FloorBand", Vector3.new(BX * 2 + 1, 0.8, 0.4), L(0, y, FO + 0.2), trim)
+		for _, s in { -1, 1 } do
+			part(det, "FloorBand", Vector3.new(0.4, 0.8, ZF - ZB + 1), L(s * (SO + 0.2), y, (ZF + ZB) / 2), trim)
+		end
+	end
+	for _, w in frontWindows(floors) do
+		part(det, "Sill", Vector3.new(WIN_W + 1.4, 0.5, 0.8), L(w.x, w.ft + WIN_SILL - 0.3, FO + 0.35), base)
+		part(det, "Lintel", Vector3.new(WIN_W + 1.4, 0.8, 0.5), L(w.x, w.ft + WIN_TOP + 0.45, FO + 0.2), trim)
+	end
+	-- sills and lintels on the side windows too (the same openings buildFloor cuts)
+	for f = 1, floors do
+		local ft = floorTop(f)
+		for _, z in { -55, -41, -27, 8 } do
+			for _, s in { -1, 1 } do
+				part(det, "SideSill", Vector3.new(0.8, 0.5, 9.4), L(s * (SO + 0.35), ft + WIN_SILL - 0.3, z), base)
+				part(det, "SideLintel", Vector3.new(0.5, 0.8, 9.4), L(s * (SO + 0.2), ft + WIN_TOP + 0.45, z), trim)
+			end
+		end
+	end
+	-- lamps either side of the doors, and four lamp posts along the front walk
+	for _, s in { -1, 1 } do
+		part(det, "SconceBack", Vector3.new(1, 1.6, 0.3), L(s * 8.3, F1 + 7.6, FO + 0.15), iron, Enum.Material.Metal)
+		local bulb = part(det, "Sconce", Vector3.new(0.7, 1, 0.7), L(s * 8.3, F1 + 7.6, FO + 0.6), rgb(255, 222, 160), Enum.Material.Neon)
+		light(bulb, 14, 0.9, rgb(255, 210, 150))
+		for _, z in { 30, 62 } do
+			part(det, "LampBase", Vector3.new(1.2, 0.8, 1.2), L(s * 7.8, 0.8, z), iron, Enum.Material.Metal)
+			part(det, "LampPost", Vector3.new(0.4, 9, 0.4), L(s * 7.8, 5, z), iron, Enum.Material.Metal)
+			part(det, "LampCap", Vector3.new(1.5, 0.35, 1.5), L(s * 7.8, 10.7, z), iron, Enum.Material.Metal)
+			local lantern = part(det, "Lantern", Vector3.new(1.1, 1.3, 1.1), L(s * 7.8, 9.85, z), rgb(255, 226, 170), Enum.Material.Neon)
+			light(lantern, 18, 0.7, rgb(255, 214, 160))
+		end
+	end
+	-- the cornerstone
+	local stone = part(det, "Cornerstone", Vector3.new(4, 2, 0.4), L(-BX + 3.4, 3.2, FO + 0.25), base:Lerp(WHITE, 0.25), Enum.Material.Slate)
+	surfaceText(stone, Enum.NormalId.Back, "EST. 2026", rgb(60, 60, 70), nil, Enum.Font.Fantasy)
 	return roofY
 end
 
@@ -722,17 +792,6 @@ local function fence(parent, L, style, look)
 	run(-59, -74, 59, -74)
 end
 
--- the front windows of every floor, as { x, floor top } (same layout buildFloor cuts)
-local function frontWindows(floors)
-	local out = {}
-	for f = 1, floors or 1 do
-		for _, wx in (f == 1 and { -30, -18, 18, 30 } or { -30, -18, 0, 18, 30 }) do
-			table.insert(out, { x = wx, ft = floorTop(f) })
-		end
-	end
-	return out
-end
-local WIN_W, WIN_SILL, WIN_TOP = 7, 3.5, 11
 
 -- a school nobody has fixed up yet: planks nailed across the front windows
 function SchoolBuilder.boards(parent, L, floors)
