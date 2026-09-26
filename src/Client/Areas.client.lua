@@ -149,6 +149,50 @@ for _, area in Config.Areas do
 	end)
 end
 
+-- the executive elevator: a fade to black while the floors tick by
+local fader
+local function elevatorRide(dir)
+	if not fader then
+		local g = Instance.new("ScreenGui")
+		g.Name = "ElevatorFade"
+		g.IgnoreGuiInset = true
+		g.DisplayOrder = 60
+		g.ResetOnSpawn = false
+		g.Parent = player:WaitForChild("PlayerGui")
+		fader = Instance.new("Frame")
+		fader.Size = UDim2.fromScale(1, 1)
+		fader.BackgroundColor3 = Color3.new(0, 0, 0)
+		fader.BackgroundTransparency = 1
+		fader.Parent = g
+		local t = Instance.new("TextLabel")
+		t.Name = "Floor"
+		t.AnchorPoint = Vector2.new(0.5, 0.5)
+		t.Position = UDim2.fromScale(0.5, 0.5)
+		t.Size = UDim2.fromOffset(400, 80)
+		t.BackgroundTransparency = 1
+		t.Font = Enum.Font.Arcade
+		t.TextScaled = true
+		t.TextColor3 = Color3.fromRGB(255, 80, 80)
+		t.TextTransparency = 1
+		t.Parent = fader
+	end
+	local floor = fader.Floor
+	TweenService:Create(fader, TweenInfo.new(0.5), { BackgroundTransparency = 0 }):Play()
+	TweenService:Create(floor, TweenInfo.new(0.5), { TextTransparency = 0 }):Play()
+	local seq = dir == "down" and { "L", "B1", "B2", "B3", "B13", "LAIR" } or { "LAIR", "B13", "B3", "B1", "L" }
+	for _, f in seq do
+		floor.Text = "\u{25BC} " .. f
+		if dir ~= "down" then floor.Text = "\u{25B2} " .. f end
+		task.wait(0.28)
+	end
+	if bus and bus:FindFirstChild("Sfx") then bus.Sfx:Fire("Ding") end
+	TweenService:Create(fader, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
+	TweenService:Create(floor, TweenInfo.new(0.4), { TextTransparency = 1 }):Play()
+end
+Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
+	if kind == "elevator" and type(data) == "table" then task.spawn(elevatorRide, data.dir) end
+end)
+
 -- an area just opened: the big announcement (the reveal cutscene hooks in here later)
 Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
 	if kind ~= "areaOpen" or type(data) ~= "table" then return end

@@ -129,6 +129,41 @@ function TownService.start()
 	end
 	town.Parent = workspace
 	TownService.root = town
+	TownService.wireElevator(town)
+end
+
+-- the EXECUTIVE ELEVATOR: the Tower lobby <-> the Lair (only once the Lair is open for you)
+function TownService.wireElevator(town)
+	local Industrial = require(script.Parent.TownIndustrial)
+	local AreaService = require(script.Parent.AreaService)
+	local Remotes = require(script.Parent.Remotes)
+	for _, d in town:GetDescendants() do
+		local dir = d:IsA("BasePart") and d:GetAttribute("Elevator")
+		if dir then
+			local prompt = Instance.new("ProximityPrompt")
+			prompt.Name = "ElevatorPrompt"
+			prompt.ActionText = dir == "down" and "Go down" or "Go up"
+			prompt.ObjectText = dir == "down" and "Executive Elevator" or "Elevator to the lobby"
+			prompt.HoldDuration = 0.6
+			prompt.MaxActivationDistance = 10
+			prompt.RequiresLineOfSight = false
+			prompt:SetAttribute("Color", Color3.fromRGB(200, 120, 255))
+			prompt.Parent = d
+			prompt.Triggered:Connect(function(player)
+				local char = player.Character
+				if not char then return end
+				if dir == "down" and not AreaService.isOpen(player, "Lair") then
+					Remotes.Notify:FireClient(player, "\u{1F512} ACCESS DENIED. Only Dr. Vex goes down there... for now.", "bad")
+					Remotes.Sfx:FireClient(player, "Error")
+					return
+				end
+				Remotes.Push:FireClient(player, "elevator", { dir = dir })
+				task.wait(0.8)
+				if not player.Parent or not char.Parent then return end
+				char:PivotTo(CFrame.new(dir == "down" and Industrial.ELEVATOR_BOTTOM or Industrial.ELEVATOR_TOP) * CFrame.Angles(0, dir == "down" and math.rad(-90) or math.rad(90), 0))
+			end)
+		end
+	end
 end
 
 return TownService
