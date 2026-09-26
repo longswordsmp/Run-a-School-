@@ -399,7 +399,10 @@ function Kit.building(parent, spec)
 			for i = 1, n do
 				local t = (i - 0.5) / n
 				local off = -len / 2 + t * len
-				if not (skipMid and f == 1 and math.abs(off) < (spec.door and spec.door.w or 6) * 0.9) then
+				-- (the door bay stays clear: the door sits at -door.x in this frame, frontCF being turned round)
+				local doorAt = spec.door and -(spec.door.x or 0) or 0
+				local clear = (spec.door and spec.door.w or 6) / 2 + (spec.winW or 4) / 2 + 0.6
+				if not (skipMid and f == 1 and math.abs(off - doorAt) < clear) then
 					Kit.window(m, cfOf(off, y), spec.winW or 4, spec.winH or math.min(5, fh * 0.45), { frame = trim })
 				end
 			end
