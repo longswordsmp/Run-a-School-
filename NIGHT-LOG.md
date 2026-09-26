@@ -126,11 +126,59 @@ Done and checked in play (how each was checked in brackets):
 Still to do from your list: the model pass (meshes for kids and props, detailed buildings) and the
 UI rebuild.
 
+## Second night (2026-09-25/26)
+You rejected the mesh kids ("not at all what I wanted... more realistic") and picked avatar-style kids.
+Then you asked for: a loading screen, PC/phone choice, autosave; a big VexCorp history; missions;
+stealing VexCorp's mutated students; a rival school across the street; sprint and sneak past guards;
+gear to buy; a Home button; side buttons that unlock when needed; better bus, VexCorp cars,
+buildings and Detention; and co-op for 1-4 players with roles and co-op tasks.
+
+Done and checked (how, in brackets):
+- **70 avatar-style kids** from catalog clothes, hair and dynamic heads. [screenshots of every rarity row]
+- **Loading screen**: doodles, waving kids, a bus loading bar, COMPUTER / PHONE, PLAY. It hides the
+  hotbar and player list until you're in. **Autosave** every minute and after big moments, with a
+  "Saved" chip. [screenshots; save pushes read on the client]
+- **Side buttons unlock when you need them** (Home, Settings and Co-op from the start; Shop at the
+  pencils step, and so on), with NEW! badges. **Home** button, H key, 10 s cooldown. [fresh player saw 3 buttons]
+- **Sprint (Shift) and sneak (C)** with stamina; guards see you by distance, cone and noise.
+  **Janitor Stan's gear stall**: Cardboard Box, Smoke Bomb, Whoopee Cushion, Energy Drink, Lockpick Set,
+  Silent Sneakers, Running Shoes. [a table of seen/unseen distances measured against a guard]
+- **VexCorp history**: 16 VexCorp Files hidden around town (the Files book on the left), telling
+  Veronica Vex's story from Grade 5. [read and rewarded in play]
+- **The Mutation Lab** (north-west): steal a Mutated kid out of a tube past lasers, cameras and hazmat
+  guards; Mutated kids earn big early. **Janitor Stan's secret jobs** (hack, ghost, sample, snoop)
+  pay Mutagen Vials; V mutates one of your own kids. [lab escape delivered a Mutated kid; a hack job
+  run to JOB DONE; Skater Kid mutated to $360/s]
+- **Vex Prep Academy**, the rival school at the south-east end: ONE campus for the whole server.
+  Steal kids from its eight desks past three hall monitors; the bell brings them running; every theft
+  raises your Rivalry (rarer, smarter kids) and brings a revenge raid sooner. It has a first-look
+  cutscene the first time you walk up, and chapter 5 asks you to steal one. [steal, carry, escape
+  (kid delivered to the bench, Rivalry 1), caught after 12 s standing still, cutscene screenshots]
+- **Co-op schools, 1-4 players.** On the loading screen (or the Co-op button in game): pick a role,
+  then START A CO-OP SCHOOL or JOIN one in the server. Everyone plays the host's school: shared cash,
+  kids, income, prompts, raids, chapter and to-do card. Members' own schools keep earning and pay
+  out when they go home (BACK TO MY SCHOOL). Roles, any number of each, perks with 2+ players:
+  President (10% back on purchases), Teacher (+20% tuition while inside), Hall Monitor (one-hit goons,
+  2x stun), Recruiter (carry 20% faster, quieter). **Crew jobs** (Assembly, Bus Rush, Raid Vex Prep,
+  Payday) pay the school and give +30% tuition for 2 minutes. One VIP in the crew doubles the school.
+  [A real 2-client local server: joined by real clicks on the loading screen and in the panel; both
+  saw the same cash and income; the member collected a desk ($3.2K into the shared wallet); the
+  member saw Sell but no Steal on their own school's kids; ASSEMBLY finished and paid $600;
+  Teacher perk 87.5 x 1.2 x 1.3 = 136.5/s measured; Hall Monitor took a 3-HP goon out in one bonk;
+  the raid banner reached the member; leaving and the host quitting both sent the member home
+  with their own plot back]
+- **Vehicles**: a real conventional school bus (hood and grille, framed windows, rub rails, folding
+  door, stop sign, emergency door), the special buses show their name on both sides, a VexCorp panel
+  van with a raked windshield and a light bar, a chrome-trimmed stretch limo. [screenshots]
+- **Detention Hall** (east end): brick, barred windows, porch, neon sign, a clock stuck at 3:00,
+  water tank, searchlight, fenced yard. **Every school** gets a detail pass: base course, corner
+  pilasters, floor bands, sills and lintels, door lamps, walk lamp posts. [screenshots, tier 1 and 6]
+
 ## Not verified / known gaps
-- Anything with two players: stealing from another player, Ruler hits on another player, the alarm.
-- Mouse clicks from the test tool don't reach GUI buttons, so panels were opened through the
-  ClientBus bindable and actions called directly. The buttons are wired to the same calls; clicking
-  them by hand hasn't been checked.
+- Two players in different schools: stealing from another player, a Ruler hit on another player, the
+  alarm. (Co-op WAS tested with two clients; see above.) Three and four-player crews weren't run.
+- Stan's ghost, sample and snoop jobs weren't run end to end (the hack job was).
+- The Friends invite window (Roblox's own) only works in a published game.
 - Real DataStore saves (Studio uses an in-memory stand-in on an unpublished place). The save/load
   round trip through that stand-in was verified earlier.
 - Game passes and products are built but have no ids yet (see below), so no real purchase has run.
@@ -145,7 +193,9 @@ UI rebuild.
 - Event tokens on a crowded server: spawning is per player (4 live each), not tested with many players.
 
 ## Things only you can do
-- **File > Save in Studio** (and Publish when you're ready).
+- **File > Save in Studio** (and Publish when you're ready). The new school bus and Detention Hall
+  were rebuilt in the place itself (tools/rebuild_bus.lua, tools/rebuild_detention.lua), so they
+  only stick once you save.
 - Create the game passes and developer products on the Creator Dashboard and paste their ids into
   `Config.Passes` / `Config.Products` (they show "SOON" until then).
 - The admin panel is open to anyone in Studio and to the place owner (or group rank 255) in live games,
