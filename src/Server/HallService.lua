@@ -230,13 +230,30 @@ function HallService.spawnOne(forceRarity, forceId, weights, from, quiet)
 end
 
 ---------------------------------------------------------------------------
--- special buses
+-- the bus stop: every bus pulls into the same spot (where the regular bus is parked in the map),
+-- door towards the shelter, kids step off onto the carpet.
+--   the regular bus  pulls in, drops at most Config.BusCapacity kids (72), backs out; the next one
+--                    comes a few seconds later
+--   event buses      (Late, Field Trip, Honor Roll, Principal's Pick, Lucky, Welcome) queue for the
+--                    stop: the regular bus leaves early to make room, the event bus pulls in, drops
+--                    its kids and backs out, then the regular bus comes back
 ---------------------------------------------------------------------------
-local busTemplate = map.SchoolBus
-local PARK = CFrame.new(-305, 0, 26) -- ahead of the regular bus, door facing the carpet
+local regularBus = map.SchoolBus
+local busTemplate = regularBus
+local STOP = regularBus:GetPivot() -- (the map's parked bus: this is the stop)
+local OFFSTAGE = STOP - Vector3.new(190, 0, 0) -- down the street to the west, where buses come from
+local HIDDEN = STOP - Vector3.new(0, 400, 0)
+local CAPACITY = Config.BusCapacity or 72
+local BUS_GAP = 6 -- seconds between one regular bus leaving and the next pulling in
+local queue = {} -- event buses waiting for the stop: { kind, byName }
+local holdUntil = 0 -- an event bus is due: the regular bus clears the stop
+HallService.CAPACITY = CAPACITY
+
 local function makeBus(label, color, textColor)
 	local bus = busTemplate:Clone()
 	bus.Name = label:gsub(" ", "")
+	local counter = bus:FindFirstChild("KidsLeft", true)
+	if counter then counter:Destroy() end
 	for _, n in { "Body", "Hood" } do
 		for _, part in bus:GetChildren() do
 			if part.Name == n then part.Color = color end
@@ -270,6 +287,46 @@ local function drive(model, from, to, t)
 	end
 end
 
+-- where a kid steps off a bus parked at the stop
+local function doorSpot(bus)
+	local door = bus:FindFirstChild("Door")
+	local p = door and door.Position or STOP.Position
+	return Vector3.new(p.X, 0, p.Z - 3)
+end
+
+-- the counter over the regular bus: how many kids are still on board
+local counterLabel
+do
+	local roof = regularBus.PrimaryPart or regularBus:FindFirstChildWhichIsA("BasePart")
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "KidsLeft"
+	bb.Size = UDim2.fromOffset(210, 44)
+	bb.StudsOffsetWorldSpace = Vector3.new(0, 9, 0)
+	bb.MaxDistance = 140
+	bb.LightInfluence = 0
+	bb.Parent = roof
+	local t = Instance.new("TextLabel")
+	t.Size = UDim2.fromScale(1, 1)
+	t.BackgroundColor3 = Color3.fromRGB(255, 214, 51)
+	t.Font = Enum.Font.LuckiestGuy
+	t.TextScaled = true
+	t.TextColor3 = Color3.fromRGB(30, 26, 40)
+	t.Text = ""
+	t.Parent = bb
+	Instance.new("UICorner", t).CornerRadius = UDim.new(0, 12)
+	local s = Instance.new("UIStroke")
+	s.Thickness = 3
+	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	s.Parent = t
+	counterLabel = t
+end
+local function setCounter(n)
+	if counterLabel then
+		counterLabel.Parent.Enabled = n ~= nil
+		counterLabel.Text = n and ("\u{1F68C} %d KIDS ON BOARD"):format(n) or ""
+	end
+end
+
 local BUSES = {
 	LateBus = { label = "LATE BUS", color = Color3.fromRGB(255, 120, 30) },
 	FieldTrip = { label = "FIELD TRIP", color = Color3.fromRGB(150, 80, 255) },
@@ -281,7 +338,8 @@ local BUSES = {
 -- the Welcome Bus brings the six starter kids when a new principal arrives
 local WELCOME = { count = 6, ids = { "UntiedTyler", "GlueStickGus", "DoodleDot", "LunchboxLucy", "PajamaPete", "HiccupHank" } }
 
-function HallService.specialBus(kind, byName)
+-- an event bus at the stop: in, its kids off, out (the stop is free when this runs)
+local function runEventBus(kind, byName)
 	local spec = kind == "FieldTrip" and Config.FieldTrip or kind == "HonorBus" and Config.HonorBus or kind == "Welcome" and WELCOME
 		or kind == "Pick" and Config.PrincipalsPick or Config.LateBus
 	local style = BUSES[kind] or BUSES.LateBus
@@ -297,43 +355,119 @@ function HallService.specialBus(kind, byName)
 		weights = { Legendary = 70, Mythic = 24, Prodigy = 5, Secret = 1 }
 	end
 	local bus = makeBus(label, color, style.text)
-	-- the template faces +X with its door on -Z; park it with the same orientation
-	local pivot0 = busTemplate:GetPivot()
-	local parked = PARK * pivot0.Rotation + Vector3.new(0, pivot0.Position.Y, 0)
-	local away = parked - Vector3.new(160, 0, 0)
-	bus:PivotTo(away)
+	bus:PivotTo(OFFSTAGE)
 	bus.Parent = workspace
 	Remotes.Sfx:FireAllClients("BusHorn")
-	drive(bus, away, parked, 4)
-	local door = bus.Door.Position
+	drive(bus, OFFSTAGE, STOP, 4)
+	if byName then
+		Remotes.Notify:FireAllClients(byName .. " called a " .. label .. "!", "steal")
+	end
+	local from = doorSpot(bus)
 	for i = 1, spec.count or 6 do
 		local w = (i == 1 and spec.first) or weights
 		local kid
 		if spec.ids then
-			kid = HallService.spawnOne(nil, spec.ids[i], nil, Vector3.new(door.X, 0, door.Z - 3))
+			kid = HallService.spawnOne(nil, spec.ids[i], nil, from)
 		else
-			kid = HallService.spawnOne(nil, nil, w, Vector3.new(door.X, 0, door.Z - 3))
+			kid = HallService.spawnOne(nil, nil, w, from)
 		end
 		-- which bus they came off (chapter requests like "enroll a kid off the Honor Roll Bus")
 		if kid then kid:SetAttribute("Bus", kind) end
 		task.wait(0.6)
 	end
 	task.wait(1.5)
-	-- reverse back out the way it came
-	drive(bus, parked, parked - Vector3.new(200, 0, 0), 4)
+	-- back out the way it came
+	drive(bus, STOP, OFFSTAGE, 4)
 	bus:Destroy()
-	if byName then
-		Remotes.Notify:FireAllClients(byName .. " called a " .. label .. "!", "steal")
+end
+
+-- call an event bus: it queues for the stop (the regular bus makes room)
+function HallService.specialBus(kind, byName)
+	table.insert(queue, { kind = kind, byName = byName })
+	holdUntil = math.max(holdUntil, os.clock() + 20)
+end
+
+-- an event bus is due soon (the 10 s warning): the regular bus starts clearing the stop now
+function HallService.clearStop(secs)
+	holdUntil = math.max(holdUntil, os.clock() + (secs or 15))
+end
+
+local function stopWanted()
+	return #queue > 0 or os.clock() < holdUntil
+end
+
+-- the stop's loop: event buses first, then the regular bus with up to CAPACITY kids
+local function busLoop()
+	local parked = true -- (the map starts with the regular bus at the stop)
+	while true do
+		-- event buses, one at a time
+		if #queue > 0 then
+			if parked then
+				setCounter(nil)
+				Remotes.Sfx:FireAllClients("BusHorn")
+				drive(regularBus, STOP, OFFSTAGE, 4)
+				regularBus:PivotTo(HIDDEN)
+				parked = false
+			end
+			local ev = table.remove(queue, 1)
+			local ok, err = pcall(runEventBus, ev.kind, ev.byName)
+			if not ok then warn("[Hall] event bus failed:", err) end
+			if #queue == 0 then holdUntil = 0 end
+			continue
+		end
+		if os.clock() < holdUntil then
+			-- waiting for the event bus that was announced
+			if parked then
+				setCounter(nil)
+				drive(regularBus, STOP, OFFSTAGE, 4)
+				regularBus:PivotTo(HIDDEN)
+				parked = false
+			end
+			task.wait(0.3)
+			continue
+		end
+		-- the regular bus
+		if not parked then
+			regularBus:PivotTo(OFFSTAGE)
+			Remotes.Sfx:FireAllClients("BusHorn")
+			drive(regularBus, OFFSTAGE, STOP, 4)
+			parked = true
+		end
+		local left = CAPACITY
+		setCounter(left)
+		while left > 0 and not stopWanted() do
+			if #hall:GetChildren() < Config.MaxHallStudents then
+				local ok, m = pcall(HallService.spawnOne, nil, nil, nil, doorSpot(regularBus))
+				if not ok then warn("[Hall] spawn failed:", m) end
+				if ok and m then
+					left -= 1
+					setCounter(left)
+				end
+			end
+			task.wait(Config.SpawnInterval / (HallService.recessActive() and 1.5 or 1))
+		end
+		-- empty (or making room): back out, and the next one comes after a short gap
+		setCounter(nil)
+		task.wait(0.8)
+		Remotes.Sfx:FireAllClients("BusHorn")
+		drive(regularBus, STOP, OFFSTAGE, 4)
+		regularBus:PivotTo(HIDDEN)
+		parked = false
+		if not stopWanted() then task.wait(BUS_GAP) end
 	end
 end
 
 function HallService.start()
-	-- regular bus
+	-- the bus stop (the regular bus and the event buses)
 	task.spawn(function()
 		while true do
-			local ok, err = pcall(HallService.spawnOne)
-			if not ok then warn("[Hall] spawn failed:", err) end
-			task.wait(Config.SpawnInterval / (HallService.recessActive() and 1.5 or 1))
+			local ok, err = pcall(busLoop)
+			warn("[Hall] bus loop stopped:", err)
+			task.wait(2)
+			if not ok then
+				-- (put the regular bus back at the stop and start again)
+				pcall(function() regularBus:PivotTo(STOP) end)
+			end
 		end
 	end)
 
@@ -368,6 +502,8 @@ function HallService.start()
 				if at - t <= 10 and not warned[kind] then
 					warned[kind] = true
 					Remotes.Announce:FireAllClients(label .. " ARRIVES IN 10s!", BUSES[kind].text or BUSES[kind].color)
+					-- the regular bus makes room at the stop
+					HallService.clearStop(16)
 				end
 				if t >= at then
 					warned[kind] = nil

@@ -256,6 +256,8 @@ Config.DeskRows = {
 	{ 0, 0, 5e9, 50e9 },
 }
 Config.DesksPerRow = 4
+-- how many kids one regular bus brings before it drives off (HallService)
+Config.BusCapacity = 72
 
 -- the kids grow up with the school: a seated kid's size by tier (Kindergarten little, college grown)
 Config.AgeScale = { 0.8, 0.87, 0.94, 1, 1.04, 1.07, 1.12, 1.14, 1.16, 1.16, 1.17, 1.18 }
