@@ -604,13 +604,15 @@ Config.Missions = {
 -- the chase routes (world waypoints, ground level)
 Config.ChaseRoutes = {
 	factory_to_shack = { Vector3.new(0, 0, 30), Vector3.new(20, 0, 24), Vector3.new(80, 0, 22), Vector3.new(140, 0, 22), Vector3.new(190, 0, 26), Vector3.new(190, 0, 52) },
-	hub_to_bus = { Vector3.new(-14, 0, -64), Vector3.new(-14, 0, -40), Vector3.new(-40, 0, -24), Vector3.new(-100, 0, -22), Vector3.new(-170, 0, -22), Vector3.new(-240, 0, -22), Vector3.new(-318, 0, -18) },
-	shack_to_hub = { Vector3.new(190, 0, 60), Vector3.new(190, 0, 26), Vector3.new(150, 0, 22), Vector3.new(100, 0, -22), Vector3.new(40, 0, -24), Vector3.new(0, 0, -44), Vector3.new(-40, 0, -24), Vector3.new(-110, 0, 22), Vector3.new(-160, 0, 22), Vector3.new(-190, 0, 60) },
+	hub_to_bus = { Vector3.new(-14, 0, -64), Vector3.new(-14, 0, -40), Vector3.new(-40, 0, -17), Vector3.new(-100, 0, -17), Vector3.new(-170, 0, -17), Vector3.new(-240, 0, -17), Vector3.new(-318, 0, -17) },
+	shack_to_hub = { Vector3.new(190, 0, 60), Vector3.new(190, 0, 26), Vector3.new(150, 0, 17), Vector3.new(100, 0, -17), Vector3.new(40, 0, -17), Vector3.new(0, 0, -44), Vector3.new(-40, 0, -17), Vector3.new(-110, 0, 17), Vector3.new(-160, 0, 17), Vector3.new(-176, 0, 40) },
 }
+-- speed vs your 16: you close 2-3 studs a second, so keep swinging and you catch him; each hit makes him
+-- dash away for dashTime seconds (and he can't be hit again for 1.6 s)
 Config.ChaseRunners = {
-	courier = { id = "VexGoon", name = "Candy Courier", title = "VexCorp", mult = 1, outfit = "goon", speed = 15, dash = 22 },
-	crumpet = { id = "Crumpet", name = "Crumpet", title = "Butler", mult = 1, outfit = "butler", speed = 15.5, dash = 23 },
-	baron = { id = "Baron", name = "The Sugar Baron", title = "???", mult = 1, outfit = "baron", speed = 15.5, dash = 24 },
+	courier = { id = "VexGoon", name = "Candy Courier", title = "VexCorp", mult = 1, outfit = "goon", speed = 13, dash = 19, dashTime = 0.8 },
+	crumpet = { id = "Crumpet", name = "Crumpet", title = "Butler", mult = 1, outfit = "butler", speed = 13.5, dash = 19.5, dashTime = 0.8 },
+	baron = { id = "Baron", name = "The Sugar Baron", title = "???", mult = 1, outfit = "baron", speed = 14, dash = 20, dashTime = 0.9 },
 }
 Config.MissionRewardMult = 3 -- a mission step pays this many times a normal chapter request
 
@@ -745,7 +747,8 @@ Config.Heist = {
 	guards = 3,
 	patrolSpeed = 7,
 	chaseSpeed = 15,
-	chaseSpeedCarry = 14,
+	chaseSpeedCarry = 13.5,
+	alerted = 2, -- guards who come running when you grab something (the rest join if they see you)
 	carrySpeed = 12,
 	sightRange = 26,
 	sightAngle = 100,

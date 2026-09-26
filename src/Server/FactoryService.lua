@@ -850,6 +850,18 @@ local function escaped(player)
 	end
 end
 
+-- the alarm: the nearest guards (Config.Heist.alerted) come running; the others keep to their rounds
+-- and join in if they spot you
+local function alertNearest(player, proot)
+	local list = {}
+	for _, g in guards do
+		local r = g.model.PrimaryPart
+		if r and now() >= g.stunUntil then table.insert(list, { g = g, d = (r.Position - proot.Position).Magnitude }) end
+	end
+	table.sort(list, function(a, b) return a.d < b.d end)
+	for i = 1, math.min(H.alerted or #list, #list) do chase(list[i].g, player) end
+end
+
 local function takeKid(player, i)
 	local pen = pens[i]
 	if not pen or not pen.kind or pen.takenBy or heists[player] then return end
@@ -858,6 +870,9 @@ local function takeKid(player, i)
 	local char = player.Character
 	local proot = char and char:FindFirstChild("HumanoidRootPart")
 	if not proot or (stunUntil[player] or 0) > now() then return end
+	-- (at the bars: the prompt's range, checked here too rather than trusted)
+	local spot = pen.model:FindFirstChild("PromptSpot")
+	if spot and (spot.Position - proot.Position).Magnitude > 12 then return end
 	local def = pen.kind == "captured" and Config.StudentById[pen.entry.id] or (pen.kidModel and Config.StudentById[pen.kidModel:GetAttribute("StudentId")])
 	if not def then return end
 	local grade = pen.kind == "captured" and (pen.entry.grade or "Normal") or "Normal"
@@ -906,9 +921,7 @@ local function takeKid(player, i)
 		end
 		Remotes.Notify:FireClient(player, "A guard heard you! Run for the gate (bonk him if he gets close).", "steal")
 	else
-		for _, g in guards do
-			if now() >= g.stunUntil then chase(g, player) end
-		end
+		alertNearest(player, proot)
 	end
 end
 
@@ -917,6 +930,7 @@ local function takePlans(player)
 	local char = player.Character
 	local proot = char and char:FindFirstChild("HumanoidRootPart")
 	if not proot or (stunUntil[player] or 0) > now() then return end
+	if (desk.prompt.Parent.Position - proot.Position).Magnitude > 12 then return end
 	-- a rolled copy rides over your head
 	local roll = Instance.new("Part")
 	roll.Name = "CarriedPlans"
@@ -956,9 +970,7 @@ local function takePlans(player)
 	setCarrySpeed(player, true)
 	alarm(true)
 	Remotes.Push:FireClient(player, "heist", { state = "carrying", name = "Vex's Blueprints" })
-	for _, g in guards do
-		if now() >= g.stunUntil then chase(g, player) end
-	end
+	alertNearest(player, proot)
 end
 
 -- the Ruler stuns a guard and knocks him back
@@ -970,7 +982,8 @@ local function onSwing(player, proot)
 		if root and now() >= g.stunUntil then
 			local d = root.Position - proot.Position
 			local flat = Vector3.new(d.X, 0, d.Z)
-			if flat.Magnitude < 9 and (flat.Magnitude < 3.5 or flat.Unit:Dot(look) > 0.25) then
+			-- (forgiving: he's running at you, and the server sees you a moment late)
+			if flat.Magnitude < 9 and (flat.Magnitude < 5.5 or flat.Unit:Dot(look) > 0.1) then
 				g.stunUntil = now() + H.guardStun
 				Walkers.stop(g.model)
 				g.state = "stunned"

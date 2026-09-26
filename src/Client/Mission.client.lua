@@ -292,12 +292,12 @@ local objL = UI.label(card, { Text = "", TextColor3 = Color3.fromRGB(70, 60, 90)
 local pips = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -24, 0, 22), Position = UDim2.fromOffset(12, 114), Parent = card })
 UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), VerticalAlignment = Enum.VerticalAlignment.Center, Parent = pips })
 -- chases: how close he is to getting away
-local meter = UI.new("Frame", { Size = UDim2.new(1, -24, 0, 12), Position = UDim2.fromOffset(12, 118), BackgroundColor3 = Color3.fromRGB(225, 215, 200), Visible = false, Parent = card })
+local meter = UI.new("Frame", { Size = UDim2.new(1, -24, 0, 12), Position = UDim2.fromOffset(12, 160), BackgroundColor3 = Color3.fromRGB(225, 215, 200), Visible = false, Parent = card })
 UI.corner(meter, 6)
 UI.stroke(meter, 2)
 local meterFill = UI.new("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = UI.C.red, Parent = meter })
 UI.corner(meterFill, 6)
-local meterL = UI.label(card, { Text = "ESCAPING", Font = UI.BIG, TextColor3 = UI.C.red, TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.new(0, 120, 0, 14), Position = UDim2.new(1, -132, 0, 102), Visible = false, stroke = 0 })
+local meterL = UI.label(card, { Text = "ESCAPING", Font = UI.BIG, TextColor3 = UI.C.red, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(0, 160, 0, 16), Position = UDim2.fromOffset(12, 141), Visible = false, stroke = 0 })
 
 local cur -- { id, def, progress, count }
 
@@ -384,6 +384,7 @@ Remotes.Push.OnClientEvent:Connect(function(kind, data)
 		local chase = def and def.kind == "chase"
 		meter.Visible = chase
 		meterL.Visible = chase
+		card.Size = UDim2.fromOffset(300, chase and 184 or 150)
 		meterFill.Size = UDim2.fromScale(0, 1)
 		setPips(cur.progress, cur.count)
 		showTracker(true)

@@ -187,7 +187,8 @@ local function groundY(x, z)
 		if pl.Character then table.insert(skip, pl.Character) end
 	end
 	params.FilterDescendantsInstances = skip
-	local hit = workspace:Raycast(Vector3.new(x, 60, z), Vector3.new(0, -120, 0), params)
+	-- (from knee height, so lamp arms, awnings and the bus stop roof don't count)
+	local hit = workspace:Raycast(Vector3.new(x, 4, z), Vector3.new(0, -12, 0), params)
 	return hit and hit.Position.Y or 0.4
 end
 
@@ -264,6 +265,7 @@ local function hitRunner(player, m, root)
 	r.hp -= 1
 	r.safeUntil = now() + 1.6
 	r.running = true
+	r.hits = (r.hits or 0) + 1
 	Walkers.stop(model)
 	Remotes.Sfx:FireClient(player, "Bonk")
 	Remotes.Push:FireClient(player, "hit", { pos = mroot.Position + Vector3.new(0, 2, 0), ko = r.hp <= 0 })
@@ -289,11 +291,11 @@ local function hitRunner(player, m, root)
 		mroot.CFrame = start + dir * 5 * a + Vector3.new(0, math.sin(a * math.pi) * 1.8, 0)
 		if a >= 1 then conn:Disconnect() end
 	end)
-	task.delay(0.7, function()
+	task.delay(0.6, function()
 		if active[player] ~= m or not model.Parent then return end
 		-- a dash, then back to his normal pace
 		r.runFrom(r.spec.dash)
-		task.delay(1.2, function()
+		task.delay(r.spec.dashTime or 0.8, function()
 			if active[player] == m and model.Parent and Walkers.isWalking(model) then r.runFrom(r.spec.speed) end
 		end)
 	end)
@@ -308,7 +310,8 @@ local function onSwing(player, root)
 	if not mroot then return end
 	local d = mroot.Position - root.Position
 	local flat = Vector3.new(d.X, 0, d.Z)
-	if flat.Magnitude < 9 and math.abs(d.Y) < 7 and (flat.Magnitude < 3.5 or flat.Unit:Dot(look) > 0.25) then
+	-- (forgiving: he's moving, and the server sees you a moment late)
+	if flat.Magnitude < 9 and math.abs(d.Y) < 7 and (flat.Magnitude < 5.5 or flat.Unit:Dot(look) > 0.1) then
 		hitRunner(player, m, root)
 	end
 end
@@ -418,6 +421,11 @@ end
 -- Studio
 function MissionService.debugStart(player, id)
 	local p = Data.get(player)
+	local cur = active[player]
+	if cur then
+		active[player] = nil
+		if cur.cleanup then pcall(cur.cleanup) end
+	end
 	-- jump straight to the chapter that has this mission
 	for n, ch in Config.Chapters do
 		for _, step in ch.steps do
