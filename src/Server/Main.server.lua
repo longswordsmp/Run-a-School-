@@ -84,6 +84,8 @@ CrewService.start()
 TownService.start()
 AreaService.start()
 local HQService = require(Server.HQService)
+local PrestigeService = require(Server.PrestigeService)
+PrestigeService.start()
 HQService.start(TownService.root)
 TownNPCService.start()
 TownQuestService.start_service()
@@ -315,6 +317,9 @@ require(Server.DebugBridge).start({
 	end,
 	tqReset = function(player)
 		return TownQuestService.debugReset(player)
+	end,
+	setPrestige = function(player, n)
+		return require(Server.PrestigeService).debugSet(player, n)
 	end,
 	hqBadge = function(player)
 		return HQService.debugBadge(player, true)

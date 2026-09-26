@@ -1549,6 +1549,115 @@ local function buildWings(school, L, look, g, storeys, name)
 	_ = name
 end
 
+---------------------------------------------------------------------------
+-- PRESTIGE finishes (Config.Prestige): the building remade in gold, diamond or alien metal. The
+-- pass recolours the outside by the tier's own palette (wall, trim, roof colours), so it works for
+-- every tier's building, the wings and the grand storeys; then sparkles, and for Alien a saucer.
+---------------------------------------------------------------------------
+local FINISH = {
+	Gold = {
+		wall = { rgb(204, 150, 36), Enum.Material.Metal, 0.3 },
+		trim = { rgb(255, 214, 96), Enum.Material.Metal, 0.45 },
+		roof = { rgb(160, 110, 24), Enum.Material.Metal, 0.25 },
+		sparkle = rgb(255, 232, 150),
+	},
+	Diamond = {
+		wall = { rgb(178, 228, 255), Enum.Material.Glass, 0.3 },
+		trim = { rgb(240, 250, 255), Enum.Material.Ice, 0.2 },
+		roof = { rgb(120, 196, 240), Enum.Material.Glass, 0.3 },
+		sparkle = rgb(220, 245, 255),
+	},
+	Alien = {
+		wall = { rgb(36, 46, 44), Enum.Material.Foil, 0.1 },
+		trim = { rgb(110, 255, 80), Enum.Material.Neon, 0 },
+		roof = { rgb(24, 32, 30), Enum.Material.Foil, 0.1 },
+		sparkle = rgb(140, 255, 110),
+	},
+}
+SchoolBuilder.FINISH = FINISH
+
+local function sameColor(a, b)
+	return b and math.abs(a.R - b.R) < 0.01 and math.abs(a.G - b.G) < 0.01 and math.abs(a.B - b.B) < 0.01
+end
+
+local function saucer(parent, L, roofY)
+	local ufo = Instance.new("Model")
+	ufo.Name = "Saucer"
+	ufo.Parent = parent
+	local y = roofY + 26
+	local body = cyl(ufo, "SaucerBody", 30, 3, L(0, y, -25) * CFrame.Angles(0, 0, math.rad(90)), rgb(170, 176, 190), Enum.Material.Metal)
+	body.Reflectance = 0.2
+	cyl(ufo, "SaucerRim", 34, 1.2, L(0, y, -25) * CFrame.Angles(0, 0, math.rad(90)), rgb(120, 126, 140), Enum.Material.Metal)
+	ball(ufo, "SaucerDome", 13, L(0, y + 2.5, -25), rgb(120, 255, 90), Enum.Material.Glass).Transparency = 0.35
+	cyl(ufo, "SaucerBelly", 16, 2, L(0, y - 2, -25) * CFrame.Angles(0, 0, math.rad(90)), rgb(90, 96, 110), Enum.Material.Metal)
+	for k = 0, 11 do
+		local a = math.rad(k * 30)
+		local lamp = ball(ufo, "SaucerLight", 1.6, L(math.cos(a) * 15.5, y, -25 + math.sin(a) * 15.5), k % 2 == 0 and rgb(120, 255, 90) or rgb(255, 240, 120), Enum.Material.Neon)
+		lamp.CanCollide = false
+	end
+	-- the tractor beam down onto the roof
+	local beam = cyl(ufo, "TractorBeam", 12, y - roofY - 3, L(0, (y + roofY) / 2, -25) * CFrame.Angles(0, 0, math.rad(90)), rgb(150, 255, 120), Enum.Material.Neon)
+	beam.Transparency = 0.8
+	beam.CanCollide = false
+	beam.CastShadow = false
+	light(body, 40, 2, rgb(120, 255, 90))
+	for _, d in ufo:GetDescendants() do
+		if d:IsA("BasePart") then d.CanCollide = false d.CanQuery = false end
+	end
+	-- (it turns about its own middle, not the world's)
+	ufo.WorldPivot = L(0, y, -25)
+	ufo:SetAttribute("SpinSpeed", 0.6)
+	game:GetService("CollectionService"):AddTag(ufo, "Spin")
+	return ufo
+end
+
+local function applyFinish(school, L, look, finishId, roofY)
+	local f = FINISH[finishId]
+	if not f then return end
+	local function paint(p)
+		local slot
+		if sameColor(p.Color, look.wall) then slot = f.wall
+		elseif sameColor(p.Color, look.cap) then slot = f.trim
+		elseif sameColor(p.Color, look.roof) then slot = f.roof end
+		if slot then
+			p.Color, p.Material, p.Reflectance = slot[1], slot[2], slot[3]
+		end
+	end
+	local function walk(folder, deep)
+		if not folder then return end
+		for _, d in (deep and folder:GetDescendants() or folder:GetChildren()) do
+			if d:IsA("BasePart") then paint(d) end
+		end
+	end
+	for _, fm in school.Floors:GetChildren() do
+		walk(fm:FindFirstChild("Walls"), false) -- (not the Skin inside: the classrooms keep their colours)
+		walk(fm:FindFirstChild("Caps"), true)
+	end
+	for _, name in { "Exterior", "Roof", "Caps", "Wings", "Upper" } do
+		walk(school:FindFirstChild(name), true)
+	end
+	-- sparkles along the roof line and the corners
+	local fx = Instance.new("Folder")
+	fx.Name = "Finish"
+	fx.Parent = school
+	for _, p in { { -BX, ZF }, { BX, ZF }, { -BX, ZB }, { BX, ZB }, { 0, ZF }, { 0, (ZF + ZB) / 2 } } do
+		local e = part(fx, "Sparkles", Vector3.new(1, 1, 1), L(p[1], roofY + 2, p[2]), f.sparkle, nil, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+		local pe = Instance.new("ParticleEmitter")
+		pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		pe.Color = ColorSequence.new(f.sparkle)
+		pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.4), NumberSequenceKeypoint.new(1, 0) })
+		pe.Lifetime = NumberRange.new(1.2, 2)
+		pe.Rate = 6
+		pe.Speed = NumberRange.new(1, 3)
+		pe.SpreadAngle = Vector2.new(180, 180)
+		pe.LightEmission = 1
+		pe.Parent = e
+	end
+	local band = part(fx, "FinishBanner", Vector3.new(16, 2.4, 0.3), L(0, roofY + 5.8, ZF + 1.2), f.trim[1], f.trim[2])
+	surfaceText(band, Enum.NormalId.Back, finishId:upper() .. " SCHOOL", finishId == "Alien" and rgb(20, 30, 20) or rgb(60, 40, 10), nil, Enum.Font.LuckiestGuy)
+	if finishId == "Alien" then saucer(fx, L, roofY) end
+end
+
 function SchoolBuilder.build(plot, opts)
 	local old = plot:FindFirstChild("School")
 	if old then old:Destroy() end
@@ -1571,6 +1680,7 @@ function SchoolBuilder.build(plot, opts)
 	local roofY = buildFacade(school, L, storeys, look, opts.tier, opts.name or "Empty School")
 	buildWings(school, L, look, g, storeys, opts.name)
 	buildYard(school, L, look)
+	if opts.finish then applyFinish(school, L, look, opts.finish, roofY) end
 	school:SetAttribute("Floors", opts.floors)
 	school:SetAttribute("RoofY", roofY)
 	school:SetAttribute("Tier", opts.tier)

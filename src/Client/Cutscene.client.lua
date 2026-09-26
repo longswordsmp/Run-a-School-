@@ -772,10 +772,68 @@ local function safeScene(id, data)
 	if data and data.quest then pcall(Action.InvokeServer, Action, "tqScene", data.quest) end
 end
 
+---------------------------------------------------------------------------
+-- Prestige: the Board remakes your school in its new finish (PrestigeService rebuilds it while the
+-- flash covers the screen)
+---------------------------------------------------------------------------
+local function prestige(data)
+	local t0 = os.clock()
+	while busy and os.clock() - t0 < 20 do task.wait(0.2) end
+	if busy then return end
+	busy = true
+	local plotName = player:GetAttribute("Plot")
+	local plot = plotName and workspace:FindFirstChild("Plots") and workspace.Plots:FindFirstChild(plotName)
+	local origin = plot and plot:FindFirstChild("Origin")
+	if not origin then busy = false return end
+	local o = origin.CFrame
+	local function at(x, y, z) return o:PointToWorldSpace(Vector3.new(x, y, z)) end
+	fade(0, 0.35)
+	hideHud(true)
+	letterbox(true)
+	player:SetAttribute("LocalMusic", "heroes")
+	local prevType = camera.CameraType
+	camera.CameraType = Enum.CameraType.Scriptable
+	camera.CFrame = CFrame.lookAt(at(-70, 40, 130), at(0, 20, 0))
+	fade(1, 0.5)
+	local move = TweenService:Create(camera, TweenInfo.new(9, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(at(60, 34, 120), at(0, 22, 0)) })
+	move:Play()
+	local c1 = caption("THE BOARD HAS DECIDED...", Color3.new(1, 1, 1), 0.2, 50)
+	sfx("GavelBig")
+	task.wait(2.2)
+	c1:Destroy()
+	-- the flash in the finish's colour (the school is rebuilt behind it)
+	black.BackgroundColor3 = data.color or Color3.new(1, 1, 1)
+	TweenService:Create(black, TweenInfo.new(0.35), { BackgroundTransparency = 0 }):Play()
+	sfx("StingParty")
+	task.wait(2.6)
+	TweenService:Create(black, TweenInfo.new(1.2), { BackgroundTransparency = 1 }):Play()
+	task.wait(0.4)
+	local c2 = caption(("%s SCHOOL!"):format(data.name or ""), data.color or Color3.fromRGB(255, 215, 90), 0.2, 84)
+	local c3 = caption(("x%d tuition forever. Back to Kindergarten, better than ever."):format(data.mult or 2), Color3.new(1, 1, 1), 0.3, 32)
+	confetti(160)
+	task.wait(4.2)
+	fade(0, 0.4)
+	c2:Destroy()
+	c3:Destroy()
+	black.BackgroundColor3 = Color3.new(0, 0, 0)
+	move:Cancel()
+	camera.CameraType = prevType == Enum.CameraType.Scriptable and Enum.CameraType.Custom or prevType
+	letterbox(false)
+	hideHud(false)
+	player:SetAttribute("LocalMusic", nil)
+	task.wait(0.2)
+	fade(1, 0.5)
+	busy = false
+end
+
 Remotes:WaitForChild("Cutscene").OnClientEvent:Connect(function(name, data, extra)
 	if name == "Play" then
 		-- ("Play", sceneId, extras)
 		task.spawn(safeScene, data, extra)
+		return
+	end
+	if name == "Prestige" then
+		task.spawn(safely, prestige, data)
 		return
 	end
 	if name == "Rival" then

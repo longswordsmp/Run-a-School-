@@ -236,6 +236,19 @@ Config.IntroLines = {
 -- after the last tier, each Prestige star costs the previous requirement x3 and adds +10 %
 Config.PrestigeStep = { cashMult = 3, bonus = 0.1 }
 
+-- PRESTIGE (PrestigeService): at Multiverse University the Board can remake your school in a new
+-- finish. You go back to Kindergarten (cash, students, tier and stars reset; everything else
+-- stays) and the finish is forever: the school is built in it at every tier, and its multiplier
+-- stacks on top of the tier's. The Alien finish needs the Close Encounters story (quest X06).
+Config.Prestige = {
+	{ id = "Gold", name = "GOLD", icon = "\u{1F451}", mult = 2, cash = 240e15, color = rgb(255, 196, 50),
+		desc = "Solid gold walls, gold trim, sparkles. Every tier after this one." },
+	{ id = "Diamond", name = "DIAMOND", icon = "\u{1F48E}", mult = 4, cash = 600e15, color = rgb(150, 225, 255),
+		desc = "A school cut from diamond: glittering glass walls and crystal trim." },
+	{ id = "Alien", name = "ALIEN", icon = "\u{1F47D}", mult = 8, cash = 1.5e18, quest = "X06", color = rgb(110, 255, 80),
+		desc = "Out of this world: glowing green trim and a flying saucer parked on the roof." },
+}
+
 -- desk rows per floor (4 desks each); 0 = free with the floor. Rows are kept on review.
 Config.DeskRows = {
 	{ 0, 0, 5e3, 150e3 },

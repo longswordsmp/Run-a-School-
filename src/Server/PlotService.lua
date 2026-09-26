@@ -210,6 +210,7 @@ function PlotService.rebuild(player)
 		floors = PlotService.floorsOf(p),
 		name = PlotService.schoolName(player),
 		items = p.builds,
+		finish = Config.Prestige[p.prestige or 0] and Config.Prestige[p.prestige].id or nil,
 	})
 	wirePads(plot)
 	PlotService.applyDesks(player)
@@ -438,7 +439,8 @@ function PlotService.earning(e)
 end
 
 function PlotService.tierMult(p)
-	return PlotService.tierOf(p).mult * (1 + Config.PrestigeStep.bonus * (p.stars or 0))
+	local finish = Config.Prestige[p.prestige or 0]
+	return PlotService.tierOf(p).mult * (1 + Config.PrestigeStep.bonus * (p.stars or 0)) * (finish and finish.mult or 1)
 end
 
 function PlotService.incomeOf(player, e, slot, base)

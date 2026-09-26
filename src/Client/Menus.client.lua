@@ -535,6 +535,7 @@ end
 ---------------------------------------------------------------------------
 -- School Board
 ---------------------------------------------------------------------------
+local prestigeBtn
 do
 	local panel = UI.panel(gui, { name = "Board", title = "SCHOOL BOARD", color = UI.C.purple, size = UDim2.fromOffset(620, 470) })
 	panels.Board = panel
@@ -561,6 +562,13 @@ do
 	_ = warn
 	local go = UI.button(b, { text = "REQUEST REVIEW", color = UI.C.purple, size = UDim2.fromOffset(300, 64), position = UDim2.new(0.5, 0, 1, -4), anchor = Vector2.new(0.5, 1), font = UI.BIG })
 	lift(go.button, 12)
+	-- at the top of the ladder: PRESTIGE (the Prestige panel below)
+	prestigeBtn = UI.button(b, { text = "\u{1F451} PRESTIGE", color = Color3.fromRGB(230, 170, 30), size = UDim2.fromOffset(170, 48), position = UDim2.new(1, 0, 1, -12), anchor = Vector2.new(1, 1), font = UI.BIG, onClick = function()
+		panel.close()
+		if panels.Prestige then panels.Prestige.open() end
+	end })
+	lift(prestigeBtn.button, 12)
+	prestigeBtn.button.Visible = false
 	local info
 	local function refresh()
 		info = call("boardInfo")
@@ -581,6 +589,7 @@ do
 		end
 		reward.Text = ("Reward: tuition x%s%s"):format(tostring(info.mult), (info.floors and info.floors > 1) and ("  \u{2022}  " .. info.floors .. " floors") or "")
 		go.setEnabled(info.hasCash and info.hasNeeded)
+		prestigeBtn.button.Visible = info.tier == #Config.Tiers
 	end
 	go.button.Activated:Connect(function()
 		if not go.button.Active then return end
@@ -595,6 +604,60 @@ do
 			local has = cash() >= info.cash
 			if has ~= info.hasCash then refresh() end
 		end
+	end)
+	panel.onOpen = refresh
+end
+
+---------------------------------------------------------------------------
+-- Prestige: the three finishes, what's next, what resets
+---------------------------------------------------------------------------
+do
+	local panel = UI.panel(gui, { name = "Prestige", title = "\u{1F451} PRESTIGE", color = Color3.fromRGB(230, 170, 30), size = UDim2.fromOffset(760, 520) })
+	panels.Prestige = panel
+	local b = panel.body
+	local row = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 260), ZIndex = 12, Parent = b })
+	UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 14), Parent = row })
+	local status = UI.label(b, { Text = "", TextColor3 = UI.C.navy, TextWrapped = true, Size = UDim2.new(1, -20, 0, 26), Position = UDim2.fromOffset(10, 272), ZIndex = 12, stroke = 0 })
+	UI.label(b, { Text = "Prestige sends your school back to Kindergarten: cash, students, tier and stars reset. Upgrades, desks, supplies, builds, teachers, gear, candy, diplomas, quests and the town stay. The finish and its multiplier are forever.", TextWrapped = true, TextScaled = false, TextSize = 16, TextColor3 = Color3.fromRGB(150, 60, 60), Size = UDim2.new(1, -20, 0, 62), Position = UDim2.fromOffset(10, 300), ZIndex = 12, stroke = 0 })
+	local go = UI.button(b, { text = "PRESTIGE!", color = Color3.fromRGB(230, 170, 30), size = UDim2.fromOffset(300, 64), position = UDim2.new(0.5, 0, 1, -4), anchor = Vector2.new(0.5, 1), font = UI.BIG })
+	lift(go.button, 12)
+	local function card(f, order)
+		local color = f.id == "Gold" and Color3.fromRGB(240, 185, 40) or f.id == "Diamond" and Color3.fromRGB(120, 205, 255) or Color3.fromRGB(90, 220, 70)
+		local c = UI.new("Frame", { Size = UDim2.fromOffset(226, 250), LayoutOrder = order, BackgroundColor3 = UI.C.white, ZIndex = 13, Parent = row })
+		UI.corner(c, 16)
+		UI.stroke(c, f.next and 5 or 3, f.next and UI.C.ink or Color3.fromRGB(60, 60, 70))
+		UI.gradient(c, UI.lighten(color, f.owned and 0.2 or 0.55), f.owned and color or UI.lighten(color, 0.25))
+		UI.label(c, { Text = f.icon, Size = UDim2.new(1, 0, 0, 60), Position = UDim2.fromOffset(0, 8), ZIndex = 14, stroke = 0 })
+		UI.label(c, { Text = f.name, Font = UI.BIG, Size = UDim2.new(1, -16, 0, 36), Position = UDim2.fromOffset(8, 70), ZIndex = 14, stroke = 3 })
+		UI.label(c, { Text = ("x%d TUITION"):format(f.mult), Font = UI.BIG, TextColor3 = Color3.fromRGB(40, 150, 70), Size = UDim2.new(1, -16, 0, 26), Position = UDim2.fromOffset(8, 108), ZIndex = 14, stroke = 2 })
+		UI.label(c, { Text = f.desc, TextWrapped = true, TextScaled = false, TextSize = 15, TextColor3 = UI.C.ink, Size = UDim2.new(1, -20, 0, 60), Position = UDim2.fromOffset(10, 138), ZIndex = 14, stroke = 0 })
+		local tag = f.owned and "\u{2714} YOURS" or f.next and ("NEXT \u{2022} " .. Config.formatCash(f.cash)) or "\u{1F512} LATER"
+		if f.quest and not f.owned and not f.questDone then tag = "\u{1F47D} NEEDS THE UFO STORY" end
+		UI.label(c, { Text = tag, Font = UI.BIG, TextColor3 = f.owned and Color3.fromRGB(30, 110, 50) or UI.C.navy, Size = UDim2.new(1, -16, 0, 26), Position = UDim2.new(0, 8, 1, -36), ZIndex = 14, stroke = 0 })
+	end
+	local info
+	local function refresh()
+		for _, c in row:GetChildren() do
+			if c:IsA("GuiObject") then c:Destroy() end
+		end
+		info = call("prestigeInfo")
+		if not info or info.ok == false then return end
+		for i, f in info.list do card(f, i) end
+		if info.done then
+			status.Text = "Your school is the rarest there is. Nothing left but the stars!"
+		elseif info.can then
+			status.Text = "The Board is ready. Prestige now?"
+		else
+			status.Text = "Not yet: " .. (info.why or "")
+		end
+		go.setEnabled(info.can == true)
+	end
+	go.button.Activated:Connect(function()
+		if not go.button.Active then return end
+		go.setEnabled(false)
+		panel.close()
+		local res = call("prestige")
+		if res and res.ok == false and res.err then announce(res.err, UI.C.red) end
 	end)
 	panel.onOpen = refresh
 end
