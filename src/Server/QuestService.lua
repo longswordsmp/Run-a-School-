@@ -362,8 +362,24 @@ end
 QuestService.remember = remember
 
 function QuestService.start()
-	Signals.on("questStep", function(player)
+	Signals.on("questStep", function(player, id)
 		task.defer(QuestService.recheck, player)
+		-- the step's call: who, where and why, before you go (once per step; not if it's already done)
+		local call = Config.StepCalls[id]
+		local p = Data.get(player)
+		if call and p then
+			p.callsHeard = p.callsHeard or {}
+			if not p.callsHeard[id] then
+				task.delay(1.4, function()
+					local pp = Data.get(player)
+					if not player.Parent or not pp or pp.tutorialId ~= id then return end
+					pp.callsHeard[id] = true
+					for _, pl in Data.schoolPlayers(player) do
+						Remotes.Push:FireClient(pl, "missionTalk", { call = true, lines = call })
+					end
+				end)
+			end
+		end
 	end)
 	-- the First Morning's stamp (Cutscene "FirstMorning"), with what you did in it
 	Signals.on("firstMorningDone", function(player)

@@ -745,7 +745,7 @@ local function rival(data)
 	move:Play()
 	if data and data.chapter1 then
 		-- Chapter 1: the front door is no good; Stan's map says there's a way in from below
-		sayLine("MR. WOBBLESWORTH", "Wobblesworth", "The front door is guarded day and night. But Stan's map says there's a way in... from BELOW.")
+		sayLine("MR. WOBBLESWORTH", "Wobblesworth", "The front door is guarded day and night, and her Headmaster, old Grindle, never leaves his office. But Stan's map says there's a way in... from BELOW.")
 		move:Cancel()
 		camera.CFrame = CFrame.lookAt(Vector3.new(452, 9, 14), Vector3.new(466, 0.5, -7))
 		move = TweenService:Create(camera, TweenInfo.new(5, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(Vector3.new(459, 4.5, 4), Vector3.new(466, 0.3, -7)) })

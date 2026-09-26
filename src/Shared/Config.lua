@@ -448,6 +448,26 @@ Config.Tutorial = {
 	{ id = "k12_heist", part = "ch1", icon = "\u{1F3EB}", short = "The Vex Prep Job", text = "Mr. Wobblesworth has the plan. Tonight's the night", count = 1, secs = 180, min = 25000, guide = "npc:Wobblesworth", mission = "k_heist" },
 	{ id = "board", part = "ch1", icon = "\u{2B50}", short = "Face the Board", text = "Become an Elementary School", count = 1, reward = 0, guide = "panel:Board" },
 }
+-- a short call when a step starts, so every new person and place has been introduced before you meet
+-- them ({ speaker, portrait template, line }; QuestService pushes it as a missionTalk call)
+Config.StepCalls = {
+	scholar = { { "OTIS", "Otis", "Word travels fast, Principal! Three star students want your school. You can only take ONE." } },
+	rescue = { { "MR. WOBBLESWORTH", "Wobblesworth", "Vex took him to her Homework Factory, in the middle of the street. The guards are sleepy this early: sneak in and carry him out!" } },
+	desks = { { "MR. WOBBLESWORTH", "Wobblesworth", "Every desk is taken! Build another row: press E on the see-through desks in your classroom." } },
+	k01_pencils = { { "MR. WOBBLESWORTH", "Wobblesworth", "Now let's grow. Sharp pencils make smart kids, and smart kids pay more tuition. The Shop's open!" } },
+	k02_teacher = { { "MR. WOBBLESWORTH", "Wobblesworth", "A classroom needs a teacher. Substitute Steve works cheap: hire him in the Shop." } },
+	k04_hector = { { "MR. WOBBLESWORTH", "Wobblesworth", "The School Board won't promote a school without a Hall Monitor. Hall Monitor Hector trains them: find him on the sidewalk!" } },
+	k05_janitor = { { "MR. WOBBLESWORTH", "Wobblesworth", "Tired of running between desks? A Janitor's Cart collects the tuition for you. Look in Upgrades." } },
+	k06_thief = { { "MR. WOBBLESWORTH", "Wobblesworth", "Principal! Come to the fountain, quickly! Crumpet's up to something dreadful." } },
+	k07_swap = { { "MR. WOBBLESWORTH", "Wobblesworth", "Full school? Not all kids earn the same. Sell your weakest (hold F on them) and enroll a better one: that's how schools grow!" } },
+	k08_crew = { { "MR. WOBBLESWORTH", "Wobblesworth", "Vex is furious you keep beating Crumpet. She's hired a whole crew! Come to the fountain." } },
+	k09_map = { { "MR. WOBBLESWORTH", "Wobblesworth", "Janitor Stan runs the Confiscation Closet. He knows every secret on this street, and he's asking for you." } },
+	k10_peek = { { "JANITOR STAN", "Stan", "That map shows an old tunnel running right under Vex Prep. Go and have a look at the place first: the gate at the east end." } },
+	k11_pothole = { { "JANITOR STAN", "Stan", "See the pothole in the road by Vex Prep? That's the way down. Find the ladder under her office. Just LOOK, kid." } },
+	k12_heist = { { "MR. WOBBLESWORTH", "Wobblesworth", "Stan says the Headmaster, old Grindle, sleeps in his office on top of that ladder. Come to the fountain: I have a plan." } },
+	board = { { "MR. WOBBLESWORTH", "Wobblesworth", "You did it! Now show the School Board: the Board button. Elementary School, here we come!" } },
+}
+
 -- the header each part shows on the To-Do card
 Config.TutorialParts = {
 	morning = { title = "FIRST MORNING", color = rgb(70, 150, 255) },
