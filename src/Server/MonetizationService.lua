@@ -108,6 +108,14 @@ GRANTS.LockRefresh = function(player)
 	local plot = PlotService.getPlot(player)
 	if plot then plot:SetAttribute("CooldownUntil", 0) end
 end
+-- open a part of town early (AreaService; kept in the buyer's own save)
+for _, product in Config.Products do
+	if product.area then
+		GRANTS[product.key] = function(player)
+			require(script.Parent.AreaService).open(player, product.area)
+		end
+	end
+end
 
 function MonetizationService.grantProduct(player, key)
 	local product = productByKey[key]

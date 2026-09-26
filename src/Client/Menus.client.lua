@@ -1335,7 +1335,8 @@ local function sideButton(order, icon, caption, color, panel)
 		sfx("Ding")
 		if panel then panel.toggle() end
 	end)
-	watchUnlock(caption, b)
+	-- (the Admin button is made only for admins and never waits for an unlock)
+	if caption ~= "Admin" then watchUnlock(caption, b) end
 	return b
 end
 

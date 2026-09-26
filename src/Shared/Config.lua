@@ -953,6 +953,39 @@ Config.CrewJobs = {
 -- boost for everyone
 Config.CrewJobReward = { incomeSecs = 150, min = 600, boost = 0.3, boostSecs = 120, gap = 25 }
 
+-- The town's locked areas (AreaService, docs/TOWN.md). box: where the area is (y1 for the
+-- underground Lair); gate: the opening a locked player's client blocks (x, z, width, and `alongX`
+-- when the opening runs along x); needs: what opens it (a chapter, or a story quest once the Quest
+-- Log exists); product: the Robux shortcut (Config.Products key).
+Config.Areas = {
+	{ id = "Downtown", name = "Downtown", icon = "\u{1F3EA}", color = rgb(230, 96, 64),
+		box = { x0 = -540, x1 = 540, z0 = -560, z1 = -240 }, gate = { x = 0, z = -240, w = 26, alongX = true },
+		needs = { tutorial = true }, hint = "Finish your first day at school", product = "UnlockDowntown" },
+	{ id = "Lab", name = "the Mutation Lab", icon = "\u{1F9EA}", color = rgb(120, 220, 60),
+		box = { x0 = -474, x1 = -366, z0 = 42, z1 = 150 }, gate = { x = -420, z = 42, w = 12, alongX = true },
+		needs = { chapter = 1 }, hint = "Reach Chapter 1", product = "UnlockLab" },
+	{ id = "MapleHeights", name = "Maple Heights", icon = "\u{1F3E1}", color = rgb(80, 170, 90),
+		box = { x0 = -540, x1 = 540, z0 = 240, z1 = 560 }, gate = { x = 0, z = 240, w = 26, alongX = true },
+		needs = { chapter = 2 }, hint = "Reach Chapter 2", product = "UnlockMapleHeights" },
+	{ id = "PinePark", name = "Pine Park", icon = "\u{1F332}", color = rgb(46, 140, 80),
+		box = { x0 = -800, x1 = -540, z0 = -560, z1 = 560 }, gate = { x = -540, z = 0, w = 26 },
+		needs = { chapter = 3 }, hint = "Reach Chapter 3", product = "UnlockPinePark" },
+	{ id = "VexPrep", name = "Vex Prep Academy", icon = "\u{1F3EB}", color = rgb(130, 60, 200),
+		box = { x0 = 372, x1 = 482, z0 = -170, z1 = -45 }, gate = { x = 427, z = -45, w = 14, alongX = true },
+		needs = { chapter = 5 }, hint = "Reach Chapter 5", product = "UnlockVexPrep" },
+	{ id = "Industrial", name = "VexCorp Industrial", icon = "\u{1F3ED}", color = rgb(110, 50, 160),
+		box = { x0 = 540, x1 = 800, z0 = -560, z1 = 560 }, gate = { x = 540, z = 0, w = 26 },
+		needs = { chapter = 7 }, hint = "Reach Chapter 7", product = "UnlockIndustrial" },
+	{ id = "Lair", name = "the Top Secret Lair", icon = "\u{1F480}", color = rgb(200, 30, 60),
+		box = { x0 = 540, x1 = 800, z0 = -560, z1 = 560, y1 = -40 }, needs = { chapter = 10 }, hint = "Reach Chapter 10",
+		product = "UnlockLair" },
+}
+Config.AreaById = {}
+for i, a in Config.Areas do
+	a.order = i
+	Config.AreaById[a.id] = a
+end
+
 -- Vex Prep Academy (RivalService): VexCorp's own school, full of kids to steal
 Config.Rival = {
 	restock = 75, -- seconds before a desk has a new kid
@@ -988,6 +1021,14 @@ Config.Products = {
 	{ key = "ExpressRare", id = 0, name = "Express Rare Letter", robux = 25, icon = "\u{2709}\u{FE0F}", desc = "Your Rare letter, ready now (you still pay the kid's price)" },
 	{ key = "ExpressEpic", id = 0, name = "Express Epic Letter", robux = 79, icon = "\u{1F48C}", desc = "Your Epic letter, ready now (you still pay the kid's price)" },
 	{ key = "LockRefresh", id = 0, name = "Instant Lock Refresh", robux = 25, icon = "\u{1F504}", desc = "Your gate can lock again right now" },
+	-- open a part of town early (AreaService)
+	{ key = "UnlockDowntown", id = 0, name = "Open Downtown Now", robux = 29, icon = "\u{1F3EA}", desc = "Explore Downtown right away", area = "Downtown" },
+	{ key = "UnlockLab", id = 0, name = "Open the Mutation Lab Now", robux = 79, icon = "\u{1F9EA}", desc = "Steal mutant kids right away", area = "Lab" },
+	{ key = "UnlockMapleHeights", id = 0, name = "Open Maple Heights Now", robux = 49, icon = "\u{1F3E1}", desc = "Meet the neighbours right away", area = "MapleHeights" },
+	{ key = "UnlockPinePark", id = 0, name = "Open Pine Park Now", robux = 59, icon = "\u{1F332}", desc = "Explore the park right away", area = "PinePark" },
+	{ key = "UnlockVexPrep", id = 0, name = "Open Vex Prep Now", robux = 99, icon = "\u{1F3EB}", desc = "Raid the rival school right away", area = "VexPrep" },
+	{ key = "UnlockIndustrial", id = 0, name = "Open VexCorp Industrial Now", robux = 129, icon = "\u{1F3ED}", desc = "Sneak into VexCorp right away", area = "Industrial" },
+	{ key = "UnlockLair", id = 0, name = "Open the Lair Now", robux = 199, icon = "\u{1F480}", desc = "Face Dr. Vex right away", area = "Lair" },
 }
 
 -- special buses

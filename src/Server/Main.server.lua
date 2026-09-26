@@ -43,6 +43,8 @@ local FilesService = require(Server.FilesService)
 local SecretService = require(Server.SecretService)
 local RivalService = require(Server.RivalService)
 local CrewService = require(Server.CrewService)
+local TownService = require(Server.TownService)
+local AreaService = require(Server.AreaService)
 
 Factory.preload()
 PlotService.start()
@@ -77,6 +79,8 @@ FilesService.start()
 SecretService.start_service()
 RivalService.start()
 CrewService.start()
+TownService.start()
+AreaService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -285,6 +289,14 @@ require(Server.DebugBridge).start({
 	end,
 	lab = function(player)
 		return LabService.debugState()
+	end,
+	openArea = function(player, id)
+		return AreaService.open(player, id)
+	end,
+	areas = function(player)
+		local out = {}
+		for _, a in Config.Areas do out[a.id] = AreaService.isOpen(player, a.id) end
+		return out
 	end,
 	friends = function(player, n)
 		return CrewService.debugFriends(player, n)
