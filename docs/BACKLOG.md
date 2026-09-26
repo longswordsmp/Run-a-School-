@@ -5,19 +5,19 @@ done after it's been played in Studio and checked on screen. "Built, not verifie
 
 ## P0: broken (blocks play)
 
-- [ ] The Vex Prep Job gets stuck after you steal the kid: it tells you to go back into the sewer and you can't progress.
-- [ ] Carrying a kid gets you stuck in some places (the kid over your head is too big for doorways).
-- [ ] The game is laggy. Measure first (server and client frame times, part counts, what runs every frame), then fix the worst.
+- [~] The Vex Prep Job gets stuck after you steal the kid. Fixed in code (the guide follows each stage; walking out of the grounds with the kid counts); played through with the debug bridge, NOT yet by hand.
+- [~] Carrying a kid gets you stuck in doorways. Fixed in code (carried kids collide with nothing); not yet walked through a doorway by hand.
+- [~] The game is laggy. NPCs now move smoothly every frame (measured 43/43, was every other frame); steady 59.4 fps. Still open: a one-off client freeze right after joining.
 
 ## P1: first impressions
 
 - [ ] The street doesn't make sense: a red carpet laid over a road, and the kids off the bus walk into Detention. Replace it with a proper drop-off: the bus stops at a stop, kids wait on a sidewalk plaza, unpicked kids go home or back on the bus. Nobody walks into Detention.
-- [ ] An opening cutscene: how you get the school.
-- [ ] The story has to make sense: introduce VexCorp, Dr. Vex and Crumpet BEFORE they do anything (not "some random dude named Crumpet stealing kids"); every event has a reason the player has been shown. Plan: you arrive on Otis's bus, Wobblesworth (retiring) hands you the keys to the empty old school; Vex's limo glides past with Crumpet driving and Wobblesworth explains who she is and what she wants; Crumpet's raid then opens with "Dr. Vex sends her compliments..."; Skater Kid is your first transfer student, snatched by Vex before he reached you.
-- [ ] A tutorial that really teaches the game: earn tuition, buy better kids, sell old kids to make room for better ones, upgrades, the gate, the Board.
-- [ ] A way to hide the GUI (and the guide arrow and trail) when you want to.
-- [ ] Remove every leftover "coming soon" / unfinished thing (the Homework Factory sign, "Recess is cancelled", and the rest: find them all).
-- [ ] Vex Prep is missing one side of its roof.
+- [x] An opening cutscene: how you get the school ("The Keys", screenshots of every shot).
+- [x] (opening + step calls; keep checking every new beat) The story has to make sense: introduce VexCorp, Dr. Vex and Crumpet BEFORE they do anything (not "some random dude named Crumpet stealing kids"); every event has a reason the player has been shown. Plan: you arrive on Otis's bus, Wobblesworth (retiring) hands you the keys to the empty old school; Vex's limo glides past with Crumpet driving and Wobblesworth explains who she is and what she wants; Crumpet's raid then opens with "Dr. Vex sends her compliments..."; Skater Kid is your first transfer student, snatched by Vex before he reached you.
+- [~] A tutorial that really teaches the game: "Swap up!" step (sell weakest, enroll better) and a call explaining each step. Not yet played by a fresh player end to end.
+- [x] A way to hide the GUI: H or the eye button; Settings toggles the guide (screenshots).
+- [x] Remove every leftover "coming soon" / unfinished thing (signs reworded; UNLOCK NOW only once the product exists). Not re-checked on screen at chapters 3-9.
+- [x] Vex Prep is missing one side of its roof (gable ends, screenshot).
 - [ ] A Vex Prep showcase cutscene that really shows the rival school off.
 - [ ] More cutscenes, and better ones.
 
