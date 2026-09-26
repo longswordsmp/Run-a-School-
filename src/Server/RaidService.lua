@@ -759,7 +759,8 @@ function RaidService.start_raid(player, opts)
 			model.Parent = folder
 			local g = { model = model, slot = slot, e = e, path = path, hp = hp, stunUntil = 0 }
 			table.insert(raid.goons, g)
-			if opts.tutorial then goonSay(g, "Terribly sorry. Just passing through.") end
+			-- (you met him on the back of Vex's limo in the intro)
+			if opts.tutorial then goonSay(g, "Dr. Vex sends her compliments... and requires one of your students.") end
 			if opts.lockDemo then
 				spawned()
 				Factory.play(model, "idle")

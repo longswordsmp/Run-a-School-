@@ -301,13 +301,85 @@ local function board(data)
 end
 
 ---------------------------------------------------------------------------
--- Intro: a brand-new principal's first eight seconds. High over the street onto your empty school,
--- then down at your gate as YOUR Welcome Bus pulls up; two short lines; then you're standing at
--- the gate facing it while six kids step off. (The server starts the bus as this starts: it pulls
--- up during the second line.) data: { gate = your gate, park = where the bus stops, side = +1 for
--- the north row of schools, -1 for the south }
+-- Intro, "The Keys": a brand-new principal's first half minute, so nothing that happens after it comes
+-- out of nowhere.
+--   1  high over Recess Row, pushing in on your empty school
+--   2  at your gate: Mr. Wobblesworth, retiring after forty years, hands you the keys
+--   3  Dr. Vex's limo glides up (her butler Crumpet riding on the back): every kid on the street
+--      will be at HER school by summer
+--   4  Wobblesworth: who she is, and that Crumpet does her dirty work
+--   5  Otis's Welcome Bus honks up with your first kids; you take over
+-- The server sends the Welcome Bus when this asks (Action "introBus"), so it pulls up on cue.
+-- Click to hurry a line along; SKIP ends the whole thing. data: { gate, park, side, stand, row }
 ---------------------------------------------------------------------------
-local INTRO = Config.IntroLines
+local ANIM = {
+	idle = "rbxassetid://507766388", wave = "rbxassetid://507770239", point = "rbxassetid://507770453",
+	laugh = "rbxassetid://507770818", sit = "rbxassetid://2506281703",
+}
+
+-- a local stand-in of a cast member, standing with its feet at `at` and facing `face`
+local function actor(templateId, at, face)
+	local tt = ReplicatedStorage:FindFirstChild("TeacherTemplates")
+	local t = tt and tt:FindFirstChild(templateId)
+	if not t then return nil end
+	local m = t:Clone()
+	for _, d in m:GetDescendants() do
+		if d:IsA("Script") or d:IsA("LocalScript") then d:Destroy() end
+		if d:IsA("BasePart") then d.CanCollide = false d.CanQuery = false end
+	end
+	local root = m.PrimaryPart or m:FindFirstChild("HumanoidRootPart")
+	local hum = m:FindFirstChildOfClass("Humanoid")
+	if not root or not hum then m:Destroy() return nil end
+	root.Anchored = true
+	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+	if not hum:FindFirstChildOfClass("Animator") then Instance.new("Animator").Parent = hum end
+	local so = hum.HipHeight + root.Size.Y / 2
+	local pos = at + Vector3.new(0, so, 0)
+	m:PivotTo(CFrame.lookAt(pos, Vector3.new(face.X, pos.Y, face.Z)))
+	m.Parent = workspace
+	return m
+end
+
+local function pose(m, which, looped)
+	local hum = m and m:FindFirstChildOfClass("Humanoid")
+	local an = hum and hum:FindFirstChildOfClass("Animator")
+	if not an or not ANIM[which] then return end
+	local a = Instance.new("Animation")
+	a.AnimationId = ANIM[which]
+	local ok, track = pcall(function() return an:LoadAnimation(a) end)
+	if ok and track then
+		track.Looped = looped == true
+		track:Play(0.2)
+	end
+	return track
+end
+
+-- the big brass key Wobblesworth hands over
+local function makeKey()
+	local m = Instance.new("Model")
+	m.Name = "IntroKey"
+	local gold = Color3.fromRGB(240, 196, 70)
+	local function kp(name, size, cf, shape, color)
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Size = size
+		p.CFrame = cf
+		p.Color = color or gold
+		p.Material = Enum.Material.Metal
+		p.Reflectance = 0.15
+		p.Anchored, p.CanCollide, p.CanQuery, p.CastShadow = true, false, false, false
+		if shape then p.Shape = shape end
+		p.Parent = m
+		return p
+	end
+	local bow = kp("Bow", Vector3.new(0.18, 1, 1), CFrame.new(0, 0.9, 0) * CFrame.Angles(0, math.rad(90), 0), Enum.PartType.Cylinder)
+	kp("Hole", Vector3.new(0.2, 0.45, 0.45), CFrame.new(0, 0.9, 0) * CFrame.Angles(0, math.rad(90), 0), Enum.PartType.Cylinder, Color3.fromRGB(60, 45, 20))
+	kp("Shaft", Vector3.new(0.18, 1.4, 0.18), CFrame.new(0, -0.2, 0))
+	kp("Tooth", Vector3.new(0.14, 0.18, 0.4), CFrame.new(0, -0.7, 0.2))
+	kp("Tooth2", Vector3.new(0.14, 0.18, 0.28), CFrame.new(0, -0.45, 0.14))
+	m.PrimaryPart = bow
+	return m
+end
 
 local function intro(data)
 	if busy then return end
@@ -321,58 +393,221 @@ local function intro(data)
 	local gate = typeof(data.gate) == "Vector3" and data.gate or Vector3.new(ocf.Position.X, 0, side * 23)
 	local park = typeof(data.park) == "Vector3" and data.park or gate - Vector3.new(20, 0, side * 8)
 	local school = ocf.Position + Vector3.new(0, 12, 0)
+	local ground = 0.4
+	local cast = {} -- everything this scene put in the world
+	local skipped = false
 
 	fade(0, 0.25)
 	hideHud(true)
 	letterbox(true)
 	camera.CameraType = Enum.CameraType.Scriptable
-	-- shot 1: high over the street, pushing in on your school
-	local high = gate + Vector3.new(-46, 58, -side * 62)
-	local closer = gate + Vector3.new(-26, 30, -side * 40)
-	camera.CFrame = CFrame.lookAt(high, school)
-	fade(1, 0.5)
-	sfx("StingMorning")
-	TweenService:Create(camera, TweenInfo.new(4.2, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(closer, school) }):Play()
+	pcall(function() player:RequestStreamAroundAsync(gate, 3) end)
 
-	local box, text, hint = dialogBox()
-	local skip = UI.new("TextButton", { Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = gui })
+	-- the SKIP button, and a click anywhere hurries the current line
+	local skipBtn = UI.button(gui, { text = "SKIP \u{25B6}\u{25B6}", color = Color3.fromRGB(60, 60, 75), size = UDim2.fromOffset(150, 46), position = UDim2.new(1, -24, 0, 24), anchor = Vector2.new(1, 0) })
+	skipBtn.button.ZIndex = 30
+	for _, d in skipBtn.button:GetDescendants() do if d:IsA("GuiObject") then d.ZIndex = 31 end end
+	local clickLayer = UI.new("TextButton", { Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = gui })
 	local clicked = false
-	skip.Activated:Connect(function() clicked = true end)
-	local function say(line, hold)
+	clickLayer.Activated:Connect(function() clicked = true end)
+	skipBtn.button.Activated:Connect(function() skipped = true clicked = true end)
+
+	-- one line in the dialog box: typed in the speaker's voice, then held (a click hurries both)
+	local function say(speaker, template, line, hold)
+		if skipped then return end
+		local box, text, hint = dialogBox(speaker, template)
 		clicked = false
-		text.Text = ""
 		hint.Visible = false
 		for c = 1, #line do
-			if clicked then break end
+			if clicked or skipped then break end
 			text.Text = line:sub(1, c)
-			if c % 2 == 0 and line:sub(c, c) ~= " " then talk("THE BOARD CHAIR") end
+			if c % 2 == 0 and line:sub(c, c) ~= " " then talk(speaker) end
 			task.wait(0.026)
 		end
 		text.Text = line
 		clicked = false
 		hint.Visible = true
 		local t0 = os.clock()
-		while not clicked and os.clock() - t0 < hold do task.wait(0.05) end
+		while not clicked and not skipped and os.clock() - t0 < (hold or 1.6) do task.wait(0.05) end
+		box:Destroy()
 	end
-	say(INTRO[1], 1.4)
+	local function wait(t)
+		local t0 = os.clock()
+		while not skipped and os.clock() - t0 < t do task.wait(0.05) end
+	end
 
-	-- shot 2: down at your gate, looking down the street as the bus pulls up
-	local curb = gate + Vector3.new(16, 6.5, -side * 2)
-	local busLook = park + Vector3.new(0, 5, 0)
-	TweenService:Create(camera, TweenInfo.new(1.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), { CFrame = CFrame.lookAt(curb, busLook) }):Play()
-	sfx("BusHorn")
-	say(INTRO[2], 2.4)
-	skip:Destroy()
-	box:Destroy()
-
-	-- hand over: you on your front walk looking out through your gate at the six new kids, the
-	-- camera behind you
+	-- where everyone stands: you just inside your gate, Mr. Wobblesworth between you and the street
+	local inward = Vector3.new(0, 0, side)
+	-- (well inside the gate: nearer, the arch and its posts cut through the two-shot)
+	local youAt = Vector3.new(gate.X, ground, gate.Z) + inward * 11
+	local wobAt = Vector3.new(gate.X, ground, gate.Z) + inward * 6.4
+	local wob = actor("Wobblesworth", wobAt, youAt)
+	table.insert(cast, wob)
+	pose(wob, "idle", true)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	fade(0, 0.3)
 	if root then
-		local s = typeof(data.stand) == "Vector3" and data.stand or Vector3.new(gate.X, 0, gate.Z + side * 10)
+		local hum = player.Character:FindFirstChildOfClass("Humanoid")
+		local so = hum and (hum.HipHeight + root.Size.Y / 2) or 3
+		player.Character:PivotTo(CFrame.lookAt(youAt + Vector3.new(0, so, 0), Vector3.new(wobAt.X, youAt.Y + so, wobAt.Z)))
+	end
+	-- the key, in his hand
+	local key = makeKey()
+	table.insert(cast, key)
+	local hand = wob and (wob:FindFirstChild("RightHand") or wob:FindFirstChild("Right Arm"))
+	if hand then key:PivotTo(hand.CFrame * CFrame.new(0, -0.6, -0.3)) end
+	key.Parent = workspace
+
+	-- 1: over Recess Row, onto your empty school
+	camera.CFrame = CFrame.lookAt(gate + Vector3.new(-46, 58, -side * 62), school)
+	fade(1, 0.5)
+	sfx("StingMorning")
+	local push = TweenService:Create(camera, TweenInfo.new(3.6, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(gate + Vector3.new(-22, 26, -side * 36), school) })
+	push:Play()
+	local c1 = caption("RECESS ROW", Color3.new(1, 1, 1), 0.22, 64)
+	local c2 = caption("Your first day as Principal", Color3.fromRGB(255, 225, 140), 0.31, 34)
+	wait(3.2)
+	-- (stop the push before cutting away, or it keeps pulling the camera back to the sky)
+	push:Cancel()
+	c1:Destroy()
+	c2:Destroy()
+
+	-- 2: at the gate, the keys
+	local mid = (wobAt + youAt) / 2 + Vector3.new(0, 4.2, 0)
+	local sideways = Vector3.new(1, 0, 0)
+	-- (over Mr. Wobblesworth's shoulder at you, your school behind you; the gate is behind the camera)
+	local twoShot = CFrame.lookAt(wobAt + sideways * 4.5 - inward * 2.5 + Vector3.new(0, 5.6, 0),
+		(youAt + Vector3.new(0, 4.4, 0)):Lerp(wobAt + Vector3.new(0, 4.4, 0), 0.35))
+	camera.CFrame = twoShot
+	pose(wob, "wave")
+	say("MR. WOBBLESWORTH", "Wobblesworth", "Ah, the new Principal! Mr. Wobblesworth. I ran this old school for forty years.", 1.8)
+	say("MR. WOBBLESWORTH", "Wobblesworth", "It's yours now. Empty, I'm afraid... but every great school starts with one kid.", 1.4)
+	-- the key goes from his hand to yours
+	local yourHand = player.Character and (player.Character:FindFirstChild("RightHand") or player.Character:FindFirstChild("Right Arm"))
+	if yourHand and key.PrimaryPart then
+		local to = yourHand.CFrame * CFrame.new(0, -0.6, -0.3)
+		local t0 = os.clock()
+		local from = key:GetPivot()
+		while os.clock() - t0 < 0.6 and not skipped do
+			local a = (os.clock() - t0) / 0.6
+			key:PivotTo(from:Lerp(to, a) + Vector3.new(0, math.sin(a * math.pi) * 1.2, 0))
+			task.wait()
+		end
+		key:PivotTo(to)
+		sfx("Coin")
+	end
+	wait(0.6)
+
+	-- 3: the limo glides up the street and stops at your gate
+	local limo
+	local stages = ReplicatedStorage:FindFirstChild("StreetStages")
+	local tmpl = stages and stages:FindFirstChild("ForSale") and stages.ForSale:FindFirstChild("VexLimo")
+	local laneZ = side * 13
+	-- (the limo's pivot is its body's middle, 2.5 above its wheels' contact)
+	local function limoAt(x) return CFrame.new(x, ground + 2.4, laneZ) end
+	local vex, crumpet
+	if tmpl and not skipped then
+		limo = tmpl:Clone()
+		for _, d in limo:GetDescendants() do
+			if d:IsA("BasePart") then d.Anchored = true d.CanCollide = false end
+		end
+		limo:PivotTo(limoAt(gate.X - 90))
+		limo.Parent = workspace
+		table.insert(cast, limo)
+		-- Vex up through the sunroof; Crumpet riding on the back like a footman
+		local base = limo:GetPivot()
+		vex = actor("Vex", (base * CFrame.new(3, 1.3, 0)).Position, (base * CFrame.new(3, 1.3, -side * 10)).Position)
+		crumpet = actor("Crumpet", (base * CFrame.new(-16.2, -1.4, 0)).Position, (base * CFrame.new(10, -1.4, 0)).Position)
+		table.insert(cast, vex)
+		table.insert(cast, crumpet)
+		pose(vex, "idle", true)
+		pose(crumpet, "idle", true)
+		local riders = {}
+		for _, r in { vex, crumpet } do
+			if r then riders[r] = base:ToObjectSpace(r:GetPivot()) end
+		end
+		-- over your shoulder, looking out through the gate at the street
+		local behind = youAt + inward * 9 + Vector3.new(4, 7, 0)
+		camera.CFrame = CFrame.lookAt(behind, Vector3.new(gate.X, 3, laneZ))
+		sfx("BusHorn")
+		local t0 = os.clock()
+		local dur = 3.2
+		while os.clock() - t0 < dur and not skipped do
+			local a = (os.clock() - t0) / dur
+			local e = 1 - (1 - a) * (1 - a) -- (easing to a stop)
+			local cf = limoAt(gate.X - 90 + 90 * e)
+			limo:PivotTo(cf)
+			for r, off in riders do r:PivotTo(cf * off) end
+			task.wait()
+		end
+		limo:PivotTo(limoAt(gate.X))
+		for r, off in riders do r:PivotTo(limoAt(gate.X) * off) end
+		-- she turns to your school
+		if vex and vex.PrimaryPart then
+			local vr = vex.PrimaryPart
+			vex:PivotTo(CFrame.lookAt(vr.Position, Vector3.new(youAt.X, vr.Position.Y, youAt.Z)))
+		end
+		-- Vex from across the street, your school behind her
+		local stop = limoAt(gate.X)
+		local vexHead = (stop * CFrame.new(3, 6.2, 0)).Position
+		local vexShot = CFrame.lookAt(Vector3.new(gate.X + 7, vexHead.Y + 1.5, laneZ - side * 15), vexHead)
+		camera.CFrame = vexShot
+		pose(vex, "point")
+		say("DR. VERONICA VEX", "Vex", "Enjoy your little school while it lasts, Principal.", 1.2)
+		say("DR. VERONICA VEX", "Vex", "By summer, every kid on Recess Row will be at MY school.", 1.6)
+		-- Crumpet on the back of the limo
+		local crumpetHead = (stop * CFrame.new(-16.2, 3.4, 0)).Position
+		camera.CFrame = CFrame.lookAt(crumpetHead + Vector3.new(-7, 1.2, -side * 7), crumpetHead)
+		pose(crumpet, "wave")
+		say("CRUMPET", "Crumpet", "Shall I fetch one of their students now, Madam?", 1.2)
+		camera.CFrame = vexShot
+		pose(vex, "laugh")
+		say("DR. VERONICA VEX", "Vex", "Patience, Crumpet. Soon.", 1.0)
+		-- (from inside your gate as she drives away)
+		camera.CFrame = CFrame.lookAt(youAt + inward * 9 + Vector3.new(4, 7, 0), Vector3.new(gate.X, 3, laneZ))
+		-- and away
+		local t1 = os.clock()
+		while os.clock() - t1 < 2.2 and not skipped do
+			local a = (os.clock() - t1) / 2.2
+			local cf = limoAt(gate.X + 140 * a * a)
+			limo:PivotTo(cf)
+			for r, off in riders do r:PivotTo(cf * off) end
+			task.wait()
+		end
+	end
+
+	-- the Welcome Bus sets off now, so it pulls up while he talks
+	pcall(function() Remotes.Action:InvokeServer("introBus") end)
+
+	-- 4: who that was
+	camera.CFrame = twoShot
+	if wob and wob.PrimaryPart then
+		wob:PivotTo(CFrame.lookAt(wob.PrimaryPart.Position, Vector3.new(youAt.X, wob.PrimaryPart.Position.Y, youAt.Z)))
+	end
+	say("MR. WOBBLESWORTH", "Wobblesworth", "That was Dr. Veronica Vex. VexCorp, the Homework Factory, Vex Prep across the street: all hers.", 2)
+	say("MR. WOBBLESWORTH", "Wobblesworth", "She thinks recess is a waste of homework time. And Crumpet does her dirty work. Keep an eye on your kids!", 2)
+
+	-- 5: here comes the Welcome Bus
+	local rowAt = typeof(data.row) == "Vector3" and data.row or Vector3.new(gate.X, 0, gate.Z - side * 5)
+	camera.CFrame = CFrame.lookAt(youAt + inward * 8 + Vector3.new(-3, 8, 0), Vector3.new(rowAt.X, 3, rowAt.Z))
+	pose(wob, "point")
+	say("MR. WOBBLESWORTH", "Wobblesworth", "Ah! Here comes Otis with your Welcome Bus. Go on, Principal: grab those kids!", 2.2)
+
+	-- hand over: you on your front walk looking out through your gate at the new kids, the camera
+	-- behind you
+	fade(0, 0.3)
+	for _, m in cast do
+		if m and m.Parent then m:Destroy() end
+	end
+	skipBtn.button:Destroy()
+	clickLayer:Destroy()
+	local d = gui:FindFirstChild("Dialog", true)
+	if d then d:Destroy() end
+	if skipped then pcall(function() Remotes.Action:InvokeServer("introBus") end) end
+	root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if root then
+		local s0 = typeof(data.stand) == "Vector3" and data.stand or Vector3.new(gate.X, 0, gate.Z + side * 10)
 		local row = typeof(data.row) == "Vector3" and data.row or Vector3.new(gate.X, 0, gate.Z - side * 5)
-		local stand = Vector3.new(s.X, root.Position.Y, s.Z)
+		local stand = Vector3.new(s0.X, root.Position.Y, s0.Z)
 		local face = Vector3.new(row.X, stand.Y, row.Z)
 		player.Character:PivotTo(CFrame.lookAt(stand, face))
 		local look = (face - stand).Unit

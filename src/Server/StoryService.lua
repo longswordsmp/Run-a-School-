@@ -506,8 +506,9 @@ local function vexDriveBy()
 	local limo, vex = buildLimo()
 	-- the sidewalk on the target school's side of the street, clear of the carpet
 	local z = (target and target.Origin.Position.Z < 0) and -19 or 19
-	-- facing along the street; Vex turns to the school when the limo stops
-	local function at(x) return CFrame.new(x, 0, z) end
+	-- facing along the street; Vex turns to the school when the limo stops (the pivot is the body's
+	-- middle, 2.5 over the wheels' bottoms)
+	local function at(x) return CFrame.new(x, 2.8, z) end
 	limo:PivotTo(at(-460))
 	limo.Parent = folder
 	local npc = { model = vex }
@@ -597,7 +598,8 @@ function StoryService.tutorialLimo(player)
 	local z = side * 19
 	-- (on the far side of the gate from where the goons' van parks)
 	local stopX = (plot.Origin.CFrame * CFrame.new(-26, 0, 0)).Position.X
-	local function at(x) return CFrame.new(x, 0, z) end
+	-- (the limo's pivot is its body's middle, 2.5 over its wheels' bottoms: at 0 it drove half sunk in the road)
+	local function at(x) return CFrame.new(x, 2.8, z) end
 	local function drive(fromX, toX, speed)
 		local dist = math.abs(toX - fromX)
 		local t0, dur = os.clock(), math.max(0.1, dist / speed)
@@ -629,9 +631,9 @@ function StoryService.tutorialLimo(player)
 		local vr = vex.PrimaryPart
 		vr.CFrame = CFrame.lookAt(vr.Position, Vector3.new(plot.Entry.Position.X, vr.Position.Y, plot.Entry.Position.Z))
 		Factory.emote(vex, "point")
-		line(npc, "Cute school. I'll take it.")
+		line(npc, "Your first transfer student, Principal? He rides with ME now.")
 		task.wait(1.2)
-		line(kidNpc, "HELP! Principal, HELP!", 4)
+		line(kidNpc, "HELP! I was coming to YOUR school!", 4)
 		Factory.emote(kid, "wave")
 		task.wait(1.5)
 		-- her goons, for your gate

@@ -145,7 +145,7 @@ local function buildForSale(folder)
 	for _, d in limo:GetDescendants() do
 		if d:IsA("BasePart") then d.CanCollide = false d.Anchored = true end
 	end
-	limo:PivotTo(CFrame.new(0, 0.6, -104))
+	limo:PivotTo(CFrame.new(0, 3.0, -104)) -- (the pivot is the body's middle, 2.4 over the ground)
 	limo.Parent = m
 	-- the sign: two posts, a swinging board, a slapped-on SOLD SOON banner
 	local base = Vector3.new(14, 0.6, -66)

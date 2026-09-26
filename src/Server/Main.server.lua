@@ -95,6 +95,8 @@ require(Server.SewerHeist).start_service() -- (Chapter 1: the pothole, the sewer
 TownQuestService.targets.hqFloor = function(player, s) return HQService.target(player, s.arg) end
 require(Server.QuestGoons).start(TownQuestService)
 
+local introBusFor = {} -- [player] = "waiting" / "sent": the intro's Welcome Bus
+
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
 	ls.Name = "leaderstats"
@@ -127,14 +129,25 @@ local function onPlayer(player)
 			if not player.Parent then return end
 			-- (joined a friend's co-op school from the loading screen: that school is already running)
 			if Data.isMember(player) then return end
-			local spots = HallService.welcomeBus(player)
 			if not p.introSeen then
+				-- "The Keys" (Cutscene.client): the Welcome Bus sets off when the scene asks for it
+				-- (Action "introBus"), or after a while whatever happens
 				p.introSeen = true
+				local spots = HallService.welcomeSpots(PlotService.getPlot(player))
 				Remotes.Cutscene:FireClient(player, "Intro", {
 					name = PlotService.schoolName(player),
 					gate = spots and spots.gate, park = spots and spots.park.Position, side = spots and spots.side,
 					stand = spots and spots.stand, row = spots and spots.wait[3]:Lerp(spots.wait[4], 0.5),
 				})
+				introBusFor[player] = "waiting"
+				task.delay(75, function()
+					if player.Parent and introBusFor[player] == "waiting" then
+						introBusFor[player] = "sent"
+						HallService.welcomeBus(player)
+					end
+				end)
+			else
+				HallService.welcomeBus(player)
 			end
 		end)
 	end
@@ -171,6 +184,15 @@ Players.PlayerRemoving:Connect(function(player)
 	PlotService.release(player)
 	Data.release(player)
 end)
+
+-- the intro's cue for the Welcome Bus (once)
+Actions.register("introBus", function(player)
+	if introBusFor[player] ~= "waiting" then return { ok = false } end
+	introBusFor[player] = "sent"
+	HallService.welcomeBus(player)
+	return { ok = true }
+end)
+Players.PlayerRemoving:Connect(function(player) introBusFor[player] = nil end)
 
 -- Studio-only test commands (see DebugBridge)
 require(Server.DebugBridge).start({

@@ -429,7 +429,7 @@ Config.Tutorial = {
 	{ id = "collect", part = "morning", icon = "\u{1F4B5}", short = "Scoop the cash!", text = "Walk over the glowing pads by the desks", count = 1, secs = 30, min = 60, guide = "pad" },
 	{ id = "bonk", part = "morning", icon = "\u{1F3A9}", short = "Bonk Crumpet!", text = "Catch the butler and click to swing your Ruler", count = 1, secs = 20, min = 150, guide = "thief" },
 	{ id = "lock", part = "morning", icon = "\u{1F512}", short = "LOCK YOUR GATE!", text = "Goons are coming! Press E on the red button by your gate", count = 1, secs = 20, min = 200, guide = "lock" },
-	{ id = "rescue", part = "morning", icon = "\u{1F6F9}", short = "Free Skater Kid!", text = "Vex has him in her Factory. Sneak in and carry him out", count = 1, secs = 30, min = 300, guide = "factory" },
+	{ id = "rescue", part = "morning", icon = "\u{1F6F9}", short = "Free Skater Kid!", text = "He was on his way to YOUR school. Sneak into Vex's Factory and carry him out", count = 1, secs = 30, min = 300, guide = "factory" },
 	{ id = "desks", part = "morning", icon = "\u{1FA91}", short = "Build 4 desks!", text = "Press E on the see-through desks in your classroom ($5,000)", count = 1, secs = 30, min = 250, guide = "ghostrow" },
 	-- CHAPTER 1: DOWN THE POTHOLE
 	{ id = "k01_pencils", part = "ch1", icon = "\u{270F}\u{FE0F}", short = "Buy Pencils", text = "Shop > Supplies: sharp pencils make smarter kids", count = 1, secs = 60, min = 500, guide = "shop:1" },
