@@ -90,10 +90,17 @@ local function blockyDescription(def)
 	return desc
 end
 
--- keep only part of a signature prop (KidAvatars prop = "hands" | "head" | "nohead"): every prop part is welded
--- to a body part, or to another prop part that is
+-- keep only part of a signature prop (KidAvatars prop = "hands", "head", "body" or a mix like
+-- "hands,head"): every prop part is welded to a body part, or to another prop part that is
 local HELD = { RightHand = true, LeftHand = true, RightLowerArm = true, LeftLowerArm = true }
+local function groupOf(at)
+	if at == "Head" then return "head" end
+	if HELD[at] then return "hands" end
+	return "body"
+end
 local function trimProp(model, mode)
+	local keep = {}
+	for g in mode:gmatch("%a+") do keep[g] = true end
 	local folder = model:FindFirstChild("Props")
 	if not folder then return end
 	local function anchorOf(part, depth)
@@ -107,9 +114,7 @@ local function trimProp(model, mode)
 	for _, part in folder:GetDescendants() do
 		if part:IsA("BasePart") then
 			local at = anchorOf(part, 0)
-			if (mode == "hands" and not HELD[at]) or (mode == "nohead" and at == "Head") or (mode == "head" and at ~= "Head") then
-				table.insert(drop, part)
-			end
+			if not keep[groupOf(at)] then table.insert(drop, part) end
 		end
 	end
 	for _, part in drop do part:Destroy() end
@@ -162,7 +167,11 @@ local function makeTemplate(def)
 	if not av then Props.hair(model, def) end
 	if not av or av.prop ~= false then Props.add(model, def) end
 	if av and type(av.prop) == "string" then trimProp(model, av.prop) end
-	if av then model:SetAttribute("Avatar", true) end
+	if av then
+		model:SetAttribute("Avatar", true)
+		-- the floating tag clears a tall hat
+		if av.hat then model:SetAttribute("TagLift", 0.9) end
+	end
 	model.Parent = templates
 	return model
 end

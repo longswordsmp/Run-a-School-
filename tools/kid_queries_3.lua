@@ -1,0 +1,18 @@
+{
+	{ "Tina", "shirt", "purple cardigan", 20 }, { "Tina", "pants", "grey skirt", 20 }, { "Tina", "hair", "high ponytail brown", 300 },
+	{ "Lou", "shirt", "green shirt boy", 5 }, { "Lou", "hair", "short curly hair boy", 300 },
+	{ "Rudy", "pants", "grey pants", 5 },
+	{ "Clown", "hair", "rainbow afro", 50 }, { "Clown", "shirt", "clown shirt", 20 }, { "Clown", "pants", "clown pants", 10 },
+	{ "Ned", "shirt", "white shirt tie nerd", 10 }, { "Ned", "face", "round glasses", 300 }, { "Ned", "hair", "neat brown hair", 300 },
+	{ "Fred", "shirt", "orange hoodie", 20 }, { "Fred", "hair", "black fluffy hair", 300 },
+	{ "Monitor", "shirt", "blue button shirt", 10 }, { "Monitor", "pants", "black pants", 50 }, { "Monitor", "hair", "short black fade", 300 },
+	{ "Sally", "shirt", "teal t-shirt", 5 }, { "Sally", "pants", "orange pants", 5 }, { "Sally", "hair", "brown pigtails", 300 },
+	{ "Gabe", "shirt", "black hoodie gamer", 20 }, { "Gabe", "hat", "gaming headset", 100 }, { "Gabe", "hair", "gamer hair", 300 },
+	{ "Theater", "shirt", "maroon velvet shirt", 5 }, { "Theater", "hair", "swoop hair", 300 },
+	{ "Pet", "shirt", "pink sweater", 20 }, { "Pet", "hair", "brown bob bow", 200 },
+	{ "Skater", "shirt", "black t-shirt", 10 }, { "Skater", "pants", "ripped jeans", 50 }, { "Skater", "hat", "backwards red cap", 100 }, { "Skater", "hair", "shaggy brown hair", 300 },
+	{ "Mathlete", "shirt", "blue polo", 10 }, { "Mathlete", "pants", "white pants", 20 }, { "Mathlete", "hair", "short black hair boy", 300 },
+	{ "Cheer", "shirt", "cheerleader uniform red", 5 }, { "Cheer", "pants", "cheerleader skirt red", 5 }, { "Cheer", "hair", "blonde high ponytail bow", 200 },
+	{ "Ava", "shirt", "paint splatter smock", 5 }, { "Ava", "hat", "red beret", 100 }, { "Ava", "hair", "long dark hair", 300 },
+	{ "Chess", "shirt", "sweater vest", 20 }, { "Chess", "hair", "slicked back hair", 300 },
+}

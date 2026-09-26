@@ -1,0 +1,16 @@
+{
+	{ "QB", "shirt", "red football jersey", 20 }, { "QB", "pants", "white football pants", 5 }, { "QB", "hair", "short black hair fade", 300 },
+	{ "Science", "shirt", "lab coat", 50 }, { "Science", "hair", "wild messy hair scientist", 100 },
+	{ "Exchange", "shirt", "teal jacket", 10 }, { "Exchange", "pants", "beige pants", 20 },
+	{ "Bee", "shirt", "bee costume", 5 }, { "Bee", "pants", "bee costume pants", 5 }, { "Bee", "hat", "bee antenna", 100 },
+	{ "Robo", "shirt", "grey hoodie", 20 }, { "Robo", "face", "safety goggles", 50 },
+	{ "Photo", "shirt", "green vest pockets", 5 }, { "Photo", "hat", "green bucket hat", 100 }, { "Photo", "pants", "khaki pants", 20 },
+	{ "Drama", "shirt", "purple sparkly dress", 20 }, { "Drama", "pants", "purple dress skirt", 20 }, { "Drama", "hair", "long wavy purple hair", 100 }, { "Drama", "hat", "silver tiara", 100 },
+	{ "Vale", "shirt", "graduation gown", 5 }, { "Vale", "pants", "graduation gown", 5 }, { "Vale", "hat", "graduation cap", 100 },
+	{ "Prez", "shirt", "school blazer tie", 20 }, { "Prez", "pants", "grey school pants", 20 }, { "Prez", "hair", "side part hair", 300 },
+	{ "Mascot", "hat", "bear mascot head", 20 }, { "Mascot", "shirt", "red sweater letter", 5 }, { "Mascot", "pants", "brown fur pants", 5 },
+	{ "Lunch", "shirt", "yellow shirt", 20 }, { "Lunch", "hair", "short brown hair rosy", 200 },
+	{ "Prom", "shirt", "black tuxedo red bow tie", 20 }, { "Prom", "pants", "tuxedo pants", 20 }, { "Prom", "hat", "gold crown", 300 },
+	{ "DJ", "shirt", "purple bomber jacket", 10 }, { "DJ", "hat", "big headphones", 200 }, { "DJ", "hair", "dreads", 300 },
+	{ "Fame", "shirt", "green letterman jacket", 10 }, { "Fame", "hair", "short black hair athlete", 200 },
+}
