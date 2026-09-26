@@ -65,6 +65,13 @@ local Townsfolk = {
 		lines = { "WELCOME TO VEXCORP. HOMEWORK IS THE FUTURE. HAVE YOU DONE YOURS?", "DR. VEX IS IN A MEETING. SHE IS ALWAYS IN A MEETING." } },
 	{ id = "ChiefBrick", name = "Security Chief Brick", title = "VexCorp Security", outfit = "guard", color = Color3.fromRGB(255, 110, 110),
 		lines = { "Badge? No badge? ...I'm watching you, Principal.", "Thirty-one goons on my team. Thirty after Gary quits." } },
+	-- the Mothership (the Close Encounters story)
+	{ id = "CaptainZorp", name = "Captain Zorp", title = "Mothership Captain", outfit = "aliencaptain", color = Color3.fromRGB(120, 255, 255),
+		lines = { "GREETINGS, EARTH PRINCIPAL. PLEASE DO NOT PRESS THE BIG RED BUTTON.", "On our planet, recess lasts nine hours. We have three recesses a day." } },
+	{ id = "Blip", name = "Blip", title = "Specimen Keeper", outfit = "alien", scale = 0.8, color = Color3.fromRGB(120, 255, 90),
+		lines = { "This is my EARTH BEAST. It says MOO. We do not know why.", "Do you want to see my traffic cone? It is my favourite hat." } },
+	{ id = "Glorb", name = "Glorb", title = "Signals Officer", outfit = "alienblue", color = Color3.fromRGB(110, 190, 255),
+		lines = { "We receive one channel from your planet. VEXCORP TV. It is ALL homework.", "Is it true Earthlings sit still for six hours? On purpose?" } },
 }
 
 Townsfolk.byId = {}

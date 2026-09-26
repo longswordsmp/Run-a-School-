@@ -538,14 +538,23 @@ local function spawnActor(a, folder)
 	return m, lift
 end
 
--- glide an actor to a spot, walking
-local function moveActor(m, lift, to, speed)
+-- glide an actor to a spot, walking (float = drift there without walking, e.g. a beam-up)
+local function moveActor(m, lift, to, speed, float)
 	local root = m.PrimaryPart or m:FindFirstChild("HumanoidRootPart")
 	if not root then return end
 	local from = root.Position
 	local goal = Vector3.new(to.X, to.Y + lift, to.Z)
 	local dist = (goal - from).Magnitude
 	if dist < 0.1 then return end
+	if float then
+		local v = Instance.new("CFrameValue")
+		v.Value = m:GetPivot()
+		v.Changed:Connect(function(cf) m:PivotTo(cf) end)
+		local tw = TweenService:Create(v, TweenInfo.new(dist / (speed or 10), Enum.EasingStyle.Sine), { Value = m:GetPivot() + (goal - from) })
+		tw:Play()
+		tw.Completed:Connect(function() v:Destroy() end)
+		return
+	end
 	local walk = playAnim(m, "walk")
 	local look = CFrame.lookAt(goal, goal + (goal - from).Unit * Vector3.new(1, 0, 1))
 	local v = Instance.new("CFrameValue")
@@ -613,6 +622,49 @@ local function resolveActor(a)
 	return out
 end
 
+-- a flying saucer prop (the Close Encounters scenes); the beam starts off
+local function buildSaucer(parent, cf, scale)
+	scale = scale or 1
+	local m = Instance.new("Model")
+	m.Name = "Saucer"
+	local function p(name, shape, size, offset, color, material, props)
+		local x = Instance.new("Part")
+		x.Name = name
+		x.Shape = shape
+		x.Size = size * scale
+		x.CFrame = cf * CFrame.new(offset * scale)
+		x.Color = color
+		x.Material = material or Enum.Material.Metal
+		x.Anchored, x.CanCollide, x.CanQuery, x.CanTouch = true, false, false, false
+		for k, v in props or {} do x[k] = v end
+		x.Parent = m
+		return x
+	end
+	local up = CFrame.Angles(0, 0, math.rad(90))
+	local body = p("Body", Enum.PartType.Cylinder, Vector3.new(3, 30, 30), Vector3.zero, Color3.fromRGB(170, 176, 190))
+	body.CFrame = cf * up
+	body.Reflectance = 0.2
+	local rim = p("Rim", Enum.PartType.Cylinder, Vector3.new(1.2, 34, 34), Vector3.zero, Color3.fromRGB(120, 126, 140))
+	rim.CFrame = cf * up
+	p("Dome", Enum.PartType.Ball, Vector3.new(13, 13, 13), Vector3.new(0, 2.5, 0), Color3.fromRGB(120, 255, 90), Enum.Material.Glass, { Transparency = 0.35 })
+	local belly = p("Belly", Enum.PartType.Cylinder, Vector3.new(2, 16, 16), Vector3.new(0, -2, 0), Color3.fromRGB(90, 96, 110))
+	belly.CFrame = cf * CFrame.new(0, -2 * scale, 0) * up
+	for k = 0, 11 do
+		local a = math.rad(k * 30)
+		p("Light", Enum.PartType.Ball, Vector3.new(1.6, 1.6, 1.6), Vector3.new(math.cos(a) * 15.5, 0, math.sin(a) * 15.5), k % 2 == 0 and Color3.fromRGB(120, 255, 90) or Color3.fromRGB(255, 240, 120), Enum.Material.Neon)
+	end
+	local beam = p("TractorBeam", Enum.PartType.Cylinder, Vector3.new(60, 12, 12), Vector3.new(0, -32, 0), Color3.fromRGB(150, 255, 120), Enum.Material.Neon, { Transparency = 1, CastShadow = false })
+	beam.CFrame = cf * CFrame.new(0, -32 * scale, 0) * up
+	local l = Instance.new("PointLight")
+	l.Range = 50
+	l.Brightness = 2
+	l.Color = Color3.fromRGB(120, 255, 90)
+	l.Parent = body
+	m.WorldPivot = cf
+	m.Parent = parent
+	return m
+end
+
 local function playScene(id, data)
 	local scene = Cutscenes[id]
 	if not scene then
@@ -672,6 +724,10 @@ local function playScene(id, data)
 			hideReal(a.id)
 		end
 	end
+	local props = {}
+	for _, pr in scene.props or {} do
+		if pr.kind == "saucer" then props[pr.id] = buildSaucer(folder, CFrame.new(pr.at), pr.scale) end
+	end
 	-- a click skips the line being typed and the wait after it
 	local skip = UI.new("TextButton", { Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = gui })
 	local clicked = false
@@ -706,9 +762,25 @@ local function playScene(id, data)
 				local p = Places.get(to)
 				to = p and p.pos
 			end
-			if act and typeof(to) == "Vector3" then moveActor(act.model, act.lift, to, mv[3]) end
+			if act and typeof(to) == "Vector3" then moveActor(act.model, act.lift, to, mv[3], mv[4] == "float") end
 		end
 		if s.confetti then confetti(s.confetti) end
+		for _, pm in s.propMoves or {} do
+			local pr = props[pm[1]]
+			if pr then
+				local v = Instance.new("CFrameValue")
+				v.Value = pr:GetPivot()
+				v.Changed:Connect(function(cf) pr:PivotTo(cf) end)
+				local tw = TweenService:Create(v, TweenInfo.new(pm[3] or 3, Enum.EasingStyle.Sine), { Value = CFrame.new(pm[2]) })
+				tw:Play()
+				tw.Completed:Connect(function() v:Destroy() end)
+			end
+		end
+		for _, bm in s.beams or {} do
+			local pr = props[bm[1]]
+			local beam = pr and pr:FindFirstChild("TractorBeam")
+			if beam then TweenService:Create(beam, TweenInfo.new(0.5), { Transparency = bm[2] and 0.55 or 1 }):Play() end
+		end
 		local cap
 		if s.caption then cap = caption(s.caption, s.captionColor or Color3.new(1, 1, 1), 0.8, 40) end
 		if s.say then

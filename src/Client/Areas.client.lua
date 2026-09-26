@@ -193,6 +193,15 @@ local function elevatorRide(dir, data)
 	elseif dir == "caught" then
 		floor.Text = "\u{1F6A8} CAUGHT!"
 		task.wait(1.1)
+	elseif dir == "beam" then
+		fader.BackgroundColor3 = Color3.fromRGB(120, 255, 90)
+		floor.TextColor3 = Color3.fromRGB(20, 40, 20)
+		floor.Text = "BZZZZZT..."
+		task.wait(1.1)
+		task.delay(0.8, function()
+			fader.BackgroundColor3 = Color3.new(0, 0, 0)
+			floor.TextColor3 = Color3.fromRGB(255, 80, 80)
+		end)
 	else
 		local seq = dir == "down" and { "L", "B1", "B2", "B3", "B13", "LAIR" } or { "LAIR", "B13", "B3", "B1", "L" }
 		for _, f in seq do

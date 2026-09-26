@@ -172,6 +172,132 @@ Q({ id = "P01", line = "town", title = "Something in the Lake", giver = "Fisherm
 })
 
 ---------------------------------------------------------------------------
+-- CLOSE ENCOUNTERS (after the first Prestige): strange lights, an abduction, and the ALIEN finish
+---------------------------------------------------------------------------
+do
+	local BEA = say("BIRDWATCHER BEA", "BirdwatcherBea")
+	local KIM = say("MRS. KIM", "MrsKim")
+	local ELLIE = say("ENGINEER ELLIE", "EngineerEllie")
+	local RICK = say("RANGER RICK", "RangerRick")
+	local GRUMBLES = say("OLD MAN GRUMBLES", "Grumbles")
+	local SKYE = say("SKYE", "Skye")
+	local TIMMY2 = say("LIL' TIMMY", "LilTimmy")
+	local ZORP = say("CAPTAIN ZORP", "CaptainZorp")
+	local BLIP = say("BLIP", "Blip")
+	local GLORB = say("GLORB", "Glorb")
+
+	Q({ id = "X01", line = "town", title = "Close Encounters: Lights in the Sky", giver = "BirdwatcherBea", area = "PinePark",
+		needs = { prestige = 1 },
+		intro = {
+			BEA("Principal! Last night I saw a bird. A very big bird. A very big, very ROUND, very GLOWING bird."),
+			BEA("Climb the lookout tower with me. If it comes back, I want a witness."),
+		},
+		steps = {
+			{ kind = "visit", place = "Lookout", r = 10, text = "Climb the Lookout tower in Pine Park" },
+			{ kind = "scene", scene = "X01_Lights", text = "Watch the sky" },
+			{ kind = "talk", npc = "BirdwatcherBea", text = "Tell Bea what you saw",
+				lines = { BEA("THAT WAS NOT A BIRD. I am writing this in my bird book anyway.") } },
+		},
+		reward = { incomeSecs = 300, min = 1e6, candy = 15 },
+	})
+
+	Q({ id = "X02", line = "town", title = "Close Encounters: Crop Circles", giver = "MrsKim", area = "MapleHeights",
+		needs = { quests = { "X01" } },
+		intro = {
+			KIM("My pumpkin patch has CIRCLES in it. Perfect ones. My pumpkins are too polite to do that."),
+			KIM("And there's shiny metal everywhere. Pick it up before Grumbles complains about litter."),
+		},
+		steps = {
+			{ kind = "collect", item = "Strange Metal Scrap", spots = { "CommunityGarden", "OakCulDeSacEast", "Playground" }, text = "Pick up the strange metal scraps" },
+			{ kind = "deliver", npc = "EngineerEllie", item = "Strange Metal Scrap", text = "Get Engineer Ellie to look at the metal",
+				lines = {
+					ELLIE("This alloy isn't from Earth. It isn't even from VexCorp. It's... humming a tune?"),
+					ELLIE("It's picking up a signal. The same one over and over: VexCorp TV. Somebody up there is WATCHING us."),
+				} },
+		},
+		reward = { incomeSecs = 400, min = 2e6, candy = 15 },
+	})
+
+	Q({ id = "X03", line = "town", title = "Close Encounters: The Humming Lake", giver = "FishermanFinn", area = "PinePark",
+		needs = { quests = { "X02" } },
+		intro = {
+			say("FISHERMAN FINN", "FishermanFinn")("The lake is humming. Not the fish. The LAKE."),
+			say("FISHERMAN FINN", "FishermanFinn")("There's glowing pebbles all round the shore. They weren't there yesterday."),
+		},
+		steps = {
+			{ kind = "collect", item = "Glowing Pebble", spots = { "LakeShore", "Boathouse", "BirdHide" }, text = "Collect the glowing pebbles" },
+			{ kind = "deliver", npc = "FishermanFinn", item = "Glowing Pebble", text = "Bring them to Finn",
+				lines = { say("FISHERMAN FINN", "FishermanFinn")("Warm as toast. And they're all pointing the same way. Up.") } },
+			{ kind = "talk", npc = "RangerRick", text = "Ask Ranger Rick about the lights",
+				lines = { RICK("Saucer's been circling the lookout every night this week. I've been leaving it snacks.") } },
+		},
+		reward = { incomeSecs = 400, min = 2e6, candy = 15, vials = 1 },
+	})
+
+	Q({ id = "X04", line = "town", title = "Close Encounters: Where's Mr. Moo?", giver = "Grumbles", area = "MapleHeights",
+		needs = { quests = { "X03" } },
+		intro = {
+			GRUMBLES("Somebody stole my cow. My MAILBOX cow. Mr. Moo. Forty years he held my letters."),
+			GRUMBLES("Ask those kids. Kids know everything and tell nobody."),
+		},
+		steps = {
+			{ kind = "talk", npc = "Skye", text = "Ask Skye if she saw anything",
+				lines = { SKYE("I was skating at midnight. Totally allowed. A big light went WHOOSH and the cow went UP.") } },
+			{ kind = "talk", npc = "LilTimmy", text = "Ask Lil' Timmy",
+				lines = { TIMMY2("The cow waved at me. I waved back. Then it was gone. Mr. Whiskers saw it too.") } },
+			{ kind = "visit", place = "GrumblesHedge", r = 12, text = "Look round Grumbles' hedge for clues" },
+			{ kind = "talk", npc = "Grumbles", text = "Tell Grumbles the cow went UP",
+				lines = { GRUMBLES("UP?! Well. Tell whoever's UP there to bring him back. And to get off my grass.") } },
+		},
+		reward = { incomeSecs = 400, min = 2e6, candy = 20 },
+	})
+
+	Q({ id = "X05", line = "town", title = "Close Encounters: Night Watch", giver = "RangerRick", area = "PinePark",
+		needs = { quests = { "X04" } },
+		intro = {
+			RICK("Tonight's the night, Principal. The saucer comes over the lookout at the same time every night."),
+			RICK("Stand up top and wave. Worst case, you get a nice view. Best case... well. Let's find out."),
+		},
+		steps = {
+			{ kind = "visit", place = "Lookout", r = 10, text = "Climb the Lookout tower and wave at the sky" },
+			{ kind = "scene", scene = "X05_Abduction", text = "Uh oh..." },
+		},
+		reward = { incomeSecs = 300, min = 1e6, teleport = "ShipPad" },
+	})
+
+	Q({ id = "X06", line = "town", title = "Close Encounters: Take Me to Your Principal", auto = true,
+		needs = { quests = { "X05" } },
+		intro = {
+			ZORP("GREETINGS, EARTH PRINCIPAL. DO NOT BE ALARMED. PLEASE STEP OFF THE BEAM PAD."),
+			ZORP("We have watched your planet for many cycles. Come. We have QUESTIONS."),
+		},
+		steps = {
+			{ kind = "talk", npc = "CaptainZorp", text = "Talk to Captain Zorp at the console",
+				lines = {
+					ZORP("We receive ONE channel from Earth. VexCorp TV. It says Earth schools are homework. Forever."),
+					ZORP("Our planet was going to send its children to Earth schools. Now we are... worried."),
+				} },
+			{ kind = "talk", npc = "Glorb", text = "See what Glorb found on the TV wall",
+				lines = { GLORB("Look. 'RECESS IS CANCELLED.' Every broadcast. Is it true? Is there NO recess on Earth?") } },
+			{ kind = "talk", npc = "Blip", text = "Ask Blip about the specimens",
+				lines = {
+					BLIP("I collected Earth things! A cow, a cone, a tiny beard man. I will give the cow back. Probably."),
+					BLIP("Captain says Earthlings cannot play. Show me! Grab the Recess Stars before I do!"),
+				} },
+			{ kind = "collect", item = "Recess Star", spots = { "ShipStar1", "ShipStar2", "ShipStar3", "ShipStar4", "ShipStar5" }, text = "Show them recess: grab the Recess Stars" },
+			{ kind = "talk", npc = "CaptainZorp", text = "Tell Captain Zorp about REAL recess",
+				lines = {
+					ZORP("Recess... is REAL? Stars. Running. Snacks. Tag. It is WONDERFUL."),
+					ZORP("VexCorp lied to the whole galaxy. Our children will come to YOUR school, Principal."),
+					ZORP("And your school shall look like one of ours, so we can find it from space. Next time you Prestige... GO ALIEN."),
+				} },
+			{ kind = "scene", scene = "X06_Return", text = "Beam back down" },
+		},
+		reward = { incomeSecs = 900, min = 5e6, candy = 50, teleport = "home" },
+	})
+end
+
+---------------------------------------------------------------------------
 -- checks (tests and the content workflow run these)
 ---------------------------------------------------------------------------
 local KINDS = { talk = true, deliver = true, visit = true, collect = true, signal = true, goons = true, chase = true, scene = true }

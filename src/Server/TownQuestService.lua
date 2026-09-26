@@ -59,6 +59,10 @@ local function blocked(player, q)
 		if p.finaleSeen then ch = 99 end
 		if ch < n.chapter then return ("Reach Chapter %d"):format(n.chapter) end
 	end
+	if n.prestige and (p.prestige or 0) < n.prestige then
+		local f = Config.Prestige[n.prestige]
+		return ("Prestige your school to %s first"):format(f and f.name or ("prestige " .. n.prestige))
+	end
 	if n.tier and (p.tier or 1) < n.tier then
 		local tier = Config.Tiers[n.tier]
 		return ("Grow your school to %s"):format(tier and tier.name or ("tier " .. n.tier))
@@ -258,7 +262,36 @@ local function rewardText(player, r)
 		local a = Config.AreaById[r.unlock]
 		table.insert(out, "Opened " .. (a and a.name or r.unlock) .. "!")
 	end
+	if r.teleport then
+		task.delay(0.3, function() TownQuestService.teleport(player, r.teleport) end)
+	end
 	return out
+end
+
+-- send a player to a named place, or "home" (in front of their school's gate)
+function TownQuestService.teleport(player, where)
+	local char = player.Character
+	if not char then return end
+	local pos
+	if where == "home" then
+		local plotName = player:GetAttribute("Plot")
+		local plot = plotName and workspace:FindFirstChild("Plots") and workspace.Plots:FindFirstChild(plotName)
+		local origin = plot and plot:FindFirstChild("Origin")
+		if origin then
+			-- (on the front walk inside the gate: the street's red carpet is a conveyor)
+			char:PivotTo(origin.CFrame * CFrame.new(0, 4, 58) * CFrame.Angles(0, math.pi, 0))
+			return
+		end
+		pos = Vector3.new(0, 4, -20)
+	else
+		local p = Places.get(where)
+		if not p then return end
+		pos = p.pos + Vector3.new(0, 3.5, 0)
+		pcall(function() player:RequestStreamAroundAsync(pos, 5) end)
+		char:PivotTo(CFrame.lookAt(pos, Vector3.new(p.look.X, pos.Y, p.look.Z)))
+		return
+	end
+	char:PivotTo(CFrame.new(pos))
 end
 
 complete = function(player, q)
@@ -513,6 +546,26 @@ function TownQuestService.start_service()
 	local errs = Quests.validate(Places, Townsfolk, Config.AreaById, Cutscenes)
 	for _, e in errs do warn("[Quests] " .. e) end
 	TownNPCService.onTalk = onTalk
+	-- the Mothership's beam pad: home
+	local town = workspace:FindFirstChild("Town")
+	for _, d in town and town:GetDescendants() or {} do
+		if d:IsA("BasePart") and d:GetAttribute("BeamHome") then
+			local pp = Instance.new("ProximityPrompt")
+			pp.Name = "BeamPrompt"
+			pp.ActionText = "Beam down"
+			pp.ObjectText = "Back to Earth"
+			pp.HoldDuration = 0.8
+			pp.MaxActivationDistance = 10
+			pp.RequiresLineOfSight = false
+			pp:SetAttribute("Color", Color3.fromRGB(120, 255, 90))
+			pp.Parent = d
+			pp.Triggered:Connect(function(player)
+				Remotes.Push:FireClient(player, "elevator", { dir = "beam" })
+				task.wait(0.9)
+				TownQuestService.teleport(player, "home")
+			end)
+		end
+	end
 	-- every signal a step listens for
 	local names = {}
 	for _, q in Quests.list do

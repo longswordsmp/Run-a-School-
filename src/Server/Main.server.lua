@@ -318,6 +318,10 @@ require(Server.DebugBridge).start({
 	tqReset = function(player)
 		return TownQuestService.debugReset(player)
 	end,
+	teleport = function(player, where)
+		require(Server.TownQuestService).teleport(player, where)
+		return true
+	end,
 	setPrestige = function(player, n)
 		return require(Server.PrestigeService).debugSet(player, n)
 	end,

@@ -75,4 +75,58 @@ Cutscenes.S02_Flyer = {
 	},
 }
 
+---------------------------------------------------------------------------
+-- CLOSE ENCOUNTERS
+---------------------------------------------------------------------------
+Cutscenes.X01_Lights = {
+	clock = 21.5,
+	props = { { id = "ufo", kind = "saucer", at = V(-1000, 110, 40), scale = 0.8 } },
+	actors = { { id = "BirdwatcherBea", look = "BirdwatcherBea", at = V(-742, 30.8, 173), face = V(-790, 30.8, 130) } },
+	shots = {
+		{ from = V(-733, 36, 180), to = V(-790, 62, 128), push = V(-736, 35, 177), time = 6, hold = 2.6,
+			caption = "Nightfall over Pine Park. Nothing but stars..." },
+		{ propMoves = { { "ufo", V(-770, 78, 140), 2.2 } }, hold = 2.4, sfx = "StingMorning",
+			say = { "BIRDWATCHER BEA", "BirdwatcherBea", "There! THERE! Over the trees! Are you seeing this?!" } },
+		{ propMoves = { { "ufo", V(-705, 92, 230), 0.9 } }, hold = 1.2, shake = 0.3 },
+		{ propMoves = { { "ufo", V(-620, 190, 60), 0.7 } }, hold = 1.6, caption = "...ZOOM. Gone." },
+		{ emotes = { { "BirdwatcherBea", "point" } },
+			say = { "BIRDWATCHER BEA", "BirdwatcherBea", "Zig-zags. No wings. Glowing green. Birds do NOT do that." } },
+	},
+}
+
+Cutscenes.X05_Abduction = {
+	clock = 23.5,
+	music = "heroes",
+	props = { { id = "ufo", kind = "saucer", at = V(-960, 120, 60) } },
+	actors = { { id = "Me", look = "player", at = V(-740, 30.8, 170), face = V(-700, 30.8, 170) } },
+	shots = {
+		{ from = V(-708, 40, 196), to = V(-740, 33, 170), push = V(-716, 37, 190), time = 6, hold = 2.4,
+			caption = "Midnight. The Lookout. You wave at the sky..." },
+		{ from = V(-712, 34, 205), to = V(-760, 72, 150), propMoves = { { "ufo", V(-740, 62, 170), 4 } }, hold = 4.4, sfx = "StingMorning",
+			title = "...AND THE SKY WAVES BACK", titleColor = Color3.fromRGB(140, 255, 110), titleTime = 3.6 },
+		{ from = V(-714, 46, 206), to = V(-740, 46, 170), beams = { { "ufo", true } }, emotes = { { "Me", "wave" } }, hold = 2.4, shake = 0.2 },
+		{ moves = { { "Me", V(-740, 54, 170), 5, "float" } }, hold = 4, caption = "BEAM ME UP!", captionColor = Color3.fromRGB(140, 255, 110) },
+		{ beams = { { "ufo", false } }, propMoves = { { "ufo", V(-740, 260, 170), 1.8 } }, hold = 2.2, caption = "WHOOSH." },
+	},
+}
+
+Cutscenes.X06_Return = {
+	props = { { id = "ufo", kind = "saucer", at = V(0, 220, 520) } },
+	actors = {
+		{ id = "CaptainZorp", look = "CaptainZorp", place = "CaptainZorp" },
+		{ id = "Blip", look = "Blip", place = "Blip", scale = 0.8 },
+		{ id = "Glorb", look = "Glorb", place = "Glorb" },
+	},
+	shots = {
+		{ place = "CaptainZorp", cam = "close", emotes = { { "CaptainZorp", "wave" } },
+			say = { "CAPTAIN ZORP", "CaptainZorp", "Farewell, Earth Principal. We will visit. Often. Leave the recess on for us." } },
+		{ place = "Blip", cam = "close", emotes = { { "Blip", "cheer" } },
+			say = { "BLIP", "Blip", "I am giving the cow back. I am keeping the traffic cone. It is my hat now." } },
+		{ from = V(80, 90, -120), to = V(0, 40, 60), propMoves = { { "ufo", V(0, 60, 40), 5 } }, hold = 5,
+			caption = "The mothership sets you down at home... and drops off Mr. Moo on the way." },
+		{ beams = { { "ufo", true } }, hold = 2, confetti = 90, title = "ALIEN FINISH UNLOCKED", titleColor = Color3.fromRGB(140, 255, 110), titleTime = 3 },
+		{ beams = { { "ufo", false } }, propMoves = { { "ufo", V(0, 400, -300), 2 } }, hold = 2.2 },
+	},
+}
+
 return Cutscenes

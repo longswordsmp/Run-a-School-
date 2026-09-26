@@ -2542,6 +2542,58 @@ T.robot = function(model, head, hs, torso, ts)
 	block(model, torso, Vector3.new(ts.X * 0.5, ts.Y * 0.3, 0.1), CFrame.new(0, ts.Y * 0.1, -ts.Z * 0.54), rgb(110, 48, 160))
 end
 
+-- the aliens (the Close Encounters story): green skin, big black eyes, antennae with glowing tips
+local ALIEN = rgb(120, 220, 90)
+local function alienSkin(model, color)
+	for _, n in { "Head", "LeftHand", "RightHand", "LeftLowerArm", "RightLowerArm", "LeftUpperArm", "RightUpperArm" } do
+		local p = model:FindFirstChild(n)
+		if p then p.Color = color or ALIEN end
+	end
+	-- no human face under the alien one: the decal, the dynamic head's texture and its face rig
+	local head = model:FindFirstChild("Head")
+	if head then
+		for _, d in head:GetChildren() do
+			if d:IsA("Decal") or d:IsA("FaceControls") then d:Destroy() end
+		end
+		if head:IsA("MeshPart") then pcall(function() head.TextureID = "" end) end
+	end
+end
+local function alienFace(model, head, hs, tip, skin)
+	for _, s in { -1, 1 } do
+		-- the eyes: big black almonds tilted up at the outside, a white glint
+		blob(model, head, Vector3.new(hs.X * 0.34, hs.Y * 0.4, 0.14), CFrame.new(hs.X * 0.22 * s, hs.Y * 0.06, -hs.Z * 0.5) * CFrame.Angles(0, 0, math.rad(-22 * s)), rgb(12, 12, 18))
+		ball(model, head, 0.14, CFrame.new(hs.X * 0.18 * s, hs.Y * 0.16, -hs.Z * 0.58), rgb(255, 255, 255), Enum.Material.Neon)
+		-- the antennae
+		cylY(model, head, 0.1, 1.2, CFrame.new(hs.X * 0.28 * s, hs.Y * 0.95, 0) * CFrame.Angles(0, 0, math.rad(-18 * s)), skin or ALIEN)
+		ball(model, head, 0.38, CFrame.new(hs.X * 0.46 * s, hs.Y * 1.45, 0), tip or rgb(255, 240, 90), Enum.Material.Neon)
+	end
+	-- a little smile
+	block(model, head, Vector3.new(hs.X * 0.24, 0.06, 0.05), CFrame.new(0, -hs.Y * 0.28, -hs.Z * 0.52), rgb(40, 60, 30))
+end
+Props.TeacherLooks.alien = { skinColor = ALIEN, shirt = rgb(170, 176, 190), pants = rgb(120, 126, 140) }
+T.alien = function(model, head, hs, torso, ts)
+	alienSkin(model)
+	alienFace(model, head, hs)
+	block(model, torso, Vector3.new(ts.X * 0.4, ts.Y * 0.4, 0.1), CFrame.new(0, ts.Y * 0.05, -ts.Z * 0.54), rgb(110, 255, 80), Enum.Material.Neon)
+end
+Props.TeacherLooks.alienblue = { skinColor = rgb(110, 190, 255), shirt = rgb(60, 70, 110), pants = rgb(40, 46, 80) }
+T.alienblue = function(model, head, hs, torso, ts)
+	local skin = rgb(110, 190, 255)
+	alienSkin(model, skin)
+	alienFace(model, head, hs, rgb(255, 120, 220), skin)
+	block(model, torso, Vector3.new(ts.X * 1.02, 0.25, ts.Z * 1.02), CFrame.new(0, -ts.Y * 0.1, 0), rgb(255, 120, 220), Enum.Material.Neon)
+	inHand(model, "RightHand", function(h) cylY(model, h, 0.3, 1.8, CFrame.new(0, 0.2, -0.4), rgb(200, 200, 210), Enum.Material.Metal) ball(model, h, 0.5, CFrame.new(0, 1.2, -0.4), rgb(255, 120, 220), Enum.Material.Neon) end)
+end
+Props.TeacherLooks.aliencaptain = { skinColor = ALIEN, shirt = rgb(70, 40, 120), pants = rgb(40, 30, 70) }
+T.aliencaptain = function(model, head, hs, torso, ts)
+	alienSkin(model)
+	alienFace(model, head, hs, rgb(120, 255, 255))
+	-- the captain's collar and cape and a star on the chest
+	block(model, torso, Vector3.new(ts.X * 1.3, ts.Y * 0.3, ts.Z * 1.3), CFrame.new(0, ts.Y * 0.55, 0), rgb(230, 190, 60), Enum.Material.Metal)
+	block(model, torso, Vector3.new(ts.X * 1.1, ts.Y * 2.1, 0.12), CFrame.new(0, -ts.Y * 0.4, ts.Z * 0.6), rgb(200, 40, 70), Enum.Material.Fabric)
+	ball(model, torso, 0.5, CFrame.new(-ts.X * 0.22, ts.Y * 0.2, -ts.Z * 0.56), rgb(120, 255, 255), Enum.Material.Neon)
+end
+
 function Props.teacher(model, outfit)
 	local build = T[outfit]
 	if not build then return end

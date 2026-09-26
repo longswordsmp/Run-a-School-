@@ -43,6 +43,10 @@ Places.npc = {
 	EngineerEllie = P(740, 0, -122, 700, -122, "Industrial"),
 	Robo7 = P(688.2, 0.6, 0, 670, 0, "Industrial"),
 	ChiefBrick = P(592, 0, -10, 570, -10, "Industrial"),
+	-- the Mothership (TownUFO, high over the sea: only reached by being beamed up)
+	CaptainZorp = P(0, 380, 746, 0, 800),
+	Blip = P(-32, 380, 760, 0, 760),
+	Glorb = P(40, 380, 760, 0, 760),
 }
 
 -- spots quests send you to (visit, collect, goons, chase routes)
@@ -134,6 +138,16 @@ Places.spot = {
 	LairCages = P(690, -160, -74),
 	LairVats = P(690, -160, 74),
 	LairPod = P(640, -160, 8),
+	-- the Mothership
+	ShipPad = P(0, 380, 806, 0, 760),
+	ShipBridge = P(0, 380, 748),
+	ShipTubes = P(-36, 380, 760),
+	ShipScreen = P(42, 380, 760),
+	ShipStar1 = P(-30, 380, 728),
+	ShipStar2 = P(30, 380, 728),
+	ShipStar3 = P(-42, 380, 792),
+	ShipStar4 = P(42, 380, 792),
+	ShipStar5 = P(0, 380, 714),
 }
 
 -- a place by name (an NPC post or a spot)

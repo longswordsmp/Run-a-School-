@@ -370,7 +370,7 @@ end
 
 local function makeTeacherTemplate(tdef)
 	local look = Props.TeacherLooks[tdef.outfit] or Props.TeacherLooks.sub
-	local skin = SKIN[look.skin] or SKIN.light
+	local skin = look.skinColor or SKIN[look.skin] or SKIN.light
 	local desc = Instance.new("HumanoidDescription")
 	desc.HeadColor = skin
 	desc.LeftArmColor = look.shirt
@@ -408,6 +408,10 @@ local function makeTeacherTemplate(tdef)
 	end
 	model.PrimaryPart = model:FindFirstChild("HumanoidRootPart")
 	model.PrimaryPart.Anchored = true
+	-- (a clone entering the world re-applies the HumanoidDescription, which would undo the skin-coloured
+	-- hands and any outfit that recolours the body: the parts keep their colours without it)
+	local hd = hum:FindFirstChildOfClass("HumanoidDescription")
+	if hd then hd:Destroy() end
 	Props.teacher(model, tdef.outfit)
 	model.Parent = teacherTemplates
 	return model
