@@ -193,6 +193,16 @@ local function elevatorRide(dir, data)
 	elseif dir == "caught" then
 		floor.Text = "\u{1F6A8} CAUGHT!"
 		task.wait(1.1)
+	elseif dir == "door" then
+		-- a door: a quick fade with the house's name
+		floor.Font = Enum.Font.LuckiestGuy
+		floor.TextColor3 = Color3.fromRGB(255, 240, 210)
+		floor.Text = data.text or ""
+		task.wait(0.45)
+		task.delay(0.8, function()
+			floor.Font = Enum.Font.Arcade
+			floor.TextColor3 = Color3.fromRGB(255, 80, 80)
+		end)
 	elseif dir == "beam" then
 		fader.BackgroundColor3 = Color3.fromRGB(120, 255, 90)
 		floor.TextColor3 = Color3.fromRGB(20, 40, 20)

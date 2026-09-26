@@ -120,7 +120,7 @@ function TownService.start()
 	town.Name = "Town"
 	buildFrame(town)
 	-- the districts (each file builds into its own model)
-	for _, name in { "TownDowntown", "TownMaple", "TownPark", "TownIndustrial", "TownHQ", "TownUFO" } do
+	for _, name in { "TownDowntown", "TownMaple", "TownPark", "TownIndustrial", "TownHQ", "TownUFO", "TownInteriors" } do
 		local mod = script.Parent:FindFirstChild(name)
 		if mod then
 			local ok, err = pcall(function() require(mod).build(town, Kit) end)

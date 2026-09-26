@@ -86,6 +86,7 @@ AreaService.start()
 local HQService = require(Server.HQService)
 local PrestigeService = require(Server.PrestigeService)
 PrestigeService.start()
+require(Server.HouseService).start()
 HQService.start(TownService.root)
 TownNPCService.start()
 TownQuestService.start_service()
@@ -317,6 +318,9 @@ require(Server.DebugBridge).start({
 	end,
 	tqReset = function(player)
 		return TownQuestService.debugReset(player)
+	end,
+	enterHouse = function(player, style)
+		return require(Server.HouseService).debugEnter(player, style)
 	end,
 	teleport = function(player, where)
 		require(Server.TownQuestService).teleport(player, where)
