@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Props = require(script.Parent.StudentProps)
+local KidAvatars = require(script.Parent.KidAvatars)
 
 local Factory = {}
 
@@ -39,11 +40,41 @@ if not templates then
 	templates.Parent = ReplicatedStorage
 end
 
-local function makeTemplate(def)
+-- a real avatar (KidAvatars): the ROBLOX Boy / Girl body, a dynamic head, catalog clothes and hair
+local ACCESSORY_FIELDS = {
+	hair = "HairAccessory", hat = "HatAccessory", face = "FaceAccessory", neck = "NeckAccessory",
+	back = "BackAccessory", front = "FrontAccessory", waist = "WaistAccessory", shoulder = "ShouldersAccessory",
+}
+local function avatarDescription(def, av)
 	local look = def.look
-	local skin = SKIN[look.skin] or SKIN.light
+	local skin = KidAvatars.Skin[av.skin or look.skin] or KidAvatars.Skin.light
 	local desc = Instance.new("HumanoidDescription")
-	desc.HeadColor = skin
+	desc.HeadColor, desc.TorsoColor = skin, skin
+	desc.LeftArmColor, desc.RightArmColor, desc.LeftLegColor, desc.RightLegColor = skin, skin, skin, skin
+	for part, id in KidAvatars.Bodies[av.body or "boy"] do desc[part] = id end
+	desc.Head = av.head or KidAvatars.Faces.smile
+	desc.Shirt = av.shirt or 0
+	desc.Pants = av.pants or 0
+	desc.GraphicTShirt = av.tshirt or 0
+	for key, field in ACCESSORY_FIELDS do
+		if av[key] then desc[field] = av[key] end
+	end
+	-- kid-sized: a bit shorter and slimmer than a player, head a touch big
+	local s = look.scale or 1
+	desc.HeightScale = 0.85 * s
+	desc.WidthScale = 0.9 * s
+	desc.DepthScale = 0.9 * s
+	desc.HeadScale = 1.05 * (look.head or 1) * math.sqrt(s)
+	desc.BodyTypeScale = 0
+	desc.ProportionScale = 0
+	return desc
+end
+
+-- the old blocky kid: body parts coloured as shirt and pants, blocky hair from StudentProps
+local function blockyDescription(def)
+	local look = def.look
+	local desc = Instance.new("HumanoidDescription")
+	desc.HeadColor = SKIN[look.skin] or SKIN.light
 	desc.LeftArmColor = look.shirt
 	desc.RightArmColor = look.shirt
 	desc.TorsoColor = look.shirt
@@ -56,8 +87,51 @@ local function makeTemplate(def)
 	desc.HeadScale = 1.25 * (look.head or 1) * math.sqrt(s)
 	desc.BodyTypeScale = 0
 	desc.ProportionScale = 0
+	return desc
+end
 
-	local model = Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
+-- keep only part of a signature prop (KidAvatars prop = "hands" | "head" | "nohead"): every prop part is welded
+-- to a body part, or to another prop part that is
+local HELD = { RightHand = true, LeftHand = true, RightLowerArm = true, LeftLowerArm = true }
+local function trimProp(model, mode)
+	local folder = model:FindFirstChild("Props")
+	if not folder then return end
+	local function anchorOf(part, depth)
+		local w = part:FindFirstChildOfClass("Weld")
+		local to = w and w.Part0
+		if not to or depth > 8 then return nil end
+		if to:IsDescendantOf(folder) then return anchorOf(to, depth + 1) end
+		return to.Name
+	end
+	local drop = {}
+	for _, part in folder:GetDescendants() do
+		if part:IsA("BasePart") then
+			local at = anchorOf(part, 0)
+			if (mode == "hands" and not HELD[at]) or (mode == "nohead" and at == "Head") or (mode == "head" and at ~= "Head") then
+				table.insert(drop, part)
+			end
+		end
+	end
+	for _, part in drop do part:Destroy() end
+end
+
+local function makeTemplate(def)
+	local look = def.look
+	local av = KidAvatars.Kids[def.id]
+	local skin = av and (KidAvatars.Skin[av.skin or look.skin] or KidAvatars.Skin.light) or SKIN[look.skin] or SKIN.light
+	local model
+	if av then
+		-- (the catalog can fail to load: then this kid stays blocky rather than not existing)
+		local ok, m = pcall(Players.CreateHumanoidModelFromDescription, Players, avatarDescription(def, av), Enum.HumanoidRigType.R15)
+		if ok then
+			model = m
+		else
+			warn("[StudentFactory] avatar failed, blocky instead:", def.id, m)
+			av = nil
+			skin = SKIN[look.skin] or SKIN.light
+		end
+	end
+	model = model or Players:CreateHumanoidModelFromDescription(blockyDescription(def), Enum.HumanoidRigType.R15)
 	model.Name = def.id
 	local hum = model:FindFirstChildOfClass("Humanoid")
 	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
@@ -72,7 +146,6 @@ local function makeTemplate(def)
 		local h = model:FindFirstChild(n)
 		if h then h.Color = skin end
 	end
-	-- the kid face on the head decal comes with the default description
 	for _, p in model:GetDescendants() do
 		if p:IsA("BasePart") then
 			p.CanCollide = false
@@ -85,21 +158,47 @@ local function makeTemplate(def)
 	model.PrimaryPart.Anchored = true
 	model.PrimaryPart.CanQuery = true -- prompts and ruler hits need something queryable
 
-	Props.hair(model, def)
-	Props.add(model, def)
+	-- an avatar kid has real hair; its signature prop stays, or the part of it the outfit doesn't cover
+	if not av then Props.hair(model, def) end
+	if not av or av.prop ~= false then Props.add(model, def) end
+	if av and type(av.prop) == "string" then trimProp(model, av.prop) end
+	if av then model:SetAttribute("Avatar", true) end
 	model.Parent = templates
 	return model
 end
 
+-- one build per kid, even when the preload and a bus ask at the same moment
+local building = {}
 local function getTemplate(def)
-	return templates:FindFirstChild(def.id) or makeTemplate(def)
+	local t = templates:FindFirstChild(def.id)
+	if t then return t end
+	if building[def.id] then
+		while building[def.id] do task.wait() end
+		return templates:FindFirstChild(def.id) or getTemplate(def)
+	end
+	building[def.id] = true
+	local ok, m = pcall(makeTemplate, def)
+	building[def.id] = nil
+	if not ok then error(m) end
+	return m
 end
 
 -- warm the cache at boot so the first bus does not hitch
 function Factory.preload()
-	for _, def in Config.Students do
-		local ok, err = pcall(getTemplate, def)
-		if not ok then warn("[StudentFactory] template failed for", def.id, err) end
+	-- (six at a time: an avatar kid waits on its catalog assets loading)
+	local queue = table.clone(Config.Students)
+	local running = 0
+	while #queue > 0 or running > 0 do
+		while running < 6 and #queue > 0 do
+			local def = table.remove(queue, 1)
+			running += 1
+			task.spawn(function()
+				local ok, err = pcall(getTemplate, def)
+				if not ok then warn("[StudentFactory] template failed for", def.id, err) end
+				running -= 1
+			end)
+		end
+		task.wait()
 	end
 end
 

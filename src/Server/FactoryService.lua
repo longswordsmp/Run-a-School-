@@ -467,6 +467,7 @@ end
 local function silhouette(model)
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") then d.Color = rgb(30, 25, 40) d.Material = Enum.Material.SmoothPlastic end
+		if d:IsA("MeshPart") then d.TextureID = "" end
 		if d:IsA("BillboardGui") or d:IsA("ParticleEmitter") or d:IsA("Decal") or d:IsA("Highlight") then d:Destroy() end
 	end
 end
