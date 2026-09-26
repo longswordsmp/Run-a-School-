@@ -675,7 +675,7 @@ Config.WeeklyPool = {
 	{ id = "wcollect300", text = "Collect tuition 300 times", signal = "collect", count = 300 },
 	{ id = "wquiz15", text = "Answer 15 Pop Quizzes right", signal = "quizRight", count = 15 },
 	{ id = "wgrad25", text = "Graduate 25 kids", signal = "graduate", count = 25 },
-	{ id = "wtokens80", text = "Collect 80 event tokens", signal = "ticket", count = 80 },
+	{ id = "wtokens80", text = "Earn 80 event tickets", signal = "ticket", count = 80 },
 	{ id = "wletter10", text = "Enroll 10 kids from Admissions Letters", signal = "benchEnroll", group = "enroll", count = 10 },
 	{ id = "weagle10", text = "Make 10 EAGLE EYE catches", signal = "eagleEye", group = "catchCheater", count = 10 },
 }
@@ -691,7 +691,8 @@ Config.LunchBox = {
 }
 
 ---------------------------------------------------------------------------
--- Event Tickets: during an event, event tokens pop up around every player; each one is a ticket.
+-- Event Tickets: earned by running your school during an event (TicketService: a trickle while you
+-- play, a bonus per kid enrolled).
 -- Tickets buy letters and candy any time, and each event's trophy only while that event runs
 -- (12 trophies fill the trophy case on your lawn). tools/econ_sim.py models the letters.
 ---------------------------------------------------------------------------
@@ -716,7 +717,6 @@ Config.EventShop = {
 	{ id = "Candy50", name = "50 Candy", icon = "\u{1F36C}", tickets = 10, kind = "candy", amount = 50 },
 }
 Config.TrophyTickets = 40
-Config.TicketsPerToken = 1
 
 ---------------------------------------------------------------------------
 -- Graduation: graduate a seated kid (hold G) and it leaves your school for Diplomas (by rarity,

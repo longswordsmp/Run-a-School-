@@ -291,7 +291,7 @@ do
 		ticketRows[it.id] = shopRow(ticketList, 10 + i, {
 			name = it.id, icon = it.icon, title = it.name,
 			desc = it.kind == "letter" and "A guaranteed " .. it.rarity .. " kid you can afford, on your bench" or "For Janitor Stan's Closet",
-			sub = "Collect event tokens during events for tickets",
+			sub = "Earn tickets by running your school during events",
 			iconBg = Color3.fromRGB(255, 235, 200),
 		})
 	end
@@ -397,8 +397,8 @@ do
 			local st = call("tickets")
 			if not st or st.ok == false then return end
 			local ev = st.event
-			info.Text = ev and ("\u{1F39F}\u{FE0F} %d tickets  \u{2022}  %s is on: grab the tokens around you!"):format(st.tickets, Config.EventInfo[ev].name)
-				or ("\u{1F39F}\u{FE0F} %d tickets  \u{2022}  tokens appear during events"):format(st.tickets)
+			info.Text = ev and ("\u{1F39F}\u{FE0F} %d tickets  \u{2022}  %s is on: run your school to earn more!"):format(st.tickets, Config.EventInfo[ev].name)
+				or ("\u{1F39F}\u{FE0F} %d tickets  \u{2022}  earned during events"):format(st.tickets)
 			for _, it in Config.EventShop do
 				local row = ticketRows[it.id]
 				setState(row, "buy", 0)

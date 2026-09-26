@@ -1,11 +1,12 @@
 -- ServerScriptService.Server.TicketService
--- Event Tickets. While an event runs, event tokens (a spinning coin in the event's colour with its
--- icon) pop up on the ground around every player; touching one is a ticket. Tickets buy letters and
--- candy (Config.EventShop) and each event's trophy while that event runs; trophies fill the trophy
--- case on your lawn (SchoolBuilder.trophyCase).
+-- Event Tickets. While an event runs you earn them by running your school: one every few seconds
+-- while you're playing, and a bonus for every kid you enroll (more for the event's own kids).
+-- (They used to be coins popping up on the ground around every player, which pulled people off
+-- their schools to hoover the street.) Tickets buy letters and candy (Config.EventShop) and each
+-- event's trophy while that event runs; trophies fill the trophy case on your lawn
+-- (SchoolBuilder.trophyCase).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CollectionService = game:GetService("CollectionService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Data = require(script.Parent.DataService)
@@ -17,13 +18,9 @@ local SchoolBuilder = require(script.Parent.SchoolBuilder)
 
 local TicketService = {}
 
-local SPAWN_EVERY = 8 -- seconds between tokens per player
-local MAX_LIVE = 4 -- per player
-local LIFETIME = 45
-local RING = { 12, 34 } -- studs from the player
-
-local folder
-local live = {} -- [player] = { token parts }
+local TRICKLE = 10 -- a ticket every this many seconds while you're playing through an event
+local ACTIVE = 120 -- "playing": moved in the last two minutes
+local ENROLL_BONUS, EVENT_KID_BONUS = 2, 5
 
 local EVENT_COLORS = {
 	SnowDay = Color3.fromRGB(170, 220, 255), FieldDay = Color3.fromRGB(255, 205, 60), ScienceFair = Color3.fromRGB(90, 255, 90),
@@ -41,114 +38,14 @@ local function refreshCase(player, p)
 	if plot then SchoolBuilder.trophyCase(plot, p.trophies or {}) end
 end
 
-local function clearTokens()
-	if folder then folder:ClearAllChildren() end
-	table.clear(live)
-end
-
--- somewhere on the ground near the player: street, lawn or sidewalk, not a roof
-local rayParams = RaycastParams.new()
-rayParams.FilterType = Enum.RaycastFilterType.Exclude
-local function groundNear(root)
-	local exclude = { folder }
-	for _, pl in Players:GetPlayers() do
-		if pl.Character then table.insert(exclude, pl.Character) end
-	end
-	for _, name in { "Hall", "StoryNPCs", "QuestGuide", "MoneyRain" } do
-		local f = workspace:FindFirstChild(name)
-		if f then table.insert(exclude, f) end
-	end
-	rayParams.FilterDescendantsInstances = exclude
-	for _ = 1, 6 do
-		local a = math.random() * math.pi * 2
-		local r = RING[1] + math.random() * (RING[2] - RING[1])
-		local at = root.Position + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
-		local hit = workspace:Raycast(Vector3.new(at.X, 60, at.Z), Vector3.new(0, -120, 0), rayParams)
-		if hit and hit.Position.Y < 4 and hit.Position.Y > -2 then return hit.Position end
-	end
-	return nil
-end
-
--- golden: the rare one (every GOLDEN_EVERY s during an event, near a random player, announced to the
--- whole server), worth GOLDEN_VALUE tickets to whoever gets there first
-local GOLDEN_EVERY, GOLDEN_VALUE = 90, 10
-local function spawnToken(player, eventId, golden)
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if not root then return end
-	local pos = groundNear(root)
-	if not pos then return end
-	local color = golden and Color3.fromRGB(255, 205, 60) or EVENT_COLORS[eventId] or Color3.new(1, 1, 1)
-	local info = Config.EventInfo[eventId]
-	local t = Instance.new("Part")
-	t.Name = golden and "GoldenToken" or "EventToken"
-	t.Shape = Enum.PartType.Cylinder
-	t.Size = golden and Vector3.new(0.6, 4.2, 4.2) or Vector3.new(0.45, 2.8, 2.8)
-	t.CFrame = CFrame.new(pos + Vector3.new(0, golden and 3.2 or 2.4, 0))
-	t.Color = color
-	t.Material = Enum.Material.SmoothPlastic
-	t.Reflectance = 0.15
-	t.Anchored, t.CanCollide, t.CanQuery, t.CanTouch = true, false, false, true
-	-- a coin you can read: solid colour, the event icon drawn on top, a few sparkles
-	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.fromOffset(64, 64)
-	bb.StudsOffset = Vector3.new(0, 2.6, 0)
-	bb.LightInfluence = 0
-	bb.MaxDistance = 80
-	bb.Parent = t
-	local icon = Instance.new("TextLabel")
-	icon.BackgroundTransparency = 1
-	icon.Size = UDim2.fromScale(1, 1)
-	icon.TextScaled = true
-	icon.Text = info and info.icon or "?"
-	icon.Font = Enum.Font.FredokaOne
-	icon.Parent = bb
-	local sp = Instance.new("ParticleEmitter")
-	sp.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	sp.Color = ColorSequence.new(color)
-	sp.LightEmission = 1
-	sp.Size = NumberSequence.new(0.35, 0)
-	sp.Lifetime = NumberRange.new(0.6, 1)
-	sp.Rate = golden and 30 or 7
-	sp.Speed = NumberRange.new(1, 2)
-	sp.SpreadAngle = Vector2.new(180, 180)
-	sp.Parent = t
-	local l = Instance.new("PointLight")
-	l.Color = color
-	l.Range = 7
-	l.Brightness = 0.8
-	l.Parent = t
-	CollectionService:AddTag(t, "EventToken")
-	if golden then
-		t.Material = Enum.Material.Neon
-		icon.Text = (info and info.icon or "") .. " x" .. GOLDEN_VALUE
-		bb.Size = UDim2.fromOffset(110, 64)
-		Remotes.Announce:FireAllClients(("A GOLDEN %s TOKEN! (near %s)"):format(info and info.name:upper() or "EVENT", player.DisplayName), color)
-		Remotes.Sfx:FireAllClients("Rare")
-	end
-	t.Parent = folder
-	if not golden then
-		live[player] = live[player] or {}
-		table.insert(live[player], t)
-	end
-	local taken = false
-	t.Touched:Connect(function(hit)
-		if taken then return end
-		local who = Players:GetPlayerFromCharacter(hit.Parent)
-		local p = who and Data.get(who)
-		if not p then return end
-		taken = true
-		p.tickets = (p.tickets or 0) + (golden and GOLDEN_VALUE or Config.TicketsPerToken)
-		syncTickets(who, p)
-		Remotes.Sfx:FireClient(who, golden and "Cheer" or "Coin", t.Position)
-		if golden then
-			Remotes.Notify:FireAllClients(("%s grabbed the golden token! +%d tickets"):format(who.DisplayName, GOLDEN_VALUE), "steal")
-		end
-		Signals.fire("ticket", who, eventId)
-		t:Destroy()
-	end)
-	task.delay(LIFETIME, function()
-		if t.Parent then t:Destroy() end
-	end)
+-- tickets for a player (the goals count each one)
+local function give(player, n)
+	local p = Data.get(player)
+	if not p or n <= 0 then return end
+	p.tickets = (p.tickets or 0) + n
+	syncTickets(player, p)
+	local ev = workspace:GetAttribute("Event")
+	for _ = 1, n do Signals.fire("ticket", player, ev) end
 end
 
 function TicketService.state(player)
@@ -205,9 +102,8 @@ Actions.register("buyTicket", function(player, p, id)
 end)
 
 function TicketService.start()
-	folder = workspace:FindFirstChild("EventTokens") or Instance.new("Folder")
-	folder.Name = "EventTokens"
-	folder.Parent = workspace
+	local old = workspace:FindFirstChild("EventTokens")
+	if old then old:Destroy() end
 	-- tickets and the trophy case once the profile is loaded
 	local function onJoin(player)
 		for _ = 1, 40 do
@@ -230,49 +126,45 @@ function TicketService.start()
 			refreshCase(player, p)
 		end
 	end)
+	local lastPos, lastMove = {}, {}
 	Players.PlayerRemoving:Connect(function(player)
-		for _, t in live[player] or {} do
-			if t.Parent then t:Destroy() end
-		end
-		live[player] = nil
+		lastPos[player], lastMove[player] = nil, nil
 		-- (a co-op crew member leaving: the case is their host's)
 		if Data.isMember(player) or PlotService.isAlias(player) then return end
 		local plot = PlotService.getPlot(player)
 		local case = plot and plot:FindFirstChild("TrophyCase")
 		if case then case:Destroy() end
 	end)
-	-- a school that gets rebuilt (Board review) keeps its case: it lives beside the School model
+	-- enrolling during an event: a bonus, bigger for the event's own kids
+	Signals.on("enroll", function(player, def, grade)
+		local ev = workspace:GetAttribute("Event")
+		if not ev then return end
+		local g = Config.GradeById[grade]
+		give(player, (g and g.event == ev) and EVENT_KID_BONUS or ENROLL_BONUS)
+	end)
+	-- and a steady trickle while you're playing through it
 	task.spawn(function()
 		local clock = 0
 		while true do
 			task.wait(1)
 			clock += 1
-			local ev = workspace:GetAttribute("Event")
-			if not ev then
-				if next(live) then clearTokens() end
-			elseif clock % GOLDEN_EVERY == 0 then
-				local players = Players:GetPlayers()
-				if #players > 0 then pcall(spawnToken, players[math.random(#players)], ev, true) end
-			elseif clock % SPAWN_EVERY == 0 then
-				for _, player in Players:GetPlayers() do
-					local list = live[player] or {}
-					for i = #list, 1, -1 do
-						if not list[i].Parent then table.remove(list, i) end
+			local now = os.clock()
+			for _, player in Players:GetPlayers() do
+				local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+				if root then
+					local last = lastPos[player]
+					if not last or (root.Position - last).Magnitude > 3 then
+						lastPos[player], lastMove[player] = root.Position, now
 					end
-					live[player] = list
-					if #list < MAX_LIVE then pcall(spawnToken, player, ev) end
+				end
+			end
+			if workspace:GetAttribute("Event") and clock % TRICKLE == 0 then
+				for _, player in Players:GetPlayers() do
+					if lastMove[player] and now - lastMove[player] < ACTIVE then give(player, 1) end
 				end
 			end
 		end
 	end)
-end
-
--- Studio: a golden token near the player now
-function TicketService.debugGolden(player)
-	local ev = workspace:GetAttribute("Event")
-	if not ev then return false end
-	spawnToken(player, ev, true)
-	return true
 end
 
 -- Studio: tickets for testing
