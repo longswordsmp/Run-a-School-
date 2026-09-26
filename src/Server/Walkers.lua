@@ -7,6 +7,19 @@ local RunService = game:GetService("RunService")
 
 local Walkers = {}
 local active = {}
+local TURN_RATE = 10 -- radians a second a walker turns (a full about-turn in ~0.3 s)
+
+-- turn a flat facing `cur` towards `dir` by at most `maxAngle` radians. (Lerping the two vectors
+-- never turns at all when they point exactly opposite ways, a guard reversing its patrol, which
+-- left guards walking whole legs backwards.)
+function Walkers.turn(cur, dir, maxAngle)
+	local a0 = math.atan2(cur.X, cur.Z)
+	local a1 = math.atan2(dir.X, dir.Z)
+	local diff = (a1 - a0 + math.pi) % (2 * math.pi) - math.pi
+	if math.abs(diff) <= maxAngle then return dir end
+	local a = a0 + (diff >= 0 and 1 or -1) * maxAngle
+	return Vector3.new(math.sin(a), 0, math.cos(a))
+end
 
 -- opts: { flat = true (default) | false }; onDone(model) runs at the last waypoint
 function Walkers.walk(model, points, speed, onDone, opts)
@@ -57,10 +70,7 @@ RunService.Heartbeat:Connect(function(dt)
 			local np = pos + delta.Unit * step
 			local cur = w.hrp.CFrame.LookVector
 			local dir = ground.Magnitude > 1e-3 and ground.Unit or Vector3.new(cur.X, 0, cur.Z)
-			local blended = cur:Lerp(dir, math.min(1, dt * 12))
-			blended = Vector3.new(blended.X, 0, blended.Z)
-			if blended.Magnitude < 1e-3 then blended = dir end
-			w.hrp.CFrame = CFrame.lookAt(np, np + blended)
+			w.hrp.CFrame = CFrame.lookAt(np, np + Walkers.turn(cur, dir, TURN_RATE * dt))
 		end
 	end
 end)
