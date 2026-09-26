@@ -467,7 +467,7 @@ Config.Chapters = {
 			{ kind = "build", id = "Fountain" },
 			{ kind = "hire", id = "MadameVerse" },
 			{ kind = "mission", id = "vex_blueprints" },
-			{ kind = "own", rarity = "Mythic", n = 1 },
+			{ kind = "count", signal = "rivalEscaped", count = 1, text = "Steal a kid from VEX PREP (across the street)" },
 		} },
 	{ title = "Campus Life", host = "Lunch Lady Loretta", letter = "Legendary",
 		line = "College kids eat four lunches a day. I've done the math. Please help.",

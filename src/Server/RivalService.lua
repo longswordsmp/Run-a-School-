@@ -45,6 +45,7 @@ local desks = {} -- { model, x, z, kid, def, grade, prompt, emptyUntil }
 local carrying = {} -- [player] = { desk, kid, def, grade, lastPos, lastT }
 local stunUntil = {}
 local lastSpotted = {}
+local seen = {} -- [player] = true once the first-look cutscene was checked this session
 
 local function part(parent, name, size, cf, color, material, props)
 	local p = Instance.new("Part")
@@ -157,11 +158,17 @@ local function buildGrounds(m)
 		l.Color = rgb(255, 210, 150)
 		l.Parent = lamp
 	end
-	local arch = part(m, "GateArch", Vector3.new(12.4, 2.4, 0.5), CFrame.new(CX, 11.5, LOT.z1), rgb(30, 30, 36), Enum.Material.Metal)
+	local arch = part(m, "GateArch", Vector3.new(10.6, 2.4, 0.5), CFrame.new(CX, 11.5, LOT.z1), rgb(30, 30, 36), Enum.Material.Metal)
 	sign(arch, Enum.NormalId.Back, "VEX PREP ACADEMY", GOLD, Enum.Font.Fantasy)
 	sign(arch, Enum.NormalId.Front, "VEX PREP ACADEMY", GOLD, Enum.Font.Fantasy)
-	local motto = part(m, "Motto", Vector3.new(12.4, 1.2, 0.3), CFrame.new(CX, 9.6, LOT.z1), rgb(30, 30, 36), Enum.Material.Metal)
+	local motto = part(m, "Motto", Vector3.new(10.6, 1.2, 0.3), CFrame.new(CX, 9.6, LOT.z1), rgb(30, 30, 36), Enum.Material.Metal)
 	sign(motto, Enum.NormalId.Back, "Excellence Through Homework", rgb(230, 220, 200), Enum.Font.Fantasy)
+	-- iron ties from the sign to the pillars (the sign stays clear of them so the name reads whole)
+	for _, x in { -5.9, 5.9 } do
+		for _, y in { 12.5, 10.5, 9.2 } do
+			part(m, "ArchTie", Vector3.new(1.3, 0.22, 0.22), CFrame.new(CX + x, y, LOT.z1), rgb(30, 30, 36), Enum.Material.Metal)
+		end
+	end
 	sign(motto, Enum.NormalId.Front, "Excellence Through Homework", rgb(230, 220, 200), Enum.Font.Fantasy)
 	-- a noticeboard on the lawn (a VexCorp File sits by it)
 	part(m, "BoardPost", Vector3.new(0.4, 5, 0.4), CFrame.new(LOT.x0 + 22, 2.5, LOT.z1 - 8), WOOD, Enum.Material.Wood)
@@ -310,8 +317,8 @@ local function buildHall(m)
 		sign(bb, Enum.NormalId.Back, x < 0 and "HOMEWORK IS THE FUTURE\nHOMEWORK IS THE FUTURE\nHOMEWORK IS THE FUTURE" or "RECESS: CANCELLED\nLUNCH: 4 MINUTES\nFUN: SEE HEADMISTRESS", rgb(235, 235, 225), Enum.Font.PermanentMarker)
 		part(m, "ChalkTray", Vector3.new(20, 0.3, 0.6), CFrame.new(CX + x, FLOOR + 4.8, -144.9), rgb(70, 44, 28), Enum.Material.Wood)
 	end
-	-- portraits of the family along the side walls: Dr. Vex, Victor Vex, Veronica
-	local portraits = { { "DR. VEX\nFounder", -107.5 }, { "VICTOR VEX\nHeadmaster", -120.5 }, { "VERONICA\nHead Girl", -133.5 } }
+	-- portraits along the side walls: the founder and her friends
+	local portraits = { { "DR. VEX\nFounder", -107.5 }, { "CRUMPET\nButler of the Year", -120.5 }, { "THE SUGAR BARON\nGenerous Donor", -133.5 } }
 	for _, pr in portraits do
 		for _, x in { B.x0 + 1.1, B.x1 - 1.1 } do
 			local rot = CFrame.Angles(0, math.rad(x < cx and -90 or 90), 0)
@@ -523,6 +530,20 @@ local function tick(dt)
 		end
 		local pos = proot.Position
 		local inside = inLot(pos)
+		-- the first time someone walks up to the gate: the Vex Prep cutscene (once per save)
+		if not seen[player] then
+			local dx, dz = pos.X - CX, pos.Z - LOT.z1
+			if dx * dx + dz * dz < 75 * 75 and player:GetAttribute("Ready") and not player:GetAttribute("Mission") then
+				local p = Data.get(player)
+				if p then
+					seen[player] = true
+					if not p.rivalSeen then
+						p.rivalSeen = true
+						Remotes.Cutscene:FireClient(player, "Rival")
+					end
+				end
+			end
+		end
 		if inside or lastSpotted[player] ~= nil then
 			local spotted = inside and guards:isChasing(player) or nil
 			if spotted ~= lastSpotted[player] then
@@ -652,6 +673,7 @@ function RivalService.start()
 		dropCarry(player)
 		stunUntil[player] = nil
 		lastSpotted[player] = nil
+		seen[player] = nil
 	end)
 end
 

@@ -428,8 +428,61 @@ local function finale(data)
 	busy = false
 end
 
+---------------------------------------------------------------------------
+-- Rival: the first look at Vex Prep Academy (one campus for the whole server, across the street)
+---------------------------------------------------------------------------
+local function rival()
+	if busy then return end
+	busy = true
+	pcall(function() player:RequestStreamAroundAsync(Vector3.new(427, 5, -100), 4) end)
+	fade(0, 0.35)
+	hideHud(true)
+	letterbox(true)
+	local prevType = camera.CameraType
+	camera.CameraType = Enum.CameraType.Scriptable
+	local hall = Vector3.new(427, 14, -100)
+	-- over the street: the gate, the fountains and the hall behind them
+	camera.CFrame = CFrame.lookAt(Vector3.new(372, 44, 18), hall)
+	fade(1, 0.5)
+	local move = TweenService:Create(camera, TweenInfo.new(10, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(Vector3.new(427, 18, -20), hall) })
+	move:Play()
+	local c1 = caption("MEANWHILE, ACROSS THE STREET...", Color3.new(1, 1, 1), 0.2, 44)
+	task.wait(2.2)
+	c1:Destroy()
+	local c2 = caption("VEX PREP ACADEMY", Color3.fromRGB(205, 150, 255), 0.2, 84)
+	sfx("GavelBig")
+	sayLine("DR. VERONICA VEX", "Vex", "Welcome to Vex Prep Academy. MY school. The only school on Recess Row that matters.")
+	c2:Destroy()
+	-- inside the Great Hall: the desks, the kids, a hall monitor
+	move:Cancel()
+	camera.CFrame = CFrame.lookAt(Vector3.new(452, 15, -99), Vector3.new(420, 3, -128))
+	move = TweenService:Create(camera, TweenInfo.new(9, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(Vector3.new(440, 10, -104), Vector3.new(415, 3, -128)) })
+	move:Play()
+	sayLine("DR. VERONICA VEX", "Vex", "Eight of the smartest kids in town, at MY desks, doing homework twenty-five hours a day.")
+	sayLine("DR. VERONICA VEX", "Vex", "And my hall monitors never blink. Touch one of my students and the bell rings. Everybody comes running.")
+	-- back at the gate: Wobblesworth's tip
+	move:Cancel()
+	camera.CFrame = CFrame.lookAt(Vector3.new(446, 8, -28), Vector3.new(427, 9, -60))
+	move = TweenService:Create(camera, TweenInfo.new(8, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(Vector3.new(438, 7, -34), Vector3.new(427, 9, -60)) })
+	move:Play()
+	sayLine("MR. WOBBLESWORTH", "Wobblesworth", "Psst! Sneak in, grab a kid, carry them out through the gate. Every kid you take, Vex sends smarter ones... and angrier goons.")
+	local c3 = caption("ONE VEX PREP. EVERY SCHOOL ON THE STREET WANTS ITS KIDS.", Color3.fromRGB(255, 200, 140), 0.2, 40)
+	task.wait(2.6)
+	c3:Destroy()
+	fade(0, 0.35)
+	move:Cancel()
+	camera.CameraType = prevType == Enum.CameraType.Scriptable and Enum.CameraType.Custom or prevType
+	letterbox(false)
+	hideHud(false)
+	task.wait(0.2)
+	fade(1, 0.5)
+	busy = false
+end
+
 Remotes:WaitForChild("Cutscene").OnClientEvent:Connect(function(name, data)
-	if name == "Finale" then
+	if name == "Rival" then
+		task.spawn(safely, rival, data)
+	elseif name == "Finale" then
 		task.spawn(safely, finale, data)
 	elseif name == "Board" then
 		task.spawn(safely, board, data)

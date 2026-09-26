@@ -277,6 +277,10 @@ require(Server.DebugBridge).start({
 	lab = function(player)
 		return LabService.debugState()
 	end,
+	rivalScene = function(player)
+		Remotes.Cutscene:FireClient(player, "Rival")
+		return true
+	end,
 	rivalTake = function(player, i)
 		return RivalService.debugTake(player, i)
 	end,
