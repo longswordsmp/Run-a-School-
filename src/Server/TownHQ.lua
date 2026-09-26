@@ -735,6 +735,116 @@ function HQ.build(town, Kit)
 		}
 	end
 
+	---------------------------------------------------------------------------
+	-- FLOOR 6: THE BARRACKS
+	--   the goons' gym: a boxing ring in the middle (step in and the waves start), bleachers north and
+	--   south, bunk beds and lockers, punching bags, training dummies, GOON OF THE MONTH; three waves
+	--   of goons, then Crumpet (HQService, QuestGoons.brawl / .boss); the exit door on the east wall
+	---------------------------------------------------------------------------
+	do
+		local m, at = shell(6, {
+			floor = rgb(64, 58, 84), floorMat = Enum.Material.SmoothPlastic, wall = rgb(52, 44, 72), ceiling = rgb(36, 30, 50),
+			lightColor = rgb(255, 240, 220), noWindows = true,
+		})
+		local gym = Kit.folder(m, "Gym")
+		local MAT = rgb(120, 60, 180)
+		-- the ring
+		-- (a low ring, so goons chasing you off the mat stay on the ground)
+		Kit.cylY(gym, "RingBase", 46, 0.4, (at(0, 0.2, 0)).Position, rgb(40, 34, 56), Enum.Material.Metal)
+		Kit.cylY(gym, "RingMat", 44, 0.2, (at(0, 0.45, 0)).Position, MAT, Enum.Material.Fabric)
+		local logo = part(gym, "RingLogo", Vector3.new(18, 0.05, 18), at(0, 0.57, 0), MAT, nil, { Transparency = 1, CanCollide = false })
+		Kit.sign(logo, Enum.NormalId.Top, "VEXCORP", rgb(230, 210, 255), nil, Enum.Font.LuckiestGuy)
+		local posts = {}
+		for k = 0, 7 do
+			local a = math.rad(k * 45 + 22.5)
+			local p = (at(math.cos(a) * 21, 0, math.sin(a) * 21)).Position
+			Kit.cylY(gym, "RingPost", 1, 6, p + Vector3.new(0, 4, 0), rgb(230, 230, 236), Enum.Material.Metal)
+			Kit.cylY(gym, "PostPad", 1.4, 1.2, p + Vector3.new(0, 6.4, 0), k % 2 == 0 and rgb(220, 60, 60) or rgb(60, 110, 230), Enum.Material.Fabric)
+			table.insert(posts, p)
+		end
+		for k = 1, 8 do
+			local a, b = posts[k], posts[k % 8 + 1]
+			for _, h in { 3.2, 4.8, 6.2 } do
+				local p0, p1 = a + Vector3.new(0, h, 0), b + Vector3.new(0, h, 0)
+				-- (a gap on the west side: the way in)
+				if not (k == 4) then
+					part(gym, "Rope", Vector3.new(0.35, 0.35, (p1 - p0).Magnitude), CFrame.lookAt((p0 + p1) / 2, p1), rgb(245, 245, 250), Enum.Material.Fabric, { CanCollide = h > 4 })
+				end
+			end
+		end
+		-- spotlights on the ring
+		for _, c in { { -30, -30 }, { 30, -30 }, { -30, 30 }, { 30, 30 } } do
+			local lamp = part(gym, "RingLamp", Vector3.new(2, 1.4, 2), at(c[1], HQ.HEIGHT - 1, c[2]), rgb(40, 40, 48), Enum.Material.Metal)
+			local at0 = Instance.new("Attachment")
+			at0.Parent = lamp
+			at0.WorldCFrame = CFrame.lookAt(lamp.Position, (at(0, 0, 0)).Position)
+			local sl = Instance.new("SpotLight")
+			sl.Face = Enum.NormalId.Front
+			sl.Angle = 40
+			sl.Range = 60
+			sl.Brightness = 3
+			sl.Color = rgb(255, 240, 220)
+			sl.Parent = at0
+		end
+		-- bleachers north and south
+		for _, s in { -1, 1 } do
+			for row = 0, 4 do
+				part(gym, "Bleacher", Vector3.new(80, 1, 4), at(0, 0.5 + row * 1.6, s * (48 + row * 4)), rgb(90, 80, 110), Enum.Material.WoodPlanks)
+				part(gym, "BleacherRiser", Vector3.new(80, 0.5 + row * 1.6, 4), at(0, (0.5 + row * 1.6) / 2, s * (48 + row * 4)), rgb(60, 54, 76), Enum.Material.Metal)
+			end
+			local banner = part(gym, "Banner", Vector3.new(40, 6, 0.2), at(0, 20, s * 74.6) * CFrame.Angles(0, s > 0 and math.rad(180) or 0, 0), MAT, Enum.Material.Fabric)
+			Kit.sign(banner, Enum.NormalId.Front, s > 0 and "GOONS NEVER TAKE RECESS" or "HOMEWORK \u{2022} DISCIPLINE \u{2022} MORE HOMEWORK", rgb(255, 220, 120), MAT, Enum.Font.LuckiestGuy)
+		end
+		-- bunk beds on the west side, north and south of the elevators
+		for _, s in { -1, 1 } do
+			for k = 0, 2 do
+				local bx, bz = -48 + k * 9, s * 30
+				for _, h in { 1.6, 5.2 } do
+					part(gym, "Bunk", Vector3.new(4, 0.8, 8), at(bx, h, bz), rgb(120, 110, 140), Enum.Material.Metal)
+					part(gym, "Mattress", Vector3.new(3.6, 0.6, 7.6), at(bx, h + 0.7, bz), rgb(200, 200, 220), Enum.Material.Fabric)
+					part(gym, "Pillow", Vector3.new(2.4, 0.5, 1.4), at(bx, h + 1.2, bz + s * 2.8), rgb(250, 250, 255), Enum.Material.Fabric)
+				end
+				for _, dx in { -1.8, 1.8 } do
+					for _, dz in { -3.8, 3.8 } do part(gym, "BunkPost", Vector3.new(0.3, 7, 0.3), at(bx + dx, 3.5, bz + dz), rgb(80, 72, 100), Enum.Material.Metal) end
+				end
+			end
+		end
+		-- lockers along the east wall, north and south of the door
+		for _, s in { -1, 1 } do
+			for k = 0, 7 do
+				local lz = s * (12 + k * 3)
+				part(gym, "Locker", Vector3.new(2, 8, 2.8), at(73.8, 4, lz), k % 2 == 0 and rgb(110, 60, 170) or rgb(90, 50, 140), Enum.Material.Metal)
+				part(gym, "LockerVent", Vector3.new(0.1, 0.8, 1.6), at(72.75, 6.6, lz), rgb(40, 30, 56))
+			end
+		end
+		-- punching bags and training dummies (east of the ring)
+		for _, z in { -34, -20, 20, 34 } do
+			part(gym, "BagChain", Vector3.new(0.2, 6, 0.2), at(44, HQ.HEIGHT - 3, z), rgb(80, 80, 90), Enum.Material.Metal)
+			Kit.cylY(gym, "PunchBag", 2.6, 6, (at(44, HQ.HEIGHT - 9, z)).Position, rgb(190, 40, 50), Enum.Material.Fabric)
+		end
+		for _, z in { -46, 46 } do
+			for k = 0, 2 do
+				local dx = 30 + k * 8
+				part(gym, "DummyPost", Vector3.new(0.6, 3, 0.6), at(dx, 1.5, z), rgb(110, 80, 50), Enum.Material.Wood)
+				part(gym, "DummyBody", Vector3.new(2.2, 3, 1.4), at(dx, 4.5, z), rgb(210, 180, 130), Enum.Material.Fabric)
+				Kit.ball(gym, "DummyHead", 1.6, (at(dx, 6.8, z)).Position, rgb(210, 180, 130), Enum.Material.Fabric)
+				local face = part(gym, "DummyFace", Vector3.new(1.2, 1, 0.05), at(dx, 6.9, z - 0.8), rgb(210, 180, 130), nil, { Transparency = 1, CanCollide = false })
+				Kit.sign(face, Enum.NormalId.Front, "\u{1F620}", rgb(40, 20, 20), nil, Enum.Font.GothamBlack)
+			end
+		end
+		-- GOON OF THE MONTH
+		local gotm = part(gym, "GoonOfTheMonth", Vector3.new(10, 8, 0.3), at(50, 12, 74.5) * CFrame.Angles(0, math.rad(180), 0), rgb(250, 240, 220))
+		Kit.sign(gotm, Enum.NormalId.Front, "GOON OF THE MONTH\n\u{1F3C6}\nGARY\n(for 'sitting very still')", rgb(90, 60, 20), rgb(250, 240, 220), Enum.Font.GothamBold)
+		-- the exit door on the east wall, the service elevator behind it
+		part(m, "DoorFrame", Vector3.new(1.2, 12, 12), at(74.4, 6, 0), rgb(40, 34, 56), Enum.Material.Metal)
+		local door = part(m, "ExitDoor", Vector3.new(0.8, 10, 9), at(73.6, 5, 0), rgb(90, 70, 120), Enum.Material.DiamondPlate)
+		door:SetAttribute("HQDoor", 6)
+		local ds = part(m, "DoorSign", Vector3.new(0.2, 1.6, 12), at(73.9, 12.6, 0), rgb(20, 16, 26))
+		Kit.sign(ds, Enum.NormalId.Left, "BEAT THE BARRACKS", rgb(255, 220, 120), rgb(20, 16, 26), Enum.Font.GothamBlack)
+		local svc = part(m, "ServiceElevator", Vector3.new(0.3, 9.6, 8), at(74.9, 4.8, 0), rgb(255, 240, 200), Enum.Material.Neon)
+		svc:SetAttribute("HQElevator", 6)
+	end
+
 	return root
 end
 

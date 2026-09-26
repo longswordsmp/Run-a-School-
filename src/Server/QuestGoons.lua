@@ -18,6 +18,7 @@ local StealService = require(script.Parent.StealService)
 local QuestGoons = {}
 local folder
 local gangs = {} -- player -> { questId, place, left, goons = { {model, hp, nextShove, gone} } }
+local bosses = {} -- player -> { model, hp, max, bar, keep(), onDone(), stunUntil, nextDash }
 local runners = {} -- player -> { questId, model, route, i, speed, gone }
 
 local LOOKS = {
@@ -97,7 +98,7 @@ end
 -- goons
 ---------------------------------------------------------------------------
 local function spawnGang(player, gang)
-	local place = Places.get(gang.place)
+	local place = gang.pos and { pos = gang.pos } or Places.get(gang.place)
 	for i = 1, gang.left do
 		local a = (i / gang.left) * math.pi * 2
 		local pos = place.pos + Vector3.new(math.cos(a) * 14, 0, math.sin(a) * 14)
@@ -108,7 +109,9 @@ local function spawnGang(player, gang)
 		if i == 1 then bubble(m, TAUNTS[math.random(#TAUNTS)]) end
 	end
 	gang.spawned = true
-	Remotes.Notify:FireClient(player, "\u{1F4A5} Goons! Swing your Ruler (click) to bonk them!", "bad")
+	if not gang.quiet then
+		Remotes.Notify:FireClient(player, "\u{1F4A5} Goons! Swing your Ruler (click) to bonk them!", "bad")
+	end
 end
 
 local function clearGang(gang)
@@ -117,6 +120,14 @@ local function clearGang(gang)
 	end
 	gang.goons = {}
 	gang.spawned = false
+end
+
+-- a fight anywhere (the HQ Barracks): opts = { pos, n, look, keep() -> bool, onKO(left), onDone() }
+function QuestGoons.brawl(player, opts)
+	local old = gangs[player]
+	if old then clearGang(old) end
+	gangs[player] = { custom = true, pos = opts.pos, left = opts.n or 3, goons = {}, look = opts.look or "goon",
+		keep = opts.keep, onKO = opts.onKO, onDone = opts.onDone, quiet = opts.quiet }
 end
 
 function QuestGoons.goons(player, q, s, st)
@@ -163,13 +174,19 @@ end
 local function tick(dt)
 	local now = os.clock()
 	for player, gang in gangs do
-		if not player.Parent or not stepStillOn(player, gang.questId, gang.step) then
+		local valid
+		if gang.custom then
+			valid = player.Parent and (not gang.keep or gang.keep())
+		else
+			valid = player.Parent and stepStillOn(player, gang.questId, gang.step)
+		end
+		if not valid then
 			clearGang(gang)
 			gangs[player] = nil
 			continue
 		end
 		local root = rootOf(player)
-		local place = Places.get(gang.place)
+		local place = gang.pos and { pos = gang.pos } or Places.get(gang.place)
 		local near = root and (root.Position - place.pos).Magnitude < 45
 		if near and not gang.spawned then spawnGang(player, gang) end
 		if not near and gang.spawned and root and (root.Position - place.pos).Magnitude > 120 then clearGang(gang) end
@@ -257,9 +274,50 @@ local function onSwing(player, root)
 				bubble(g.model, "Ow ow OW...")
 				tumble(g.model, d)
 				gang.left -= 1
-				TownQuestService.progress(player, gang.questId, 1)
+				if gang.custom then
+					if gang.onKO then task.spawn(gang.onKO, gang.left) end
+					if gang.left <= 0 then
+						gangs[player] = nil
+						if gang.onDone then task.spawn(gang.onDone) end
+					end
+				else
+					TownQuestService.progress(player, gang.questId, 1)
+				end
 			else
 				groot.CFrame += Vector3.new(d.X, 0, d.Z).Unit * 3
+			end
+			return
+		end
+	end
+	-- a boss: loses a bit of health per bonk, hops back, and dashes again
+	local b = bosses[player]
+	local broot = b and not b.gone and b.model.PrimaryPart
+	if broot then
+		local ok, d = inReach(broot)
+		if ok and os.clock() > b.stunUntil then
+			b.hp -= 1
+			b.stunUntil = os.clock() + 0.7
+			Remotes.Sfx:FireClient(player, "Bonk")
+			Remotes.Push:FireClient(player, "hit", { pos = broot.Position + Vector3.new(0, 2, 0), ko = b.hp <= 0 })
+			b.bar.Size = UDim2.fromScale(math.max(0, b.hp / b.max), 1)
+			local flat = Vector3.new(d.X, 0, d.Z)
+			if flat.Magnitude > 0.01 then broot.CFrame += flat.Unit * 6 end
+			if b.hp <= 0 then
+				b.gone = true
+				bubble(b.model, b.surrender or "Enough! I surrender!")
+				Factory.play(b.model, "idle")
+				bosses[player] = nil
+				local model = b.model
+				task.delay(2.4, function()
+					for _, part in model:GetDescendants() do
+						if part:IsA("BasePart") or part:IsA("Decal") then TweenService:Create(part, TweenInfo.new(0.6), { Transparency = 1 }):Play() end
+					end
+					task.wait(0.7)
+					model:Destroy()
+				end)
+				if b.onDone then task.spawn(b.onDone) end
+			else
+				if b.ouch then bubble(b.model, b.ouch[math.random(#b.ouch)]) end
 			end
 			return
 		end
@@ -282,6 +340,75 @@ local function onSwing(player, root)
 	end
 end
 
+-- a boss fight (the HQ Barracks' Crumpet): opts = { pos, look, hp, speed, name, lines, ouch, surrender, keep(), onDone() }
+function QuestGoons.boss(player, opts)
+	local old = bosses[player]
+	if old and old.model.Parent then old.model:Destroy() end
+	local m, so = build(opts.look or "crumpet", opts.pos)
+	m:SetAttribute("QuestBoss", player.UserId)
+	Factory.play(m, "run")
+	-- a health bar over his head
+	local head = m:FindFirstChild("Head")
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "BossBar"
+	bb.Size = UDim2.fromOffset(220, 46)
+	bb.StudsOffsetWorldSpace = Vector3.new(0, 3.2, 0)
+	bb.LightInfluence = 0
+	bb.MaxDistance = 120
+	bb.Parent = head
+	local name = Instance.new("TextLabel")
+	name.Size = UDim2.new(1, 0, 0, 22)
+	name.BackgroundTransparency = 1
+	name.Font = Enum.Font.LuckiestGuy
+	name.TextScaled = true
+	name.Text = opts.name or "BOSS"
+	name.TextColor3 = Color3.fromRGB(255, 220, 120)
+	name.Parent = bb
+	Instance.new("UIStroke", name).Thickness = 2.5
+	local back = Instance.new("Frame")
+	back.Position = UDim2.fromOffset(0, 26)
+	back.Size = UDim2.new(1, 0, 0, 16)
+	back.BackgroundColor3 = Color3.fromRGB(40, 20, 30)
+	back.Parent = bb
+	Instance.new("UICorner", back).CornerRadius = UDim.new(0, 8)
+	local bar = Instance.new("Frame")
+	bar.Size = UDim2.fromScale(1, 1)
+	bar.BackgroundColor3 = Color3.fromRGB(255, 70, 90)
+	bar.Parent = back
+	Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 8)
+	bosses[player] = { model = m, so = so, y = opts.pos.Y, hp = opts.hp or 10, max = opts.hp or 10, bar = bar, speed = opts.speed or 13,
+		keep = opts.keep, onDone = opts.onDone, stunUntil = 0, nextDash = os.clock() + 2, lines = opts.lines, ouch = opts.ouch, surrender = opts.surrender }
+	if opts.lines then bubble(m, opts.lines[1]) end
+end
+
+local function bossTick(dt)
+	local now = os.clock()
+	for player, b in bosses do
+		if not player.Parent or (b.keep and not b.keep()) then
+			if b.model.Parent then b.model:Destroy() end
+			bosses[player] = nil
+			continue
+		end
+		local root = rootOf(player)
+		local broot = b.model.PrimaryPart
+		if not root or not broot or now < b.stunUntil then continue end
+		local to = Vector3.new(root.Position.X, b.y + b.so - 0.1, root.Position.Z)
+		local d = to - broot.Position
+		local flat = Vector3.new(d.X, 0, d.Z)
+		if flat.Magnitude > 4 then
+			local step = math.min(flat.Magnitude - 3.5, b.speed * dt)
+			local p = broot.Position + flat.Unit * step
+			broot.CFrame = CFrame.lookAt(Vector3.new(p.X, to.Y, p.Z), Vector3.new(root.Position.X, to.Y, root.Position.Z))
+		elseif now > b.nextDash then
+			-- the tea-tray shove: a big push
+			b.nextDash = now + 2.2
+			Factory.emote(b.model, "point")
+			root.AssemblyLinearVelocity = flat.Magnitude > 0.01 and (flat.Unit * 70 + Vector3.new(0, 26, 0)) or Vector3.new(0, 30, 0)
+			if b.lines and math.random() < 0.6 then bubble(b.model, b.lines[math.random(#b.lines)]) end
+		end
+	end
+end
+
 function QuestGoons.start(tqs)
 	TownQuestService = tqs
 	folder = workspace:FindFirstChild("QuestGoons") or Instance.new("Folder")
@@ -293,6 +420,8 @@ function QuestGoons.start(tqs)
 	RunService.Heartbeat:Connect(function(dt)
 		local ok, err = pcall(tick, dt)
 		if not ok then warn("[QuestGoons]", err) end
+		local ok2, err2 = pcall(bossTick, dt)
+		if not ok2 then warn("[QuestGoons boss]", err2) end
 	end)
 	Players.PlayerRemoving:Connect(function(player)
 		local g = gangs[player]

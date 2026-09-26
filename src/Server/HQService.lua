@@ -108,6 +108,8 @@ function HQService.arrive(player, n)
 	elseif n == 5 then
 		s.zapUntil = os.clock() + 2
 		s.freed = s.freed or {}
+	elseif n == 6 then
+		s.fight = nil
 	end
 	player:SetAttribute("HQFloor", n)
 	Remotes.Push:FireClient(player, "hqArrive", { floor = n, name = HQ.FLOORS[n].name, cleared = HQService.cleared(player, n) })
@@ -665,6 +667,93 @@ local function acidTick()
 	end
 end
 
+---------------------------------------------------------------------------
+-- floor 6: the Barracks (three waves of goons, then Crumpet)
+---------------------------------------------------------------------------
+local QuestGoons = require(script.Parent.QuestGoons)
+local door6
+local WAVES = { 4, 6, 8 }
+
+local function onFloor6(player)
+	return function() return player.Parent and player:GetAttribute("HQFloor") == 6 end
+end
+
+local function crumpetDone(player)
+	local s = state[player]
+	if not s then return end
+	-- (the ring stays quiet until you step out of it; step back in for a rematch)
+	s.fight = { done = true }
+	Remotes.Push:FireClient(player, "missionTalk", { call = true, title = "QUEST: THE BARRACKS", lines = {
+		{ "CRUMPET", "Crumpet", "Enough! I surrender. And, if I may... I never liked homework either." },
+		{ "CRUMPET", "Crumpet", "Dr. Vex is on the top floor. Her vault takes a three-digit code, hidden about the office." },
+		{ "CRUMPET", "Crumpet", "And, Principal... there is a little genius locked in the Lair. The Tiny Professor. Please help him." },
+	}, bye = "THANK YOU, CRUMPET" })
+	if door6 then openDoor(door6) end
+	HQService.clear(player, 6)
+end
+
+local startWave
+startWave = function(player, n)
+	local s = state[player]
+	if not s or player:GetAttribute("HQFloor") ~= 6 then return end
+	local y = HQ.FLOORS[6].y
+	local center = Vector3.new(HQ.X, y + 0.5, HQ.Z)
+	s.fight = { wave = n }
+	if n > #WAVES then
+		Remotes.Push:FireClient(player, "hqWave", { boss = true })
+		task.wait(2.2)
+		if player:GetAttribute("HQFloor") ~= 6 then s.fight = nil return end
+		QuestGoons.boss(player, {
+			pos = center + Vector3.new(0, 0, -14), look = "crumpet", hp = 12, speed = 12.5, name = "CRUMPET THE BUTLER",
+			lines = { "I must ask you to leave, Principal.", "Tea tray incoming!", "Dr. Vex will be most displeased.", "Mind the carpet!" },
+			ouch = { "Oof! Terribly sorry.", "Mind the waistcoat!", "My monocle!", "Most unsporting!" },
+			surrender = "Enough! I surrender!",
+			keep = onFloor6(player),
+			onDone = function() crumpetDone(player) end,
+		})
+		return
+	end
+	Remotes.Push:FireClient(player, "hqWave", { wave = n, of = #WAVES, n = WAVES[n] })
+	task.wait(1.6)
+	if player:GetAttribute("HQFloor") ~= 6 then s.fight = nil return end
+	QuestGoons.brawl(player, {
+		pos = center, n = WAVES[n], look = n == 3 and "guard" or "goon", quiet = true,
+		keep = onFloor6(player),
+		onKO = function(left)
+			if left > 0 then msg(player, ("\u{1F4A5} %d left in wave %d!"):format(left, n), "info") end
+		end,
+		onDone = function()
+			msg(player, ("\u{2714} WAVE %d CLEARED!"):format(n), "good")
+			task.wait(2.5)
+			startWave(player, n + 1)
+		end,
+	})
+end
+
+local function ringTick()
+	local y = HQ.FLOORS[6].y
+	for _, player in Players:GetPlayers() do
+		if player:GetAttribute("HQFloor") == 6 then
+			local s = state[player]
+			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			if s and root then
+				local d = Vector3.new(root.Position.X - HQ.X, 0, root.Position.Z - HQ.Z).Magnitude
+				if not s.fight and d < 19 and math.abs(root.Position.Y - (y + 3.5)) < 6 then
+					task.spawn(startWave, player, 1)
+				elseif s.fight and s.fight.done and d > 26 then
+					s.fight = nil
+				end
+			end
+		end
+	end
+end
+
+local function setupFloor6(folder)
+	for _, d in folder:GetDescendants() do
+		if d:IsA("BasePart") and d:GetAttribute("HQDoor") == 6 then door6 = d end
+	end
+end
+
 -- where the story quest's beam should point while you work on floor n
 function HQService.target(player, n)
 	local on = player:GetAttribute("HQFloor")
@@ -674,6 +763,11 @@ function HQService.target(player, n)
 		return LOBBY + Vector3.new(-3, 3, 0)
 	end
 	local s = state[player]
+	if n == 6 then
+		if s and s.fight then return nil end -- (they come to you)
+		if HQService.cleared(player, 6) and door6 then return door6.Position + Vector3.new(-2, 2, 0) end
+		return Vector3.new(HQ.X, HQ.FLOORS[6].y + 4, HQ.Z)
+	end
 	if n == 5 then
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		local best, bestD
@@ -799,6 +893,15 @@ function HQService.start(townRoot)
 	if f4 then setupFloor4(f4) end
 	local f5 = hqRoot and hqRoot:FindFirstChild("Floor5")
 	if f5 then setupFloor5(f5) end
+	local f6 = hqRoot and hqRoot:FindFirstChild("Floor6")
+	if f6 then setupFloor6(f6) end
+	task.spawn(function()
+		while true do
+			task.wait(0.4)
+			local ok, err = pcall(ringTick)
+			if not ok then warn("[HQ ring]", err) end
+		end
+	end)
 	RunService.Heartbeat:Connect(function()
 		local ok, err = pcall(acidTick)
 		if not ok then warn("[HQ acid]", err) end

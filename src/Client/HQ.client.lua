@@ -176,7 +176,8 @@ player:GetAttributeChangedSignal("HQKeycard"):Connect(function()
 end)
 
 local function banner(top, big, color)
-	local holder = UI.new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.36), Size = UDim2.fromOffset(900, 160), ZIndex = 30, Parent = root })
+	-- (a little below the middle: the game's own announcements use the band above)
+	local holder = UI.new("Frame", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.46), Size = UDim2.fromOffset(900, 160), ZIndex = 30, Parent = root })
 	local a = UI.label(holder, { Text = top, Font = Enum.Font.Arcade, TextColor3 = Color3.fromRGB(230, 230, 240), Size = UDim2.new(1, 0, 0, 36), ZIndex = 30, stroke = 3 })
 	local b = UI.label(holder, { Text = big, Font = UI.BIG, TextColor3 = color, Size = UDim2.new(1, 0, 0, 86), Position = UDim2.fromOffset(0, 44), ZIndex = 30, stroke = 5 })
 	UI.pop(holder, 1.8)
@@ -356,7 +357,13 @@ end)
 local flash = UI.new("Frame", { BackgroundColor3 = RED, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 50, Parent = gui })
 
 Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
-	if kind == "hqSpotted" then
+	if kind == "hqWave" then
+		if data.boss then
+			banner("FINAL ROUND", "CRUMPET THE BUTLER", Color3.fromRGB(255, 220, 120))
+		else
+			banner(("WAVE %d OF %d"):format(data.wave, data.of), ("%d GOONS! BONK 'EM!"):format(data.n), Color3.fromRGB(205, 150, 255))
+		end
+	elseif kind == "hqSpotted" then
 		flash.BackgroundTransparency = 0.35
 		TweenService:Create(flash, TweenInfo.new(0.9), { BackgroundTransparency = 1 }):Play()
 		banner("\u{1F4F7} SPOTTED!", "SECURITY IS ON ITS WAY", RED)
