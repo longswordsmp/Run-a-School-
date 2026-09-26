@@ -83,8 +83,11 @@ RivalService.start()
 CrewService.start()
 TownService.start()
 AreaService.start()
+local HQService = require(Server.HQService)
+HQService.start(TownService.root)
 TownNPCService.start()
 TownQuestService.start_service()
+TownQuestService.targets.hqFloor = function(player, s) return HQService.target(player, s.arg) end
 require(Server.QuestGoons).start(TownQuestService)
 
 local function onPlayer(player)
@@ -312,6 +315,25 @@ require(Server.DebugBridge).start({
 	end,
 	tqReset = function(player)
 		return TownQuestService.debugReset(player)
+	end,
+	hqBadge = function(player)
+		return HQService.debugBadge(player, true)
+	end,
+	hqClear = function(player, n)
+		return HQService.debugClear(player, n)
+	end,
+	hqSearch = function(player, office)
+		HQService.search(player, office)
+		return HQService.debugState(player)
+	end,
+	hqSwipe = function(player)
+		return HQService.swipe(player)
+	end,
+	hqState = function(player)
+		return HQService.debugState(player)
+	end,
+	hqGo = function(player, n)
+		return Actions.invoke(player, "hqGo", n)
 	end,
 	tqMark = function(player, ...)
 		return TownQuestService.debugMark(player, { ... })

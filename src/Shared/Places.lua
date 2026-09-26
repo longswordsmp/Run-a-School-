@@ -112,6 +112,7 @@ Places.spot = {
 	BirdHide = P(-750, 0, -300),
 	ParkNorthTrail = P(-600, 0, 330),
 	ParkSouthTrail = P(-600, 0, -330),
+	ParkSouthFork = P(-600, 0, -370), -- where the treehouse trail meets the south trail
 	-- VexCorp Industrial
 	IndustrialGate = P(560, 0, 0),
 	Checkpoint = P(585, 0, 0),

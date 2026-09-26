@@ -95,6 +95,13 @@ function Industrial.build(town, Kit)
 	local elevSign = part(lobby, "ElevatorSign", Vector3.new(7, 1.2, 0.3), at(14, 12, -20.8), rgb(20, 16, 26))
 	Kit.sign(elevSign, Enum.NormalId.Back, "EXECUTIVE ELEVATOR", rgb(255, 80, 80), rgb(20, 16, 26), Enum.Font.GothamBlack)
 	ELEV:SetAttribute("Elevator", "down")
+	-- the STAFF ELEVATOR (the HQ floors, TownHQ / HQService): the other end of the back wall
+	local STAFF = part(lobby, "StaffElevatorDoors", Vector3.new(7, 10, 0.4), at(-10, 5.6, -20.9), rgb(170, 175, 190), Enum.Material.Metal)
+	part(lobby, "StaffElevatorFrame", Vector3.new(8.4, 11, 0.3), at(-10, 5.9, -21.05), rgb(40, 30, 50), Enum.Material.Metal)
+	part(lobby, "StaffDoorSeam", Vector3.new(0.12, 10, 0.45), at(-10, 5.6, -20.9), rgb(110, 115, 130), Enum.Material.Metal)
+	local staffSign = part(lobby, "StaffElevatorSign", Vector3.new(7, 1.2, 0.3), at(-10, 12, -20.8), rgb(20, 16, 26))
+	Kit.sign(staffSign, Enum.NormalId.Back, "STAFF ELEVATOR", TOXIC, rgb(20, 16, 26), Enum.Font.GothamBlack)
+	STAFF:SetAttribute("HQElevator", 1)
 	-- a queue of VexCorp homework on a conveyor in the lobby window
 	for k = 0, 5 do
 		part(lobby, "HomeworkPile", Vector3.new(2.4, 1.6 + (k % 3) * 0.6, 3), at(-16 + k * 2.6, 1.4, 17), rgb(250, 248, 240))

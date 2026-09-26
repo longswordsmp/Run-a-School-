@@ -151,7 +151,7 @@ end
 
 -- the executive elevator: a fade to black while the floors tick by
 local fader
-local function elevatorRide(dir)
+local function elevatorRide(dir, data)
 	if not fader then
 		local g = Instance.new("ScreenGui")
 		g.Name = "ElevatorFade"
@@ -179,18 +179,34 @@ local function elevatorRide(dir)
 	local floor = fader.Floor
 	TweenService:Create(fader, TweenInfo.new(0.5), { BackgroundTransparency = 0 }):Play()
 	TweenService:Create(floor, TweenInfo.new(0.5), { TextTransparency = 0 }):Play()
-	local seq = dir == "down" and { "L", "B1", "B2", "B3", "B13", "LAIR" } or { "LAIR", "B13", "B3", "B1", "L" }
-	for _, f in seq do
-		floor.Text = "\u{25BC} " .. f
-		if dir ~= "down" then floor.Text = "\u{25B2} " .. f end
-		task.wait(0.28)
+	if dir == "hq" then
+		-- the staff elevator: the floor numbers tick up (or down) to where you're going
+		local to = data.floor or 1
+		local from = player:GetAttribute("HQFloor") or 1
+		local step = to >= from and 1 or -1
+		for f = from, to, step do
+			floor.Text = (step > 0 and "\u{25B2} " or "\u{25BC} ") .. (f == 1 and "L" or tostring(f))
+			task.wait(0.22)
+		end
+		floor.Text = (to == 1 and "LOBBY" or data.name or "")
+		task.wait(0.35)
+	elseif dir == "caught" then
+		floor.Text = "\u{1F6A8} CAUGHT!"
+		task.wait(1.1)
+	else
+		local seq = dir == "down" and { "L", "B1", "B2", "B3", "B13", "LAIR" } or { "LAIR", "B13", "B3", "B1", "L" }
+		for _, f in seq do
+			floor.Text = "\u{25BC} " .. f
+			if dir ~= "down" then floor.Text = "\u{25B2} " .. f end
+			task.wait(0.28)
+		end
 	end
 	if bus and bus:FindFirstChild("Sfx") then bus.Sfx:Fire("Ding") end
 	TweenService:Create(fader, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
 	TweenService:Create(floor, TweenInfo.new(0.4), { TextTransparency = 1 }):Play()
 end
 Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
-	if kind == "elevator" and type(data) == "table" then task.spawn(elevatorRide, data.dir) end
+	if kind == "elevator" and type(data) == "table" then task.spawn(elevatorRide, data.dir, data) end
 end)
 
 -- an area just opened: the big announcement (the reveal cutscene hooks in here later)

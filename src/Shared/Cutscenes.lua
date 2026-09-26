@@ -9,8 +9,35 @@
 --               emotes = { { actorId, "wave" } }, moves = { { actorId, Vector3, speed } } } }
 -- A shot with no from/to keeps the camera where it is. Each shot waits for its line (or `hold`
 -- seconds); a click skips ahead.
+-- Named places (Shared/Places) instead of coordinates:
+--   actor { id, look, place = "OfficerPenny" }     at that post, facing the way it faces
+--   shot  { place = "TownHall", cam = "close" | "wide" | "high" | "low" | "side" | "back", side = 1 | -1 }
+--         (the camera sits in front of the place, relative to the way it faces, and pushes in slowly)
+--   moves { { actorId, "PlaceName", speed } }
 local V = Vector3.new
 local Cutscenes = {}
+
+-- every place and actor a scene names must exist (the content checks run this)
+function Cutscenes.validate(Places, templates)
+	local errs = {}
+	for id, s in Cutscenes do
+		if type(s) ~= "table" then continue end
+		if not s.shots or #s.shots == 0 then table.insert(errs, id .. ": no shots") end
+		for i, sh in s.shots or {} do
+			if sh.place and not Places.get(sh.place) then table.insert(errs, ("%s shot %d: unknown place %s"):format(id, i, sh.place)) end
+			for _, mv in sh.moves or {} do
+				if type(mv[2]) == "string" and not Places.get(mv[2]) then table.insert(errs, ("%s shot %d: unknown move target %s"):format(id, i, mv[2])) end
+			end
+			if sh.say and (type(sh.say[3]) ~= "string" or #sh.say ~= 3) then table.insert(errs, ("%s shot %d: say needs speaker, portrait, line"):format(id, i)) end
+		end
+		for _, a in s.actors or {} do
+			if a.place and not Places.get(a.place) then table.insert(errs, ("%s actor %s: unknown place %s"):format(id, a.id, a.place)) end
+			if not a.place and not a.at then table.insert(errs, ("%s actor %s: no place or at"):format(id, a.id)) end
+			if templates and a.look ~= "player" and not templates[a.look or a.id] then table.insert(errs, ("%s actor %s: no template %s"):format(id, a.id, tostring(a.look or a.id))) end
+		end
+	end
+	return errs
+end
 
 Cutscenes.S01_Downtown = {
 	clock = 13,

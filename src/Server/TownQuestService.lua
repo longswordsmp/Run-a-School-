@@ -30,6 +30,8 @@ local PICKUP_RANGE = 9
 
 -- the step-kind handlers some other service provides (goons, chase): kind -> fn(player, quest, step, state)
 TownQuestService.starters = {}
+-- where a signal step points the beam (HQService: hqFloor): signal -> fn(player, step) -> Vector3?
+TownQuestService.targets = {}
 
 local function tqOf(player)
 	local own = Data.own(player)
@@ -129,6 +131,8 @@ local function targetOf(player, q, st)
 		return best and best + Vector3.new(0, 3, 0)
 	elseif s.kind == "chase" then
 		return player:GetAttribute("QuestRunnerAt")
+	elseif s.kind == "signal" and TownQuestService.targets[s.signal] then
+		return TownQuestService.targets[s.signal](player, s)
 	end
 	return nil
 end

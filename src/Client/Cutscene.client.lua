@@ -570,12 +570,62 @@ local function shake(power, secs)
 	end)
 end
 
+-- shots and actors can name a place (Shared/Places) instead of giving coordinates:
+--   actor { id, look, place = "OfficerPenny" }        stands at that post, facing its way
+--   shot  { place = "TownHall", cam = "close" | "wide" | "high" | "low" | "side" | "back", side = 1|-1 }
+local Places = require(Shared:WaitForChild("Places"))
+local CAMS = {
+	-- { distance in front, height of the camera, height looked at, sideways }
+	close = { 9, 5, 4.2, 0.35 },
+	wide = { 42, 22, 3, 0.2 },
+	high = { 12, 70, 0, 0 },
+	low = { 12, 1.6, 6, 0.25 },
+	side = { 16, 6, 4, 1 },
+	back = { -14, 7, 4, 0.2 },
+}
+local function resolveShot(s)
+	if not s.place then return s end
+	local p = Places.get(s.place)
+	if not p then return s end
+	local fwd = Vector3.new(p.look.X - p.pos.X, 0, p.look.Z - p.pos.Z)
+	fwd = fwd.Magnitude > 0.01 and fwd.Unit or Vector3.new(0, 0, 1)
+	local right = fwd:Cross(Vector3.yAxis)
+	local c = CAMS[s.cam or "close"] or CAMS.close
+	local side = (s.side or 1) * c[4]
+	local dir = (fwd + right * side).Unit
+	local focus = p.pos + Vector3.new(0, c[3], 0)
+	local out = table.clone(s)
+	out.from = p.pos + dir * c[1] + Vector3.new(0, c[2], 0)
+	out.to = focus
+	if not s.push then
+		-- a slow push in: a quarter of the way closer
+		out.push = out.from:Lerp(focus, 0.25)
+	end
+	return out
+end
+local function resolveActor(a)
+	if not a.place then return a end
+	local p = Places.get(a.place)
+	if not p then return a end
+	local out = table.clone(a)
+	out.at = out.at or p.pos
+	out.face = out.face or p.look
+	return out
+end
+
 local function playScene(id, data)
 	local scene = Cutscenes[id]
 	if not scene then
 		warn("[Cutscene] no scene", id)
 		return
 	end
+	-- (named places become coordinates)
+	local shots = {}
+	for i, s in scene.shots do shots[i] = resolveShot(s) end
+	local cast = {}
+	for i, a in scene.actors or {} do cast[i] = resolveActor(a) end
+	scene = table.clone(scene)
+	scene.shots, scene.actors = shots, cast
 	-- wait for another scene to finish rather than dropping this one
 	local t0 = os.clock()
 	while busy and os.clock() - t0 < 30 do task.wait(0.2) end
@@ -651,7 +701,12 @@ local function playScene(id, data)
 		end
 		for _, mv in s.moves or {} do
 			local act = actors[mv[1]]
-			if act then moveActor(act.model, act.lift, mv[2], mv[3]) end
+			local to = mv[2]
+			if type(to) == "string" then
+				local p = Places.get(to)
+				to = p and p.pos
+			end
+			if act and typeof(to) == "Vector3" then moveActor(act.model, act.lift, to, mv[3]) end
 		end
 		if s.confetti then confetti(s.confetti) end
 		local cap
