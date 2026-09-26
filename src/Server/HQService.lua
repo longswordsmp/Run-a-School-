@@ -99,6 +99,9 @@ function HQService.arrive(player, n)
 		local offices = { "REGIONAL MANAGER", "ASSISTANT TO THE MANAGER", "VP OF WORKSHEETS" }
 		s.office = offices[math.random(#offices)]
 		s.searched = {}
+	elseif n == 3 then
+		s.lever = 0
+		s.zapUntil = os.clock() + 2
 	end
 	player:SetAttribute("HQFloor", n)
 	Remotes.Push:FireClient(player, "hqArrive", { floor = n, name = HQ.FLOORS[n].name, cleared = HQService.cleared(player, n) })
@@ -234,6 +237,138 @@ function HQService.search(player, office)
 	end
 end
 
+---------------------------------------------------------------------------
+-- floor 3: the Laser Vault
+---------------------------------------------------------------------------
+local HQLasers = require(ReplicatedStorage.Shared.HQLasers)
+local lasers3 = {} -- { part, base }
+local ORDER = {} -- the lever order this server (the lamps blink it)
+local vault3, gate3
+
+local function toCheckpoint(player, n)
+	local s = state[player]
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	local lx = root.Position.X - HQ.X
+	local cps = HQ.CHECKPOINTS[n]
+	local k = 1
+	for i, cp in cps do
+		if lx >= cp[1] - 2 then k = i end
+	end
+	local cp = cps[k]
+	local y = HQ.FLOORS[n].y
+	local pos = Vector3.new(HQ.X + cp[1], y + 3.5, HQ.Z + cp[2])
+	player.Character:PivotTo(CFrame.lookAt(pos, pos + Vector3.new(1, 0, 0)))
+	if s then s.zapUntil = os.clock() + 1.2 end
+end
+
+local function zap(player)
+	local s = state[player]
+	if not s or (s.zapUntil or 0) > os.clock() then return end
+	s.zapUntil = os.clock() + 1.5
+	Remotes.Push:FireClient(player, "hqZap", {})
+	Remotes.Sfx:FireClient(player, "Error")
+	task.delay(0.25, function() toCheckpoint(player, 3) end)
+end
+
+local function pullLever(player, handle)
+	local s = state[player]
+	if not s or player:GetAttribute("HQFloor") ~= 3 then return end
+	local color = handle:GetAttribute("HQLever")
+	-- the handle swings down and back
+	local home = handle:GetAttribute("Home")
+	handle.CFrame = home * CFrame.Angles(math.rad(60), 0, 0)
+	task.delay(0.8, function() handle.CFrame = home end)
+	s.lever = s.lever or 0
+	if ORDER[s.lever + 1] == color then
+		s.lever += 1
+		Remotes.Sfx:FireClient(player, "Collect")
+		if s.lever >= #ORDER then
+			s.lever = 0
+			msg(player, "\u{2714} THE VAULT IS OPEN!", "good")
+			if vault3 and not vault3:GetAttribute("Open") then
+				vault3:SetAttribute("Open", true)
+				local home3 = vault3.CFrame
+				TweenService:Create(vault3, TweenInfo.new(1.6, Enum.EasingStyle.Quad), { CFrame = home3 + Vector3.new(0, 0, -14) }):Play()
+				if gate3 then gate3.CanCollide = false gate3.Transparency = 1 end
+				task.delay(10, function()
+					TweenService:Create(vault3, TweenInfo.new(1.6, Enum.EasingStyle.Quad), { CFrame = home3 }):Play()
+					if gate3 then gate3.CanCollide = true gate3.Transparency = 0 end
+					vault3:SetAttribute("Open", nil)
+				end)
+			end
+			HQService.clear(player, 3)
+		else
+			msg(player, ("\u{2714} %s! %d more."):format(color, #ORDER - s.lever), "good")
+		end
+	else
+		s.lever = 0
+		msg(player, "\u{1F6A8} WRONG ORDER! The alarm resets the levers. Watch the lamps!", "bad")
+		zap(player)
+	end
+end
+
+local function setupFloor3(folder)
+	for _, d in folder:GetDescendants() do
+		if d:IsA("BasePart") then
+			if d:GetAttribute("Laser") then table.insert(lasers3, { part = d, base = d.CFrame }) end
+			if d:GetAttribute("HQDoor") == 3 then vault3 = d end
+			if d:GetAttribute("HQGate") == 3 then gate3 = d end
+			if d:GetAttribute("HQLever") then
+				local p = floorPrompt(d, "Pull", d:GetAttribute("HQLever") .. " LEVER", 0.25, Color3.fromRGB(255, 220, 120))
+				p.MaxActivationDistance = 7
+				p.Triggered:Connect(function(player) pullLever(player, d) end)
+			end
+		end
+	end
+	-- a random order for this server, blinked by the lamps over the vault
+	local colors = { "RED", "BLUE", "GREEN" }
+	for i = #colors, 2, -1 do
+		local j = math.random(i)
+		colors[i], colors[j] = colors[j], colors[i]
+	end
+	ORDER = colors
+	local lamps = {}
+	for _, d in folder:GetDescendants() do
+		if d:IsA("BasePart") and d:GetAttribute("HQLamp") then lamps[d:GetAttribute("HQLamp")] = d end
+	end
+	task.spawn(function()
+		while true do
+			for _, c in ORDER do
+				local lamp = lamps[c]
+				if lamp then
+					lamp.Color = lamp:GetAttribute("Lit")
+					task.wait(0.8)
+					lamp.Color = Color3.fromRGB(40, 40, 46)
+					task.wait(0.25)
+				end
+			end
+			task.wait(1.8)
+		end
+	end)
+end
+
+local function laserTick()
+	local t = workspace:GetServerTimeNow()
+	for _, player in Players:GetPlayers() do
+		if player:GetAttribute("HQFloor") == 3 then
+			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+			if root and hum then
+				local pos = root.Position
+				local feet = pos.Y - (hum.HipHeight + root.Size.Y / 2)
+				local head = pos.Y + 1.6
+				for _, l in lasers3 do
+					if HQLasers.hits(l.part, l.base, t, pos, feet, head, 0.9) then
+						zap(player)
+						break
+					end
+				end
+			end
+		end
+	end
+end
+
 -- where the story quest's beam should point while you work on floor n
 function HQService.target(player, n)
 	local on = player:GetAttribute("HQFloor")
@@ -243,6 +378,15 @@ function HQService.target(player, n)
 		return LOBBY + Vector3.new(-3, 3, 0)
 	end
 	local s = state[player]
+	if n == 3 then
+		-- through the course to the levers
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local lx = root and root.Position.X - HQ.X or -64
+		local y = HQ.FLOORS[3].y
+		if lx < -10 then return Vector3.new(HQ.X - 8, y + 4, HQ.Z) end
+		if lx < 40 then return Vector3.new(HQ.X + 43, y + 4, HQ.Z) end
+		return Vector3.new(HQ.X + 73, y + 17.5, HQ.Z)
+	end
 	if n == 2 then
 		local y = HQ.FLOORS[2].y
 		if s and s.keycard then return Vector3.new(HQ.X + 36, y + 6, HQ.Z + 72) end
@@ -271,6 +415,14 @@ function HQService.debugBadge(player, on)
 	local hq = hqOf(player)
 	hq.badge = on ~= false
 	return true
+end
+
+function HQService.debugPull(player, color)
+	local folder = workspace.Town.VexCorpHQ.Floor3
+	for _, d in folder:GetDescendants() do
+		if d:IsA("BasePart") and d:GetAttribute("HQLever") == color then pullLever(player, d) end
+	end
+	return { order = ORDER, step = state[player] and state[player].lever }
 end
 
 function HQService.debugState(player)
@@ -310,6 +462,12 @@ function HQService.start(townRoot)
 	local hqRoot = townRoot:FindFirstChild("VexCorpHQ")
 	local f2 = hqRoot and hqRoot:FindFirstChild("Floor2")
 	if f2 then setupFloor2(f2) end
+	local f3 = hqRoot and hqRoot:FindFirstChild("Floor3")
+	if f3 then setupFloor3(f3) end
+	RunService.Heartbeat:Connect(function()
+		local ok, err = pcall(laserTick)
+		if not ok then warn("[HQ lasers]", err) end
+	end)
 	-- the guards only think while someone's on their floor
 	RunService.Heartbeat:Connect(function(dt)
 		for n, squad in squads do

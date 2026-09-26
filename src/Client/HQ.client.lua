@@ -226,8 +226,62 @@ local function message(text, kind)
 	end)
 end
 
+---------------------------------------------------------------------------
+-- the Laser Vault's lasers (floor 3): animated here from the server clock (Shared/HQLasers);
+-- the server checks the hits with the same maths
+---------------------------------------------------------------------------
+local RunService = game:GetService("RunService")
+local HQLasers = require(Shared:WaitForChild("HQLasers"))
+local laserParts -- { part, base }
+local HOT = Color3.fromRGB(255, 50, 40)
+local WARM = Color3.fromRGB(150, 60, 30)
+local COLD = Color3.fromRGB(40, 38, 50)
+local function findLasers()
+	local town = workspace:FindFirstChild("Town")
+	local f = town and town:FindFirstChild("VexCorpHQ")
+	f = f and f:FindFirstChild("Floor3")
+	f = f and f:FindFirstChild("Lasers")
+	if not f then return nil end
+	local list = {}
+	for _, p in f:GetChildren() do
+		if p:IsA("BasePart") then table.insert(list, { part = p, base = p.CFrame }) end
+	end
+	return #list > 0 and list or nil
+end
+RunService.RenderStepped:Connect(function()
+	if player:GetAttribute("HQFloor") ~= 3 then return end
+	laserParts = laserParts or findLasers()
+	if not laserParts then return end
+	local t = workspace:GetServerTimeNow()
+	for _, l in laserParts do
+		local p = l.part
+		if not p.Parent then laserParts = nil return end
+		local kind = p:GetAttribute("Laser")
+		if kind == "blink" then
+			p.Transparency = HQLasers.isOn(p, t) and 0 or 0.88
+		elseif kind == "tile" then
+			if HQLasers.isOn(p, t) then
+				p.Color, p.Material = HOT, Enum.Material.Neon
+			elseif HQLasers.isOn(p, t + 0.5) then
+				p.Color, p.Material = WARM, Enum.Material.Neon -- (about to heat up)
+			else
+				p.Color, p.Material = COLD, Enum.Material.SmoothPlastic
+			end
+		elseif kind == "spin" then
+			p.CFrame = HQLasers.spinCF(p, l.base, t)
+		end
+	end
+end)
+
+-- a zap: a red flash
+local flash = UI.new("Frame", { BackgroundColor3 = RED, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 50, Parent = gui })
+
 Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
-	if kind == "hqElevator" then
+	if kind == "hqZap" then
+		flash.BackgroundTransparency = 0.25
+		TweenService:Create(flash, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
+		message("\u{26A1} ZAPPED! Back to the start of this section.", "bad")
+	elseif kind == "hqElevator" then
 		openPanel(data)
 	elseif kind == "elevator" then
 		panel.Visible = false

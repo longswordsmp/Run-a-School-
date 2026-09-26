@@ -345,6 +345,135 @@ function HQ.build(town, Kit)
 		}
 	end
 
+	---------------------------------------------------------------------------
+	-- FLOOR 3: THE LASER VAULT
+	--   the lobby (x -75..-58), the security corridor (-58..-10, z -8..8) with five blinking laser
+	--   gates, the hot-tile hall (-10..40, z -30..30: a wave of glowing tiles sweeps across it), the
+	--   spinner room (40..75, z -25..25: a laser turning at ankle height to jump over, three levers,
+	--   the vault door with the lamps that blink the lever order)
+	---------------------------------------------------------------------------
+	do
+		local m, at = shell(3, {
+			floor = rgb(28, 26, 34), floorMat = Enum.Material.Marble, wall = rgb(58, 60, 72), ceiling = rgb(40, 40, 48),
+			lightColor = rgb(235, 240, 255), noWindows = true,
+		})
+		local y3 = HQ.FLOORS[3].y
+		local STEEL = rgb(70, 72, 84)
+		local RED = rgb(255, 40, 50)
+		local lasers = Kit.folder(m, "Lasers")
+		HQ.CHECKPOINTS = HQ.CHECKPOINTS or {}
+		HQ.CHECKPOINTS[3] = { { -64, 0 }, { -8, 0 }, { 43, 0 } } -- where a zap sends you back to
+		-- solid walls, floor to ceiling, so the only way through is the course
+		local function wallX(x0, x1, z, h)
+			part(m, "VaultWall", Vector3.new(x1 - x0, h or HQ.HEIGHT, 1.4), at((x0 + x1) / 2, (h or HQ.HEIGHT) / 2, z), STEEL, Enum.Material.DiamondPlate)
+		end
+		local function wallZ(z0, z1, x, h)
+			part(m, "VaultWall", Vector3.new(1.4, h or HQ.HEIGHT, z1 - z0), at(x, (h or HQ.HEIGHT) / 2, (z0 + z1) / 2), STEEL, Enum.Material.DiamondPlate)
+		end
+		-- the lobby box
+		wallX(-75, -58, 20)
+		wallX(-75, -58, -20)
+		wallZ(8, 20, -58)
+		wallZ(-20, -8, -58)
+		-- the corridor
+		wallX(-58, -10, 8)
+		wallX(-58, -10, -8)
+		-- the hall
+		wallZ(8, 30, -10)
+		wallZ(-30, -8, -10)
+		wallX(-10, 40, 30)
+		wallX(-10, 40, -30)
+		wallZ(6, 30, 40)
+		wallZ(-30, -6, 40)
+		-- the spinner room
+		wallX(40, 75, 25)
+		wallX(40, 75, -25)
+		-- the dead space around the course: blocked off with a low ceiling of crates and vaults
+		for _, zz in { { 20, 75 }, { -75, -20 } } do
+			part(m, "Filler", Vector3.new(17, HQ.HEIGHT, zz[2] - zz[1]), at(-66.5, HQ.HEIGHT / 2, (zz[1] + zz[2]) / 2), STEEL, Enum.Material.DiamondPlate)
+		end
+		-- (the rest stays open but walled off; the walls above stop anyone climbing out)
+
+		-- red warning stripes along the corridor floor and the gates' emitters
+		for k = 0, 4 do
+			local gx = -50 + k * 8
+			for _, s in { -1, 1 } do
+				part(m, "Emitter", Vector3.new(1.2, 7, 0.8), at(gx, 3.5, s * 7.3), rgb(30, 30, 36), Enum.Material.Metal)
+				part(m, "EmitterEye", Vector3.new(0.6, 6, 0.2), at(gx, 3.5, s * 6.85), RED, Enum.Material.Neon)
+			end
+			part(m, "HazardStripe", Vector3.new(1.4, 0.05, 16), at(gx, 0.03, 0), rgb(250, 200, 40))
+			for h, hy in { 1, 2.6, 4.2, 5.8 } do
+				local beam = part(lasers, "LaserBeam", Vector3.new(0.25, 0.25, 13.6), at(gx, hy, 0), RED, Enum.Material.Neon, { CanCollide = false, CanQuery = false, CastShadow = false })
+				beam:SetAttribute("Laser", "blink")
+				beam:SetAttribute("Period", 3.2)
+				beam:SetAttribute("Phase", k * 0.75)
+				beam:SetAttribute("On", 0.55)
+				_ = h
+			end
+		end
+		local cs = part(m, "CorridorSign", Vector3.new(0.3, 3, 14), at(-57.2, 12, 0), rgb(20, 16, 26))
+		Kit.sign(cs, Enum.NormalId.Right, "\u{26A0} LASER SECURITY \u{26A0}", RED, rgb(20, 16, 26), Enum.Font.GothamBlack)
+
+		-- the hot-tile hall: 8 x 10 tiles; a wave crosses from west to east
+		local TILE = 6
+		for i = 0, 7 do
+			for j = 0, 9 do
+				local tx, tz = -7 + i * TILE, -27 + j * TILE
+				local tile = part(lasers, "HotTile", Vector3.new(TILE - 0.3, 0.2, TILE - 0.3), at(tx, 0.1, tz), rgb(40, 38, 50), Enum.Material.SmoothPlastic, { CastShadow = false })
+				tile:SetAttribute("Laser", "tile")
+				tile:SetAttribute("Period", 5.4)
+				-- the wave moves east; every other row lags a little so the edge is ragged
+				tile:SetAttribute("Phase", -(i * 0.62) - (j % 2) * 0.25)
+				tile:SetAttribute("On", 0.3)
+			end
+		end
+		for i = 0, 8 do part(m, "TileGrout", Vector3.new(0.3, 0.22, 60), at(-10 + i * TILE, 0.11, 0), rgb(20, 18, 26)) end
+		local hs = part(m, "HallSign", Vector3.new(0.3, 3, 16), at(39.2, 12, 16), rgb(20, 16, 26))
+		Kit.sign(hs, Enum.NormalId.Left, "THE FLOOR IS HOT. WALK WITH THE WAVE.", rgb(255, 150, 60), rgb(20, 16, 26), Enum.Font.GothamBlack)
+
+		-- the spinner room: the hub, the beam, the levers, the vault door
+		local hub = Kit.cylY(m, "SpinnerHub", 3, 1.6, (at(57, 0.8, 0)).Position, rgb(30, 30, 36), Enum.Material.Metal)
+		Kit.cylY(m, "SpinnerEye", 1.6, 0.4, (at(57, 1.8, 0)).Position, RED, Enum.Material.Neon)
+		local spin = part(lasers, "SpinBeam", Vector3.new(0.3, 0.3, 17), at(57, 1.2, 0), RED, Enum.Material.Neon, { CanCollide = false, CanQuery = false, CastShadow = false })
+		spin:SetAttribute("Laser", "spin")
+		spin:SetAttribute("Period", 4.2)
+		spin:SetAttribute("Radius", 17)
+		_ = hub
+		local LEVERS = { { "RED", rgb(230, 60, 60), { 47, -17 } }, { "BLUE", rgb(60, 120, 240), { 67, -17 } }, { "GREEN", rgb(60, 200, 90), { 47, 17 } } }
+		for _, l in LEVERS do
+			local lx, lz = l[3][1], l[3][2]
+			part(m, "LeverBase", Vector3.new(3, 3, 3), at(lx, 1.5, lz), rgb(40, 40, 48), Enum.Material.Metal)
+			part(m, "LeverPlate", Vector3.new(3.2, 0.3, 3.2), at(lx, 3.1, lz), l[2], Enum.Material.Neon)
+			local handle = part(m, "LeverHandle", Vector3.new(0.5, 3, 0.5), at(lx, 4.6, lz) * CFrame.Angles(math.rad(-30), 0, 0), rgb(200, 200, 210), Enum.Material.Metal)
+			handle:SetAttribute("HQLever", l[1])
+			handle:SetAttribute("Home", handle.CFrame)
+			Kit.ball(m, "LeverKnob", 1, (at(lx, 6.1, lz - 0.8)).Position, l[2], Enum.Material.Neon)
+		end
+		-- the vault door on the east wall, and the three order lamps above it
+		part(m, "VaultRing", Vector3.new(1.2, 16, 16), at(73.6, 8, 0), rgb(120, 122, 134), Enum.Material.Metal, { Shape = Enum.PartType.Cylinder })
+		local vdoor = part(m, "VaultDoor", Vector3.new(1.2, 13, 13), at(73, 8, 0), rgb(170, 172, 184), Enum.Material.DiamondPlate, { Shape = Enum.PartType.Cylinder })
+		vdoor:SetAttribute("HQDoor", 3)
+		Kit.cylX(m, "VaultWheel", 5, 0.8, (at(72.2, 8, 0)).Position, rgb(210, 180, 90), Enum.Material.Metal)
+		for k, l in LEVERS do
+			local lamp = Kit.ball(m, "OrderLamp", 1.8, (at(73, 17.5, -5 + (k - 1) * 5)).Position, rgb(40, 40, 46), Enum.Material.Neon)
+			lamp:SetAttribute("HQLamp", l[1])
+			lamp:SetAttribute("Lit", l[2])
+		end
+		local vs = part(m, "VaultSign", Vector3.new(0.3, 2.4, 20), at(73.2, 21.5, 0), rgb(20, 16, 26))
+		Kit.sign(vs, Enum.NormalId.Left, "WATCH THE LAMPS. PULL THE LEVERS IN THEIR ORDER.", rgb(255, 220, 120), rgb(20, 16, 26), Enum.Font.GothamBlack)
+		-- behind the vault door: the service elevator up
+		local svc = part(m, "ServiceElevator", Vector3.new(0.3, 9.6, 8), at(74.8, 4.8, 12), rgb(255, 240, 200), Enum.Material.Neon)
+		svc:SetAttribute("HQElevator", 3)
+		local up = part(m, "UpSign", Vector3.new(0.1, 1.4, 4), at(74.6, 10.4, 12), rgb(30, 26, 40))
+		Kit.sign(up, Enum.NormalId.Left, "\u{25B2} UP", TOXIC, rgb(30, 26, 40), Enum.Font.GothamBlack)
+		part(m, "SvcGate", Vector3.new(1, 10, 9), at(73.8, 5, 12), rgb(90, 92, 104), Enum.Material.DiamondPlate):SetAttribute("HQGate", 3)
+		-- red mood lights
+		for _, p in { { -34, 0 }, { 15, 0 }, { 57, 0 } } do
+			local l = part(m, "RedGlow", Vector3.new(2, 0.3, 2), at(p[1], HQ.HEIGHT - 0.2, p[2]), RED, Enum.Material.Neon, { CanCollide = false })
+			Kit.light(l, 26, 0.5, rgb(255, 60, 60))
+		end
+	end
+
 	return root
 end
 

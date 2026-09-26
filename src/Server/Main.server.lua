@@ -329,6 +329,9 @@ require(Server.DebugBridge).start({
 	hqSwipe = function(player)
 		return HQService.swipe(player)
 	end,
+	hqPull = function(player, color)
+		return HQService.debugPull(player, color)
+	end,
 	hqState = function(player)
 		return HQService.debugState(player)
 	end,
