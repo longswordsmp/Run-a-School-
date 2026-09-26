@@ -1354,7 +1354,7 @@ do
 		{ "Takeover", UI.C.navy, "event", "HostileTakeover" }, { "Graduation", UI.C.grey, "event", "Graduation" },
 		{ "End Event", UI.C.red, "event", "stop" },
 	})
-	section(L, 3, "\u{2728} SPAWN 3 KIDS ON THE CARPET", {
+	section(L, 3, "\u{2728} SPAWN 3 KIDS ON THE STREET", {
 		{ "Legendary", Color3.fromRGB(255, 170, 30), "spawn", "Legendary" }, { "Mythic", Color3.fromRGB(255, 50, 90), "spawn", "Mythic" },
 		{ "Prodigy", Color3.fromRGB(90, 200, 255), "spawn", "Prodigy" }, { "Secret", Color3.fromRGB(40, 40, 50), "spawn", "Secret" },
 	})

@@ -126,7 +126,7 @@ end
 -- the van
 ---------------------------------------------------------------------------
 -- parked alongside the curb in front of the plot; its length runs along the street (lot X)
-local VAN_PARK = Vector3.new(18, 0, 89)
+local VAN_PARK = Vector3.new(18, 0, 97) -- (in your side's lane of the road: StreetLayout.LANE)
 local function buildVan()
 	-- a purple VexCorp panel van: front +X, the sliding door on -Z (the school side), built around the
 	-- road point under its middle (the pivot, so PivotTo puts the wheels on the ground)

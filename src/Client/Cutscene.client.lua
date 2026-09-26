@@ -501,7 +501,7 @@ local function intro(data)
 	local limo
 	local stages = ReplicatedStorage:FindFirstChild("StreetStages")
 	local tmpl = stages and stages:FindFirstChild("ForSale") and stages.ForSale:FindFirstChild("VexLimo")
-	local laneZ = side * 13
+	local laneZ = side * 6 -- (your side's lane of the road)
 	-- (the limo's pivot is its body's middle, 2.5 above its wheels' contact)
 	local function limoAt(x) return CFrame.new(x, ground + 2.4, laneZ) end
 	local vex, crumpet

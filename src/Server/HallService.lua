@@ -1,5 +1,6 @@
 -- ServerScriptService.Server.HallService
--- Students step off the bus and walk the red carpet to detention unless someone enrolls them.
+-- Students step off the bus at the stop and walk along the sidewalks of Recess Row, past every school
+-- gate, to the Home Bus at the far end, unless someone enrolls them (StreetLayout: the street).
 -- Also: luck (players standing in the hallway bring their Recruitment Office luck), special buses
 -- that drive in with a batch of rarer students, and Recess (luck x2, busier bus) every 15 minutes.
 local Players = game:GetService("Players")
@@ -26,6 +27,7 @@ hall.Parent = workspace
 
 local map = workspace:WaitForChild("Map")
 local path = map.HallPath
+local Street = require(script.Parent.StreetLayout)
 local FLOOR_Y = 0.65
 local RECESS_EVERY, RECESS_LEN = 900, 60
 
@@ -56,7 +58,7 @@ function HallService.luck()
 	local best = 1
 	for player, p in Data.all() do
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		if root and math.abs(root.Position.Z) < 20 and root.Position.X > path.Start.Position.X - 30 and root.Position.X < path.End.Position.X + 5 then
+		if root and math.abs(root.Position.Z) < Street.WALK_OUT and root.Position.X > path.Start.Position.X - 30 and root.Position.X < path.End.Position.X + 5 then
 			local mine = UpgradeService.luck(p) * (p.luckMult or 1)
 			for _, hook in HallService.playerLuckHooks do
 				mine *= hook(player)
@@ -213,8 +215,8 @@ function HallService.spawnOne(forceRarity, forceId, weights, from, quiet)
 	local hrp = model.PrimaryPart
 	local start = path.Start.Position
 	local y = FLOOR_Y + Factory.standOffset(model)
-	-- a little sideways jitter so the line does not look like a conveyor belt
-	local z = (math.random() - 0.5) * 6
+	-- which sidewalk, and how far along it (not a single file: it doesn't look like a conveyor belt)
+	local side, z = Street.kidLane()
 	local origin = from or Vector3.new(start.X, 0, z)
 	if from then
 		-- off a bus: out of the door, facing away from the bus
@@ -230,7 +232,7 @@ function HallService.spawnOne(forceRarity, forceId, weights, from, quiet)
 	if quiet then
 		-- an invited kid (Alumni Hall): nobody else can enroll them, so no server-wide alert
 	elseif rarity.order >= 7 then
-		Remotes.announceAll(("A %s STUDENT IS ON THE CARPET!"):format(rarity.id:upper()), Config.rarityAccent(def.rarity))
+		Remotes.announceAll(("A %s STUDENT IS ON RECESS ROW!"):format(rarity.id:upper()), Config.rarityAccent(def.rarity))
 		Remotes.Sfx:FireAllClients(rarity.id == "Prodigy" and "Choir" or "RecordScratch")
 	elseif rarity.order == 6 then
 		Remotes.notifyAll("A Mythic student just stepped off the bus!", "steal")
@@ -249,15 +251,17 @@ function HallService.spawnOne(forceRarity, forceId, weights, from, quiet)
 		HallService.enroll(player, model)
 	end)
 
-	local finish = path.End.Position
 	local pts = {}
 	if from then
-		-- clear of the bus, round its front, then into the carpet lane (the bus stands on the lane)
-		table.insert(pts, Vector3.new(from.X, 0, from.Z - 3.2))
-		table.insert(pts, Vector3.new(start.X - 4, 0, from.Z - 3.2))
-		table.insert(pts, Vector3.new(start.X + 2, 0, z))
+		-- off the bus (it stands in the south lane, door to the kerb) onto the south sidewalk; kids
+		-- for the north side cross at the crosswalk by the stop
+		local curb = -(Street.KID_MIN + 0.5)
+		table.insert(pts, Vector3.new(from.X, 0, curb))
+		if side > 0 then table.insert(pts, Vector3.new(start.X, 0, curb)) end
 	end
-	table.insert(pts, Vector3.new(finish.X, 0, z))
+	table.insert(pts, Vector3.new(start.X + 2, 0, z))
+	-- along the sidewalk to the far end, and onto the Home Bus
+	for _, p in Street.homeRoute(z) do table.insert(pts, p) end
 	Walkers.walk(model, pts, Config.WalkSpeed, function()
 		model:Destroy()
 	end)
@@ -446,7 +450,7 @@ end
 -- outside the gate, waving, until they're enrolled. North-side kids step out on the carpet side
 -- and walk round the front of the bus, like off the regular bus.
 ---------------------------------------------------------------------------
-local WELCOME_LANE = 14.5 -- (clears the carpet and the lamp arms over the curbs)
+local WELCOME_LANE = Street.LANE -- (your side's lane of the road)
 local welcomeKids = {} -- [player] = { models }
 
 local function fadeBus(bus, from, to, t)

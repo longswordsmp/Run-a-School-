@@ -3,6 +3,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Server = script.Parent
+-- the street first: HallService reads the bus stop and the kids' walk from it
+require(Server.StreetLayout).build()
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(Server.Remotes)
 local Data = require(Server.DataService)

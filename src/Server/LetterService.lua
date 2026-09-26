@@ -100,7 +100,7 @@ local function freeSeat(player)
 	return nil
 end
 
--- let a bench kid give up and wander onto the carpet like any other kid
+-- let a bench kid give up: out of the gate and off along the sidewalk to the Home Bus
 local function release(player, model)
 	if not model.Parent or model:GetAttribute("State") ~= "Hall" then return end
 	model:SetAttribute("ReservedFor", nil)
@@ -117,9 +117,12 @@ local function release(player, model)
 		for _, w in PlotService.worldPoints(plot, { Vector3.new(-12.5, 0.5, 64), Vector3.new(0, 0.5, 66), Vector3.new(0, 0.5, 72) }, so) do table.insert(pts, w) end
 		table.insert(pts, Vector3.new(plot.Entry.Position.X, 0.65 + so, plot.Entry.Position.Z))
 	end
-	local finish = workspace.Map.HallPath.End.Position
-	table.insert(pts, Vector3.new(pts[#pts] and pts[#pts].X or finish.X, 0.65 + so, 0))
-	table.insert(pts, Vector3.new(finish.X, 0.65 + so, 0))
+	local Street = require(script.Parent.StreetLayout)
+	local side = plot and (plot.Entry.Position.Z > 0 and 1 or -1) or -1
+	local _, z = Street.kidLane(side)
+	local fromX = pts[#pts] and pts[#pts].X or Street.CROSS_WEST
+	table.insert(pts, Vector3.new(fromX, 0.65 + so, z))
+	for _, p in Street.homeRoute(z) do table.insert(pts, Vector3.new(p.X, 0.65 + so, p.Z)) end
 	Factory.play(model, "walk")
 	Walkers.walk(model, pts, Config.WalkSpeed, function() model:Destroy() end, { flat = false })
 end

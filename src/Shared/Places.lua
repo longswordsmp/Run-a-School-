@@ -54,7 +54,7 @@ Places.spot = {
 	-- the school area
 	HubFountain = P(0, 0, -86),
 	BusStop = P(-330, 0, -12),
-	Detention = P(346, 0, 0),
+	Detention = P(440, 0, 22), -- (off the street, north of the east connector road: StreetLayout)
 	FactoryGate = P(0, 0, 30),
 	LabGate = P(-420, 0, 36),
 	LabTubes = P(-420, 0, 110),

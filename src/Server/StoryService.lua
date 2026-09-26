@@ -44,7 +44,7 @@ local LINES = {
 		"NO. RUNNING. IN. THE. HALLS!",
 		"Hall pass, please. Hall pass. HALL PASS.",
 		"I wrote half the rules. The good half.",
-		"This carpet is a PUBLIC hallway.",
+		"This sidewalk is a PUBLIC hallway.",
 	},
 	Baron = {
 		"Pssst... nice school.",
@@ -505,7 +505,7 @@ local function vexDriveBy()
 	end
 	local limo, vex = buildLimo()
 	-- the sidewalk on the target school's side of the street, clear of the carpet
-	local z = (target and target.Origin.Position.Z < 0) and -19 or 19
+	local z = (target and target.Origin.Position.Z < 0) and -6 or 6 -- (the lane on that side: StreetLayout.LANE)
 	-- facing along the street; Vex turns to the school when the limo stops (the pivot is the body's
 	-- middle, 2.5 over the wheels' bottoms)
 	local function at(x) return CFrame.new(x, 2.8, z) end
@@ -595,7 +595,7 @@ function StoryService.tutorialLimo(player)
 	kidNpc.bubble, kidNpc.text = speech(kid)
 	local npc = { model = vex }
 	npc.bubble, npc.text = speech(vex)
-	local z = side * 19
+	local z = side * 6 -- (your side's lane of the road)
 	-- (on the far side of the gate from where the goons' van parks)
 	local stopX = (plot.Origin.CFrame * CFrame.new(-26, 0, 0)).Position.X
 	-- (the limo's pivot is its body's middle, 2.5 over its wheels' bottoms: at 0 it drove half sunk in the road)
