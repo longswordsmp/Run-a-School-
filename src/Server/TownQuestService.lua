@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Quests = require(ReplicatedStorage.Shared.Quests)
+local Cutscenes = require(ReplicatedStorage.Shared.Cutscenes)
 local Places = require(ReplicatedStorage.Shared.Places)
 local Townsfolk = require(ReplicatedStorage.Shared.Townsfolk)
 local Data = require(script.Parent.DataService)
@@ -173,6 +174,15 @@ function TownQuestService.state(player)
 end
 
 local function push(player)
+	-- always track something that's actually on (the story first)
+	local t = tqOf(player)
+	if t and (not t.tracked or not t.active[t.tracked]) then
+		t.tracked = nil
+		for id in t.active do
+			local q = Quests.byId[id]
+			if not t.tracked or (q and q.line == "story") then t.tracked = id end
+		end
+	end
 	local s = TownQuestService.state(player)
 	if s then Remotes.Push:FireClient(player, "tq", s) end
 	refreshTarget(player)
@@ -476,6 +486,18 @@ function TownQuestService.debugState(player)
 	return t and { active = t.active, done = t.done, tracked = t.tracked, target = player:GetAttribute("QuestTarget") }
 end
 
+-- mark quests done without playing them (tests)
+function TownQuestService.debugMark(player, ids)
+	local t = tqOf(player)
+	if not t then return false end
+	for _, id in ids do
+		t.active[id] = nil
+		t.done[id] = true
+	end
+	push(player)
+	return true
+end
+
 function TownQuestService.debugReset(player)
 	local own = Data.own(player)
 	if own then own.tq = nil end
@@ -484,7 +506,7 @@ function TownQuestService.debugReset(player)
 end
 
 function TownQuestService.start_service()
-	local errs = Quests.validate(Places, Townsfolk, Config.AreaById)
+	local errs = Quests.validate(Places, Townsfolk, Config.AreaById, Cutscenes)
 	for _, e in errs do warn("[Quests] " .. e) end
 	TownNPCService.onTalk = onTalk
 	-- every signal a step listens for

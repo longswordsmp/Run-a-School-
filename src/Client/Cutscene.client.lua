@@ -124,7 +124,7 @@ local function hideHud(on)
 	local pg = player:FindFirstChild("PlayerGui")
 	if not pg then return end
 	if on then
-		for _, name in { "HUD", "Menus", "NowPlaying", "Prompts", "Quests", "Chapters" } do
+		for _, name in { "HUD", "Menus", "NowPlaying", "Prompts", "Quests", "Chapters", "QuestLog", "Mission" } do
 			local g = pg:FindFirstChild(name)
 			if g and g.Enabled then
 				g.Enabled = false
@@ -479,7 +479,250 @@ local function rival()
 	busy = false
 end
 
-Remotes:WaitForChild("Cutscene").OnClientEvent:Connect(function(name, data)
+---------------------------------------------------------------------------
+-- data-driven scenes (Shared/Cutscenes): actors, camera shots, captions, lines, emotes
+---------------------------------------------------------------------------
+local Cutscenes = require(Shared:WaitForChild("Cutscenes"))
+local Action = Remotes:WaitForChild("Action")
+
+local ANIMS = {
+	idle = "rbxassetid://507766388", walk = "rbxassetid://507777826", wave = "rbxassetid://507770239",
+	point = "rbxassetid://507770453", cheer = "rbxassetid://507770677", laugh = "rbxassetid://507770818",
+	dance = "rbxassetid://507771019", sit = "rbxassetid://2506281703",
+}
+
+local function playAnim(model, which, looped)
+	local hum = model:FindFirstChildOfClass("Humanoid")
+	local animator = hum and (hum:FindFirstChildOfClass("Animator") or Instance.new("Animator", hum))
+	if not animator or not ANIMS[which] then return end
+	local a = Instance.new("Animation")
+	a.AnimationId = ANIMS[which]
+	local track = animator:LoadAnimation(a)
+	track.Looped = looped ~= false and (which == "idle" or which == "walk" or which == "sit" or which == "dance")
+	track.Priority = looped == false and Enum.AnimationPriority.Action2 or Enum.AnimationPriority.Movement
+	track:Play(0.2)
+	return track
+end
+
+-- an actor: a local copy of a character template, standing on the ground at `at`, facing `face`
+local function spawnActor(a, folder)
+	local tt = ReplicatedStorage:FindFirstChild("TeacherTemplates")
+	local st = ReplicatedStorage:FindFirstChild("StudentTemplates")
+	local tmpl = (tt and tt:FindFirstChild(a.look or a.id)) or (st and st:FindFirstChild(a.look or a.id))
+	local m
+	if a.look == "player" then
+		m = standIn(CFrame.new(a.at))
+		if m then m.Parent = folder end
+	elseif tmpl then
+		m = tmpl:Clone()
+		m.Parent = folder
+	end
+	if not m then return nil end
+	m.Name = a.id
+	if a.scale and a.scale ~= 1 then m:ScaleTo(a.scale) end
+	local root = m:FindFirstChild("HumanoidRootPart") or m.PrimaryPart
+	local hum = m:FindFirstChildOfClass("Humanoid")
+	local lift = hum and root and (hum.HipHeight + root.Size.Y / 2) or 3
+	local face = a.face or (a.at + Vector3.new(0, 0, -1))
+	local base = Vector3.new(a.at.X, a.at.Y + lift, a.at.Z)
+	m:PivotTo(CFrame.lookAt(base, Vector3.new(face.X, base.Y, face.Z)))
+	-- only the root is anchored: the joints place the limbs and the animations move them
+	for _, d in m:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Anchored = d == root
+			d.CanCollide = false
+		end
+		if d:IsA("BillboardGui") or d:IsA("ProximityPrompt") then d:Destroy() end
+	end
+	playAnim(m, a.anim or "idle")
+	return m, lift
+end
+
+-- glide an actor to a spot, walking
+local function moveActor(m, lift, to, speed)
+	local root = m.PrimaryPart or m:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	local from = root.Position
+	local goal = Vector3.new(to.X, to.Y + lift, to.Z)
+	local dist = (goal - from).Magnitude
+	if dist < 0.1 then return end
+	local walk = playAnim(m, "walk")
+	local look = CFrame.lookAt(goal, goal + (goal - from).Unit * Vector3.new(1, 0, 1))
+	local v = Instance.new("CFrameValue")
+	v.Value = m:GetPivot()
+	v.Changed:Connect(function(cf) m:PivotTo(cf) end)
+	local tw = TweenService:Create(v, TweenInfo.new(dist / (speed or 10), Enum.EasingStyle.Linear), { Value = look })
+	tw:Play()
+	tw.Completed:Connect(function()
+		v:Destroy()
+		if walk then walk:Stop(0.2) end
+		playAnim(m, "idle")
+	end)
+end
+
+local function shake(power, secs)
+	local t0 = os.clock()
+	local conn
+	conn = RunService.RenderStepped:Connect(function()
+		local k = 1 - (os.clock() - t0) / secs
+		if k <= 0 then conn:Disconnect() return end
+		camera.CFrame *= CFrame.new((math.random() - 0.5) * power * k, (math.random() - 0.5) * power * k, 0)
+	end)
+end
+
+local function playScene(id, data)
+	local scene = Cutscenes[id]
+	if not scene then
+		warn("[Cutscene] no scene", id)
+		return
+	end
+	-- wait for another scene to finish rather than dropping this one
+	local t0 = os.clock()
+	while busy and os.clock() - t0 < 30 do task.wait(0.2) end
+	if busy then return end
+	busy = true
+	local first = scene.shots[1]
+	pcall(function() player:RequestStreamAroundAsync(first.to or first.from, 4) end)
+	fade(0, 0.35)
+	hideHud(true)
+	if scene.letterbox ~= false then letterbox(true) end
+	local Lighting = game:GetService("Lighting")
+	local clock0 = Lighting.ClockTime
+	if scene.clock then Lighting.ClockTime = scene.clock end
+	player:SetAttribute("LocalMusic", scene.music)
+	local prevType = camera.CameraType
+	camera.CameraType = Enum.CameraType.Scriptable
+	local folder = Instance.new("Folder")
+	folder.Name = "CutsceneActors"
+	folder.Parent = workspace
+	local actors = {}
+	-- the real townsperson (or story NPC) steps aside while their actor plays them
+	local hiddenReal = {}
+	local function hideReal(id)
+		for _, fname in { "Townsfolk", "StoryNPCs" } do
+			local f = workspace:FindFirstChild(fname)
+			local real = f and f:FindFirstChild(id)
+			if real then
+				for _, d in real:GetDescendants() do
+					if d:IsA("BasePart") or d:IsA("Decal") then
+						hiddenReal[d] = d.LocalTransparencyModifier
+						d.LocalTransparencyModifier = 1
+					elseif d:IsA("BillboardGui") and d.Enabled then
+						hiddenReal[d] = true
+						d.Enabled = false
+					end
+				end
+			end
+		end
+	end
+	for _, a in scene.actors or {} do
+		local m, lift = spawnActor(a, folder)
+		if m then
+			actors[a.id] = { model = m, lift = lift }
+			hideReal(a.id)
+		end
+	end
+	-- a click skips the line being typed and the wait after it
+	local skip = UI.new("TextButton", { Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = gui })
+	local clicked = false
+	skip.Activated:Connect(function() clicked = true end)
+	local move
+	for i, s in scene.shots do
+		if s.from and s.to then
+			if move then move:Cancel() end
+			camera.CFrame = CFrame.lookAt(s.from, s.to)
+			if i == 1 then fade(1, 0.5) end
+			if s.push then
+				move = TweenService:Create(camera, TweenInfo.new(s.time or 5, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(s.push, s.pushTo or s.to) })
+				move:Play()
+			end
+		elseif i == 1 then
+			fade(1, 0.5)
+		end
+		if s.title then
+			local c = caption(s.title, s.titleColor or Color3.fromRGB(255, 215, 90), 0.2, s.titleSize or 72)
+			task.delay(s.titleTime or 2.4, function() c:Destroy() end)
+		end
+		if s.sfx then sfx(s.sfx) end
+		if s.shake then shake(s.shake, 0.8) end
+		for _, e in s.emotes or {} do
+			local act = actors[e[1]]
+			if act then playAnim(act.model, e[2], false) end
+		end
+		for _, mv in s.moves or {} do
+			local act = actors[mv[1]]
+			if act then moveActor(act.model, act.lift, mv[2], mv[3]) end
+		end
+		if s.confetti then confetti(s.confetti) end
+		local cap
+		if s.caption then cap = caption(s.caption, s.captionColor or Color3.new(1, 1, 1), 0.8, 40) end
+		if s.say then
+			local box, text, hint = dialogBox(s.say[1], s.say[2])
+			hint.Visible = false
+			local line = s.say[3]
+			clicked = false
+			for c = 1, #line do
+				if clicked then break end
+				text.Text = line:sub(1, c)
+				if c % 3 == 0 then sfx("Coin") end
+				task.wait(0.025)
+			end
+			text.Text = line
+			clicked = false
+			hint.Visible = true
+			local hold = os.clock()
+			while not clicked and os.clock() - hold < math.clamp(#line * 0.035, 1.4, 3) do task.wait(0.05) end
+			box:Destroy()
+		else
+			clicked = false
+			local hold = os.clock()
+			while not clicked and os.clock() - hold < (s.hold or s.time or 3) do task.wait(0.05) end
+		end
+		if cap then cap:Destroy() end
+	end
+	skip:Destroy()
+	fade(0, 0.35)
+	if move then move:Cancel() end
+	folder:Destroy()
+	for d, v in hiddenReal do
+		if d.Parent then
+			if d:IsA("BillboardGui") then d.Enabled = true else d.LocalTransparencyModifier = v end
+		end
+	end
+	if scene.clock and math.abs(Lighting.ClockTime - scene.clock) < 0.01 then Lighting.ClockTime = clock0 end
+	camera.CameraType = prevType == Enum.CameraType.Scriptable and Enum.CameraType.Custom or prevType
+	letterbox(false)
+	hideHud(false)
+	player:SetAttribute("LocalMusic", nil)
+	task.wait(0.2)
+	fade(1, 0.5)
+	busy = false
+	if data and data.quest then pcall(Action.InvokeServer, Action, "tqScene", data.quest) end
+end
+
+local function safeScene(id, data)
+	local ok, err = pcall(playScene, id, data)
+	if ok then return end
+	warn("[Cutscene]", id, err)
+	local f = workspace:FindFirstChild("CutsceneActors")
+	if f then f:Destroy() end
+	camera.CameraType = Enum.CameraType.Custom
+	letterbox(false)
+	hideHud(false)
+	player:SetAttribute("LocalMusic", nil)
+	local d = gui:FindFirstChild("Dialog", true)
+	if d then d:Destroy() end
+	fade(1, 0.3)
+	busy = false
+	if data and data.quest then pcall(Action.InvokeServer, Action, "tqScene", data.quest) end
+end
+
+Remotes:WaitForChild("Cutscene").OnClientEvent:Connect(function(name, data, extra)
+	if name == "Play" then
+		-- ("Play", sceneId, extras)
+		task.spawn(safeScene, data, extra)
+		return
+	end
 	if name == "Rival" then
 		task.spawn(safely, rival, data)
 	elseif name == "Finale" then

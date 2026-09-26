@@ -70,6 +70,7 @@ stanMarker:FindFirstChildWhichIsA("TextLabel").Text = "SECRET JOB"
 
 local talking = false
 local function talkingNow() return talking end
+local afterClose -- (set below: shows the next queued conversation)
 
 local function npcHead(name)
 	local story = workspace:FindFirstChild("StoryNPCs")
@@ -213,6 +214,10 @@ local function conversation(lines, buttons, title, nearWob)
 		talking = false
 		player:SetAttribute("Talking", nil)
 		refreshMarker()
+		-- a conversation that came in meanwhile goes next
+		task.delay(0.35, function()
+			if not talking and afterClose then afterClose() end
+		end)
 		TweenService:Create(box, TweenInfo.new(0.2), { Position = UDim2.new(0.5, 0, 1, 200) }):Play()
 		task.delay(0.22, function() box:Destroy() end)
 	end
@@ -276,8 +281,8 @@ local function conversation(lines, buttons, title, nearWob)
 	return close
 end
 
-Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
-	if kind ~= "missionTalk" then return end
+local queued = {}
+local function showTalk(data)
 	-- (a call or a letter has nobody to walk away from)
 	local near = data.npc or (not data.call and true) or nil
 	if data.id then
@@ -292,6 +297,19 @@ Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
 	else
 		conversation(data.lines, { { data.bye or "BYE!", UI.C.blue } }, data.title, near)
 	end
+end
+afterClose = function()
+	local nxt = table.remove(queued, 1)
+	if nxt then showTalk(nxt) end
+end
+Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
+	if kind ~= "missionTalk" then return end
+	if talking then
+		-- one at a time: this one goes after the one that's open (a few at most)
+		if #queued < 4 then table.insert(queued, data) end
+		return
+	end
+	showTalk(data)
 end)
 
 ---------------------------------------------------------------------------

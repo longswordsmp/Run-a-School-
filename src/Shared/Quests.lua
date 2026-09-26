@@ -42,6 +42,7 @@ Q({ id = "S01", line = "story", title = "Welcome to Recess Row", auto = true, ar
 	},
 	steps = {
 		{ kind = "visit", place = "DowntownGate", r = 16, text = "Go through the DOWNTOWN gate (south)" },
+		{ kind = "scene", scene = "S01_Downtown", text = "Take in Downtown" },
 		{ kind = "talk", npc = "MayorMaxine", text = "Meet Mayor Maxine at Town Hall",
 			lines = {
 				MAYOR("There you are! Welcome, welcome. Recess Row has had recess for ninety years."),
@@ -62,11 +63,15 @@ Q({ id = "S02", line = "story", title = "The Purple Limo", giver = "OfficerPenny
 		{ kind = "collect", item = "Purple Flyer", spots = { "TownSquare", "Bank", "PostOffice" }, text = "Find what the limo left behind" },
 		{ kind = "deliver", npc = "OfficerPenny", item = "Purple Flyer", text = "Bring the flyers to Officer Penny",
 			lines = {
-				PENNY("'HOMEWORK IS THE FUTURE. Enrol at VEX PREP.' Signed... Dr. Veronica Vex."),
+				PENNY("Purple paper, purple ink... let me read this."),
+			} },
+		{ kind = "scene", scene = "S02_Flyer", text = "Read the flyer" },
+		{ kind = "talk", npc = "OfficerPenny", text = "Talk it over with Officer Penny",
+			lines = {
 				PENNY("VexCorp. They bought half of the industrial district last year. Now they want the schools."),
+				PENNY("Keep your gate locked, Principal. And keep your kids close."),
 			} },
 	},
-	outro = { PENNY("Keep your gate locked, Principal. And keep your kids close.") },
 	reward = { incomeSecs = 90, min = 500, candy = 5 },
 })
 
@@ -101,9 +106,36 @@ Q({ id = "D02", line = "town", title = "Enrolment Drive", giver = "MayorMaxine",
 	reward = { incomeSecs = 120, min = 600, candy = 5 },
 })
 
+Q({ id = "D03", line = "town", title = "Goons on Market Street", giver = "HankHardware", area = "Downtown",
+	needs = { quests = { "S02" } },
+	intro = {
+		say("HANK", "HankHardware")("Principal! Three VexCorp goons are hassling shoppers down Market Street."),
+		say("HANK", "HankHardware")("Your Ruler's tougher than my hammers. Go give 'em a bonk!"),
+	},
+	steps = {
+		{ kind = "goons", place = "MarketStreetEast", n = 3, text = "Bonk the goons on Market Street (click to swing)" },
+		{ kind = "talk", npc = "HankHardware", text = "Tell Hank the street is safe",
+			lines = { say("HANK", "HankHardware")("Ha! They ran off crying for their mommy. Take this, on the house.") } },
+	},
+	reward = { incomeSecs = 120, min = 800, candy = 8, gear = { SmokeBomb = 1 } },
+})
+
 ---------------------------------------------------------------------------
 -- TOWN: Maple Heights
 ---------------------------------------------------------------------------
+Q({ id = "M02", line = "town", title = "The Flyer Thief", giver = "MrsPatel", area = "MapleHeights",
+	intro = {
+		say("MRS. PATEL", "MrsPatel")("A goon is stuffing VexCorp flyers in every letterbox on Maple Lane!"),
+		say("MRS. PATEL", "MrsPatel")("He's at the west end right now. Catch him before he reaches the east end!"),
+	},
+	steps = {
+		{ kind = "chase", runner = "goon", route = { "MapleCulDeSacWest", "MapleLane", "MapleCulDeSacEast" }, speed = 17, text = "Catch the flyer goon on Maple Lane (sprint + bonk!)" },
+		{ kind = "talk", npc = "MrsPatel", text = "Tell Mrs. Patel",
+			lines = { say("MRS. PATEL", "MrsPatel")("You got him! The PTA will hear about this. Good things, I mean!") } },
+	},
+	reward = { incomeSecs = 120, min = 800, candy = 8 },
+})
+
 Q({ id = "M01", line = "town", title = "Cookie Delivery", giver = "GrandmaRose", area = "MapleHeights",
 	intro = {
 		ROSE("Oh, you must be the new principal! I baked far too many cookies again."),
@@ -145,7 +177,7 @@ Q({ id = "P01", line = "town", title = "Something in the Lake", giver = "Fisherm
 local KINDS = { talk = true, deliver = true, visit = true, collect = true, signal = true, goons = true, chase = true, scene = true }
 
 -- returns a list of problems: unknown places or people, missing fields, needs that point nowhere
-function Quests.validate(Places, Townsfolk, areas)
+function Quests.validate(Places, Townsfolk, areas, scenes)
 	local errs = {}
 	local function err(q, msg) table.insert(errs, (q.id or "?") .. ": " .. msg) end
 	local seen = {}
@@ -161,6 +193,8 @@ function Quests.validate(Places, Townsfolk, areas)
 			if not Quests.byId[need] then err(q, "needs unknown quest " .. need) end
 		end
 		if not q.steps or #q.steps == 0 then err(q, "no steps") end
+		if q.reward and q.reward.scene and scenes and not scenes[q.reward.scene] then err(q, "unknown reward scene " .. q.reward.scene) end
+		if q.reward and q.reward.unlock and areas and not areas[q.reward.unlock] then err(q, "unknown unlock " .. q.reward.unlock) end
 		for i, s in q.steps or {} do
 			local where = "step " .. i .. " "
 			if not KINDS[s.kind] then err(q, where .. "unknown kind " .. tostring(s.kind)) end
@@ -180,6 +214,7 @@ function Quests.validate(Places, Townsfolk, areas)
 				end
 			end
 			if s.kind == "signal" and (type(s.signal) ~= "string" or type(s.n) ~= "number") then err(q, where .. "signal needs signal and n") end
+			if s.kind == "scene" and scenes and not scenes[s.scene or ""] then err(q, where .. "unknown scene " .. tostring(s.scene)) end
 		end
 	end
 	return errs

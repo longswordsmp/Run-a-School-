@@ -85,6 +85,7 @@ TownService.start()
 AreaService.start()
 TownNPCService.start()
 TownQuestService.start_service()
+require(Server.QuestGoons).start(TownQuestService)
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -311,6 +312,13 @@ require(Server.DebugBridge).start({
 	end,
 	tqReset = function(player)
 		return TownQuestService.debugReset(player)
+	end,
+	tqMark = function(player, ...)
+		return TownQuestService.debugMark(player, { ... })
+	end,
+	scene = function(player, id)
+		Remotes.Cutscene:FireClient(player, "Play", id)
+		return true
 	end,
 	tqAccept = function(player, id)
 		return Actions.invoke(player, "tqAccept", id)

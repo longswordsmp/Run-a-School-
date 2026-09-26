@@ -243,10 +243,30 @@ local function idleLoop()
 	end
 end
 
+-- the story cast's templates (cutscene actors and dialog portraits need them before the story
+-- has spawned them anywhere)
+local CAST = {
+	{ id = "Vex", name = "Dr. Veronica Vex", title = "VexCorp CEO", outfit = "vex" },
+	{ id = "Crumpet", name = "Crumpet", title = "Butler", outfit = "butler" },
+	{ id = "VexGoon", name = "VexCorp Goon", title = "Goon", outfit = "goon" },
+	{ id = "VexGuard", name = "Security", title = "VexCorp Security", outfit = "guard" },
+	{ id = "LabGuard", name = "Hazmat", title = "Lab Security", outfit = "hazmat" },
+	{ id = "Baron", name = "The Sugar Baron", title = "???", outfit = "baron" },
+	{ id = "Wobblesworth", name = "Mr. Wobblesworth", title = "Retired Principal", outfit = "wobble" },
+	{ id = "Stan", name = "Janitor Stan", title = "Janitor", outfit = "stan" },
+}
+
 function TownNPCService.start()
 	folder = workspace:FindFirstChild("Townsfolk") or Instance.new("Folder")
 	folder.Name = "Townsfolk"
 	folder.Parent = workspace
+	task.spawn(function()
+		for _, c in CAST do
+			pcall(function()
+				Factory.buildTeacher({ id = c.id, name = c.name, title = c.title, mult = 1, outfit = c.outfit }, 1):Destroy()
+			end)
+		end
+	end)
 	task.spawn(function()
 		for _, def in ipairs(Townsfolk) do
 			local ok, err = pcall(spawnOne, def)
