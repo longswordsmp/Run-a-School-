@@ -119,6 +119,18 @@ local function makeBarrier(area)
 	return m
 end
 
+-- Chapter 1's Vex Prep Job (VexPrepHeist, SewerHeist) lets you out through the front gate with the kid,
+-- long before Vex Prep opens: its barrier lets you through while the Job is on
+local function heistPass()
+	local m = barriers.VexPrep
+	if not m then return end
+	local on = player:GetAttribute("VexPrepHeist") == true
+	for _, d in m:GetDescendants() do
+		if d:IsA("BasePart") and d.Name:find("^Barrier") then d.CanCollide = not on end
+	end
+end
+player:GetAttributeChangedSignal("VexPrepHeist"):Connect(heistPass)
+
 local function refresh(id)
 	local area = Config.AreaById[id]
 	if not area or not area.gate then return end
@@ -135,6 +147,7 @@ local function refresh(id)
 		task.delay(1.3, function() m:Destroy() end)
 	elseif not open and not barriers[id] then
 		barriers[id] = makeBarrier(area)
+		heistPass()
 	end
 end
 

@@ -639,7 +639,7 @@ do
 	-- Vex's billboard behind it
 	for _, x in { -10, 10 } do part(s, "BillboardLeg", Vector3.new(1, 22, 1), CFrame.new(cx + x, 11, cz + 26), rgb(70, 70, 80), Enum.Material.Metal) end
 	local bb = part(s, "VexBillboard", Vector3.new(30, 12, 1), CFrame.new(cx, 26, cz + 26), rgb(60, 20, 90))
-	signGui(bb, Enum.NormalId.Front, "COMING SOON:\nVEX HOMEWORK FACTORY\n\"Recess is cancelled.\"", rgb(255, 255, 255), rgb(60, 20, 90), Enum.Font.LuckiestGuy)
+	signGui(bb, Enum.NormalId.Front, "NOW OPEN:\nVEX HOMEWORK FACTORY\n\"Recess is cancelled.\"", rgb(255, 255, 255), rgb(60, 20, 90), Enum.Font.LuckiestGuy)
 end
 for x = -456, 456, 38 do
 	for _, z in { -225, 225 } do

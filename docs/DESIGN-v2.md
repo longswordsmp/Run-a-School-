@@ -1037,7 +1037,7 @@ Also:
 | West-south | **Janitor Stan's Confiscation Closet** (a 20 x 16 shed) | The 🍬 shop |
 | West-north | **Recess Commons**: swings, slide and jungle gym, where the ambient Recess kids play | Recess, the Field Day start line |
 | East-south | **District Office** (a 40 x 40 tower, 60 tall). The Hall of Fame leaderboards are on its wall, and a doorway "elevator" leads up to the Board Room. | Leaderboards, the Board |
-| East-north | The **boarded-up Sugar Shack** (flickering lights, the Sugar Baron on its roof) and **Vex's billboard**: "COMING SOON: VEX HOMEWORK FACTORY" | Smuggler spawns, the story |
+| East-north | The **boarded-up Sugar Shack** (flickering lights, the Sugar Baron on its roof) and **Vex's billboard**: "NOW OPEN: VEX HOMEWORK FACTORY" | Smuggler spawns, the story |
 
 **Also placed in the gaps:**
 - Lurk spots: trash cans every 50 studs along both sidewalks, 2 hedges and 1 manhole per gap.
