@@ -57,6 +57,9 @@ local function setSpeed(player)
 		speed *= Config.RolePerks.carry
 	end
 	hum.WalkSpeed = speed * require(script.Parent.MoveService).mult(player)
+	-- (an admin's own speed from the admin panel wins)
+	local admin = player:GetAttribute("AdminSpeed")
+	if admin then hum.WalkSpeed = admin end
 end
 
 -- put the carried student over the thief's head (at the size they were at their school)
@@ -131,7 +134,7 @@ local function complete(thief)
 	Remotes.Sfx:FireClient(owner, "Doom")
 	local rarity = Config.RarityById[c.def.rarity]
 	if rarity.order >= 5 then
-		Remotes.Announce:FireAllClients(("%s STOLE A %s FROM %s!"):format(thief.DisplayName:upper(), rarity.id:upper(), owner.DisplayName:upper()), Config.rarityAccent(c.def.rarity))
+		Remotes.announceAll(("%s STOLE A %s FROM %s!"):format(thief.DisplayName:upper(), rarity.id:upper(), owner.DisplayName:upper()), Config.rarityAccent(c.def.rarity))
 	end
 	Signals.fire("stole", thief, owner, c.def, firstTime)
 end
@@ -188,7 +191,7 @@ function StealService.begin(thief, plot, slot)
 		h.Parent = thief.Character
 		c.highlight = h
 		Remotes.Sfx:FireAllClients("Siren")
-		Remotes.Notify:FireAllClients(("ALARM! %s is stealing from %s!"):format(thief.DisplayName, owner.DisplayName), "steal")
+		Remotes.notifyAll(("ALARM! %s is stealing from %s!"):format(thief.DisplayName, owner.DisplayName), "steal")
 		owner:SetAttribute("AlarmUntil", workspace:GetServerTimeNow() + 12)
 	end
 	Signals.fire("stealStart", thief, owner, def)

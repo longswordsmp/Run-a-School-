@@ -103,7 +103,7 @@ Actions.register("review", function(player, p)
 	PlotService.applyFloors(player)
 	PlotService.updateIncome(player)
 	local an = n.name:match("^[AEIOUaeiou]") and "AN" or "A"
-	Remotes.Announce:FireAllClients(("%s IS NOW %s %s!"):format(PlotService.schoolName(player):upper(), an, n.name:upper()), Color3.fromRGB(255, 214, 51))
+	Remotes.announceAll(("%s IS NOW %s %s!"):format(PlotService.schoolName(player):upper(), an, n.name:upper()), Color3.fromRGB(255, 214, 51))
 	Signals.fire("review", player, p.tier, p.stars)
 	Data.saveSoon(player)
 	busy[key] = nil

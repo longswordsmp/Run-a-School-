@@ -34,9 +34,12 @@ function GateService.lock(player)
 	local p = Data.get(player)
 	if not plot or not p then return false end
 	local now = workspace:GetServerTimeNow()
-	if GateService.isLocked(plot) then return false end
+	if GateService.isLocked(plot) then
+		Remotes.Notify:FireClient(player, ("Your gate is already locked (%ds left)."):format(math.ceil((plot:GetAttribute("LockedUntil") or now) - now)), "info")
+		return false
+	end
 	if now < (plot:GetAttribute("CooldownUntil") or 0) then
-		Remotes.Notify:FireClient(player, "The gate is cooling down...", "bad")
+		Remotes.Notify:FireClient(player, ("The gate is cooling down (%ds)..."):format(math.ceil(plot:GetAttribute("CooldownUntil") - now)), "bad")
 		return false
 	end
 	local dur = UpgradeService.lockTimeWithPass(p)

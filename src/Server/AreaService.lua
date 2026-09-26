@@ -105,7 +105,8 @@ AreaService.outside = outside
 local function guard()
 	for _, player in Players:GetPlayers() do
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		if root then
+		-- (an admin flying, noclipping or teleporting about goes where they like)
+		if root and not player:GetAttribute("AdminBypass") then
 			local pos = root.Position
 			for _, area in Config.Areas do
 				if inBox(pos, area.box) and not AreaService.isOpen(player, area.id) then

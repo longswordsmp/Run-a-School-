@@ -280,67 +280,89 @@ local function board(data)
 end
 
 ---------------------------------------------------------------------------
--- Intro: the Board Chair welcomes a brand-new principal to an empty school
+-- Intro: a brand-new principal's first eight seconds. High over the street onto your empty school,
+-- then down at your gate as YOUR Welcome Bus pulls up; two short lines; then you're standing at
+-- the gate facing it while six kids step off. (The server starts the bus as this starts: it pulls
+-- up during the second line.) data: { gate = your gate, park = where the bus stops, side = +1 for
+-- the north row of schools, -1 for the south }
 ---------------------------------------------------------------------------
 local INTRO = Config.IntroLines
 
-local function intro()
+local function intro(data)
 	if busy then return end
 	busy = true
+	data = type(data) == "table" and data or {}
 	local plotName = player:GetAttribute("Plot")
 	local plot = plotName and workspace:FindFirstChild("Plots") and workspace.Plots:FindFirstChild(plotName)
-	fade(0, 0.3)
+	local origin = plot and plot:FindFirstChild("Origin")
+	local ocf = origin and origin.CFrame or CFrame.new()
+	local side = data.side or (ocf.Position.Z >= 0 and 1 or -1)
+	local gate = typeof(data.gate) == "Vector3" and data.gate or Vector3.new(ocf.Position.X, 0, side * 23)
+	local park = typeof(data.park) == "Vector3" and data.park or gate - Vector3.new(20, 0, side * 8)
+	local school = ocf.Position + Vector3.new(0, 12, 0)
+
+	fade(0, 0.25)
 	hideHud(true)
 	letterbox(true)
-	local prevType = camera.CameraType
 	camera.CameraType = Enum.CameraType.Scriptable
-	local origin = plot and plot:FindFirstChild("Origin")
-	local ocf = origin and origin.CFrame or (plot and plot:GetAttribute("OriginCF")) or CFrame.new()
-	local look = ocf.Position + Vector3.new(0, 12, 0)
-	local front = ocf * CFrame.new(18, 34, 150)
-	local near = ocf * CFrame.new(10, 16, 82)
-	camera.CFrame = CFrame.lookAt(front.Position, look)
+	-- shot 1: high over the street, pushing in on your school
+	local high = gate + Vector3.new(-46, 58, -side * 62)
+	local closer = gate + Vector3.new(-26, 30, -side * 40)
+	camera.CFrame = CFrame.lookAt(high, school)
 	fade(1, 0.5)
-	player:SetAttribute("LocalMusic", "heroes")
 	sfx("StingMorning")
-	TweenService:Create(camera, TweenInfo.new(14, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(near.Position, look) }):Play()
+	TweenService:Create(camera, TweenInfo.new(4.2, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(closer, school) }):Play()
+
 	local box, text, hint = dialogBox()
-	-- a full-screen button: click to finish the line / go to the next one
 	local skip = UI.new("TextButton", { Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = gui })
 	local clicked = false
 	skip.Activated:Connect(function() clicked = true end)
-	for i, line in INTRO do
+	local function say(line, hold)
 		clicked = false
 		text.Text = ""
 		hint.Visible = false
-		local t0 = os.clock()
-		-- typewriter
 		for c = 1, #line do
 			if clicked then break end
 			text.Text = line:sub(1, c)
-			if c % 3 == 0 then sfx("Coin") end
-			task.wait(0.028)
+			if c % 3 == 0 then sfx("Blip") end
+			task.wait(0.026)
 		end
 		text.Text = line
 		clicked = false
 		hint.Visible = true
-		local hold = os.clock()
-		while not clicked and os.clock() - hold < 2.2 do task.wait(0.05) end
-		_ = t0
-		if i == #INTRO - 1 then
-			-- the bus arrives on the last line
-			sfx("BusHorn")
-		end
+		local t0 = os.clock()
+		while not clicked and os.clock() - t0 < hold do task.wait(0.05) end
 	end
+	say(INTRO[1], 1.4)
+
+	-- shot 2: down at your gate, looking down the street as the bus pulls up
+	local curb = gate + Vector3.new(16, 6.5, -side * 2)
+	local busLook = park + Vector3.new(0, 5, 0)
+	TweenService:Create(camera, TweenInfo.new(1.1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), { CFrame = CFrame.lookAt(curb, busLook) }):Play()
+	sfx("BusHorn")
+	say(INTRO[2], 2.4)
 	skip:Destroy()
 	box:Destroy()
-	fade(0, 0.35)
-	camera.CameraType = prevType == Enum.CameraType.Scriptable and Enum.CameraType.Custom or prevType
+
+	-- hand over: you on your front walk looking out through your gate at the six new kids, the
+	-- camera behind you
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	fade(0, 0.3)
+	if root then
+		local s = typeof(data.stand) == "Vector3" and data.stand or Vector3.new(gate.X, 0, gate.Z + side * 10)
+		local row = typeof(data.row) == "Vector3" and data.row or Vector3.new(gate.X, 0, gate.Z - side * 5)
+		local stand = Vector3.new(s.X, root.Position.Y, s.Z)
+		local face = Vector3.new(row.X, stand.Y, row.Z)
+		player.Character:PivotTo(CFrame.lookAt(stand, face))
+		local look = (face - stand).Unit
+		camera.CFrame = CFrame.lookAt(stand - look * 13 + Vector3.new(0, 6, 0), face)
+	end
+	camera.CameraType = Enum.CameraType.Custom
 	letterbox(false)
 	hideHud(false)
 	player:SetAttribute("LocalMusic", nil)
-	task.wait(0.2)
-	fade(1, 0.5)
+	task.wait(0.1)
+	fade(1, 0.45)
 	busy = false
 end
 

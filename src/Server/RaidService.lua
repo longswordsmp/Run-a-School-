@@ -490,9 +490,15 @@ local function hitGoon(player, raid, g, root)
 	local groot = g.model.PrimaryPart
 	if not groot or g.gone or now() < g.stunUntil then return end
 	local dir = groot.Position - root.Position
-	-- the tutorial's Crumpet can't be knocked out before he's grabbed a kid (the step is to save one)
-	if not (raid.tutorial and not g.kid) then
-		g.hp -= Crew.perk(player, "Monitor") and g.hp or 1
+	-- (the tutorial's Crumpet goes down whenever you catch him: before he grabs anyone is even
+	-- better. He used to shrug off every bonk until he'd taken a kid, so you HAD to let him.)
+	g.hp -= Crew.perk(player, "Monitor") and g.hp or 1
+	if raid.tutorial and not g.kid then
+		local cash = reward(player, R.saveSecs, R.saveFloor)
+		Data.addCash(player, cash)
+		Remotes.CashPop:FireClient(player, cash, groot.Position)
+		Remotes.Notify:FireClient(player, ("You stopped Crumpet before he took anyone! +%s"):format(Config.formatCash(cash)), "good")
+		Signals.fire("tutorialBonk", player, raid.player)
 	end
 	Remotes.Sfx:FireClient(player, "Bonk")
 	Remotes.Push:FireClient(player, "hit", { pos = groot.Position + Vector3.new(0, 2, 0), ko = g.hp <= 0 })
@@ -518,7 +524,7 @@ local function hitGoon(player, raid, g, root)
 		Data.addCash(player, cash)
 		Remotes.CashPop:FireClient(player, cash, groot.Position)
 		Remotes.Notify:FireClient(player, ("You saved %s! +%s"):format(def.name, Config.formatCash(cash)), "good")
-		Signals.fire("bonkSave", player, nil, def, raid.player)
+		Signals.fire("bonkSave", player, nil, def, raid.player, raid.tutorial)
 	end
 	g.waiting = nil
 	task.spawn(function()
@@ -722,7 +728,21 @@ function RaidService.soon(player, secs)
 end
 
 function RaidService.tutorialRaid(player)
-	return RaidService.start_raid(player, { goons = 1, hp = 1, tutorial = true })
+	-- the Ruler goes in your hand for it (the step only says "click"; it sat in the backpack)
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local ruler = player:FindFirstChild("Backpack") and player.Backpack:FindFirstChild("Ruler")
+	if hum and ruler then pcall(hum.EquipTool, hum, ruler) end
+	local ok = RaidService.start_raid(player, { goons = 1, hp = 1, tutorial = true })
+	if not ok then
+		-- (nobody seated to go for right now: try again shortly, while the step still wants him)
+		task.delay(6, function()
+			local p = Data.get(player)
+			local st = p and Config.Tutorial[p.tutorial or 1]
+			if player.Parent and st and st.id == "bonk" and not raids[player] then RaidService.tutorialRaid(player) end
+		end)
+	end
+	return ok
 end
 
 local function cleanup(player)

@@ -53,17 +53,127 @@ local function findTool(player, id)
 	return nil
 end
 
-local function handle(tool, size, color, material)
-	local h = Instance.new("Part")
-	h.Name = "Handle"
-	h.Size = size
-	h.Color = color
-	h.Material = material or Enum.Material.SmoothPlastic
-	h.CanCollide = false
-	h.CanQuery = false
-	h.Massless = true
-	h.Parent = tool
-	return h
+---------------------------------------------------------------------------
+-- the gear itself, built from parts: the same model is the tool in your hand, the thing you throw
+-- and the goods on Stan's counter. Returns a Model whose PrimaryPart is "Handle"; every other part is
+-- welded to it. (They used to be one primitive each: a grey ball, a pink disc, a blue stub.)
+---------------------------------------------------------------------------
+local function gearPart(m, handleCF, name, size, offset, color, material, shape, mesh)
+	local b = Instance.new("Part")
+	b.Name = name
+	b.Size = size
+	b.Color = color
+	b.Material = material or Enum.Material.SmoothPlastic
+	b.CanCollide, b.CanQuery, b.CanTouch, b.Massless = false, false, false, true
+	b.TopSurface, b.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+	if shape then b.Shape = shape end
+	if mesh then
+		local sm = Instance.new("SpecialMesh")
+		sm.MeshType = mesh
+		sm.Parent = b
+	end
+	b.CFrame = handleCF * offset
+	b.Parent = m
+	if m.PrimaryPart and b ~= m.PrimaryPart then
+		local w = Instance.new("WeldConstraint")
+		w.Part0, w.Part1 = m.PrimaryPart, b
+		w.Parent = b
+	end
+	return b
+end
+
+function GearService.model(id, at)
+	local m = Instance.new("Model")
+	m.Name = id
+	local cf = at or CFrame.new()
+	local function add(...) return gearPart(m, cf, ...) end
+	if id == "SmokeBomb" then
+		-- a round black bomb with a purple band, a cap and a fizzing fuse
+		m.PrimaryPart = add("Handle", Vector3.new(1, 1, 1), CFrame.new(), rgb(40, 40, 48), Enum.Material.Metal, Enum.PartType.Ball)
+		add("Band", Vector3.new(0.3, 1.04, 1.04), CFrame.Angles(0, 0, math.rad(90)), rgb(120, 60, 200), Enum.Material.Metal, Enum.PartType.Cylinder)
+		add("Cap", Vector3.new(0.22, 0.42, 0.42), CFrame.new(0, 0.55, 0) * CFrame.Angles(0, 0, math.rad(90)), rgb(90, 90, 100), Enum.Material.Metal, Enum.PartType.Cylinder)
+		add("Fuse", Vector3.new(0.5, 0.09, 0.09), CFrame.new(0.12, 0.85, 0) * CFrame.Angles(0, 0, math.rad(60)), rgb(150, 110, 70), Enum.Material.Fabric, Enum.PartType.Cylinder)
+		local spark = add("Spark", Vector3.new(0.16, 0.16, 0.16), CFrame.new(0.24, 1.07, 0), rgb(255, 170, 60), Enum.Material.Neon, Enum.PartType.Ball)
+		local e = Instance.new("ParticleEmitter")
+		e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		e.Color = ColorSequence.new(rgb(255, 200, 90), rgb(255, 110, 40))
+		e.Size = NumberSequence.new(0.25, 0)
+		e.Lifetime = NumberRange.new(0.2, 0.4)
+		e.Rate = 22
+		e.Speed = NumberRange.new(2, 4)
+		e.SpreadAngle = Vector2.new(60, 60)
+		e.LightEmission = 1
+		e.Parent = spark
+	elseif id == "WhoopeeCushion" then
+		-- a squashy pink cushion with a nozzle
+		m.PrimaryPart = add("Handle", Vector3.new(1.5, 0.5, 1.5), CFrame.new(), rgb(240, 90, 150), Enum.Material.SmoothPlastic, nil, Enum.MeshType.Sphere)
+		add("Nozzle", Vector3.new(0.5, 0.26, 0.26), CFrame.new(0, -0.02, -0.85) * CFrame.Angles(0, math.rad(90), 0), rgb(220, 70, 130), Enum.Material.SmoothPlastic, Enum.PartType.Cylinder)
+		add("Lip", Vector3.new(0.08, 0.32, 0.32), CFrame.new(0, -0.02, -1.1) * CFrame.Angles(0, math.rad(90), 0), rgb(250, 160, 200), Enum.Material.SmoothPlastic, Enum.PartType.Cylinder)
+	elseif id == "EnergyDrink" then
+		-- a can of ZAP!: blue with a yellow lightning stripe, silver top and bottom, a ring pull
+		m.PrimaryPart = add("Handle", Vector3.new(1.15, 0.62, 0.62), CFrame.Angles(0, 0, math.rad(90)), rgb(40, 120, 230), Enum.Material.Metal, Enum.PartType.Cylinder)
+		for _, y in { -0.6, 0.6 } do
+			add("Rim", Vector3.new(0.08, 0.6, 0.6), CFrame.new(0, y, 0) * CFrame.Angles(0, 0, math.rad(90)), rgb(210, 214, 222), Enum.Material.Metal, Enum.PartType.Cylinder)
+		end
+		-- a yellow band round the middle (clear of the can's side, so the two never flicker)
+		add("Band", Vector3.new(0.34, 0.68, 0.68), CFrame.Angles(0, 0, math.rad(90)), rgb(255, 215, 40), Enum.Material.SmoothPlastic, Enum.PartType.Cylinder)
+		add("Pull", Vector3.new(0.2, 0.04, 0.3), CFrame.new(0, 0.65, 0.05), rgb(200, 204, 212), Enum.Material.Metal)
+	else
+		return nil
+	end
+	-- (sized for a hand)
+	local scale = ({ SmokeBomb = 0.72, WhoopeeCushion = 0.8, EnergyDrink = 0.8 })[id]
+	if scale then m:ScaleTo(scale) end
+	return m
+end
+
+-- a gear model as a tool's handle (the parts move into the Tool; the welds hold)
+local function toolHandle(tool, id)
+	local m = GearService.model(id)
+	if not m then return nil end
+	for _, c in m:GetChildren() do c.Parent = tool end
+	m:Destroy()
+	return tool:FindFirstChild("Handle")
+end
+
+-- throw a copy of a gear model in an arc from the hand to where the player faces; calls land(pos)
+local function throwArc(player, id, dist, land)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	local from = root.Position + root.CFrame.LookVector * 1.5 + Vector3.new(0, 1.5, 0)
+	local flat = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
+	flat = flat.Magnitude > 1e-3 and flat.Unit or Vector3.new(0, 0, -1)
+	-- where it comes down: on whatever is there
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { player.Character }
+	local ahead = root.Position + flat * dist
+	local hit = workspace:Raycast(ahead + Vector3.new(0, 8, 0), Vector3.new(0, -30, 0), params)
+	-- (a wall in the way: it stops short of it)
+	local block = workspace:Raycast(from, flat * dist, params)
+	if block then
+		ahead = block.Position - flat * 1.5
+		hit = workspace:Raycast(ahead + Vector3.new(0, 4, 0), Vector3.new(0, -30, 0), params)
+	end
+	local to = hit and hit.Position or (root.Position + flat * dist - Vector3.new(0, 2.8, 0))
+	local m = GearService.model(id, CFrame.new(from))
+	for _, p in m:GetDescendants() do
+		if p:IsA("BasePart") then p.Anchored = p == m.PrimaryPart end
+	end
+	m.Parent = workspace
+	local t0, dur = os.clock(), 0.55
+	local conn
+	conn = game:GetService("RunService").Heartbeat:Connect(function()
+		local a = math.min(1, (os.clock() - t0) / dur)
+		local pos = from:Lerp(to + Vector3.new(0, 0.3, 0), a) + Vector3.new(0, math.sin(a * math.pi) * 5, 0)
+		if m.PrimaryPart then m:PivotTo(CFrame.new(pos) * CFrame.Angles(a * 9, a * 4, 0)) end
+		if a >= 1 then
+			conn:Disconnect()
+			if m.PrimaryPart then m:PivotTo(CFrame.new(to + Vector3.new(0, 0.3, 0))) end
+			task.spawn(land, to, m)
+		end
+	end)
+	return m
 end
 
 -- the cardboard box, worn over the whole player
@@ -133,48 +243,87 @@ local function useGear(player, def, tool)
 		gear.uses[def.id] -= 1
 	end
 	if def.id == "SmokeBomb" then
+		-- a big cloud right where you stand that hangs about, and you flicker out of sight in it
 		local puff = Instance.new("Part")
 		puff.Anchored, puff.CanCollide, puff.CanQuery, puff.CanTouch = true, false, false, false
 		puff.Transparency = 1
 		puff.Size = Vector3.one
-		puff.Position = root.Position
+		puff.Position = root.Position - Vector3.new(0, 1.5, 0)
 		puff.Parent = workspace
-		local e = Instance.new("ParticleEmitter")
-		e.Texture = "rbxasset://textures/particles/smoke_main.dds"
-		e.Color = ColorSequence.new(rgb(235, 235, 245), rgb(170, 170, 185))
-		e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 6), NumberSequenceKeypoint.new(0.3, 12), NumberSequenceKeypoint.new(1, 16) })
-		e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.7, 0.2), NumberSequenceKeypoint.new(1, 1) })
-		e.Lifetime = NumberRange.new(3, 4)
-		e.Speed = NumberRange.new(5, 10)
-		e.SpreadAngle = Vector2.new(180, 180)
-		e.Drag = 2.5
-		e.Rate = 25
-		e.LightInfluence = 0.4
-		e.Parent = puff
-		e:Emit(90)
-		task.delay(1.5, function() e.Enabled = false end)
-		Debris:AddItem(puff, 5)
+		local function cloud(color1, color2, size, rate, speed, life)
+			local e = Instance.new("ParticleEmitter")
+			e.Texture = "rbxasset://textures/particles/smoke_main.dds"
+			e.Color = ColorSequence.new(color1, color2)
+			e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, size * 0.5), NumberSequenceKeypoint.new(0.3, size), NumberSequenceKeypoint.new(1, size * 1.4) })
+			e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(0.75, 0.25), NumberSequenceKeypoint.new(1, 1) })
+			e.Lifetime = NumberRange.new(life, life + 1.5)
+			e.Speed = NumberRange.new(speed * 0.5, speed)
+			e.SpreadAngle = Vector2.new(180, 180)
+			e.Drag = 3
+			e.Rate = rate
+			e.RotSpeed = NumberRange.new(-40, 40)
+			e.Rotation = NumberRange.new(0, 360)
+			e.LightInfluence = 0.5
+			e.Parent = puff
+			return e
+		end
+		local big = cloud(rgb(225, 222, 235), rgb(150, 140, 175), 11, 30, 14, 4)
+		local low = cloud(rgb(190, 180, 215), rgb(120, 110, 150), 7, 20, 6, 5)
+		big:Emit(120)
+		low:Emit(60)
+		local flash = Instance.new("PointLight")
+		flash.Color = rgb(210, 190, 255)
+		flash.Range = 24
+		flash.Brightness = 4
+		flash.Parent = puff
+		game:GetService("TweenService"):Create(flash, TweenInfo.new(0.6), { Brightness = 0 }):Play()
+		task.delay(4, function() big.Enabled = false low.Enabled = false end)
+		Debris:AddItem(puff, 10)
+		-- vanish: the character fades almost out for a couple of seconds
+		local faded = {}
+		for _, d in char:GetDescendants() do
+			if (d:IsA("BasePart") or d:IsA("Decal")) and d.Name ~= "HumanoidRootPart" and d.Transparency < 1 then
+				faded[d] = d.Transparency
+				d.Transparency = 0.8
+			end
+		end
+		task.delay(2.5, function()
+			for d, t in faded do
+				if d.Parent then d.Transparency = t end
+			end
+		end)
 		player:SetAttribute("SmokeUntil", workspace:GetServerTimeNow() + 3)
-		Remotes.Sfx:FireAllClients("Error", root.Position)
 		for _, hook in GearService.smokeHooks do task.spawn(hook, player, root.Position) end
 		Remotes.Notify:FireClient(player, "\u{1F4A8} POOF! Now get out of here!", "good")
 	elseif def.id == "WhoopeeCushion" then
-		local at = root.Position + root.CFrame.LookVector * 3 - Vector3.new(0, 2.6, 0)
-		local c = Instance.new("Part")
-		c.Name = "WhoopeeCushion"
-		c.Shape = Enum.PartType.Cylinder
-		c.Size = Vector3.new(0.35, 2, 2)
-		c.Color = rgb(235, 80, 140)
-		c.CFrame = CFrame.new(at) * CFrame.Angles(0, 0, math.rad(90))
-		c.Anchored, c.CanCollide, c.CanQuery, c.CanTouch = true, false, false, false
-		c.Parent = workspace
-		task.delay(2, function()
-			if not c.Parent then return end
+		-- thrown ahead: it lands, sits there for two seconds, puffs up and goes off
+		throwArc(player, "WhoopeeCushion", 22, function(at, m)
+			task.wait(2)
+			if not m.Parent or not m.PrimaryPart then return end
+			local TweenService = game:GetService("TweenService")
+			-- (it swells up...)
+			local scale = Instance.new("NumberValue")
+			scale.Value = 1
+			scale.Changed:Connect(function(v) if m.Parent then m:ScaleTo(v) end end)
+			TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Value = 1.5 }):Play()
+			task.wait(0.25)
+			-- (...and goes off: a ring across the floor, the word, the noise)
+			local ring = Instance.new("Part")
+			ring.Shape = Enum.PartType.Cylinder
+			ring.Anchored, ring.CanCollide, ring.CanQuery, ring.CanTouch = true, false, false, false
+			ring.Material = Enum.Material.Neon
+			ring.Color = rgb(255, 140, 200)
+			ring.Size = Vector3.new(0.15, 2, 2)
+			ring.CFrame = CFrame.new(at + Vector3.new(0, 0.2, 0)) * CFrame.Angles(0, 0, math.rad(90))
+			ring.Transparency = 0.2
+			ring.Parent = workspace
+			TweenService:Create(ring, TweenInfo.new(0.7, Enum.EasingStyle.Quad), { Size = Vector3.new(0.15, 34, 34), Transparency = 1 }):Play()
+			Debris:AddItem(ring, 0.8)
 			local bb = Instance.new("BillboardGui")
-			bb.Size = UDim2.fromOffset(200, 60)
+			bb.Size = UDim2.fromOffset(220, 70)
 			bb.StudsOffset = Vector3.new(0, 3, 0)
 			bb.AlwaysOnTop = true
-			bb.Parent = c
+			bb.Parent = m.PrimaryPart
 			local t = Instance.new("TextLabel")
 			t.Size = UDim2.fromScale(1, 1)
 			t.BackgroundTransparency = 1
@@ -182,21 +331,54 @@ local function useGear(player, def, tool)
 			t.Font = Enum.Font.LuckiestGuy
 			t.Text = "PFFFFRT!"
 			t.TextColor3 = rgb(255, 150, 200)
-			local s = Instance.new("UIStroke")
-			s.Thickness = 3
-			s.Parent = t
+			local st = Instance.new("UIStroke")
+			st.Thickness = 3
+			st.Parent = t
 			t.Parent = bb
-			Remotes.Sfx:FireAllClients("Error", c.Position)
-			for _, hook in GearService.noiseHooks do task.spawn(hook, c.Position) end
-			Debris:AddItem(c, 6)
+			Remotes.Sfx:FireAllClients("Bonk", at)
+			for _, hook in GearService.noiseHooks do task.spawn(hook, at) end
+			-- then it goes flat and fades
+			TweenService:Create(scale, TweenInfo.new(0.6), { Value = 0.7 }):Play()
+			task.wait(3)
+			for _, d in m:GetDescendants() do
+				if d:IsA("BasePart") then TweenService:Create(d, TweenInfo.new(0.5), { Transparency = 1 }):Play() end
+			end
+			Debris:AddItem(m, 0.6)
 		end)
 	elseif def.id == "EnergyDrink" then
+		-- a swig (the can comes up to the mouth), then a streak of lightning behind you for 20 s
+		if tool then
+			local grip = tool.Grip
+			tool.Grip = grip * CFrame.new(0, -0.6, 0.4) * CFrame.Angles(math.rad(-70), 0, 0)
+			task.delay(0.6, function() if tool.Parent then tool.Grip = grip end end)
+		end
 		player:SetAttribute("EnergyUntil", workspace:GetServerTimeNow() + 20)
 		require(script.Parent.StealService).setSpeed(player)
+		local old = root:FindFirstChild("EnergyTrail")
+		if old then old:Destroy() end
+		local a0 = Instance.new("Attachment")
+		a0.Name = "EnergyA0"
+		a0.Position = Vector3.new(0, 1.2, 0.4)
+		a0.Parent = root
+		local a1 = Instance.new("Attachment")
+		a1.Name = "EnergyA1"
+		a1.Position = Vector3.new(0, -1.6, 0.4)
+		a1.Parent = root
+		local trail = Instance.new("Trail")
+		trail.Name = "EnergyTrail"
+		trail.Attachment0, trail.Attachment1 = a0, a1
+		trail.Color = ColorSequence.new(rgb(255, 230, 60), rgb(60, 150, 255))
+		trail.Transparency = NumberSequence.new(0.2, 1)
+		trail.Lifetime = 0.35
+		trail.LightEmission = 1
+		trail.Parent = root
 		task.delay(20.1, function()
+			trail:Destroy()
+			a0:Destroy()
+			a1:Destroy()
 			if player.Parent then require(script.Parent.StealService).setSpeed(player) end
 		end)
-		Remotes.Notify:FireClient(player, "\u{26A1} ENERGY! 20 seconds of sprinting that never runs out", "good")
+		Remotes.Notify:FireClient(player, "\u{26A1} ZAP! 20 seconds of sprinting that never runs out", "good")
 	end
 	Signals.fire("gearUse", player, def.id)
 	-- update the count on the tool (or take it away when it's the last one)
@@ -217,17 +399,13 @@ local function makeTool(player, def, n)
 		tool.Equipped:Connect(function() wearBox(player, true) end)
 		tool.Unequipped:Connect(function() wearBox(player, false) end)
 	else
-		local h
-		if def.id == "SmokeBomb" then
-			h = handle(tool, Vector3.new(0.9, 0.9, 0.9), rgb(60, 60, 70), Enum.Material.Metal)
-			h.Shape = Enum.PartType.Ball
-		elseif def.id == "WhoopeeCushion" then
-			h = handle(tool, Vector3.new(0.3, 1.4, 1.4), rgb(235, 80, 140))
-			h.Shape = Enum.PartType.Cylinder
-		else
-			h = handle(tool, Vector3.new(1.1, 0.6, 0.6), rgb(60, 200, 255), Enum.Material.Metal)
-			h.Shape = Enum.PartType.Cylinder
+		toolHandle(tool, def.id)
+		if def.id == "EnergyDrink" then
+			-- (the can's axis is its handle's X: stood upright in the fist)
 			tool.Grip = CFrame.Angles(0, 0, math.rad(90))
+		elseif def.id == "WhoopeeCushion" then
+			-- (held by the edge, nozzle forward)
+			tool.Grip = CFrame.new(0, 0, 0.55)
 		end
 		tool.Activated:Connect(function()
 			useGear(player, def, tool)
@@ -363,13 +541,17 @@ local function buildStall()
 	t.Parent = g
 	-- the goods on the counter: a box, smoke bombs, a cushion, cans, sneakers, a lockpick roll
 	part("DisplayBox", Vector3.new(1.6, 1.4, 1.4), CFrame.new(-3, 4.2, 0), rgb(186, 140, 90), Enum.Material.Cardboard)
-	for i = 0, 2 do
-		part("Bomb", Vector3.new(0.7, 0.7, 0.7), CFrame.new(-1.6 + i * 0.5, 3.85, 0.3 - (i % 2) * 0.5), rgb(60, 60, 70), Enum.Material.Metal, Enum.PartType.Ball)
+	-- (the real thing, as in your hand)
+	local function display(id, cf)
+		local g = GearService.model(id, base * cf)
+		for _, d in g:GetDescendants() do
+			if d:IsA("BasePart") then d.Anchored = true end
+		end
+		g.Parent = m
 	end
-	part("Cushion", Vector3.new(0.3, 1.2, 1.2), CFrame.new(0.2, 3.65, 0) * CFrame.Angles(0, 0, math.rad(90)), rgb(235, 80, 140), nil, Enum.PartType.Cylinder)
-	for i = 0, 2 do
-		part("Can", Vector3.new(0.9, 0.5, 0.5), CFrame.new(1.4 + i * 0.55, 3.95, -0.2) * CFrame.Angles(0, 0, math.rad(90)), rgb(60, 200, 255), Enum.Material.Metal, Enum.PartType.Cylinder)
-	end
+	for i = 0, 2 do display("SmokeBomb", CFrame.new(-1.6 + i * 0.55, 4, 0.3 - (i % 2) * 0.5)) end
+	display("WhoopeeCushion", CFrame.new(0.3, 3.75, 0))
+	for i = 0, 2 do display("EnergyDrink", CFrame.new(1.5 + i * 0.6, 4.1, -0.2)) end
 	part("Sneaker", Vector3.new(0.7, 0.5, 1.3), CFrame.new(3.3, 3.75, 0.2), rgb(240, 240, 250))
 	part("SneakerSole", Vector3.new(0.72, 0.15, 1.32), CFrame.new(3.3, 3.55, 0.2), rgb(80, 180, 255))
 	local lamp = part("Lamp", Vector3.new(0.6, 0.6, 0.6), CFrame.new(0, 7.2, 0.4), rgb(255, 240, 200), Enum.Material.Neon, Enum.PartType.Ball)

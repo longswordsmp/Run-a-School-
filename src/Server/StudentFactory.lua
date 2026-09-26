@@ -265,11 +265,12 @@ local function buildBillboard(model, def, gradeId)
 	local grade = Config.GradeById[gradeId] or Config.Grades[1]
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "Tag"
-	-- rarer students get bigger tags so they read from across the hallway
-	local w = 7.5 + (rarity.order - 1) * 0.7
-	bb.Size = UDim2.new(w, 0, w * 0.58, 0)
-	bb.StudsOffsetWorldSpace = Vector3.new(0, 3.6 + (model:GetAttribute("TagLift") or 0), 0)
-	bb.MaxDistance = 90
+	-- rarer students get bigger tags that show from further off (the common ones only close by, so
+	-- the carpet isn't a wall of text); three lines: rarity, name, price and income
+	local w = 6.2 + (rarity.order - 1) * 0.6
+	bb.Size = UDim2.new(w, 0, w * 0.46, 0)
+	bb.StudsOffsetWorldSpace = Vector3.new(0, 3.4 + (model:GetAttribute("TagLift") or 0), 0)
+	bb.MaxDistance = rarity.order >= 3 and 90 or 55
 	bb.LightInfluence = 0
 	bb.Parent = head
 	local list = Instance.new("UIListLayout")
@@ -288,10 +289,12 @@ local function buildBillboard(model, def, gradeId)
 	elseif rarity.gradient then
 		shimmer(r, rarity.gradient[1], rarity.gradient[2])
 	end
-	label(bb, "Name", 3, 0.22, def.name, Color3.new(1, 1, 1))
+	label(bb, "Name", 3, 0.3, def.name, Color3.new(1, 1, 1))
+	-- price and income on one line (the other modes rewrite this line: RESERVED, STOLEN!...)
 	local income = def.income * grade.mult
-	label(bb, "Income", 4, 0.18, Config.formatCash(income) .. "/s", Color3.fromRGB(110, 255, 110))
-	label(bb, "Price", 5, 0.2, Config.formatCash(def.price), Color3.fromRGB(255, 220, 60))
+	local price = label(bb, "Price", 5, 0.26, "", Color3.fromRGB(255, 220, 60))
+	price.RichText = true
+	price.Text = ('%s  <font color="#6EFF6E">%s/s</font>'):format(Config.formatCash(def.price), Config.formatCash(income))
 	return bb
 end
 
@@ -393,21 +396,11 @@ end
 -- both arms straight up (carrying something overhead), or back down. Works on player characters
 -- (Motor6D shoulders) and on the NPC rigs (AnimationConstraint shoulders); the walk or run swing
 -- then plays around the raised arms.
+-- (the pose itself is drawn by each client, Client/CarryPose: after the animations run it sets
+-- the shoulders and elbows of every model tagged "CarryArms". A change made here on the server was
+-- overwritten by the walk and run animations every frame.)
 function Factory.raiseArms(rig, up)
-	for _, name in { "RightShoulder", "LeftShoulder" } do
-		local joint = rig:FindFirstChild(name, true)
-		local target, prop = Factory.poseTarget(joint)
-		if target then
-			local rest = joint:GetAttribute("RestPose")
-			if up and not rest then
-				joint:SetAttribute("RestPose", target[prop])
-				target[prop] = target[prop] * CFrame.Angles(math.rad(165), 0, 0)
-			elseif not up and rest then
-				target[prop] = rest
-				joint:SetAttribute("RestPose", nil)
-			end
-		end
-	end
+	if up then CollectionService:AddTag(rig, "CarryArms") else CollectionService:RemoveTag(rig, "CarryArms") end
 end
 
 -- a kid carried overhead by `carrier` (a goon, a thief, a player): sitting on the raised hands just

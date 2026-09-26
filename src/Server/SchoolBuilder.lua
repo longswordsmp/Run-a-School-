@@ -811,19 +811,6 @@ local function fence(parent, L, style, look)
 end
 
 
--- a school nobody has fixed up yet: planks nailed across the front windows
-function SchoolBuilder.boards(parent, L, floors)
-	local wood = rgb(150, 105, 60)
-	local z = ZF + WT / 2 + 0.3
-	for _, w in frontWindows(floors) do
-		local cy = w.ft + (WIN_SILL + WIN_TOP) / 2
-		for _, a in { 28, -28 } do
-			part(parent, "Board", Vector3.new(WIN_W + 1.5, 0.9, 0.25), L(w.x, cy, z) * CFrame.Angles(0, 0, math.rad(a)), wood, Enum.Material.Wood)
-		end
-		part(parent, "Board", Vector3.new(WIN_W + 1, 0.9, 0.25), L(w.x, cy + 2.2, z + 0.1), wood:Lerp(Color3.new(0, 0, 0), 0.1), Enum.Material.Wood)
-	end
-end
-
 -- curtains tied back inside every front window, a pot with a red flower on every sill
 Items.Curtains = function(parent, L, look, roofY, floors)
 	local inside = ZF - WT / 2 - 0.45
@@ -1762,13 +1749,7 @@ function SchoolBuilder.setItems(plot, owned, animate)
 			if not ok then warn("[SchoolBuilder] item", id, err) end
 		end
 	end
-	-- until someone buys curtains, the front windows stay boarded up
-	if not (owned and owned.Curtains) then
-		local f = Instance.new("Folder")
-		f.Name = "Boards"
-		f.Parent = items
-		SchoolBuilder.boards(f, L, floors)
-	end
+	-- (no planks over the windows of a school nobody has fixed up: the owner found them ugly)
 	items.Parent = school
 	local fresh = animate and items:FindFirstChild(animate)
 	if fresh then task.spawn(buildIn, fresh) end

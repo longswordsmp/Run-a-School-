@@ -201,6 +201,25 @@ function UI.viewport(parent, model, opts)
 	m:PivotTo(CFrame.new())
 	m.Parent = world
 	local cf, size = m:GetBoundingBox()
+	-- a rig is framed by its body, not its whole bounding box (a prop held out, a pet at its feet
+	-- or a glow around it made the kid a speck in the middle of the photo); portrait = head and
+	-- shoulders, like a school photo
+	local head = m:FindFirstChild("Head")
+	local lower = m:FindFirstChild("LowerTorso")
+	if head and lower and m:FindFirstChildOfClass("Humanoid") then
+		local top = head.Position.Y + head.Size.Y / 2 + 0.25
+		local bottom
+		if opts.portrait then
+			local upper = m:FindFirstChild("UpperTorso")
+			bottom = upper and (upper.Position.Y - upper.Size.Y * 0.35) or lower.Position.Y
+		else
+			local foot = m:FindFirstChild("LeftFoot") or m:FindFirstChild("RightFoot")
+			bottom = foot and (foot.Position.Y - foot.Size.Y / 2 - 0.1) or (lower.Position.Y - 3)
+		end
+		local h = top - bottom
+		cf = CFrame.new(head.Position.X, bottom + h / 2, head.Position.Z)
+		size = Vector3.new(h * 0.8, h, 1.5)
+	end
 	local cam = Instance.new("Camera")
 	cam.FieldOfView = 40
 	local dist = math.max(size.X, size.Y) / (2 * math.tan(math.rad(20))) * (opts.zoom or 1.05)
@@ -352,6 +371,8 @@ function UI.card(parent, opts)
 			size = UDim2.new(1, -8, 0.62, 0),
 			position = UDim2.new(0, 4, 0, 4),
 			silhouette = opts.silhouette,
+			portrait = opts.portrait,
+			zoom = opts.portrait and 0.92 or nil,
 			zindex = 13,
 		})
 	end

@@ -127,7 +127,7 @@ local lastTickets = player:GetAttribute("Tickets") or 0
 local function refreshTickets()
 	local n = player:GetAttribute("Tickets") or 0
 	ticketText.Text = "\u{1F39F}\u{FE0F} " .. tostring(n)
-	local show = n > 0 or workspace:GetAttribute("Event") ~= nil
+	local show = (n > 0 or workspace:GetAttribute("Event") ~= nil) and not player:GetAttribute("InTutorial")
 	ticketText.Parent.Visible = show
 	chips.Size = UDim2.fromOffset(show and 590 or 440, 34)
 	if n > lastTickets then
@@ -138,6 +138,7 @@ local function refreshTickets()
 	lastTickets = n
 end
 player:GetAttributeChangedSignal("Tickets"):Connect(refreshTickets)
+player:GetAttributeChangedSignal("InTutorial"):Connect(refreshTickets)
 workspace:GetAttributeChangedSignal("Event"):Connect(refreshTickets)
 refreshTickets()
 local function refreshCandy()
@@ -296,6 +297,17 @@ local function fixPrompt(prompt)
 	if prompt:GetAttribute("OwnerOnly") then prompt.Enabled = mine end
 	if prompt:GetAttribute("OthersOnly") then prompt.Enabled = not mine end
 end
+-- a prompt meant for one principal (their Welcome Bus kids): nobody else sees it
+task.spawn(function()
+	local hallFolder = workspace:WaitForChild("Hall", 30)
+	if not hallFolder then return end
+	local function fixOnlyFor(d)
+		local who = d:IsA("ProximityPrompt") and d:GetAttribute("OnlyFor")
+		if who then d.Enabled = Crew.owns(player, who) end
+	end
+	hallFolder.DescendantAdded:Connect(function(d) task.defer(fixOnlyFor, d) end)
+	for _, d in hallFolder:GetDescendants() do fixOnlyFor(d) end
+end)
 local plots = workspace:WaitForChild("Plots")
 plots.DescendantAdded:Connect(function(d)
 	if d:IsA("ProximityPrompt") then task.defer(fixPrompt, d) end

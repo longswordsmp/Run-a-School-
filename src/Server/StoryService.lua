@@ -22,7 +22,7 @@ local LINES = {
 		"Back in MY day we had ONE desk, and we SHARED it!",
 		"Splendid! Simply splendid!",
 		"A kid steps off that bus every 2.2 seconds. Every! Single! One!",
-		"Catch a cheater and the Board sends you windows. True story.",
+		"Lock your gate when the purple van comes round. Trust me.",
 		"The Honor Roll Bus comes at half past seven. Every quarter hour!",
 		"Lock your gate, young principal. Thieves everywhere.",
 		"I founded this street with one pencil. That pencil, in fact.",
@@ -492,7 +492,8 @@ local function vexDriveBy()
 	for player in Data.all() do
 		local plot = PlotService.getPlot(player)
 		local inc = player:GetAttribute("BaseIncome") or 0
-		if plot and (not lowest or inc < lowest) then target, lowest = plot, inc end
+		-- (not a principal still on the To-Do list: their first minutes are scripted)
+		if plot and not player:GetAttribute("InTutorial") and (not lowest or inc < lowest) then target, lowest = plot, inc end
 	end
 	local limo, vex = buildLimo()
 	-- the sidewalk on the target school's side of the street, clear of the carpet

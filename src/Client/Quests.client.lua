@@ -1,7 +1,7 @@
 -- StarterPlayer.StarterPlayerScripts.Quests
--- The Principal's To-Do card (top left) and the guide that points at what to do next:
--- a glowing band from you to the target plus a bouncing arrow over it, or a pulse on the
--- side-bar button when the step happens in a menu.
+-- The Principal's To-Do card (top left) and the guide: the thing the step is about glows (an
+-- outline, seen through walls when it's far), or the side-bar button pulses when the step
+-- happens in a menu.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -53,59 +53,58 @@ local go = UI.button(card, { text = "GO!", color = UI.C.orange, size = UDim2.fro
 local state
 
 ---------------------------------------------------------------------------
--- the guide
+-- the guide: what the step is about glows. The thing itself (the kid to grab, the pad, Crumpet,
+-- the lock button, the pen) pulses with a warm glow, drawn through walls when it's hidden; a ring
+-- of light pulses on the ground under it; and when it's more than a street away a soft pillar of
+-- light rises from it, so you can spot it across the map. No arrows and no beam from you to it:
+-- they were loud, and the owner wanted them gone. (A Highlight alone was too faint: its outline
+-- is a pixel wide, and a white fill vanishes on a light shirt.)
 ---------------------------------------------------------------------------
 local guideFolder = Instance.new("Folder")
 guideFolder.Name = "QuestGuide"
 guideFolder.Parent = workspace
 
-local targetPart = Instance.new("Part")
-targetPart.Name = "Target"
-targetPart.Anchored, targetPart.CanCollide, targetPart.CanQuery, targetPart.CanTouch = true, false, false, false
-targetPart.Transparency = 1
-targetPart.Size = Vector3.one * 0.2
-targetPart.Parent = guideFolder
-local a1 = Instance.new("Attachment")
-a1.Parent = targetPart
+local GLOW = Color3.fromRGB(70, 225, 255) -- (cyan: it reads on grass, the white sidewalk and the red carpet alike)
+local glow = Instance.new("Highlight")
+glow.Name = "QuestGlow"
+glow.FillColor = GLOW
+glow.OutlineColor = Color3.new(1, 1, 1)
+glow.Enabled = false
+glow.Parent = guideFolder
 
--- a bouncing down-arrow made of two wedges
-local arrow = Instance.new("Model")
-arrow.Name = "Arrow"
-local shaft = Instance.new("Part")
-shaft.Name = "Shaft"
-shaft.Size = Vector3.new(0.9, 2.2, 0.9)
-shaft.Color = Color3.fromRGB(255, 214, 51)
-shaft.Material = Enum.Material.Neon
-shaft.Anchored, shaft.CanCollide, shaft.CanQuery, shaft.CanTouch = true, false, false, false
-shaft.Parent = arrow
-for _, side in { -1, 1 } do
-	local w = Instance.new("WedgePart")
-	w.Name = "Head"
-	w.Size = Vector3.new(0.9, 1.6, 1.1)
-	w.Color = shaft.Color
-	w.Material = Enum.Material.Neon
-	w.Anchored, w.CanCollide, w.CanQuery, w.CanTouch = true, false, false, false
-	w:SetAttribute("Side", side)
-	w.Parent = arrow
-end
-arrow.Parent = guideFolder
+-- the pillar: a tall soft column of light, fading upward
+local pillar = Instance.new("Part")
+pillar.Name = "Pillar"
+pillar.Shape = Enum.PartType.Cylinder
+pillar.Size = Vector3.new(60, 2.2, 2.2)
+pillar.Material = Enum.Material.Neon
+pillar.Color = GLOW
+pillar.Transparency = 1
+pillar.Anchored, pillar.CanCollide, pillar.CanQuery, pillar.CanTouch, pillar.CastShadow = true, false, false, false, false
+pillar.Parent = guideFolder
 
-local beam = Instance.new("Beam")
-beam.Attachment1 = a1
-beam.Color = ColorSequence.new(Color3.fromRGB(255, 230, 90))
-beam.LightEmission = 1
-beam.Width0, beam.Width1 = 0.5, 0.5
-beam.FaceCamera = true
-beam.Segments = 12
-beam.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.9), NumberSequenceKeypoint.new(0.3, 0.35), NumberSequenceKeypoint.new(1, 0.25) })
-beam.Parent = guideFolder
+local ring = Instance.new("Part")
+ring.Name = "Ring"
+ring.Shape = Enum.PartType.Cylinder
+ring.Size = Vector3.new(0.12, 7, 7)
+ring.Material = Enum.Material.Neon
+ring.Color = GLOW
+ring.Transparency = 1
+ring.Anchored, ring.CanCollide, ring.CanQuery, ring.CanTouch, ring.CastShadow = true, false, false, false, false
+ring.Parent = guideFolder
 
 local function myPlot()
 	local name = player:GetAttribute("Plot")
 	return name and workspace:FindFirstChild("Plots") and workspace.Plots:FindFirstChild(name)
 end
 
--- where the current step wants you to go (nil = it happens in a menu)
+local function story(name)
+	local s = workspace:FindFirstChild("StoryNPCs")
+	return s and s:FindFirstChild(name)
+end
+
+-- what the current step is about: an Instance to outline, or a Vector3 for the ground ring
+-- (nil = it happens in a menu, or there's nothing to point at right now)
 local function missionTarget()
 	-- a secret job points where the server says (the Lab gate, the Factory gate)
 	local t = player:GetAttribute("MissionTarget")
@@ -116,105 +115,94 @@ local function missionTarget()
 		if def.kind == "defend" then
 			if player:GetAttribute("Raid") then return nil, "thief" end
 			local plot = myPlot()
-			local entry = plot and plot:FindFirstChild("Entry")
-			return entry and entry.Position + Vector3.new(0, 3, 0) or nil
+			return plot and plot:FindFirstChild("LockButton")
 		end
 		if def.kind == "chase" then
 			local folder = workspace:FindFirstChild("Runners")
 			for _, m in folder and folder:GetChildren() or {} do
-				if m:GetAttribute("Runner") == player.UserId and m.PrimaryPart then
-					return m.PrimaryPart.Position + Vector3.new(0, 4, 0)
-				end
+				if m:GetAttribute("Runner") == player.UserId then return m end
 			end
 			return nil
 		end
 		if def.item and not player:GetAttribute("Heist") then
 			local fac = workspace:FindFirstChild("VexFactory")
-			local desk = fac and fac:FindFirstChild("VexDesk", true)
-			local spot = desk and desk:FindFirstChild("PromptSpot")
-			return spot and spot.Position + Vector3.new(0, 2, 0) or Vector3.new(0, 5, 34)
+			return fac and fac:FindFirstChild("VexDesk", true)
 		end
 		return nil, "factory"
 	end
 	-- the tracked town quest (TownQuestService sets QuestTarget), once the To-Do list is done
 	local q = player:GetAttribute("QuestTarget")
-	if typeof(q) == "Vector3" and (not state or state.kind ~= "tutorial") then
-		return q, nil, true
-	end
-	if player:GetAttribute("SecretReady") and not player:GetAttribute("MissionReady") and not player:GetAttribute("Talking") then
-		local story = workspace:FindFirstChild("StoryNPCs")
-		local stan = story and story:FindFirstChild("JanitorStan")
-		-- (only once the goal card has nothing more urgent: the beam, no arrow)
-		if stan and stan.PrimaryPart and (not state or state.kind ~= "tutorial") then
-			return stan.PrimaryPart.Position + Vector3.new(0, 4.5, 0), nil, true
+	if typeof(q) == "Vector3" and (not state or state.kind ~= "tutorial") then return q end
+	if not state or state.kind ~= "tutorial" then
+		if player:GetAttribute("SecretReady") and not player:GetAttribute("MissionReady") and not player:GetAttribute("Talking") then
+			return story("JanitorStan")
 		end
-	end
-	if player:GetAttribute("MissionReady") and not player:GetAttribute("Talking") then
-		-- (the "!" over his head marks him; the beam leads the way)
-		local story = workspace:FindFirstChild("StoryNPCs")
-		local wob = story and story:FindFirstChild("Wobblesworth")
-		return wob and wob.PrimaryPart and wob.PrimaryPart.Position + Vector3.new(0, 4.5, 0) or nil, nil, true
+		if player:GetAttribute("MissionReady") and not player:GetAttribute("Talking") then
+			return story("Wobblesworth")
+		end
 	end
 	return nil
 end
 
-local noArrow = false
+local function nearest(list, root)
+	local best, bestD
+	for _, m in list do
+		local pp = m:IsA("Model") and m.PrimaryPart or m
+		if pp then
+			local d = root and (pp.Position - root.Position).Magnitude or 0
+			if not best or d < bestD then best, bestD = m, d end
+		end
+	end
+	return best
+end
+
 local function worldTarget()
-	local mpos, mguide, beamOnly = missionTarget()
-	noArrow = beamOnly == true
 	if player:GetAttribute("Talking") then return nil end
-	if mpos then return mpos end
+	local mt, mguide = missionTarget()
+	if mt then return mt end
 	if not mguide and (not state or not state.guide) then return nil end
 	local g = mguide or state.guide
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if g == "carpet" then
 		local hall = workspace:FindFirstChild("Hall")
-		local best, bestD
 		local cash = player:GetAttribute("Cash") or 0
+		local mine, others = {}, {}
 		for _, m in hall and hall:GetChildren() or {} do
 			if m:GetAttribute("State") == "Hall" and m.PrimaryPart then
+				local reserved = m:GetAttribute("ReservedFor")
 				local def = Config.StudentById[m:GetAttribute("StudentId")]
-				local ok = def and def.price <= cash
-				if state.guide == "carpet" and state.text:find("Rare") then
-					ok = ok and Config.RarityById[def.rarity].order >= 3
-				end
-				if ok then
-					local d = root and (m.PrimaryPart.Position - root.Position).Magnitude or 0
-					if not best or d < bestD then best, bestD = m.PrimaryPart.Position, d end
+				local price = m:GetAttribute("Free") and 0 or (def and def.price or math.huge)
+				if reserved then
+					-- your own Welcome Bus / bench kids first
+					if Crew.owns(player, reserved) and price <= cash then table.insert(mine, m) end
+				elseif price <= cash then
+					table.insert(others, m)
 				end
 			end
 		end
-		if best then return best + Vector3.new(0, 3.5, 0) end
-		local plot = myPlot()
-		local entry = plot and plot:FindFirstChild("Entry")
-		return entry and Vector3.new(entry.Position.X, 4, 0) or nil
+		return nearest(#mine > 0 and mine or others, root)
 	elseif g == "pad" then
 		local plot = myPlot()
 		local school = plot and plot:FindFirstChild("School")
 		if not school then return nil end
-		local bestPad, bestD
+		local pads, any = {}, nil
 		for _, fm in school:FindFirstChild("Floors") and school.Floors:GetChildren() or {} do
 			for _, d in fm:FindFirstChild("Desks") and fm.Desks:GetChildren() or {} do
 				local pad = d:FindFirstChild("CollectPad")
 				local label = pad and pad:FindFirstChild("Cash") and pad.Cash:FindFirstChild("Label")
-				if label and label.Text ~= "" then
-					local dist = root and (pad.Position - root.Position).Magnitude or 0
-					if not bestPad or dist < bestD then bestPad, bestD = pad, dist end
-				end
+				if label and label.Text ~= "" then table.insert(pads, pad) end
+				any = any or pad
 			end
 		end
-		return bestPad and bestPad.Position + Vector3.new(0, 1.5, 0) or nil
+		return nearest(pads, root) or any
 	elseif g == "factory" then
 		local fac = workspace:FindFirstChild("VexFactory")
-		if player:GetAttribute("Heist") then return Vector3.new(0, 5, 30) end
+		if player:GetAttribute("Heist") then return myPlot() and myPlot():FindFirstChild("Entry") end
 		local pens = fac and fac:FindFirstChild("Pens")
 		for _, pen in pens and pens:GetChildren() or {} do
-			if Crew.owns(player, pen:GetAttribute("OwnerId")) then
-				local spot = pen:FindFirstChild("PromptSpot")
-				if spot then return spot.Position + Vector3.new(0, 2, 0) end
-			end
+			if Crew.owns(player, pen:GetAttribute("OwnerId")) then return pen end
 		end
-		return Vector3.new(0, 5, 34)
+		return Vector3.new(0, 1, 34)
 	elseif g == "thief" then
 		local raids = workspace:FindFirstChild("Raids")
 		local best, bestScore
@@ -225,7 +213,7 @@ local function worldTarget()
 				if not best or score < bestScore then best, bestScore = m, score end
 			end
 		end
-		return best and best.PrimaryPart.Position + Vector3.new(0, 4, 0) or nil
+		return best
 	elseif g == "cheater" or g == "smuggler" then
 		local plot = myPlot()
 		local students = plot and plot:FindFirstChild("Students")
@@ -233,22 +221,20 @@ local function worldTarget()
 			local head = m:FindFirstChild("Head")
 			local hit = (g == "cheater" and head and head:FindFirstChild("Cheating"))
 				or (g == "smuggler" and (m.Name == "CandyDealer" or m.Name == "SlimeDealer"))
-			if hit and m.PrimaryPart then return m.PrimaryPart.Position + Vector3.new(0, 4, 0) end
+			if hit then return m end
 		end
 		return nil
 	elseif g == "bench" then
 		local hall = workspace:FindFirstChild("Hall")
 		for _, m in hall and hall:GetChildren() or {} do
-			if Crew.owns(player, m:GetAttribute("ReservedFor")) and m.PrimaryPart then
-				return m.PrimaryPart.Position + Vector3.new(0, 3.5, 0)
-			end
+			if Crew.owns(player, m:GetAttribute("ReservedFor")) and m:GetAttribute("OnBench") then return m end
 		end
 		return nil
 	elseif g == "lock" then
 		local plot = myPlot()
-		local lock = plot and plot:FindFirstChild("LockButton")
-		local btn = lock and lock:FindFirstChild("Button")
-		return btn and btn.Position + Vector3.new(0, 2, 0) or nil
+		return plot and plot:FindFirstChild("LockButton")
+	elseif g == "npc" and state and state.npc then
+		return story(state.npc)
 	end
 	return nil
 end
@@ -274,40 +260,76 @@ go.button.Activated:Connect(function()
 	end
 end)
 
+-- (is the target hidden behind something, or far? then its outline is drawn through walls)
+local seeParams = RaycastParams.new()
+seeParams.FilterType = Enum.RaycastFilterType.Exclude
+local lastSee, throughWalls = 0, true
+local function checkVisible(target, pos)
+	local cam = workspace.CurrentCamera
+	local exclude = { guideFolder, target }
+	if player.Character then table.insert(exclude, player.Character) end
+	seeParams.FilterDescendantsInstances = exclude
+	local from = cam.CFrame.Position
+	local far = (pos - from).Magnitude > 70
+	local hit = workspace:Raycast(from, pos - from, seeParams)
+	return far or hit ~= nil
+end
+
 local pulseT = 0
+local ringFor, ringY
 RunService.RenderStepped:Connect(function(dt)
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	local pos = gui.Enabled and card.Visible and worldTarget() or nil
-	if pos and root then
-		targetPart.Position = pos
-		local a0 = root:FindFirstChild("QuestGuide")
-		if not a0 then
-			a0 = Instance.new("Attachment")
-			a0.Name = "QuestGuide"
-			a0.Position = Vector3.new(0, -1.5, 0)
-			a0.Parent = root
+	pulseT += dt
+	local target = gui.Enabled and card.Visible and worldTarget() or nil
+	local pulse = (math.sin(pulseT * 3.2) + 1) / 2
+	local spot -- where the ring and the pillar go
+	if typeof(target) == "Instance" and target.Parent then
+		local pos = target:IsA("Model") and target:GetPivot().Position or target.Position
+		if glow.Adornee ~= target then
+			glow.Adornee = target
+			lastSee = 0
 		end
-		beam.Attachment0 = a0
-		beam.Enabled = (pos - root.Position).Magnitude > 6
-		local bob = math.sin(os.clock() * 5) * 0.6
-		local top = pos + Vector3.new(0, 3.2 + bob, 0)
-		local spin = CFrame.Angles(0, os.clock() * 2, 0)
-		shaft.CFrame = CFrame.new(top + Vector3.new(0, 1.1, 0)) * spin
-		for _, w in arrow:GetChildren() do
-			if w:IsA("WedgePart") then
-				-- two wedges back to back make a downward triangle
-				local s = w:GetAttribute("Side")
-				w.CFrame = CFrame.new(top) * spin * CFrame.new(0, -0.8, s * 0.55) * CFrame.Angles(math.rad(180), s > 0 and 0 or math.pi, 0)
-			end
+		if os.clock() - lastSee > 0.25 then
+			lastSee = os.clock()
+			throughWalls = checkVisible(target, pos)
 		end
-		for _, p in arrow:GetChildren() do p.Transparency = noArrow and 1 or 0 end
+		glow.DepthMode = throughWalls and Enum.HighlightDepthMode.AlwaysOnTop or Enum.HighlightDepthMode.Occluded
+		glow.FillTransparency = 0.3 + 0.4 * pulse
+		glow.OutlineTransparency = 0
+		glow.Enabled = true
+		spot = pos
+	elseif typeof(target) == "Vector3" then
+		glow.Enabled = false
+		glow.Adornee = nil
+		spot = target
 	else
-		beam.Enabled = false
-		for _, p in arrow:GetChildren() do p.Transparency = 1 end
+		glow.Enabled = false
+		glow.Adornee = nil
+	end
+	if spot then
+		-- (on the ground under it; looked up again only when it moves)
+		if not ringFor or (ringFor - spot).Magnitude > 0.5 then
+			ringFor = spot
+			local exclude = { guideFolder }
+			if player.Character then table.insert(exclude, player.Character) end
+			if typeof(target) == "Instance" then table.insert(exclude, target) end
+			seeParams.FilterDescendantsInstances = exclude
+			local hit = workspace:Raycast(spot + Vector3.new(0, 2, 0), Vector3.new(0, -30, 0), seeParams)
+			ringY = hit and hit.Position.Y + 0.08 or spot.Y - 3
+		end
+		local s = 5.5 + pulse * 1.8
+		ring.Size = Vector3.new(0.12, s, s)
+		ring.CFrame = CFrame.new(spot.X, ringY, spot.Z) * CFrame.Angles(0, 0, math.rad(90))
+		ring.Transparency = 0.25 + 0.4 * pulse
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local far = root and (Vector3.new(spot.X, 0, spot.Z) - Vector3.new(root.Position.X, 0, root.Position.Z)).Magnitude > 25
+		pillar.CFrame = CFrame.new(spot.X, ringY + 30, spot.Z) * CFrame.Angles(0, 0, math.rad(90))
+		pillar.Transparency = far and (0.72 + 0.1 * pulse) or 1
+	else
+		ring.Transparency = 1
+		pillar.Transparency = 1
 	end
 	-- pulse the side-bar button for menu steps
 	local btn = gui.Enabled and card.Visible and menuTarget()
-	pulseT += dt
 	if btn then
 		local sc = btn:FindFirstChildOfClass("UIScale")
 		if sc then sc.Scale = 1 + math.abs(math.sin(pulseT * 4)) * 0.14 end

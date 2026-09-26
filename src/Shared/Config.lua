@@ -230,8 +230,8 @@ Config.FinaleLines = {
 }
 -- the Board Chair's welcome for a brand-new principal (the intro cutscene, and page 1 of the Scrapbook)
 Config.IntroLines = {
-	"Welcome, Principal! Your school has... zero students. ZERO.",
-	"Kids step off the bus onto the red carpet. Grab them before the other schools do!",
+	"Welcome, Principal! Your school has... zero students.",
+	"Here comes your Welcome Bus. Grab those kids!",
 }
 -- after the last tier, each Prestige star costs the previous requirement x3 and adds +10 %
 Config.PrestigeStep = { cashMult = 3, bonus = 0.1 }
@@ -414,7 +414,7 @@ end
 Config.Tutorial = {
 	{ id = "enroll1", text = "Enroll a kid off the Welcome Bus (walk up and press E)", signal = "enroll", count = 1, reward = 40, guide = "carpet" },
 	{ id = "collect", text = "Walk over the glowing pad to collect tuition", signal = "collect", count = 1, reward = 60, guide = "pad" },
-	{ id = "enroll4", text = "Fill 3 more desks", signal = "enroll", count = 3, reward = 80, guide = "carpet" },
+	{ id = "enroll4", text = "Fill 4 desks", signal = "enroll", count = 4, reward = 80, guide = "carpet" },
 	{ id = "bonk", text = "Crumpet grabbed a kid! Chase him and click to bonk him with your Ruler", signal = "bonkSave", count = 1, reward = 150, guide = "thief" },
 	{ id = "lock", text = "Vex will send more goons. Lock your gate (the red button) to keep them out", signal = "lock", count = 1, reward = 200, guide = "lock" },
 	{ id = "rescue", text = "Vex snatched Skater Kid on your first morning! Sneak into the VexCorp Factory and bring him home", signal = "rescued", count = 1, reward = 300, guide = "factory" },
@@ -432,7 +432,7 @@ Config.Goals = {
 	{ text = "Bonk a thief with your Ruler", signal = "bonkSave", count = 1, secs = 300, min = 1000, multi = true },
 	{ text = "Lock your gate 3 times", signal = "lock", count = 3, secs = 120, min = 500 },
 	{ text = "Enroll 25 kids", signal = "enroll", count = 25, secs = 300, min = 2000 },
-	{ text = "Catch 2 cheaters", signal = "catchCheater", count = 2, secs = 240, min = 1000 },
+	{ text = "Collect tuition 40 times", signal = "collect", count = 40, secs = 240, min = 1000 },
 	{ text = "Bust a Snack Smuggler", signal = "bustDealer", count = 1, secs = 300, min = 1500 },
 	{ text = "Answer 2 Pop Quizzes right", signal = "quizRight", count = 2, secs = 240, min = 1000 },
 }
@@ -456,12 +456,12 @@ Config.Chapters = {
 			{ kind = "mission", id = "crumpets_crew" },
 		} },
 	{ title = "Lockers and Lies", host = "Janitor Stan", letter = "Rare",
-		line = "Middle schoolers. They cheat, they sneak candy, they lose their shoes. Stay sharp.",
+		line = "Middle schoolers. They sneak candy, they lose their shoes, they swap lockers. Stay sharp.",
 		steps = {
 			{ kind = "build", id = "MascotLockers" },
 			{ kind = "hire", id = "MsHoneycutt" },
 			{ kind = "mission", id = "sugar_run" },
-			{ kind = "count", signal = "eagleEye", count = 1, text = "Make an EAGLE EYE catch" },
+			{ kind = "count", signal = "bustDealer", count = 2, text = "Bust 2 Snack Smugglers" },
 		} },
 	{ title = "Friday Night Lights", host = "Hall Monitor Hector", letter = "Epic",
 		line = "High school means a stadium, a coach, and a trophy case worth guarding.",
@@ -504,7 +504,7 @@ Config.Chapters = {
 			{ kind = "supply", id = "VRHeadsets" },
 		} },
 	{ title = "Old Money", host = "Wobblesworth", letter = "Mythic",
-		line = "The Ivy League runs on reputation. And on catching every last cheater.",
+		line = "The Ivy League runs on reputation. Keep every desk full and every gate locked.",
 		steps = {
 			{ kind = "build", id = "SolarPanels" },
 			{ kind = "supply", id = "RobotTutors" },
@@ -648,8 +648,6 @@ Config.ChapterCandy = { 10, 10, 20, 20 }
 -- signal = a Signals name; rarity = only enrolls of that rarity or rarer count.
 ---------------------------------------------------------------------------
 Config.DailyPool = {
-	{ id = "catch8", text = "Catch 8 cheaters", signal = "catchCheater", count = 8 },
-	{ id = "catch15", text = "Catch 15 cheaters", signal = "catchCheater", count = 15 },
 	{ id = "bust3", text = "Bust 3 Snack Smugglers", signal = "bustDealer", count = 3 },
 	{ id = "bust6", text = "Bust 6 Snack Smugglers", signal = "bustDealer", count = 6 },
 	{ id = "enroll20", text = "Enroll 20 kids", signal = "enroll", count = 20 },
@@ -662,14 +660,13 @@ Config.DailyPool = {
 	{ id = "lock5", text = "Lock your gate 5 times", signal = "lock", count = 5 },
 	-- group: requests credited by the same action (a bus kid is also an enroll) are never dealt together
 	{ id = "bus2", text = "Enroll 2 kids off special buses", signal = "busEnroll", group = "enroll", count = 2 },
-	{ id = "eagle2", text = "Make 2 EAGLE EYE catches", signal = "eagleEye", group = "catchCheater", count = 2 },
 	{ id = "grad3", text = "Graduate 3 kids (hold G at a desk)", signal = "graduate", count = 3 },
 }
 Config.DailyCandy = 25
 -- Weekly Requests: 3 a week (weeks start Monday 00:00 UTC), bigger counts, 100 candy each; all 3 open
 -- the Weekly Chest (a Legendary letter and 30 Event Tickets). No cash rewards.
 Config.WeeklyPool = {
-	{ id = "wcatch60", text = "Catch 60 cheaters", signal = "catchCheater", count = 60 },
+	{ id = "wcollect600", text = "Collect tuition 600 times", signal = "collect", count = 600 },
 	{ id = "wbust25", text = "Bust 25 Snack Smugglers", signal = "bustDealer", count = 25 },
 	{ id = "wenroll300", text = "Enroll 300 kids", signal = "enroll", count = 300 },
 	{ id = "wcollect300", text = "Collect tuition 300 times", signal = "collect", count = 300 },
@@ -677,7 +674,6 @@ Config.WeeklyPool = {
 	{ id = "wgrad25", text = "Graduate 25 kids", signal = "graduate", count = 25 },
 	{ id = "wtokens80", text = "Earn 80 event tickets", signal = "ticket", count = 80 },
 	{ id = "wletter10", text = "Enroll 10 kids from Admissions Letters", signal = "benchEnroll", group = "enroll", count = 10 },
-	{ id = "weagle10", text = "Make 10 EAGLE EYE catches", signal = "eagleEye", group = "catchCheater", count = 10 },
 }
 Config.WeeklyCandy = 100
 Config.WeeklyChestTickets = 30

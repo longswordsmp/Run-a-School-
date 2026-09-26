@@ -30,9 +30,17 @@ local RULES = {
 	{ name = "Settings", ok = function() return true end },
 	{ name = "Coop", ok = function() return true end }, -- (co-op is for the very first minute too)
 	{ name = "Yearbook", ok = function(p) return (p.stats.enrolled or 0) >= 5 end },
-	{ name = "Shop", ok = function(p) return (p.tutorial or 1) >= stepIndex("pencils") end },
+	-- (the Shop as soon as there's tuition to spend: it used to wait for step 7, minutes of cash
+	-- piling up with nothing to buy)
+	{ name = "Shop", ok = function(p) return (p.tutorial or 1) > math.min(stepIndex("collect"), stepIndex("pencils")) end },
 	{ name = "Board", ok = function(p) return (p.tutorial or 1) >= stepIndex("board") end },
-	{ name = "Upgrades", ok = function(p) return (p.tutorial or 1) > #Config.Tutorial end },
+	-- (desk rows once the school is nearly full: before, a Kindergarten was stuck on 8 desks until
+	-- the first Board review, and to the owner "the upgrades gui is gone")
+	{ name = "Upgrades", ok = function(p)
+		local n = 0
+		for _ in p.students do n += 1 end
+		return n >= 6 or (p.stats.enrolled or 0) >= 8 or (p.tutorial or 1) > #Config.Tutorial
+	end },
 	{ name = "Name", ok = function(p) return (p.tutorial or 1) > #Config.Tutorial end },
 	{ name = "Daily", ok = function(p) return (p.tutorial or 1) > #Config.Tutorial end },
 	{ name = "Store", ok = function(p) return (p.tutorial or 1) > #Config.Tutorial end },

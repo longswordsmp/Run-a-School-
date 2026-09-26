@@ -140,7 +140,7 @@ function PatrolService.sendToOffice(player, slot, by)
 	p.stats.caught = (p.stats.caught or 0) + 1
 	if p.stats.caught == 1 then
 		fee += 100
-		-- the Board is impressed: the boards come off the windows
+		-- the Board is impressed: it sends curtains for the windows
 		if not p.builds.Curtains then
 			p.builds.Curtains = true
 			task.delay(1.5, function()
@@ -564,12 +564,9 @@ function PatrolService.start()
 					s.nextCheat = math.max(s.nextCheat, t + 5)
 					s.nextDeal = math.max(s.nextDeal, t + 5)
 				end
-				-- random cheaters and smugglers once the tutorial is over (each explained the first time)
+				-- random smugglers once the tutorial is over (explained the first time). (Kids no longer
+				-- start cheating: the owner cut that mechanic.)
 				if active and (p.tutorial or 1) > #Config.Tutorial then
-					if t >= s.nextCheat then
-						s.nextCheat = t + math.random(CHEAT_EVERY[1], CHEAT_EVERY[2])
-						pcall(startCheating, player)
-					end
 					if t >= s.nextDeal then
 						s.nextDeal = t + math.random(DEAL_EVERY[1], DEAL_EVERY[2])
 						pcall(sendDealer, player, s)

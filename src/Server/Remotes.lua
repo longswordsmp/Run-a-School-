@@ -47,6 +47,17 @@ local function schoolWide(remote, kinds)
 end
 
 local notify = event("Notify")
+local announce = event("Announce")
+
+-- server-wide news (a bus due, recess, someone else's steal, an event starting) skips a principal
+-- who is still on the To-Do list: in their first minutes they have enough to take in
+local function settled(remote)
+	return function(...)
+		for _, pl in game:GetService("Players"):GetPlayers() do
+			if not pl:GetAttribute("InTutorial") then remote:FireClient(pl, ...) end
+		end
+	end
+end
 
 return {
 	Notify = notify, -- (text, kind) toast
@@ -56,7 +67,9 @@ return {
 		for _, pl in Data.schoolPlayers(player) do notify:FireClient(pl, text, kind) end
 	end,
 	CashPop = event("CashPop"), -- (amount, worldPos) floating +$ text
-	Announce = event("Announce"), -- (text, color) big centre text
+	Announce = announce, -- (text, color) big centre text
+	announceAll = settled(announce), -- the same to everyone past the To-Do list
+	notifyAll = settled(notify), -- a toast to everyone past the To-Do list
 	Sfx = event("Sfx"), -- (name, worldPos?) play a sound effect
 	Cutscene = schoolWide(event("Cutscene"), { Board = true, Finale = true }), -- (name, data) play a client cutscene
 	Push = schoolWide(event("Push"), { -- (kind, data) server-pushed UI state (quests, offline earnings...)

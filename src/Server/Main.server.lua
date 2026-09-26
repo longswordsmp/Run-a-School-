@@ -59,6 +59,7 @@ StealService.start()
 QuestService.start()
 PatrolService.start()
 EventService.startLoop()
+require(Server.AdminService).start()
 LetterService.start()
 MonetizationService.start()
 RewardService.start()
@@ -115,22 +116,25 @@ local function onPlayer(player)
 	-- a brand-new principal gets the intro and the Welcome Bus
 	-- (Studio tests can skip it with the ServerStorage attribute SkipIntro)
 	local skip = game:GetService("RunService"):IsStudio() and game.ServerStorage:GetAttribute("SkipIntro")
-	if p.tutorial == 1 and p.stats.enrolled == 0 and not p.introSeen and not skip then
-		p.introSeen = true
+	-- (a principal whose school is still empty on the first step gets it again when they come back:
+	-- the bus, not the intro)
+	if p.tutorial == 1 and next(p.students) == nil and not skip then
 		task.spawn(function()
-			-- after the loading screen's PLAY (or a minute, if the client never says)
-			local t0 = os.clock()
-			while player.Parent and not player:GetAttribute("Ready") and os.clock() - t0 < 60 do task.wait(0.2) end
-			task.wait(0.8)
+			-- after the loading screen's PLAY, however long that takes
+			while player.Parent and not player:GetAttribute("Ready") do task.wait(0.2) end
+			task.wait(0.4)
 			if not player.Parent then return end
 			-- (joined a friend's co-op school from the loading screen: that school is already running)
-			if Data.isMember(player) then
-				p.introSeen = nil
-				return
+			if Data.isMember(player) then return end
+			local spots = HallService.welcomeBus(player)
+			if not p.introSeen then
+				p.introSeen = true
+				Remotes.Cutscene:FireClient(player, "Intro", {
+					name = PlotService.schoolName(player),
+					gate = spots and spots.gate, park = spots and spots.park.Position, side = spots and spots.side,
+					stand = spots and spots.stand, row = spots and spots.wait[3]:Lerp(spots.wait[4], 0.5),
+				})
 			end
-			Remotes.Cutscene:FireClient(player, "Intro", { name = PlotService.schoolName(player) })
-			task.wait(7)
-			task.spawn(HallService.specialBus, "Welcome")
 		end)
 	end
 

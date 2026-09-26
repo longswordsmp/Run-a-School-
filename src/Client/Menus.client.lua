@@ -794,6 +794,7 @@ do
 				subtitle = rarity.id,
 				layoutOrder = def.order,
 				model = model,
+				portrait = true, -- (a school photo: head and shoulders)
 			})
 			cards[def.id] = card
 		end
@@ -872,7 +873,7 @@ do
 		Parent = panel.body,
 	})
 	UI.corner(box, 12)
-	UI.stroke(box, 3)
+	UI.stroke(box, 3).ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	UI.padding(box, 10)
 	local err = UI.label(panel.body, { Text = "", TextColor3 = UI.C.red, Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(0, 106), ZIndex = 12, stroke = 0 })
 	local save = UI.button(panel.body, { text = "SAVE NAME", color = UI.C.green, size = UDim2.fromOffset(220, 58), position = UDim2.new(0.5, 0, 1, -4), anchor = Vector2.new(0.5, 1) })
@@ -1074,7 +1075,7 @@ do
 	task.delay(8, function()
 		local s = call("daily")
 		local prof = call("profile")
-		if s and s.ok ~= false and not s.claimed and prof and prof.tutorial and prof.tutorial > 5 then
+		if s and s.ok ~= false and not s.claimed and player:GetAttribute("UI_Daily") then
 			panel.open()
 		end
 	end)
@@ -1166,63 +1167,204 @@ do
 end
 
 ---------------------------------------------------------------------------
--- Admin (only for admins): buses, events, spawns, money rain, server luck
+-- Admin (only for admins; the server re-checks every command, AdminService):
+--   ME       cash / candy / tickets (any amount: 250k, 3.5b, 1e12), tier, skip the tutorial, unlock
+--            everything, all gear, max desks, a student onto your bench
+--   MOVE     fly, noclip, walk anywhere, speed, jump, teleport to places
+--   PLAYERS  everyone here: teleport to, bring, give cash, kick, ban; unban by user id
+--   WORLD    buses, events, rare kids, money rain, server luck, recess, time of day, a server message
+--   STORY    jump to a chapter, play a cutscene
 ---------------------------------------------------------------------------
 do
-	local panel = UI.panel(gui, { name = "Admin", title = "ADMIN PANEL", color = UI.C.red, size = UDim2.fromOffset(760, 520) })
+	local panel = UI.panel(gui, { name = "Admin", title = "ADMIN PANEL", color = UI.C.red, size = UDim2.fromOffset(860, 580) })
 	panels.Admin = panel
-	local list = scrollList(panel.body, 10)
-	local function section(order, title, buttons)
-		-- six buttons fit on a row; the section grows with its rows
-		local lines = math.ceil(#buttons / 6)
-		local holder = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 40 + lines * 64), LayoutOrder = order, ZIndex = 11, Parent = list })
+	local status = UI.label(panel.body, { Text = "", TextColor3 = UI.C.navy, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, 0, 0, 24), Position = UDim2.new(0, 4, 1, -24), ZIndex = 13, stroke = 0 })
+	local pages = {}
+	for i = 1, 5 do
+		pages[i] = UI.new("Frame", { Name = "Page" .. i, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -82), Position = UDim2.fromOffset(0, 54), Visible = i == 1, ZIndex = 11, Parent = panel.body })
+	end
+	local lists = {}
+	for i = 1, 5 do lists[i] = scrollList(pages[i], 10) end
+
+	local function run(cmd, a, b)
+		local res = call("admin", cmd, a, b)
+		local ok = res and res.ok
+		sfx(ok and "Ding" or "Error")
+		status.TextColor3 = ok and Color3.fromRGB(40, 150, 70) or UI.C.red
+		status.Text = ok and ("\u{2714} " .. cmd .. (a and (" " .. tostring(a)) or "")) or ("\u{2716} " .. (res and res.err or "failed"))
+		return res
+	end
+
+	-- a titled block with a grid of buttons; each button: { text, color, cmd, arg } or { text, color, fn }
+	local function section(list, order, title, buttons, cell)
+		local cw = cell or 124
+		local perRow = math.max(1, math.floor(800 / (cw + 8)))
+		local lines = math.ceil(#buttons / perRow)
+		local holder = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 36 + lines * 58), LayoutOrder = order, ZIndex = 11, Parent = list })
 		UI.label(holder, { Text = title, Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = UI.C.navy, Size = UDim2.new(1, 0, 0, 28), ZIndex = 12, stroke = 0 })
-		local row = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, lines * 64), Position = UDim2.fromOffset(0, 32), ZIndex = 11, Parent = holder })
-		UI.new("UIGridLayout", { CellSize = UDim2.fromOffset(110, 56), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
+		local row = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, lines * 58), Position = UDim2.fromOffset(0, 32), ZIndex = 11, Parent = holder })
+		UI.new("UIGridLayout", { CellSize = UDim2.fromOffset(cw, 50), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		for i, spec in buttons do
-			local b = UI.button(row, { text = spec[1], color = spec[2], size = UDim2.fromOffset(spec[5] or 110, 56), layoutOrder = i, onClick = function()
-				local res = call("admin", spec[3], spec[4])
-				sfx(res and res.ok and "Ding" or "Error")
+			local b = UI.button(row, { text = spec[1], color = spec[2], size = UDim2.fromOffset(cw, 50), layoutOrder = i, onClick = function()
+				if type(spec[3]) == "function" then spec[3]() else run(spec[3], spec[4], spec[5]) end
 			end })
 			lift(b.button, 12)
 		end
+		return holder
 	end
-	section(1, "\u{1F68C} BUSES", {
-		{ "Late Bus", UI.C.orange, "bus", "LateBus" },
-		{ "Honor Roll", UI.C.yellow, "bus", "HonorBus" },
-		{ "Field Trip", UI.C.purple, "bus", "FieldTrip" },
-		{ "Lucky Bus", UI.C.green, "bus", "Lucky" },
-		{ "Welcome", UI.C.blue, "bus", "Welcome" },
-		{ "The Pick", UI.C.navy, "bus", "Pick" },
+
+	-- a text box with buttons that use what's typed in it
+	local function inputRow(list, order, title, placeholder, buttons)
+		local holder = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 92), LayoutOrder = order, ZIndex = 11, Parent = list })
+		UI.label(holder, { Text = title, Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = UI.C.navy, Size = UDim2.new(1, 0, 0, 28), ZIndex = 12, stroke = 0 })
+		local box = UI.new("TextBox", {
+			Text = "", PlaceholderText = placeholder, Font = UI.FONT, TextSize = 22, TextColor3 = UI.C.ink,
+			PlaceholderColor3 = UI.C.grey, BackgroundColor3 = UI.C.white, ClearTextOnFocus = false,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Size = UDim2.fromOffset(250, 50), Position = UDim2.fromOffset(0, 34), ZIndex = 12, Parent = holder,
+		})
+		UI.corner(box, 10)
+		-- (the stroke goes round the box, not round the letters)
+		UI.stroke(box, 3).ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		UI.padding(box, 8)
+		local row = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -262, 0, 50), Position = UDim2.fromOffset(262, 34), ZIndex = 11, Parent = holder })
+		UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
+		for i, spec in buttons do
+			local b = UI.button(row, { text = spec[1], color = spec[2], size = UDim2.fromOffset(spec[4] or 118, 50), layoutOrder = i, onClick = function()
+				if type(spec[3]) == "function" then spec[3](box.Text) else run(spec[3], box.Text) end
+			end })
+			lift(b.button, 12)
+		end
+		return box
+	end
+
+	local select = tabs(panel.body, {
+		{ "ME", UI.C.green, 150 }, { "MOVE", UI.C.blue, 150 }, { "PLAYERS", UI.C.orange, 150 }, { "WORLD", UI.C.purple, 150 }, { "STORY", UI.C.navy, 150 },
+	}, function(i)
+		for j, pg in pages do pg.Visible = j == i end
+	end)
+
+	-- ME
+	local L = lists[1]
+	inputRow(L, 1, "\u{1F4B0} CASH, CANDY, TICKETS", "an amount: 250k, 3.5b, 1e12", {
+		{ "+ Cash", UI.C.green, "cash" }, { "Set Cash", UI.C.blue, "setCash" }, { "+ Candy", UI.C.pink, "candy" }, { "+ Tickets", UI.C.orange, "tickets" },
 	})
-	section(2, "\u{1F389} EVENTS", {
-		{ "Snow Day", Color3.fromRGB(120, 190, 255), "event", "SnowDay" },
-		{ "Science Fair", UI.C.green, "event", "ScienceFair" },
-		{ "Picture Day", UI.C.grey, "event", "PictureDay" },
-		{ "Halloween", UI.C.orange, "event", "Halloween" },
-		{ "Space Camp", UI.C.purple, "event", "SpaceCamp" },
-		{ "Field Day", UI.C.yellow, "event", "FieldDay" },
-		{ "Prom Night", UI.C.pink, "event", "PromNight" },
-		{ "Throwback", UI.C.orange, "event", "Throwback" },
-		{ "Wizard Week", UI.C.purple, "event", "WizardWeek" },
-		{ "Candy Carnival", UI.C.pink, "event", "CandyCarnival" },
-		{ "Takeover", UI.C.navy, "event", "HostileTakeover" },
-		{ "Graduation", UI.C.grey, "event", "Graduation" },
+	section(L, 2, "QUICK CASH", {
+		{ "+$1M", UI.C.green, "cash", 1e6 }, { "+$1B", UI.C.green, "cash", 1e9 }, { "+$1T", UI.C.green, "cash", 1e12 },
+		{ "+$1Qd", UI.C.green, "cash", 1e15 }, { "$0", UI.C.grey, "setCash", 0 },
+	})
+	inputRow(L, 3, "\u{1F3EB} SCHOOL TIER", "1 (Kindergarten) to " .. #Config.Tiers, {
+		{ "Set Tier", UI.C.purple, "tier" },
+	})
+	section(L, 4, "\u{1F513} UNLOCKS", {
+		{ "Unlock ALL", UI.C.red, "unlockAll" }, { "Skip Tutorial", UI.C.orange, "skipTutorial" }, { "All Gear", UI.C.blue, "gearAll" },
+		{ "Max Desks", UI.C.green, "maxDesks" },
+	}, 150)
+	inputRow(L, 5, "\u{1F393} A STUDENT TO MY BENCH", "a student id (HallMonitor) or a rarity (Epic)", {
+		{ "Send", UI.C.green, "student" },
+	})
+
+	-- MOVE
+	L = lists[2]
+	section(L, 1, "\u{1F985} FLY, NOCLIP, WALK ANYWHERE", {
+		{ "Fly on/off", UI.C.blue, "fly" }, { "Noclip on/off", UI.C.purple, "noclip" }, { "Area locks off/on", UI.C.orange, "bypass" },
+	}, 180)
+	UI.label(L, { Text = "Fly: WASD to move, Space up, Ctrl or Q down, Shift fast. Area locks off lets you walk into any locked area.", TextColor3 = UI.C.grey, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, 0, 0, 40), LayoutOrder = 2, ZIndex = 12, stroke = 0 })
+	inputRow(L, 3, "\u{1F3C3} WALK SPEED", "studs a second (16 is normal)", {
+		{ "Set", UI.C.green, "speed" }, { "Normal", UI.C.grey, function() run("speed", 0) end },
+	})
+	section(L, 4, "SPEED PRESETS", {
+		{ "32", UI.C.green, "speed", 32 }, { "64", UI.C.green, "speed", 64 }, { "120", UI.C.orange, "speed", 120 }, { "250", UI.C.red, "speed", 250 },
+	})
+	inputRow(L, 5, "\u{1F998} JUMP POWER", "50 is normal", {
+		{ "Set", UI.C.green, "jump" },
+	})
+	local spots = {
+		{ "My School", "MySchool" }, { "Bus Stop", "BusStop" }, { "Hub", "Hub" }, { "Vex Prep", "VexPrep" }, { "Pothole", "Pothole" },
+		{ "Sewer", "Sewer" }, { "Factory", "Factory" }, { "Mutation Lab", "Lab" }, { "HQ Lobby", "HQLobby" }, { "Industrial", "Industrial" },
+		{ "The Lair", "Lair" }, { "Board Room", "BoardRoom" },
+	}
+	local tpButtons = {}
+	for _, s in spots do table.insert(tpButtons, { s[1], UI.C.navy, "tp", s[2] }) end
+	section(L, 6, "\u{1F4CD} TELEPORT", tpButtons)
+
+	-- PLAYERS
+	L = lists[3]
+	local reasonBox = inputRow(L, 1, "\u{1F4AC} REASON / AMOUNT", "a reason (kick, ban) or an amount (give cash)", {})
+	local unbanBox = inputRow(L, 2, "\u{2705} UNBAN", "a user id", {
+		{ "Unban", UI.C.green, "unban" },
+	})
+	_ = unbanBox
+	local playerHolder = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 4, ZIndex = 11, Parent = L })
+	UI.new("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = playerHolder })
+	local function refreshPlayers()
+		for _, c in playerHolder:GetChildren() do
+			if c:IsA("Frame") then c:Destroy() end
+		end
+		local res = call("adminPlayers")
+		if not (res and res.ok) then return end
+		for i, pl in res.players do
+			local r = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(255, 236, 206), Size = UDim2.new(1, 0, 0, 64), LayoutOrder = i, ZIndex = 12, Parent = playerHolder })
+			UI.corner(r, 12)
+			UI.stroke(r, 3)
+			UI.label(r, { Text = ("%s  @%s"):format(pl.name, pl.user), Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = UI.C.navy, Size = UDim2.new(0, 260, 0, 28), Position = UDim2.fromOffset(12, 6), ZIndex = 13, stroke = 0 })
+			UI.label(r, { Text = ("%s \u{2022} %s"):format(Config.formatCash(pl.cash), Config.Tiers[pl.tier] and Config.Tiers[pl.tier].name or "?"), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = UI.C.grey, Size = UDim2.new(0, 260, 0, 22), Position = UDim2.fromOffset(12, 34), ZIndex = 13, stroke = 0 })
+			local row = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -290, 0, 48), Position = UDim2.fromOffset(282, 8), ZIndex = 12, Parent = r })
+			UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
+			for j, spec in {
+				{ "Go to", UI.C.blue, function() run("tpTo", pl.id) end },
+				{ "Bring", UI.C.purple, function() run("bring", pl.id) end },
+				{ "Give $", UI.C.green, function() run("giveCash", pl.id, reasonBox.Text) end },
+				{ "Kick", UI.C.orange, function() run("kick", pl.id, reasonBox.Text) refreshPlayers() end },
+				{ "Ban", UI.C.red, function() run("ban", pl.id, reasonBox.Text) refreshPlayers() end },
+			} do
+				local b = UI.button(row, { text = spec[1], color = spec[2], size = UDim2.fromOffset(92, 46), layoutOrder = j, onClick = spec[3] })
+				lift(b.button, 13)
+			end
+		end
+	end
+	section(L, 3, "\u{1F465} PLAYERS HERE", { { "Refresh", UI.C.blue, refreshPlayers } }, 150)
+
+	-- WORLD
+	L = lists[4]
+	section(L, 1, "\u{1F68C} BUSES", {
+		{ "Late Bus", UI.C.orange, "bus", "LateBus" }, { "Honor Roll", UI.C.yellow, "bus", "HonorBus" }, { "Field Trip", UI.C.purple, "bus", "FieldTrip" },
+		{ "Lucky Bus", UI.C.green, "bus", "Lucky" }, { "Welcome (mine)", UI.C.blue, "bus", "Welcome" }, { "The Pick", UI.C.navy, "bus", "Pick" },
+	})
+	section(L, 2, "\u{1F389} EVENTS", {
+		{ "Snow Day", Color3.fromRGB(120, 190, 255), "event", "SnowDay" }, { "Science Fair", UI.C.green, "event", "ScienceFair" },
+		{ "Picture Day", UI.C.grey, "event", "PictureDay" }, { "Halloween", UI.C.orange, "event", "Halloween" },
+		{ "Space Camp", UI.C.purple, "event", "SpaceCamp" }, { "Field Day", UI.C.yellow, "event", "FieldDay" },
+		{ "Prom Night", UI.C.pink, "event", "PromNight" }, { "Throwback", UI.C.orange, "event", "Throwback" },
+		{ "Wizard Week", UI.C.purple, "event", "WizardWeek" }, { "Candy Carnival", UI.C.pink, "event", "CandyCarnival" },
+		{ "Takeover", UI.C.navy, "event", "HostileTakeover" }, { "Graduation", UI.C.grey, "event", "Graduation" },
 		{ "End Event", UI.C.red, "event", "stop" },
 	})
-	section(3, "\u{2728} SPAWN 3 KIDS", {
-		{ "Legendary", Color3.fromRGB(255, 170, 30), "spawn", "Legendary" },
-		{ "Mythic", Color3.fromRGB(255, 50, 90), "spawn", "Mythic" },
-		{ "Prodigy", Color3.fromRGB(90, 200, 255), "spawn", "Prodigy" },
-		{ "Secret", Color3.fromRGB(40, 40, 50), "spawn", "Secret" },
+	section(L, 3, "\u{2728} SPAWN 3 KIDS ON THE CARPET", {
+		{ "Legendary", Color3.fromRGB(255, 170, 30), "spawn", "Legendary" }, { "Mythic", Color3.fromRGB(255, 50, 90), "spawn", "Mythic" },
+		{ "Prodigy", Color3.fromRGB(90, 200, 255), "spawn", "Prodigy" }, { "Secret", Color3.fromRGB(40, 40, 50), "spawn", "Secret" },
 	})
-	section(4, "\u{1F4B8} SERVER", {
-		{ "Money Rain", UI.C.green, "money" },
-		{ "Luck x2", UI.C.blue, "luck", 2 },
-		{ "Luck x3", UI.C.purple, "luck", 3 },
+	section(L, 4, "\u{1F4B8} SERVER", {
+		{ "Money Rain", UI.C.green, "money" }, { "Luck x2", UI.C.blue, "luck", 2 }, { "Luck x3", UI.C.purple, "luck", 3 }, { "Luck x5", UI.C.red, "luck", 5 },
 		{ "Recess Now", UI.C.orange, "recess" },
-		{ "+$1B (me)", UI.C.grey, "cash", 1e9 },
 	})
+	section(L, 5, "\u{1F31E} TIME OF DAY", {
+		{ "Morning", UI.C.yellow, "time", 8 }, { "Noon", UI.C.blue, "time", 13 }, { "Sunset", UI.C.orange, "time", 18 }, { "Night", UI.C.navy, "time", 0 },
+	})
+	inputRow(L, 6, "\u{1F4E2} MESSAGE TO THE SERVER", "a short message", {
+		{ "Say", UI.C.purple, "say" },
+	})
+
+	-- STORY
+	L = lists[5]
+	inputRow(L, 1, "\u{1F4D6} JUMP TO A CHAPTER", "a chapter number", {
+		{ "Go", UI.C.navy, "chapter" },
+	})
+	section(L, 2, "\u{1F3AC} CUTSCENES", {
+		{ "Intro", UI.C.blue, "cutscene", "Intro" }, { "Vex Prep", UI.C.purple, "cutscene", "Rival" },
+	}, 150)
+
+	panel.onOpen = function() select(1) end
 end
 
 ---------------------------------------------------------------------------

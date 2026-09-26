@@ -56,13 +56,15 @@ function EventService.start(id)
 	workspace:SetAttribute("EventUntil", now + EVENT_LEN)
 	table.clear(HallService.eventGrades)
 	HallService.eventGrades[ev.grade] = ev.weight
-	Remotes.Announce:FireAllClients(ev.name .. "! " .. ev.grade:upper() .. " KIDS ON THE BUS", ev.color)
+	Remotes.announceAll(ev.name .. "! " .. ev.grade:upper() .. " KIDS ON THE BUS", ev.color)
 	Remotes.Sfx:FireAllClients("StingWild")
 	table.clear(beams)
 	-- Candy Carnival: every school gets a Snack Smuggler visit straight away
 	if id == "CandyCarnival" then
 		local Patrol = require(script.Parent.PatrolService)
-		for player in Data.all() do task.spawn(pcall, Patrol.debugDealer, player) end
+		for player in Data.all() do
+			if not player:GetAttribute("InTutorial") then task.spawn(pcall, Patrol.debugDealer, player) end
+		end
 	end
 	Signals.fire("eventStart", id)
 	return true
@@ -122,7 +124,7 @@ function EventService.stop()
 	workspace:SetAttribute("Event", nil)
 	workspace:SetAttribute("EventUntil", nil)
 	table.clear(HallService.eventGrades)
-	Remotes.Notify:FireAllClients("The event is over. See you next time!", "info")
+	Remotes.notifyAll("The event is over. See you next time!", "info")
 end
 
 -- Money Rain: bills float down over the street; touching one pays 15 seconds of your tuition
@@ -132,7 +134,7 @@ function EventService.moneyRain(count)
 	local path = map and map:FindFirstChild("HallPath")
 	local x0, x1 = -300, 320
 	if path then x0, x1 = path.Start.Position.X, path.End.Position.X end
-	Remotes.Announce:FireAllClients("MONEY RAIN!", Color3.fromRGB(110, 255, 120))
+	Remotes.announceAll("MONEY RAIN!", Color3.fromRGB(110, 255, 120))
 	Remotes.Sfx:FireAllClients("Buy")
 	local folder = workspace:FindFirstChild("MoneyRain") or Instance.new("Folder")
 	folder.Name = "MoneyRain"
@@ -188,6 +190,8 @@ end
 local ADMIN = {}
 ADMIN.bus = function(player, kind)
 	if kind ~= "LateBus" and kind ~= "HonorBus" and kind ~= "FieldTrip" and kind ~= "Lucky" and kind ~= "Welcome" and kind ~= "Pick" then return false end
+	-- (the Welcome Bus is a new principal's own: it comes to the admin's gate, a test of the first minute)
+	if kind == "Welcome" then return HallService.welcomeBus(player) ~= nil end
 	task.spawn(HallService.specialBus, kind, player.DisplayName)
 	return true
 end
@@ -201,7 +205,7 @@ ADMIN.spawn = function(player, rarity)
 		HallService.spawnOne(rarity)
 		task.wait(0.4)
 	end
-	Remotes.Notify:FireAllClients(player.DisplayName .. " spawned " .. rarity .. " kids!", "steal")
+	Remotes.notifyAll(player.DisplayName .. " spawned " .. rarity .. " kids!", "steal")
 	return true
 end
 ADMIN.money = function(player)
@@ -216,7 +220,7 @@ function EventService.serverLuck(mult, secs, byName)
 	workspace:SetAttribute("ServerLuck", serverLuck.mult)
 	workspace:SetAttribute("ServerLuckUntil", serverLuck.untilT)
 	local who = byName and (byName .. " bought ") or ""
-	Remotes.Announce:FireAllClients(("%sSERVER LUCK x%d FOR %d MINUTES!"):format(who:upper(), mult, math.floor(secs / 60)), Color3.fromRGB(110, 255, 160))
+	Remotes.announceAll(("%sSERVER LUCK x%d FOR %d MINUTES!"):format(who:upper(), mult, math.floor(secs / 60)), Color3.fromRGB(110, 255, 160))
 	Remotes.Sfx:FireAllClients("Upgrade")
 end
 
@@ -238,12 +242,8 @@ ADMIN.cash = function(player, amount)
 	return true
 end
 
-Actions.register("admin", function(player, p, cmd, arg)
-	if not EventService.isAdmin(player) then return { ok = false, err = "Admins only" } end
-	local fn = ADMIN[cmd]
-	if not fn then return { ok = false, err = "Unknown command" } end
-	return { ok = fn(player, arg) == true }
-end)
+-- (the admin panel's "admin" action lives in AdminService, which calls these)
+EventService.admin = ADMIN
 
 function EventService.startLoop()
 	-- server luck from the admin panel

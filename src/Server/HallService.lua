@@ -205,10 +205,10 @@ function HallService.spawnOne(forceRarity, forceId, weights, from, quiet)
 	if quiet then
 		-- an invited kid (Alumni Hall): nobody else can enroll them, so no server-wide alert
 	elseif rarity.order >= 7 then
-		Remotes.Announce:FireAllClients(("A %s STUDENT IS ON THE CARPET!"):format(rarity.id:upper()), Config.rarityAccent(def.rarity))
+		Remotes.announceAll(("A %s STUDENT IS ON THE CARPET!"):format(rarity.id:upper()), Config.rarityAccent(def.rarity))
 		Remotes.Sfx:FireAllClients(rarity.id == "Prodigy" and "Choir" or "RecordScratch")
 	elseif rarity.order == 6 then
-		Remotes.Notify:FireAllClients("A Mythic student just stepped off the bus!", "steal")
+		Remotes.notifyAll("A Mythic student just stepped off the bus!", "steal")
 	end
 
 	local prompt = Instance.new("ProximityPrompt")
@@ -391,7 +391,7 @@ local function runEventBus(kind, byName)
 	Remotes.Sfx:FireAllClients("BusHorn")
 	drive(bus, OFFSTAGE, STOP, 4)
 	if byName then
-		Remotes.Notify:FireAllClients(byName .. " called a " .. label .. "!", "steal")
+		Remotes.notifyAll(byName .. " called a " .. label .. "!", "steal")
 	end
 	local from = doorSpot(bus)
 	setDoor(bus, true)
@@ -413,6 +413,149 @@ local function runEventBus(kind, byName)
 	drive(bus, STOP, OFFSTAGE, 4)
 	bus:Destroy()
 end
+
+---------------------------------------------------------------------------
+-- the Welcome Bus: a new principal's own bus. It drives up the lane on their side of the street
+-- and parks by THEIR gate (not the shared stop down the street, where the six starter kids used
+-- to get lost among the regular bus's), and the six step off reserved for them and wait in a row
+-- outside the gate, waving, until they're enrolled. North-side kids step out on the carpet side
+-- and walk round the front of the bus, like off the regular bus.
+---------------------------------------------------------------------------
+local WELCOME_LANE = 14.5 -- (clears the carpet and the lamp arms over the curbs)
+local welcomeKids = {} -- [player] = { models }
+
+local function fadeBus(bus, from, to, t)
+	for _, p in bus:GetDescendants() do
+		if p:IsA("BasePart") then
+			local base = p:GetAttribute("BaseT")
+			if base == nil then
+				base = p.Transparency
+				p:SetAttribute("BaseT", base)
+			end
+			p.Transparency = base + (1 - base) * from
+			TweenService:Create(p, TweenInfo.new(t), { Transparency = base + (1 - base) * to }):Play()
+		elseif p:IsA("Decal") or p:IsA("Texture") then
+			p.Transparency = from
+			TweenService:Create(p, TweenInfo.new(t), { Transparency = to }):Play()
+		elseif p:IsA("SurfaceGui") or p:IsA("BillboardGui") then
+			p.Enabled = to < 0.5
+		end
+	end
+end
+
+-- where the Welcome Bus parks for a plot, and where the kids wait (world space)
+function HallService.welcomeSpots(plot)
+	local entry = plot and plot:FindFirstChild("Entry")
+	if not entry then return nil end
+	local side = entry.Position.Z > 0 and 1 or -1
+	local gx = entry.Position.X
+	-- the bus parks a little down the lane, its front short of the gate; the kids line up in the
+	-- lane in front of the gate, facing it, well apart (under the arch they were a heap of name tags)
+	local parkX = gx - 40
+	local park = CFrame.new(parkX, STOP.Position.Y, side * WELCOME_LANE) * STOP.Rotation
+	local wait = {}
+	for i = 1, 6 do
+		table.insert(wait, Vector3.new(gx + (i - 3.5) * 5.6, 0, side * 17.5))
+	end
+	return {
+		side = side, gate = Vector3.new(gx, 0, entry.Position.Z), park = park, wait = wait,
+		-- where the principal stands when the intro hands over: on the front walk inside the gate
+		stand = Vector3.new(gx, 0, side * 33),
+	}
+end
+
+function HallService.welcomeBus(player, ids)
+	local plot = PlotService.getPlot(player)
+	local spots = HallService.welcomeSpots(plot)
+	if not spots then return nil end
+	ids = ids or WELCOME.ids
+	local park = spots.park
+	local startX = math.max(OFFSTAGE.Position.X, park.Position.X - 170)
+	local start = CFrame.new(startX, park.Position.Y, park.Position.Z) * park.Rotation
+	local bus = makeBus("WELCOME BUS", BUSES.Welcome.color)
+	bus.Name = "WelcomeBus"
+	bus:SetAttribute("For", player.UserId)
+	bus:PivotTo(start)
+	bus.Parent = workspace
+	task.spawn(function()
+		-- (it appears down the street rather than driving the whole way from the west end)
+		if startX > OFFSTAGE.Position.X + 1 then fadeBus(bus, 1, 0, 0.6) end
+		Remotes.Sfx:FireClient(player, "BusHorn")
+		drive(bus, start, park, 4.5)
+		if not player.Parent then bus:Destroy() return end
+		setDoor(bus, true)
+		local door = doorSpot(bus)
+		local kids = {}
+		welcomeKids[player] = kids
+		for i, id in ids do
+			local def = Config.StudentById[id]
+			if not def then continue end
+			local model = Factory.build(def, "Normal")
+			model:SetAttribute("State", "Hall")
+			model:SetAttribute("ReservedFor", player.UserId)
+			model:SetAttribute("Welcome", true)
+			model:SetAttribute("Bus", "Welcome")
+			local so = Factory.standOffset(model)
+			local y = FLOOR_Y + so
+			model.PrimaryPart.CFrame = CFrame.lookAt(Vector3.new(door.X, y, door.Z), Vector3.new(door.X, y, door.Z - 5))
+			model.Parent = hall
+			local prompt = Instance.new("ProximityPrompt")
+			prompt.Name = "EnrollPrompt"
+			prompt.ActionText = "Enroll " .. Config.formatCash(def.price)
+			prompt.ObjectText = def.name
+			prompt.HoldDuration = 0
+			prompt.RequiresLineOfSight = false
+			prompt.MaxActivationDistance = 10
+			prompt:SetAttribute("Color", Config.rarityAccent(def.rarity))
+			prompt:SetAttribute("OnlyFor", player.UserId)
+			prompt.Parent = model.PrimaryPart
+			prompt.Triggered:Connect(function(who) HallService.enroll(who, model) end)
+			table.insert(kids, model)
+			-- out of the door, along the bus to past its front, then to their spot in the row
+			local spot = spots.wait[i]
+			local front = park.Position.X + 27
+			local pts = { Vector3.new(door.X, 0, door.Z - 2.5), Vector3.new(front, 0, door.Z - 2.5), spot }
+			Walkers.walk(model, pts, Config.WalkSpeed, function()
+				if model:GetAttribute("State") ~= "Hall" then return end
+				Factory.play(model, "idle")
+				local root = model.PrimaryPart
+				local lookAt = Vector3.new(spots.gate.X, root.Position.Y, spots.gate.Z + spots.side * 20)
+				root.CFrame = CFrame.lookAt(root.Position, lookAt)
+				Factory.emote(model, "wave")
+			end)
+			task.wait(0.5)
+		end
+		Signals.fire("welcomeArrived", player)
+		task.wait(1.2)
+		setDoor(bus, false)
+		-- off down the street, fading as it goes
+		local away = park * CFrame.new(140, 0, 0)
+		task.delay(2.6, function() if bus.Parent then fadeBus(bus, 0, 1, 1.2) end end)
+		drive(bus, park, away, 4)
+		bus:Destroy()
+		-- the ones still waiting wave now and then
+		while player.Parent do
+			task.wait(6 + math.random() * 4)
+			local left = {}
+			for _, m in kids do
+				if m.Parent and m:GetAttribute("State") == "Hall" and not Walkers.isWalking(m) then table.insert(left, m) end
+			end
+			if #left == 0 then break end
+			Factory.emote(left[math.random(#left)], "wave")
+		end
+	end)
+	return spots
+end
+
+Players.PlayerRemoving:Connect(function(player)
+	for _, m in welcomeKids[player] or {} do
+		if m.Parent and m:GetAttribute("State") == "Hall" then m:Destroy() end
+	end
+	welcomeKids[player] = nil
+	for _, b in workspace:GetChildren() do
+		if b.Name == "WelcomeBus" and b:GetAttribute("For") == player.UserId then b:Destroy() end
+	end
+end)
 
 -- call an event bus: it queues for the stop (the regular bus makes room)
 function HallService.specialBus(kind, byName)
@@ -527,7 +670,7 @@ function HallService.start()
 			local pickAt = workspace:GetAttribute("PickAt")
 			if pickAt - t <= 300 and not warned.Pick5 then
 				warned.Pick5 = true
-				Remotes.Announce:FireAllClients("THE PRINCIPAL'S PICK ARRIVES IN 5 MINUTES! (PRODIGY OR SECRET)", Color3.fromRGB(255, 215, 90))
+				Remotes.announceAll("THE PRINCIPAL'S PICK ARRIVES IN 5 MINUTES! (PRODIGY OR SECRET)", Color3.fromRGB(255, 215, 90))
 				Remotes.Sfx:FireAllClients("BrassBell")
 			end
 			for _, kind in { "LateBus", "FieldTrip", "HonorBus", "Pick" } do
@@ -536,7 +679,7 @@ function HallService.start()
 				if kind == "LateBus" then label = "THE LATE BUS" end
 				if at - t <= 10 and not warned[kind] then
 					warned[kind] = true
-					Remotes.Announce:FireAllClients(label .. " ARRIVES IN 10s!", BUSES[kind].text or BUSES[kind].color)
+					Remotes.announceAll(label .. " ARRIVES IN 10s!", BUSES[kind].text or BUSES[kind].color)
 					-- the regular bus makes room at the stop
 					HallService.clearStop(16)
 				end
@@ -553,7 +696,7 @@ function HallService.start()
 			if t >= recessAt then
 				workspace:SetAttribute("RecessUntil", recessAt + RECESS_LEN)
 				workspace:SetAttribute("RecessAt", recessAt + RECESS_EVERY)
-				Remotes.Announce:FireAllClients("RECESS! LUCK x2 FOR 60s", Color3.fromRGB(61, 220, 106))
+				Remotes.announceAll("RECESS! LUCK x2 FOR 60s", Color3.fromRGB(61, 220, 106))
 				Remotes.Sfx:FireAllClients("SchoolBell")
 				Signals.fire("recess")
 			end

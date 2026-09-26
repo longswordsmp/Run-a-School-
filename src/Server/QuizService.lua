@@ -64,8 +64,13 @@ function QuizService.ask()
 	local options = shuffle({ q[2], q[3], q[4] })
 	local answer = table.find(options, q[2])
 	current = { id = n, answer = answer, closes = workspace:GetServerTimeNow() + WINDOW, answered = {} }
-	Remotes.Push:FireAllClients("quiz", { id = n, question = q[1], options = options, closes = current.closes })
-	Remotes.Sfx:FireAllClients("SchoolBell")
+	-- (not for a principal on the To-Do list, or someone mid-heist, mid-raid or on a mission)
+	for _, pl in game:GetService("Players"):GetPlayers() do
+		if not (pl:GetAttribute("InTutorial") or pl:GetAttribute("Heist") or pl:GetAttribute("Raid") or pl:GetAttribute("Mission")) then
+			Remotes.Push:FireClient(pl, "quiz", { id = n, question = q[1], options = options, closes = current.closes })
+			Remotes.Sfx:FireClient(pl, "SchoolBell")
+		end
+	end
 end
 
 Actions.register("quizAnswer", function(player, p, id, choice)
