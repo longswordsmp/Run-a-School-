@@ -1358,6 +1358,11 @@ sideButton(10, "\u{1F5C2}\u{FE0F}", "Files", UI.C.purple, { toggle = function()
 	local e = bus and bus:FindFirstChild("OpenFiles")
 	if e then e:Fire() end
 end })
+-- the Quest Log lives in QuestLog.client
+sideButton(11, "\u{1F4DC}", "Quests", Color3.fromRGB(40, 170, 110), { toggle = function()
+	local e = bus and bus:FindFirstChild("OpenQuests")
+	if e then e:Fire() end
+end })
 -- a red "!" when today's streak reward or the Lunch Box is waiting (DailyService sets DailyReady)
 do
 	local badge = UI.new("Frame", { Name = "Badge", Size = UDim2.fromOffset(26, 26), Position = UDim2.new(1, 4, 0, -4), AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = UI.C.red, ZIndex = 6, Visible = false, Parent = dailyButton.button })

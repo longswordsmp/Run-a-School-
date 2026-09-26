@@ -2277,6 +2277,271 @@ T.kevin = function(model, head, hs, torso, ts)
 	end
 end
 
+---------------------------------------------------------------------------
+-- the townspeople (Shared/Townsfolk, docs/TOWN.md)
+---------------------------------------------------------------------------
+local function cap(model, head, hs, c, brim)
+	blob(model, head, Vector3.new(hs.X * 1.06, hs.Y * 0.5, hs.Z * 1.08), CFrame.new(0, hs.Y * 0.36, 0), c)
+	block(model, head, Vector3.new(hs.X * 0.9, 0.12, hs.Z * 0.55), CFrame.new(0, hs.Y * 0.26, -hs.Z * 0.6), brim or c)
+end
+local function apron(model, torso, ts, c)
+	block(model, torso, Vector3.new(ts.X * 0.8, ts.Y * 0.9, 0.06), CFrame.new(0, -ts.Y * 0.05, -ts.Z * 0.53), c)
+	local lower = part(model, "LowerTorso")
+	if lower then block(model, lower, Vector3.new(ts.X * 0.8, 1.6, 0.06), CFrame.new(0, -0.6, -lower.Size.Z * 0.55), c) end
+end
+local function beard(model, head, hs, c)
+	blob(model, head, Vector3.new(hs.X * 0.85, hs.Y * 0.5, hs.Z * 0.45), CFrame.new(0, -hs.Y * 0.32, -hs.Z * 0.3), c)
+end
+local function stache(model, head, hs, c)
+	blob(model, head, Vector3.new(hs.X * 0.55, hs.Y * 0.13, 0.14), CFrame.new(0, -hs.Y * 0.14, -hs.Z * 0.5), c)
+end
+local function inHand(model, which, fn)
+	local hand = part(model, which or "RightHand")
+	if hand then fn(hand) end
+end
+
+Props.TeacherLooks.mayor = { skin = "brown", shirt = rgb(40, 50, 100), pants = rgb(40, 50, 100) }
+T.mayor = function(model, head, hs, torso, ts)
+	hairCap(model, head, hs, rgb(200, 200, 205))
+	ball(model, head, hs.X * 0.5, CFrame.new(0, hs.Y * 0.55, hs.Z * 0.3), rgb(200, 200, 205))
+	-- the mayor's sash, pearls
+	block(model, torso, Vector3.new(0.5, ts.Y * 1.3, 0.08), CFrame.new(0, 0, -ts.Z * 0.54) * CFrame.Angles(0, 0, math.rad(35)), rgb(220, 50, 60))
+	for i = -3, 3 do ball(model, torso, 0.18, CFrame.new(i * 0.14, ts.Y * 0.42 - math.abs(i) * 0.03, -ts.Z * 0.5), rgb(250, 248, 240)) end
+	wireGlasses(model, head, hs)
+end
+
+Props.TeacherLooks.grocer = { skin = "tan", shirt = rgb(245, 245, 240), pants = rgb(60, 70, 90) }
+T.grocer = function(model, head, hs, torso, ts)
+	block(model, head, Vector3.new(hs.X * 0.9, hs.Y * 0.28, hs.Z * 0.9), CFrame.new(0, hs.Y * 0.55, 0), rgb(245, 245, 240)) -- a paper cap
+	stache(model, head, hs, rgb(80, 50, 30))
+	apron(model, torso, ts, rgb(40, 150, 70))
+	inHand(model, "RightHand", function(h) ball(model, h, 0.7, CFrame.new(0, -0.1, -0.5), rgb(230, 40, 40)) end)
+end
+
+Props.TeacherLooks.cop = { skin = "light", shirt = rgb(40, 60, 130), pants = rgb(30, 36, 60) }
+T.cop = function(model, head, hs, torso, ts)
+	cap(model, head, hs, rgb(30, 40, 90), rgb(20, 20, 26))
+	block(model, head, Vector3.new(0.4, 0.4, 0.06), CFrame.new(0, hs.Y * 0.5, -hs.Z * 0.56), rgb(230, 200, 90), Enum.Material.Metal)
+	block(model, torso, Vector3.new(0.4, 0.5, 0.06), CFrame.new(-ts.X * 0.25, ts.Y * 0.2, -ts.Z * 0.54), rgb(230, 200, 90), Enum.Material.Metal)
+	blob(model, head, Vector3.new(hs.X * 0.3, hs.Y * 0.7, hs.Z * 0.3), CFrame.new(0, -hs.Y * 0.1, hs.Z * 0.55), rgb(200, 150, 70)) -- ponytail
+	local lower = part(model, "LowerTorso")
+	if lower then block(model, lower, Vector3.new(ts.X * 1.05, 0.3, ts.Z * 1.05), CFrame.new(0, 0.1, 0), rgb(20, 20, 26)) end
+end
+
+Props.TeacherLooks.librarian = { skin = "light", shirt = rgb(150, 110, 70), pants = rgb(80, 70, 60) }
+T.librarian = function(model, head, hs, torso, ts)
+	hairCap(model, head, hs, rgb(170, 170, 175), 0.4)
+	wireGlasses(model, head, hs)
+	for _, x in { -1, 1 } do block(model, torso, Vector3.new(ts.X * 0.14, ts.Y * 0.1, 0.08), CFrame.new(x * ts.X * 0.08, ts.Y * 0.42, -ts.Z * 0.55) * CFrame.Angles(0, 0, math.rad(x * 20)), rgb(150, 30, 40)) end
+	inHand(model, "LeftHand", function(h) block(model, h, Vector3.new(0.3, 1.2, 0.9), CFrame.new(0, 0, -0.4), rgb(60, 90, 160)) end)
+end
+
+Props.TeacherLooks.arcade = { skin = "tan", shirt = rgb(30, 30, 36), pants = rgb(40, 50, 90) }
+T.arcade = function(model, head, hs, torso, ts)
+	-- a backwards cap over purple hair, headphones round the neck
+	blob(model, head, Vector3.new(hs.X * 1.06, hs.Y * 0.5, hs.Z * 1.08), CFrame.new(0, hs.Y * 0.36, 0), rgb(255, 60, 220))
+	block(model, head, Vector3.new(hs.X * 0.9, 0.12, hs.Z * 0.5), CFrame.new(0, hs.Y * 0.28, hs.Z * 0.6), rgb(255, 60, 220))
+	for i = -1, 1 do block(model, head, Vector3.new(0.3, 0.5, 0.3), CFrame.new(i * 0.4, hs.Y * 0.2, -hs.Z * 0.45) * CFrame.Angles(math.rad(-30), 0, 0), rgb(160, 80, 255)) end
+	block(model, torso, Vector3.new(ts.X * 0.9, 0.25, ts.Z * 1.2), CFrame.new(0, ts.Y * 0.5, 0), rgb(20, 20, 24))
+	for _, x in { -1, 1 } do cylZ(model, torso, 0.5, 0.3, CFrame.new(x * ts.X * 0.42, ts.Y * 0.45, -ts.Z * 0.2), rgb(90, 240, 255)) end
+end
+
+Props.TeacherLooks.cook = { skin = "tan", shirt = rgb(250, 250, 250), pants = rgb(40, 40, 46) }
+T.cook = function(model, head, hs, torso, ts)
+	cylY(model, head, hs.X * 1.05, hs.Y * 0.9, CFrame.new(0, hs.Y * 0.8, 0), rgb(250, 250, 250))
+	blob(model, head, Vector3.new(hs.X * 1.3, hs.Y * 0.5, hs.X * 1.3), CFrame.new(0, hs.Y * 1.3, 0), rgb(250, 250, 250))
+	for i = 0, 2 do ball(model, torso, 0.16, CFrame.new(ts.X * 0.18, ts.Y * (0.3 - i * 0.25), -ts.Z * 0.53), rgb(40, 40, 46)) end
+	blob(model, head, Vector3.new(hs.X * 0.35, hs.Y * 0.6, hs.Z * 0.3), CFrame.new(hs.X * 0.5, -hs.Y * 0.05, 0), rgb(200, 60, 40))
+	inHand(model, "RightHand", function(h)
+		cylY(model, h, 0.15, 1.6, CFrame.new(0, 0.2, -0.3), rgb(40, 40, 46))
+		block(model, h, Vector3.new(0.9, 0.06, 0.7), CFrame.new(0, 1.05, -0.3), rgb(200, 200, 210), Enum.Material.Metal)
+	end)
+end
+
+Props.TeacherLooks.mail = { skin = "dark", shirt = rgb(90, 130, 200), pants = rgb(40, 50, 90) }
+T.mail = function(model, head, hs, torso, ts)
+	cap(model, head, hs, rgb(40, 60, 130))
+	block(model, torso, Vector3.new(0.2, ts.Y * 1.3, 0.1), CFrame.new(0, 0, -ts.Z * 0.54) * CFrame.Angles(0, 0, math.rad(-35)), rgb(120, 80, 50))
+	local lower = part(model, "LowerTorso")
+	if lower then block(model, lower, Vector3.new(0.9, 1.1, 0.5), CFrame.new(ts.X * 0.55, -0.3, 0), rgb(150, 100, 60)) end
+end
+
+Props.TeacherLooks.scoops = { skin = "light", shirt = rgb(255, 180, 210), pants = rgb(250, 250, 250) }
+T.scoops = function(model, head, hs, torso, ts)
+	block(model, head, Vector3.new(hs.X * 1.02, hs.Y * 0.3, hs.Z * 0.6), CFrame.new(0, hs.Y * 0.55, 0), rgb(250, 250, 250))
+	for i = 0, 3 do block(model, torso, Vector3.new(ts.X * 1.02, 0.18, ts.Z * 1.03), CFrame.new(0, ts.Y * (0.35 - i * 0.22), 0), rgb(250, 250, 250)) end
+	inHand(model, "RightHand", function(h)
+		block(model, h, Vector3.new(0.5, 0.9, 0.5), CFrame.new(0, 0.5, -0.3), rgb(220, 170, 100))
+		ball(model, h, 0.7, CFrame.new(0, 1.2, -0.3), rgb(150, 230, 180))
+	end)
+end
+
+Props.TeacherLooks.banker = { skin = "light", shirt = rgb(90, 90, 100), pants = rgb(60, 60, 70) }
+T.banker = function(model, head, hs, torso, ts)
+	cylY(model, head, hs.X * 1.5, 0.12, CFrame.new(0, hs.Y * 0.45, 0), rgb(20, 20, 24))
+	cylY(model, head, hs.X * 0.95, hs.Y * 1.1, CFrame.new(0, hs.Y * 1, 0), rgb(20, 20, 24))
+	stache(model, head, hs, rgb(200, 200, 205))
+	local ring = cylZ(model, head, hs.X * 0.32, 0.05, CFrame.new(hs.X * 0.21, hs.Y * 0.05, -hs.Z * 0.53), rgb(220, 190, 90), Enum.Material.Metal)
+	_ = ring
+	for i = 0, 4 do ball(model, torso, 0.12, CFrame.new(-ts.X * 0.3 + i * 0.12, -ts.Y * 0.1 - math.sin(i / 4 * math.pi) * 0.2, -ts.Z * 0.54), rgb(230, 200, 90), Enum.Material.Metal) end
+end
+
+Props.TeacherLooks.hank = { skin = "tan", shirt = rgb(190, 50, 50), pants = rgb(60, 70, 100) }
+T.hank = function(model, head, hs, torso, ts)
+	blob(model, head, Vector3.new(hs.X * 1.1, hs.Y * 0.55, hs.Z * 1.1), CFrame.new(0, hs.Y * 0.38, 0), rgb(250, 200, 40))
+	beard(model, head, hs, rgb(110, 70, 40))
+	for i = -2, 2 do block(model, torso, Vector3.new(ts.X * 1.02, 0.1, ts.Z * 1.03), CFrame.new(0, i * ts.Y * 0.2, 0), rgb(40, 30, 30)) end
+	local lower = part(model, "LowerTorso")
+	if lower then
+		block(model, lower, Vector3.new(ts.X * 1.08, 0.5, ts.Z * 1.1), CFrame.new(0, 0.1, 0), rgb(150, 100, 60))
+		cylY(model, lower, 0.18, 1.2, CFrame.new(ts.X * 0.45, -0.3, -ts.Z * 0.5), rgb(120, 120, 130), Enum.Material.Metal)
+	end
+end
+
+Props.TeacherLooks.grandma = { skin = "light", shirt = rgb(190, 160, 230), pants = rgb(120, 100, 150) }
+T.grandma = function(model, head, hs, torso, ts)
+	hairCap(model, head, hs, rgb(240, 240, 245), 0.5)
+	ball(model, head, hs.X * 0.6, CFrame.new(0, hs.Y * 0.6, hs.Z * 0.35), rgb(240, 240, 245))
+	wireGlasses(model, head, hs)
+	apron(model, torso, ts, rgb(255, 240, 245))
+	inHand(model, "RightHand", function(h) cylZ(model, h, 0.35, 2.4, CFrame.new(0, 0, -0.5), rgb(200, 160, 110), Enum.Material.Wood) end)
+end
+
+Props.TeacherLooks.dad = { skin = "brown", shirt = rgb(90, 130, 110), pants = rgb(170, 150, 110) }
+T.dad = function(model, head, hs, torso, ts)
+	hairCap(model, head, hs, rgb(25, 20, 18), 0.45)
+	wireGlasses(model, head, hs)
+	block(model, torso, Vector3.new(ts.X * 0.7, ts.Y * 0.7, 0.06), CFrame.new(0, -ts.Y * 0.08, -ts.Z * 0.53), rgb(200, 190, 150))
+end
+
+Props.TeacherLooks.mom = { skin = "brown", shirt = rgb(60, 180, 170), pants = rgb(40, 50, 80) }
+T.mom = function(model, head, hs, torso, ts)
+	hairCap(model, head, hs, rgb(25, 20, 18), 0.7)
+	blob(model, head, Vector3.new(hs.X * 1.05, hs.Y * 1.1, hs.Z * 0.5), CFrame.new(0, -hs.Y * 0.2, hs.Z * 0.4), rgb(25, 20, 18))
+	for _, x in { -1, 1 } do ball(model, head, 0.2, CFrame.new(x * hs.X * 0.52, -hs.Y * 0.05, 0), rgb(230, 200, 90), Enum.Material.Metal) end
+end
+
+Props.TeacherLooks.timmy = { skin = "light", shirt = rgb(240, 90, 60), pants = rgb(60, 90, 170) }
+T.timmy = function(model, head, hs, torso, ts)
+	hairCap(model, head, hs, rgb(230, 180, 90), 0.6)
+	block(model, head, Vector3.new(0.25, 0.4, 0.25), CFrame.new(0.1, hs.Y * 0.62, 0) * CFrame.Angles(0, 0, math.rad(20)), rgb(230, 180, 90))
+	for i = 0, 2 do block(model, torso, Vector3.new(ts.X * 1.02, 0.14, ts.Z * 1.03), CFrame.new(0, ts.Y * (0.25 - i * 0.25), 0), rgb(255, 214, 80)) end
+end
+
+Props.TeacherLooks.coachdad = { skin = "dark", shirt = rgb(210, 50, 50), pants = rgb(210, 50, 50) }
+T.coachdad = function(model, head, hs, torso, ts)
+	cap(model, head, hs, rgb(40, 60, 140))
+	for _, x in { -1, 1 } do block(model, torso, Vector3.new(0.12, ts.Y * 1.02, ts.Z * 1.04), CFrame.new(x * ts.X * 0.35, 0, 0), rgb(250, 250, 250)) end
+	block(model, torso, Vector3.new(0.06, ts.Y * 0.4, 0.06), CFrame.new(0, ts.Y * 0.2, -ts.Z * 0.53), rgb(250, 250, 250))
+	ball(model, torso, 0.35, CFrame.new(0, -ts.Y * 0.02, -ts.Z * 0.56), rgb(200, 200, 210), Enum.Material.Metal)
+end
+
+Props.TeacherLooks.skye = { skin = "tan", shirt = rgb(120, 90, 200), pants = rgb(40, 40, 46) }
+T.skye = function(model, head, hs, torso, ts)
+	blob(model, head, Vector3.new(hs.X * 1.1, hs.Y * 0.6, hs.Z * 1.12), CFrame.new(0, hs.Y * 0.32, 0.02), rgb(40, 180, 170))
+	blob(model, head, Vector3.new(hs.X * 0.9, hs.Y * 0.5, hs.Z * 0.2), CFrame.new(-hs.X * 0.2, hs.Y * 0.1, -hs.Z * 0.48), rgb(255, 80, 180))
+	blob(model, torso, Vector3.new(ts.X * 0.9, ts.Y * 0.5, ts.Z * 0.6), CFrame.new(0, ts.Y * 0.5, ts.Z * 0.35), rgb(120, 90, 200))
+	block(model, torso, Vector3.new(ts.X * 0.6, 2.4, 0.2), CFrame.new(0, 0, ts.Z * 0.62) * CFrame.Angles(0, 0, math.rad(10)), rgb(255, 80, 180))
+end
+
+Props.TeacherLooks.grumbles = { skin = "light", shirt = rgb(130, 100, 70), pants = rgb(90, 80, 70) }
+T.grumbles = function(model, head, hs, torso, ts)
+	cap(model, head, hs, rgb(110, 100, 90))
+	for _, x in { -1, 1 } do blob(model, head, Vector3.new(hs.X * 0.35, hs.Y * 0.14, 0.2), CFrame.new(x * hs.X * 0.22, hs.Y * 0.2, -hs.Z * 0.5) * CFrame.Angles(0, 0, math.rad(x * -15)), rgb(240, 240, 240)) end
+	stache(model, head, hs, rgb(240, 240, 240))
+	inHand(model, "RightHand", function(h) cylY(model, h, 0.25, 4, CFrame.new(0, -1.5, -0.3), rgb(110, 70, 40), Enum.Material.Wood) end)
+end
+
+Props.TeacherLooks.nurse = { skin = "brown", shirt = rgb(150, 210, 230), pants = rgb(150, 210, 230) }
+T.nurse = function(model, head, hs, torso, ts)
+	hairCap(model, head, hs, rgb(40, 28, 22))
+	block(model, head, Vector3.new(hs.X * 0.8, hs.Y * 0.3, hs.Z * 0.4), CFrame.new(0, hs.Y * 0.55, -hs.Z * 0.15), rgb(250, 250, 250))
+	block(model, head, Vector3.new(0.3, 0.1, 0.06), CFrame.new(0, hs.Y * 0.55, -hs.Z * 0.37), rgb(220, 40, 50))
+	block(model, head, Vector3.new(0.1, 0.3, 0.06), CFrame.new(0, hs.Y * 0.55, -hs.Z * 0.37), rgb(220, 40, 50))
+	for _, x in { -1, 1 } do block(model, torso, Vector3.new(0.08, ts.Y * 0.6, 0.08), CFrame.new(x * ts.X * 0.18, ts.Y * 0.1, -ts.Z * 0.54), rgb(40, 40, 46)) end
+	cylZ(model, torso, 0.4, 0.1, CFrame.new(ts.X * 0.18, -ts.Y * 0.25, -ts.Z * 0.56), rgb(200, 200, 210), Enum.Material.Metal)
+end
+
+Props.TeacherLooks.firefighter = { skin = "light", shirt = rgb(200, 170, 110), pants = rgb(40, 40, 46) }
+T.firefighter = function(model, head, hs, torso, ts)
+	blob(model, head, Vector3.new(hs.X * 1.15, hs.Y * 0.6, hs.Z * 1.3), CFrame.new(0, hs.Y * 0.4, hs.Z * 0.08), rgb(210, 30, 30))
+	block(model, head, Vector3.new(0.5, 0.5, 0.08), CFrame.new(0, hs.Y * 0.5, -hs.Z * 0.62), rgb(230, 200, 90), Enum.Material.Metal)
+	for _, y in { 0.1, -0.35 } do block(model, torso, Vector3.new(ts.X * 1.03, 0.2, ts.Z * 1.05), CFrame.new(0, ts.Y * y, 0), rgb(250, 230, 60), Enum.Material.Neon) end
+	stache(model, head, hs, rgb(110, 70, 40))
+end
+
+Props.TeacherLooks.gardener = { skin = "light", shirt = rgb(250, 240, 220), pants = rgb(70, 130, 80), torso = rgb(70, 130, 80) }
+T.gardener = function(model, head, hs, torso, ts)
+	cylY(model, head, hs.X * 1.9, 0.1, CFrame.new(0, hs.Y * 0.42, 0), rgb(230, 210, 150))
+	blob(model, head, Vector3.new(hs.X * 1.05, hs.Y * 0.5, hs.Z * 1.05), CFrame.new(0, hs.Y * 0.5, 0), rgb(230, 210, 150))
+	hairCap(model, head, hs, rgb(25, 20, 18), 0.35)
+	for _, h in { "LeftHand", "RightHand" } do inHand(model, h, function(hand) blob(model, hand, Vector3.new(0.7, 0.7, 0.7), CFrame.new(), rgb(120, 200, 110)) end) end
+	inHand(model, "LeftHand", function(h)
+		cylY(model, h, 1, 1.1, CFrame.new(0, -0.7, -0.4), rgb(60, 140, 200), Enum.Material.Metal)
+		cylZ(model, h, 0.2, 1.2, CFrame.new(0, -0.5, -1.1), rgb(60, 140, 200), Enum.Material.Metal)
+	end)
+end
+
+Props.TeacherLooks.ranger = { skin = "tan", shirt = rgb(190, 170, 120), pants = rgb(70, 100, 60) }
+T.ranger = function(model, head, hs, torso, ts)
+	cylY(model, head, hs.X * 1.8, 0.1, CFrame.new(0, hs.Y * 0.45, 0), rgb(120, 100, 60))
+	cylY(model, head, hs.X * 0.95, hs.Y * 0.55, CFrame.new(0, hs.Y * 0.7, 0), rgb(120, 100, 60))
+	block(model, torso, Vector3.new(0.45, 0.5, 0.06), CFrame.new(-ts.X * 0.25, ts.Y * 0.2, -ts.Z * 0.54), rgb(230, 200, 90), Enum.Material.Metal)
+	stache(model, head, hs, rgb(90, 60, 40))
+end
+
+Props.TeacherLooks.fisher = { skin = "light", shirt = rgb(250, 210, 50), pants = rgb(60, 70, 90) }
+T.fisher = function(model, head, hs, torso, ts)
+	blob(model, head, Vector3.new(hs.X * 1.3, hs.Y * 0.5, hs.Z * 1.3), CFrame.new(0, hs.Y * 0.38, 0), rgb(250, 210, 50))
+	beard(model, head, hs, rgb(200, 200, 205))
+	inHand(model, "RightHand", function(h)
+		cylY(model, h, 0.12, 7, CFrame.new(0, 2.8, -0.4) * CFrame.Angles(math.rad(-25), 0, 0), rgb(110, 70, 40), Enum.Material.Wood)
+	end)
+end
+
+Props.TeacherLooks.bea = { skin = "brown", shirt = rgb(120, 150, 90), pants = rgb(150, 130, 100) }
+T.bea = function(model, head, hs, torso, ts)
+	hairCap(model, head, hs, rgb(90, 60, 40), 0.7)
+	cylY(model, head, hs.X * 1.6, 0.08, CFrame.new(0, hs.Y * 0.5, 0), rgb(220, 200, 140))
+	for _, x in { -1, 1 } do cylZ(model, torso, 0.45, 0.8, CFrame.new(x * 0.28, ts.Y * 0.1, -ts.Z * 0.7), rgb(30, 30, 36), Enum.Material.Metal) end
+	block(model, torso, Vector3.new(0.06, ts.Y * 0.5, 0.06), CFrame.new(0, ts.Y * 0.3, -ts.Z * 0.53), rgb(30, 30, 36))
+end
+
+Props.TeacherLooks.counselor = { skin = "dark", shirt = rgb(255, 150, 50), pants = rgb(60, 80, 60) }
+T.counselor = function(model, head, hs, torso, ts)
+	cap(model, head, hs, rgb(60, 130, 70))
+	block(model, torso, Vector3.new(ts.X * 0.8, 0.5, 0.06), CFrame.new(0, ts.Y * 0.1, -ts.Z * 0.53), rgb(250, 250, 250))
+	inHand(model, "LeftHand", function(h) block(model, h, Vector3.new(0.9, 1.2, 0.1), CFrame.new(0, 0, -0.4), rgb(150, 110, 70), Enum.Material.Wood) end)
+end
+
+Props.TeacherLooks.scout = { skin = "tan", shirt = rgb(150, 170, 90), pants = rgb(90, 90, 70) }
+T.scout = function(model, head, hs, torso, ts)
+	cap(model, head, hs, rgb(90, 110, 60))
+	block(model, torso, Vector3.new(ts.X * 0.5, ts.Y * 0.3, 0.08), CFrame.new(0, ts.Y * 0.35, -ts.Z * 0.54) * CFrame.Angles(0, 0, math.rad(45)), rgb(220, 60, 50))
+	block(model, torso, Vector3.new(0.3, ts.Y * 1.3, 0.08), CFrame.new(0, 0, -ts.Z * 0.56) * CFrame.Angles(0, 0, math.rad(-35)), rgb(60, 110, 60))
+	for i = 0, 3 do ball(model, torso, 0.18, CFrame.new(-ts.X * 0.1 + i * 0.12, ts.Y * (0.1 - i * 0.12), -ts.Z * 0.6), ({ rgb(255, 200, 40), rgb(220, 60, 50), rgb(60, 130, 230), rgb(250, 250, 250) })[i + 1]) end
+end
+
+Props.TeacherLooks.engineer = { skin = "light", shirt = rgb(90, 50, 140), pants = rgb(90, 50, 140) }
+T.engineer = function(model, head, hs, torso, ts)
+	hairCap(model, head, hs, rgb(230, 110, 40), 0.6)
+	blob(model, head, Vector3.new(hs.X * 0.9, hs.Y * 0.5, hs.Z * 0.3), CFrame.new(0, -hs.Y * 0.1, hs.Z * 0.45), rgb(230, 110, 40))
+	for _, x in { -0.22, 0.22 } do cylZ(model, head, hs.X * 0.3, 0.2, CFrame.new(hs.X * x, hs.Y * 0.38, -hs.Z * 0.48), rgb(120, 220, 255), Enum.Material.Glass) end
+	block(model, head, Vector3.new(hs.X * 1.05, 0.12, hs.Z * 1.05), CFrame.new(0, hs.Y * 0.38, 0), rgb(40, 40, 46))
+	inHand(model, "RightHand", function(h) block(model, h, Vector3.new(0.2, 1.6, 0.3), CFrame.new(0, 0.3, -0.3), rgb(180, 180, 190), Enum.Material.Metal) end)
+end
+
+Props.TeacherLooks.robot = { skin = "light", shirt = rgb(190, 195, 205), pants = rgb(150, 155, 165) }
+T.robot = function(model, head, hs, torso, ts)
+	head.Color = rgb(200, 205, 215)
+	head.Material = Enum.Material.Metal
+	block(model, head, Vector3.new(hs.X * 0.9, hs.Y * 0.55, 0.1), CFrame.new(0, 0, -hs.Z * 0.52), rgb(20, 30, 40))
+	for _, x in { -0.2, 0.2 } do block(model, head, Vector3.new(0.3, 0.2, 0.05), CFrame.new(hs.X * x, hs.Y * 0.05, -hs.Z * 0.58), rgb(120, 220, 255), Enum.Material.Neon) end
+	cylY(model, head, 0.1, 1.2, CFrame.new(0, hs.Y * 0.9, 0), rgb(150, 155, 165), Enum.Material.Metal)
+	ball(model, head, 0.35, CFrame.new(0, hs.Y * 1.5, 0), rgb(255, 60, 60), Enum.Material.Neon)
+	block(model, torso, Vector3.new(ts.X * 0.5, ts.Y * 0.3, 0.1), CFrame.new(0, ts.Y * 0.1, -ts.Z * 0.54), rgb(110, 48, 160))
+end
+
 function Props.teacher(model, outfit)
 	local build = T[outfit]
 	if not build then return end

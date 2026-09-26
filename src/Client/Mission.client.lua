@@ -28,6 +28,7 @@ local gui = UI.new("ScreenGui", {
 local root = UI.autoScale(gui)
 
 local MISSION = Color3.fromRGB(255, 120, 60)
+local QUEST = Color3.fromRGB(40, 170, 110) -- town quests (TownQuestService)
 
 ---------------------------------------------------------------------------
 -- the "!" over Mr. Wobblesworth
@@ -72,7 +73,8 @@ local function talkingNow() return talking end
 
 local function npcHead(name)
 	local story = workspace:FindFirstChild("StoryNPCs")
-	local npc = story and story:FindFirstChild(name)
+	local town = workspace:FindFirstChild("Townsfolk")
+	local npc = (story and story:FindFirstChild(name)) or (town and town:FindFirstChild(name))
 	return npc and (npc:FindFirstChild("Head") or npc.PrimaryPart)
 end
 local function wobbleHead() return npcHead("Wobblesworth") end
@@ -169,7 +171,13 @@ local function conversation(lines, buttons, title, nearWob)
 		UI.corner(tag, 10)
 		UI.stroke(tag, 3)
 		UI.gradient(tag, Color3.fromRGB(255, 180, 110), MISSION)
-		UI.label(tag, { Text = (title:find("^SECRET") and title or ("MISSION: " .. title)):upper(), Font = UI.BIG, Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 8, stroke = 2 })
+		local isQuest = title:find("^QUEST") ~= nil
+		if isQuest then
+			tag.BackgroundColor3 = QUEST
+			tag:FindFirstChildOfClass("UIGradient").Color = ColorSequence.new(Color3.fromRGB(120, 230, 170), QUEST)
+			tag.Size = UDim2.fromOffset(360, 34)
+		end
+		UI.label(tag, { Text = ((title:find("^SECRET") or isQuest) and title or ("MISSION: " .. title)):upper(), Font = UI.BIG, Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 8, stroke = 2 })
 	end
 	local speaker = UI.label(box, { Text = "", Font = UI.BIG, TextColor3 = UI.C.purple, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -190, 0, 30), Position = UDim2.fromOffset(160, 14), ZIndex = 7, stroke = 2 })
 	local text = UI.label(box, { Text = "", TextColor3 = UI.C.ink, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, TextScaled = false, TextSize = 25, Size = UDim2.new(1, -190, 0, 80), Position = UDim2.fromOffset(160, 50), ZIndex = 7, stroke = 0 })
@@ -270,16 +278,19 @@ end
 
 Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
 	if kind ~= "missionTalk" then return end
-	local near = data.npc or true
+	-- (a call or a letter has nobody to walk away from)
+	local near = data.npc or (not data.call and true) or nil
 	if data.id then
+		local color = data.action == "secretStart" and SECRET or MISSION
+		if data.action == "tqAccept" then color = data.story and UI.C.orange or QUEST end
 		conversation(data.lines, {
-			{ data.action == "secretStart" and "TAKE THE JOB" or "START MISSION", data.action == "secretStart" and SECRET or MISSION, function()
+			{ data.accept or (data.action == "secretStart" and "TAKE THE JOB" or "START MISSION"), color, function()
 				pcall(Action.InvokeServer, Action, data.action or "missionStart", data.id)
 			end },
 			{ "LATER", UI.C.grey },
 		}, data.title, near)
 	else
-		conversation(data.lines, { { "BYE!", UI.C.blue } }, nil, near)
+		conversation(data.lines, { { data.bye or "BYE!", UI.C.blue } }, data.title, near)
 	end
 end)
 

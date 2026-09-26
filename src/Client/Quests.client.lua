@@ -136,6 +136,11 @@ local function missionTarget()
 		end
 		return nil, "factory"
 	end
+	-- the tracked town quest (TownQuestService sets QuestTarget), once the To-Do list is done
+	local q = player:GetAttribute("QuestTarget")
+	if typeof(q) == "Vector3" and (not state or state.kind ~= "tutorial") then
+		return q, nil, true
+	end
 	if player:GetAttribute("SecretReady") and not player:GetAttribute("MissionReady") and not player:GetAttribute("Talking") then
 		local story = workspace:FindFirstChild("StoryNPCs")
 		local stan = story and story:FindFirstChild("JanitorStan")

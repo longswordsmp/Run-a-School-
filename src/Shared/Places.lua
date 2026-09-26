@@ -22,12 +22,12 @@ Places.npc = {
 	MrPennington = P(-192, 0, -371, -192, -390, "Downtown"),
 	HankHardware = P(-310, 0, -370, -310, -390, "Downtown"),
 	-- Maple Heights
-	GrandmaRose = P(-274, 0, 306, -274, 330, "MapleHeights"),
-	MrPatel = P(-366, 0, 308, -366, 330, "MapleHeights"),
-	MrsPatel = P(-354, 0, 308, -354, 330, "MapleHeights"),
+	GrandmaRose = P(-274, 1.4, 306, -274, 330, "MapleHeights"),
+	MrPatel = P(-366, 1.4, 306, -366, 330, "MapleHeights"),
+	MrsPatel = P(-361.5, 1.4, 306, -361.5, 330, "MapleHeights"),
 	LilTimmy = P(-266, 0, 352, -266, 330, "MapleHeights"),
 	CoachDoug = P(100, 0, 312, 100, 330, "MapleHeights"),
-	Skye = P(276, 0, 346, 276, 330, "MapleHeights"),
+	Skye = P(274, 0.45, 341, 280, 341, "MapleHeights"),
 	Grumbles = P(86, 1.4, 427, 86, 450, "MapleHeights"),
 	NurseNina = P(-84, 0, 354, -84, 330, "MapleHeights"),
 	FirefighterFrank = P(-146, 0, 470, -146, 450, "MapleHeights"),
@@ -37,11 +37,11 @@ Places.npc = {
 	FishermanFinn = P(-664, 1.4, -170, -690, -170, "PinePark"),
 	BirdwatcherBea = P(-750, 0, -306, -700, -306, "PinePark"),
 	CounselorCody = P(-700, 0, 372, -700, 358, "PinePark"),
-	ScoutSam = P(-646, 14.4, -366, -600, -366, "PinePark"),
+	ScoutSam = P(-645, 14.4, -372.5, -600, -372.5, "PinePark"),
 	-- VexCorp Industrial
 	GaryGoon = P(636, 0, 300, 600, 300, "Industrial"),
 	EngineerEllie = P(740, 0, -122, 700, -122, "Industrial"),
-	Robo7 = P(687, 0.6, 0, 670, 0, "Industrial"),
+	Robo7 = P(688.2, 0.6, 0, 670, 0, "Industrial"),
 	ChiefBrick = P(592, 0, -10, 570, -10, "Industrial"),
 }
 

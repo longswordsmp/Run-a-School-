@@ -45,6 +45,8 @@ local RivalService = require(Server.RivalService)
 local CrewService = require(Server.CrewService)
 local TownService = require(Server.TownService)
 local AreaService = require(Server.AreaService)
+local TownNPCService = require(Server.TownNPCService)
+local TownQuestService = require(Server.TownQuestService)
 
 Factory.preload()
 PlotService.start()
@@ -81,6 +83,8 @@ RivalService.start()
 CrewService.start()
 TownService.start()
 AreaService.start()
+TownNPCService.start()
+TownQuestService.start_service()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -297,6 +301,32 @@ require(Server.DebugBridge).start({
 		local out = {}
 		for _, a in Config.Areas do out[a.id] = AreaService.isOpen(player, a.id) end
 		return out
+	end,
+	npcTalk = function(player, id)
+		TownNPCService.talk(player, id)
+		return TownNPCService.count()
+	end,
+	tq = function(player)
+		return TownQuestService.debugState(player)
+	end,
+	tqReset = function(player)
+		return TownQuestService.debugReset(player)
+	end,
+	tqAccept = function(player, id)
+		return Actions.invoke(player, "tqAccept", id)
+	end,
+	tutorialDone = function(player)
+		local p = Data.get(player)
+		p.tutorial = #Config.Tutorial + 1
+		p.quests.progress = 0
+		require(Server.QuestService).push(player)
+		require(Server.UnlockService).refresh(player)
+		require(Server.Signals).fire("questDone", player)
+		return p.tutorial
+	end,
+	tqAuto = function(player)
+		TownQuestService.autoStart(player)
+		return TownQuestService.debugState(player)
 	end,
 	friends = function(player, n)
 		return CrewService.debugFriends(player, n)

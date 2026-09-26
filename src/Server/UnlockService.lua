@@ -37,6 +37,7 @@ local RULES = {
 	{ name = "Daily", ok = function(p) return (p.tutorial or 1) > #Config.Tutorial end },
 	{ name = "Store", ok = function(p) return (p.tutorial or 1) > #Config.Tutorial end },
 	{ name = "Files", ok = function(p) return p.files ~= nil and next(p.files) ~= nil end },
+	{ name = "Quests", ok = function(p) return (p.tutorial or 1) > #Config.Tutorial end },
 }
 UnlockService.Rules = RULES
 
