@@ -101,7 +101,8 @@ local function pass(root)
 				end
 			end
 		end
-		if n % 500 == 0 then task.wait() end
+		-- (small slices: a whole plot or the town in one go stalled frames for everyone)
+		if n % 60 == 0 then task.wait() end
 	end
 	local count = 0
 	for p, g in grow do
@@ -150,6 +151,9 @@ function Unfight.watch(root)
 	local pending = {}
 	root.DescendantAdded:Connect(function(d)
 		if not d:IsA("BasePart") then return end
+		-- (kids sitting down, goons, anything with a Humanoid: not a rebuild, and they're skipped anyway)
+		local m = d:FindFirstAncestorOfClass("Model")
+		if m and m:FindFirstChildOfClass("Humanoid") then return end
 		local top = d
 		while top.Parent and top.Parent ~= root do top = top.Parent end
 		if top.Parent ~= root or pending[top] then return end

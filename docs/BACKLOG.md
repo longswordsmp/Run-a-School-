@@ -13,6 +13,7 @@ done after it's been played in Studio and checked on screen. "Built, not verifie
 
 - [ ] The street doesn't make sense: a red carpet laid over a road, and the kids off the bus walk into Detention. Replace it with a proper drop-off: the bus stops at a stop, kids wait on a sidewalk plaza, unpicked kids go home or back on the bus. Nobody walks into Detention.
 - [ ] An opening cutscene: how you get the school.
+- [ ] The story has to make sense: introduce VexCorp, Dr. Vex and Crumpet BEFORE they do anything (not "some random dude named Crumpet stealing kids"); every event has a reason the player has been shown. Plan: you arrive on Otis's bus, Wobblesworth (retiring) hands you the keys to the empty old school; Vex's limo glides past with Crumpet driving and Wobblesworth explains who she is and what she wants; Crumpet's raid then opens with "Dr. Vex sends her compliments..."; Skater Kid is your first transfer student, snatched by Vex before he reached you.
 - [ ] A tutorial that really teaches the game: earn tuition, buy better kids, sell old kids to make room for better ones, upgrades, the gate, the Board.
 - [ ] A way to hide the GUI (and the guide arrow and trail) when you want to.
 - [ ] Remove every leftover "coming soon" / unfinished thing (the Homework Factory sign, "Recess is cancelled", and the rest: find them all).
