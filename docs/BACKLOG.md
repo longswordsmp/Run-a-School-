@@ -5,7 +5,8 @@ done after it's been played in Studio and checked on screen. "Built, not verifie
 
 ## P0: broken (blocks play)
 
-- [~] The Vex Prep Job gets stuck after you steal the kid. Fixed in code (the guide follows each stage; walking out of the grounds with the kid counts); played through with the debug bridge, NOT yet by hand.
+- [x] The Vex Prep Job gets stuck after you steal the kid. Played by hand twice: walk, real prompts, real Ruler swings (12 to knock Grindle out), Desk 5, the grate, the tunnels, out of the pothole, VexPA cutscene, +$25K, To-Do on to "Face the Board". Second run with live monitors: timed the patrols, got in unseen, was spotted leaving and outran them to the office. Found and fixed on the way: the camera jammed into your head in the office (prompts off screen, so "Take the hoverboard" never showed); a stale phone call sitting over the whole job; a raid firing the instant the job ended; the tracker cutting off long objectives; the pothole ladder standing mid-tunnel in front of the camera; Stan's "we go tonight" call mid-heist; "her office" when it's Grindle's.
+- [x] Grindle's office was a 90-by-14 corridor: now a real office (walls, records door, bookcases, his chair, desk things, Dr. Vex's portrait, confiscated rulers, coat stand, diploma, rug, pendant light). Screenshots.
 - [~] Carrying a kid gets you stuck in doorways. Fixed in code (carried kids collide with nothing); not yet walked through a doorway by hand.
 - [~] The game is laggy. NPCs now move smoothly every frame (measured 43/43, was every other frame); steady 59.4 fps. Still open: a one-off client freeze right after joining.
 

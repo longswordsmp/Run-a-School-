@@ -901,6 +901,8 @@ function RaidService.start()
 				local QuestService = require(script.Parent.QuestService)
 				local tutorialDone = (p.tutorial or 1) > #Config.Tutorial or QuestService.pastStep(player, "k08_crew")
 				if not nextRaid[player] then nextRaid[player] = now() + R.first end
+				-- (never the moment a mission ends: its finale cutscene is playing and you've earned a breather)
+				if player:GetAttribute("Mission") then nextRaid[player] = math.max(nextRaid[player], now() + 90) end
 				if tutorialDone and not raids[player] and now() >= nextRaid[player] and not p.reviewing and not p.finalePending
 					and not player:GetAttribute("Mission")
 					and lastMove[player] and now() - lastMove[player] < 90 then

@@ -305,7 +305,19 @@ local function showTalk(data)
 			{ "LATER", UI.C.grey },
 		}, data.title, near)
 	else
-		conversation(data.lines, { { data.bye or "BYE!", UI.C.blue } }, data.title, near)
+		local close = conversation(data.lines, { { data.bye or "BYE!", UI.C.blue } }, data.title, near)
+		-- (a call about the step is old news once a mission is under way: it hangs up by itself rather
+		-- than sit over the screen for the whole job)
+		if data.call and close then
+			local c
+			c = player:GetAttributeChangedSignal("Mission"):Connect(function()
+				if player:GetAttribute("Mission") then
+					c:Disconnect()
+					close()
+				end
+			end)
+			task.delay(180, function() c:Disconnect() end)
+		end
 	end
 end
 afterClose = function()
@@ -356,6 +368,20 @@ UI.corner(meterFill, 6)
 local meterL = UI.label(card, { Text = "ESCAPING", Font = UI.BIG, TextColor3 = UI.C.red, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(0, 160, 0, 16), Position = UDim2.fromOffset(12, 141), Visible = false, stroke = 0 })
 
 local cur -- { id, def, progress, count }
+
+-- the card grows to fit the objective (the long ones run to three lines), with the pips and the chase
+-- meter below it
+local TextService = game:GetService("TextService")
+local function fit()
+	local h = TextService:GetTextSize(objL.Text, objL.TextSize, objL.Font, Vector2.new(276, 1000)).Y
+	h = math.max(40, h + 2)
+	objL.Size = UDim2.new(1, -24, 0, h)
+	local y = 68 + h + 6
+	pips.Position = UDim2.fromOffset(12, y)
+	meterL.Position = UDim2.fromOffset(12, y + 27)
+	meter.Position = UDim2.fromOffset(12, y + 46)
+	card.Size = UDim2.fromOffset(300, meter.Visible and y + 70 or y + 36)
+end
 
 local function setPips(progress, count)
 	for _, c in pips:GetChildren() do
@@ -440,7 +466,7 @@ Remotes.Push.OnClientEvent:Connect(function(kind, data)
 		local chase = def and def.kind == "chase"
 		meter.Visible = chase
 		meterL.Visible = chase
-		card.Size = UDim2.fromOffset(300, chase and 184 or 150)
+		fit()
 		meterFill.Size = UDim2.fromScale(0, 1)
 		setPips(cur.progress, cur.count)
 		showTracker(true)
@@ -448,6 +474,7 @@ Remotes.Push.OnClientEvent:Connect(function(kind, data)
 		stamp(data.secret and "SECRET JOB!" or "MISSION START!", data.secret and SECRET or MISSION)
 	elseif data.state == "phase" and cur then
 		objL.Text = data.text
+		fit()
 		UI.punch(card, 1.06)
 	elseif data.state == "progress" and cur then
 		cur.progress, cur.count = data.progress, data.count
@@ -471,6 +498,7 @@ Remotes.Push.OnClientEvent:Connect(function(kind, data)
 		objL.Text = (data.why and (data.why .. " ") or "") .. (data.secret and "Talk to Janitor Stan for another job." or "Talk to Mr. Wobblesworth to try again.")
 		meter.Visible = false
 		meterL.Visible = false
+		fit()
 		stamp("MISSION FAILED", UI.C.red)
 		task.delay(3.5, function()
 			if not cur then showTracker(false) end
@@ -536,6 +564,7 @@ task.defer(function()
 		cur = { def = Config.Missions[id], progress = 0 }
 		titleL.Text = Config.Missions[id].title
 		objL.Text = Config.Missions[id].objective
+		fit()
 		showTracker(true)
 	end
 end)

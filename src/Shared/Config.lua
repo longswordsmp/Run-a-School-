@@ -444,7 +444,7 @@ Config.Tutorial = {
 	{ id = "k08_crew", part = "ch1", icon = "\u{1F690}", short = "Crumpet's Crew", text = "Mr. Wobblesworth has news about Vex's goons", count = 1, secs = 120, min = 10000, guide = "npc:Wobblesworth", mission = "k_crew" },
 	{ id = "k09_map", part = "ch1", icon = "\u{1F5FA}\u{FE0F}", short = "Steal the map", text = "Janitor Stan by the Confiscation Closet has a job", count = 1, secs = 120, min = 10000, guide = "npc:JanitorStan", mission = "k_map" },
 	{ id = "k10_peek", part = "ch1", icon = "\u{1F440}", short = "Scout Vex Prep", text = "Walk up to the Vex Prep gate at the east end of the street", count = 1, secs = 60, min = 10000, guide = "place:VexPrepLookout" },
-	{ id = "k11_pothole", part = "ch1", icon = "\u{1F573}\u{FE0F}", short = "Down the pothole", text = "Climb down the pothole by Vex Prep and find the ladder under her office", count = 1, secs = 120, min = 15000, guide = "sewer" },
+	{ id = "k11_pothole", part = "ch1", icon = "\u{1F573}\u{FE0F}", short = "Down the pothole", text = "Climb down the pothole by Vex Prep and find the ladder under the Headmaster's office", count = 1, secs = 120, min = 15000, guide = "sewer" },
 	{ id = "k12_heist", part = "ch1", icon = "\u{1F3EB}", short = "The Vex Prep Job", text = "Mr. Wobblesworth has the plan. Tonight's the night", count = 1, secs = 180, min = 25000, guide = "npc:Wobblesworth", mission = "k_heist" },
 	{ id = "board", part = "ch1", icon = "\u{2B50}", short = "Face the Board", text = "Become an Elementary School", count = 1, reward = 0, guide = "panel:Board" },
 }
@@ -463,7 +463,7 @@ Config.StepCalls = {
 	k08_crew = { { "MR. WOBBLESWORTH", "Wobblesworth", "Vex is furious you keep beating Crumpet. She's hired a whole crew! Come to the fountain." } },
 	k09_map = { { "MR. WOBBLESWORTH", "Wobblesworth", "Janitor Stan runs the Confiscation Closet. He knows every secret on this street, and he's asking for you." } },
 	k10_peek = { { "JANITOR STAN", "Stan", "That map shows an old tunnel running right under Vex Prep. Go and have a look at the place first: the gate at the east end." } },
-	k11_pothole = { { "JANITOR STAN", "Stan", "See the pothole in the road by Vex Prep? That's the way down. Find the ladder under her office. Just LOOK, kid." } },
+	k11_pothole = { { "JANITOR STAN", "Stan", "See the pothole in the road by Vex Prep? That's the way down. Find the ladder under the Headmaster's office. Just LOOK, kid." } },
 	k12_heist = { { "MR. WOBBLESWORTH", "Wobblesworth", "Stan says the Headmaster, old Grindle, sleeps in his office on top of that ladder. Come to the fountain: I have a plan." } },
 	board = { { "MR. WOBBLESWORTH", "Wobblesworth", "You did it! Now show the School Board: the Board button. Elementary School, here we come!" } },
 }
@@ -628,7 +628,7 @@ Config.Missions = {
 			{ "JANITOR STAN", "Stan", "There's an old sewer down there. Vex has the only map, on her desk in the Factory. Get it." },
 		},
 		objective = "Steal the Old Sewer Map from Vex's desk and get out of the Factory",
-		win = "Heh. The tunnel runs right under her office." },
+		win = "Heh. The tunnel runs right under the Headmaster's office." },
 	k_heist = { title = "The Vex Prep Job", kind = "sewer",
 		lines = {
 			{ "MR. WOBBLESWORTH", "Wobblesworth", "Tonight's the night, Principal. Down the pothole, up into Vex Prep." },

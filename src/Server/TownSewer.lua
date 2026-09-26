@@ -192,24 +192,26 @@ function Sewer.build(town, Kit)
 		end
 	end
 
-	-- the ladders: up to the pothole, and up the shaft to the office grate
-	local function ladder(p, name)
+	-- the ladder up to the pothole, against the tunnel's end wall under it. w: the foot of that wall;
+	-- dir: the way the wall faces, into the tunnel. (It used to stand out in the middle of the tunnel,
+	-- so the camera behind you ended up on the far side of it, looking through the rungs.)
+	local function ladder(w, dir, name)
 		for k = 0, 11 do
-			part(m, name .. "Rung", Vector3.new(2.4, 0.25, 0.25), CFrame.new(p + Vector3.new(0, 1 + k * 1, -W / 2 + 1.2)), rgb(150, 150, 156), Enum.Material.Metal)
+			part(m, name .. "Rung", Vector3.new(2.4, 0.25, 0.25), CFrame.new(w + Vector3.new(0, 1 + k * 1, dir * 1.2)), rgb(150, 150, 156), Enum.Material.Metal)
 		end
 		for _, s in { -1, 1 } do
-			part(m, name .. "Rail", Vector3.new(0.3, 12.5, 0.3), CFrame.new(p + Vector3.new(s * 1.2, 6.2, -W / 2 + 1.2)), rgb(120, 120, 126), Enum.Material.Metal)
+			part(m, name .. "Rail", Vector3.new(0.3, 12.5, 0.3), CFrame.new(w + Vector3.new(s * 1.2, 6.2, dir * 1.2)), rgb(120, 120, 126), Enum.Material.Metal)
 		end
-		local shaft = part(m, name .. "Shaft", Vector3.new(4, 0.4, 4), CFrame.new(p + Vector3.new(0, H + 0.8, -W / 2 + 2)), rgb(20, 20, 24))
-		local spot = part(m, name .. "Spot", Vector3.new(2, 4, 2), CFrame.new(p + Vector3.new(0, 3, -W / 2 + 2.4)), rgb(0, 0, 0), nil, { Transparency = 1, CanCollide = false })
+		local shaft = part(m, name .. "Shaft", Vector3.new(4, 0.4, 4), CFrame.new(w + Vector3.new(0, H + 0.8, dir * 2)), rgb(20, 20, 24))
+		local spot = part(m, name .. "Spot", Vector3.new(2, 4, 2), CFrame.new(w + Vector3.new(0, 3, dir * 2.4)), rgb(0, 0, 0), nil, { Transparency = 1, CanCollide = false })
 		spot:SetAttribute("SewerLadder", name)
 		-- a shaft of light from above
-		local beam = part(m, name .. "LightShaft", Vector3.new(3, H, 3), CFrame.new(p + Vector3.new(0, H / 2, -W / 2 + 2)), rgb(255, 250, 220), Enum.Material.Neon, { Transparency = 0.9, CanCollide = false, CastShadow = false })
+		local beam = part(m, name .. "LightShaft", Vector3.new(3, H, 3), CFrame.new(w + Vector3.new(0, H / 2, dir * 2)), rgb(255, 250, 220), Enum.Material.Neon, { Transparency = 0.9, CanCollide = false, CastShadow = false })
 		Kit.light(beam, 14, 0.8, rgb(255, 245, 210))
 		_ = shaft
 		return spot
 	end
-	ladder(Sewer.ENTRY + Vector3.new(0, 0, W / 2 - 1), "Pothole")
+	ladder(Vector3.new(Sewer.ENTRY.X, Sewer.Y, Sewer.ENTRY.Z + W / 2), -1, "Pothole")
 	-- (the office ladder: at the far end of the main line, on its south wall)
 	do
 		local p = Sewer.EXIT

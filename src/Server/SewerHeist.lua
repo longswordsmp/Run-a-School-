@@ -33,8 +33,10 @@ local SewerHeist = {}
 
 local FLOOR = 0.9 -- (Vex Prep's floor)
 local UP_ROAD = Vector3.new(Sewer.POTHOLE.X + 5, 3.5, Sewer.POTHOLE.Z) -- beside the pothole, on the road
-local DOWN_POTHOLE = Vector3.new(Sewer.ENTRY.X, Sewer.Y + 3.2, Sewer.ENTRY.Z - 4) -- in the tunnel, off the ladder
-local OFFICE_LADDER = Vector3.new(Sewer.EXIT.X, Sewer.Y + 3.2, Sewer.EXIT.Z + 3) -- in the tunnel, by the office ladder
+-- (both landings are a camera's length from the ladder you came down, facing away from it, so the
+-- camera behind you is in the tunnel, not squeezed behind the rungs)
+local DOWN_POTHOLE = Vector3.new(Sewer.ENTRY.X, Sewer.Y + 3.2, Sewer.ENTRY.Z - 9) -- in the tunnel, off the ladder
+local OFFICE_LADDER = Vector3.new(Sewer.EXIT.X, Sewer.Y + 3.2, Sewer.EXIT.Z + 10) -- in the tunnel, off the office ladder
 local IN_OFFICE = Vector3.new(Sewer.GRATE.X, FLOOR + 3, Sewer.GRATE.Z + 2.5) -- standing by the grate
 local BOSS_AT = Vector3.new(427, FLOOR, -150.5) -- in front of the office desk
 local TARGET_DESK = 5 -- (Vex Prep's Desk 5: x 397, z -130)
@@ -217,6 +219,7 @@ local function dropBoard(job, at)
 			task.wait()
 		end
 	end)
+	phase(job.player, "Grab the Headmaster's hoverboard!")
 	local pp = prompt(deck, "Take the hoverboard", "Headmaster's Hoverboard", 0.5, Color3.fromRGB(150, 110, 255))
 	pp.Triggered:Connect(function(who)
 		if who ~= job.player then return end
@@ -254,7 +257,7 @@ function SewerHeist.start(player, m, done)
 	if not p then return end
 	local others = p.scholarOthers or {}
 	jobs[player] = { player = player, m = m, done = done, kidId = others[1] or "ChessChampion" }
-	phase(player, "Down the pothole by Vex Prep, then up the ladder under her office")
+	phase(player, "Down the pothole by Vex Prep, then up the ladder under the Headmaster's office")
 end
 
 -- the office ladder, climbed: on the Job you come up through the grate; otherwise it's bolted
@@ -415,7 +418,10 @@ function SewerHeist.start_service()
 				local p = Data.own(player)
 				if p and not p.sewerScouted then
 					p.sewerScouted = true
-					call(player, "JANITOR STAN", "Stan", "Hear that? Snoring. Ha! Tell the old man. We go tonight.")
+					-- (not on the Job itself: "we go tonight" is old news by then)
+					if not jobs[player] then
+						call(player, "JANITOR STAN", "Stan", "Hear that? Snoring. Ha! Tell the old man. We go tonight.")
+					end
 					Signals.fire("sewerScouted", player)
 					task.defer(function() pcall(require(script.Parent.QuestService).recheck, player) end)
 				end

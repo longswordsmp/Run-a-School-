@@ -178,6 +178,125 @@ local function buildGrounds(m)
 	sign(nb, Enum.NormalId.Back, "NO RECESS\nNO LUNCH\nNO WINDOWS*\n*except these", rgb(40, 20, 20), Enum.Font.SpecialElite)
 end
 
+-- Headmaster Grindle's office, behind the partition at the back of the hall (the Vex Prep Job's boss
+-- room: you come up through the grate at x 440). It used to run the whole width of the building, a
+-- 90-by-14 corridor; now it's the middle 47 studs, with the records room through a door on the west.
+-- The desk, globe and trophy case are buildHall's; this is the rest of the room.
+local function buildOffice(m)
+	local X0, X1, Z0, Z1 = 405, 452, B.z0 + 0.8, -146.5 -- (inner: back wall face to the partition)
+	local H = B.h
+	local zc, zl = (Z0 + Z1) / 2, Z1 - Z0
+	local PANEL = rgb(100, 64, 40)
+	local DARK = rgb(70, 42, 28)
+	local rng = Random.new(1907)
+	-- the side walls, panelled like the partition, with a darker dado rail on the office side
+	for _, x in { X0, X1 } do
+		local s = x == X0 and 1 or -1 -- (the office side)
+		part(m, "OfficeWall", Vector3.new(1, H - 1, zl), CFrame.new(x, FLOOR + (H - 1) / 2, zc), PANEL, Enum.Material.Wood)
+		part(m, "OfficeDado", Vector3.new(0.2, 4, zl), CFrame.new(x + s * 0.6, FLOOR + 2, zc), DARK, Enum.Material.Wood)
+		part(m, "OfficeRail", Vector3.new(0.35, 0.3, zl), CFrame.new(x + s * 0.65, FLOOR + 4.1, zc), GOLD, Enum.Material.Metal)
+	end
+	-- the records room door, west wall (locked: it's only a door)
+	part(m, "RecordsDoor", Vector3.new(0.3, 8, 4), CFrame.new(X0 + 0.75, FLOOR + 4, -153), DARK, Enum.Material.Wood)
+	part(m, "DoorFrame", Vector3.new(0.25, 8.6, 4.8), CFrame.new(X0 + 0.66, FLOOR + 4.3, -153), PANEL, Enum.Material.Wood)
+	part(m, "DoorKnob", Vector3.new(0.4, 0.4, 0.4), CFrame.new(X0 + 0.95, FLOOR + 3.8, -154.5), GOLD, Enum.Material.Metal, { Shape = Enum.PartType.Ball })
+	local plate = part(m, "DoorPlate", Vector3.new(0.1, 0.8, 2.6), CFrame.new(X0 + 0.9, FLOOR + 6.6, -153), GOLD, Enum.Material.Metal)
+	sign(plate, Enum.NormalId.Right, "RECORDS", rgb(40, 20, 20), Enum.Font.Fantasy)
+
+	-- bookcases either side of the trophy case, floor to well over your head, full of books
+	local BOOKS = { rgb(120, 30, 40), rgb(40, 60, 110), rgb(40, 90, 60), rgb(90, 60, 30), rgb(60, 40, 80), rgb(150, 120, 70), rgb(30, 30, 36) }
+	for _, cxb in { 414.5, 439.5 } do
+		local w, hgt, back = 13, 12, Z0 + 0.15
+		part(m, "BookcaseBack", Vector3.new(w, hgt, 0.3), CFrame.new(cxb, FLOOR + hgt / 2, back), DARK, Enum.Material.Wood)
+		for _, s in { -1, 1 } do
+			part(m, "BookcaseSide", Vector3.new(0.4, hgt, 1.7), CFrame.new(cxb + s * (w / 2 - 0.2), FLOOR + hgt / 2, back + 0.85), PANEL, Enum.Material.Wood)
+		end
+		part(m, "BookcaseTop", Vector3.new(w + 0.6, 0.5, 2), CFrame.new(cxb, FLOOR + hgt + 0.25, back + 0.9), PANEL, Enum.Material.Wood)
+		for k, y in { 0.3, 3.2, 6.1, 9 } do
+			part(m, "Shelf", Vector3.new(w - 0.8, 0.3, 1.5), CFrame.new(cxb, FLOOR + y, back + 0.9), PANEL, Enum.Material.Wood)
+			-- the books on it: a run of spines, now and then a gap or one leaning over
+			if k <= 3 or rng:NextNumber() < 0.5 then
+				local x = cxb - w / 2 + 0.6
+				local stop = cxb + w / 2 - 0.6
+				while x < stop - 0.4 do
+					local bw = rng:NextNumber(0.35, 0.8)
+					if x + bw > stop then break end
+					local bh = rng:NextNumber(1.6, 2.5)
+					local lean = rng:NextNumber() < 0.06 and math.rad(18) or 0
+					part(m, "Book", Vector3.new(bw, bh, 1.2), CFrame.new(x + bw / 2, FLOOR + y + 0.15 + bh / 2, back + 0.95) * CFrame.Angles(0, 0, lean), BOOKS[rng:NextInteger(1, #BOOKS)], Enum.Material.SmoothPlastic)
+					x += bw + (rng:NextNumber() < 0.08 and rng:NextNumber(0.6, 1.4) or 0.03)
+				end
+			end
+		end
+	end
+
+	-- his chair: high-backed, oxblood leather, brass studs
+	local LEATHER = rgb(96, 30, 32)
+	part(m, "ChairSeat", Vector3.new(3, 0.7, 2.4), CFrame.new(CX, FLOOR + 2, -156.4), LEATHER, Enum.Material.Leather)
+	part(m, "ChairBack", Vector3.new(3.2, 5.6, 0.6), CFrame.new(CX, FLOOR + 4.9, -157.4), LEATHER, Enum.Material.Leather)
+	part(m, "ChairTrim", Vector3.new(3.4, 0.35, 0.7), CFrame.new(CX, FLOOR + 7.8, -157.4), GOLD, Enum.Material.Metal)
+	part(m, "ChairBase", Vector3.new(0.6, 1.6, 0.6), CFrame.new(CX, FLOOR + 0.8, -156.4), rgb(40, 40, 44), Enum.Material.Metal)
+
+	-- on the desk (its top is at 3.2): the nameplate, papers, an inkwell and quill, a green banker's lamp
+	local top = FLOOR + 3.2
+	local name = part(m, "Nameplate", Vector3.new(3, 0.55, 0.35), CFrame.new(CX - 0.6, top + 0.28, -152.75), GOLD, Enum.Material.Metal)
+	sign(name, Enum.NormalId.Back, "HEADMASTER GRINDLE", rgb(40, 20, 20), Enum.Font.Fantasy)
+	part(m, "Papers", Vector3.new(1.3, 0.35, 1.7), CFrame.new(CX - 1.8, top + 0.18, -153.9) * CFrame.Angles(0, math.rad(8), 0), rgb(245, 242, 232), Enum.Material.SmoothPlastic)
+	part(m, "Stamp", Vector3.new(0.5, 0.6, 0.5), CFrame.new(CX - 0.4, top + 0.3, -154.6), rgb(150, 30, 30), Enum.Material.SmoothPlastic)
+	part(m, "Inkwell", Vector3.new(0.5, 0.45, 0.5), CFrame.new(CX + 0.8, top + 0.23, -154.8), rgb(20, 20, 26), Enum.Material.Glass)
+	part(m, "Quill", Vector3.new(0.12, 1.4, 0.3), CFrame.new(CX + 0.95, top + 0.9, -154.8) * CFrame.Angles(0, 0, math.rad(-20)), rgb(245, 245, 240), Enum.Material.SmoothPlastic, { CanCollide = false })
+	part(m, "LampBase", Vector3.new(0.7, 0.2, 0.7), CFrame.new(CX - 3.2, top + 0.1, -155), GOLD, Enum.Material.Metal)
+	part(m, "LampStem", Vector3.new(0.15, 1.3, 0.15), CFrame.new(CX - 3.2, top + 0.85, -155), GOLD, Enum.Material.Metal)
+	local shade = part(m, "LampShade", Vector3.new(1.6, 0.45, 0.8), CFrame.new(CX - 3.2, top + 1.6, -154.75), rgb(30, 110, 60), Enum.Material.Glass, { Transparency = 0.15 })
+	local lamp = Instance.new("PointLight")
+	lamp.Color = rgb(255, 225, 160)
+	lamp.Range = 12
+	lamp.Brightness = 1.2
+	lamp.Parent = shade
+
+	-- Dr. Vex looks down on it all from over the trophy case
+	part(m, "VexPortraitFrame", Vector3.new(5.4, 6.6, 0.3), CFrame.new(CX, FLOOR + 12.5, Z0 + 0.3), GOLD, Enum.Material.Metal)
+	local canvas = part(m, "VexPortrait", Vector3.new(4.6, 5.8, 0.2), CFrame.new(CX, FLOOR + 12.5, Z0 + 0.45), rgb(60, 30, 70), Enum.Material.Fabric)
+	sign(canvas, Enum.NormalId.Back, "DR. VEX\nFounder\n\"Recess is\ninefficiency.\"", rgb(240, 225, 180), Enum.Font.Fantasy)
+
+	-- by the door, a bin of confiscated rulers; in the corner, his coat stand with the mortarboard on top
+	local bx, bz = CX - 7, -148.2
+	part(m, "RulerBin", Vector3.new(1.4, 2.4, 1.4), CFrame.new(bx, FLOOR + 1.2, bz), rgb(60, 60, 66), Enum.Material.Metal, { Shape = Enum.PartType.Cylinder, Size = Vector3.new(2.4, 1.4, 1.4), CFrame = CFrame.new(bx, FLOOR + 1.2, bz) * CFrame.Angles(0, 0, math.rad(90)) })
+	for i, a in { -12, 4, 16 } do
+		part(m, "ConfiscatedRuler", Vector3.new(0.1, 3.6, 0.45), CFrame.new(bx + (i - 2) * 0.3, FLOOR + 3, bz) * CFrame.Angles(math.rad(a * 0.4), 0, math.rad(a)), rgb(230, 190, 110), Enum.Material.Wood, { CanCollide = false })
+	end
+	local label = part(m, "BinLabel", Vector3.new(1.2, 0.5, 0.05), CFrame.new(bx, FLOOR + 1.4, bz + 0.72), rgb(245, 240, 225), Enum.Material.SmoothPlastic, { CanCollide = false })
+	sign(label, Enum.NormalId.Back, "CONFISCATED", rgb(150, 20, 20), Enum.Font.SpecialElite)
+	-- (the coat stand in the back corner: by the door it stood right where the camera sits when you come
+	-- up through the grate, and the gown filled half the screen)
+	local sx, sz = X1 - 2.4, Z0 + 2.2
+	part(m, "CoatStandBase", Vector3.new(1.8, 0.3, 1.8), CFrame.new(sx, FLOOR + 0.15, sz), DARK, Enum.Material.Wood)
+	part(m, "CoatStand", Vector3.new(0.35, 7, 0.35), CFrame.new(sx, FLOOR + 3.6, sz), DARK, Enum.Material.Wood)
+	for _, a in { 0, 120, 240 } do
+		part(m, "CoatHook", Vector3.new(0.15, 0.15, 1.1), CFrame.new(sx, FLOOR + 6.7, sz) * CFrame.Angles(0, math.rad(a), 0) * CFrame.new(0, 0, -0.5) * CFrame.Angles(math.rad(25), 0, 0), GOLD, Enum.Material.Metal, { CanCollide = false })
+	end
+	part(m, "Gown", Vector3.new(1.6, 3.6, 0.5), CFrame.new(sx, FLOOR + 4.9, sz - 0.45), rgb(24, 24, 30), Enum.Material.Fabric, { CanCollide = false })
+	part(m, "MortarboardCap", Vector3.new(1, 0.5, 1), CFrame.new(sx, FLOOR + 7.35, sz), rgb(24, 24, 30), Enum.Material.Fabric, { CanCollide = false })
+	part(m, "Mortarboard", Vector3.new(1.7, 0.12, 1.7), CFrame.new(sx, FLOOR + 7.66, sz) * CFrame.Angles(0, math.rad(45), 0), rgb(24, 24, 30), Enum.Material.Fabric, { CanCollide = false })
+	part(m, "Tassel", Vector3.new(0.1, 0.9, 0.1), CFrame.new(sx + 0.8, FLOOR + 7.2, sz), GOLD, Enum.Material.Fabric, { CanCollide = false })
+
+	-- his diploma on the east wall
+	part(m, "DiplomaFrame", Vector3.new(0.2, 2.8, 3.8), CFrame.new(X1 - 0.6, FLOOR + 8.5, -154), DARK, Enum.Material.Wood)
+	local dip = part(m, "Diploma", Vector3.new(0.1, 2.3, 3.3), CFrame.new(X1 - 0.72, FLOOR + 8.5, -154), rgb(245, 238, 215), Enum.Material.SmoothPlastic)
+	sign(dip, Enum.NormalId.Left, "DIPLOMA\nStrictness\n(with Honours)", rgb(60, 40, 30), Enum.Font.Fantasy)
+
+	-- a purple rug with a gold border under the desk, and a pendant light over it
+	part(m, "OfficeRugBorder", Vector3.new(18, 0.06, 9.6), CFrame.new(CX, FLOOR + 0.04, -152), GOLD, Enum.Material.Fabric, { CanCollide = false })
+	part(m, "OfficeRug", Vector3.new(17, 0.06, 8.6), CFrame.new(CX, FLOOR + 0.06, -152), PURPLE, Enum.Material.Fabric, { CanCollide = false })
+	part(m, "PendantChain", Vector3.new(0.15, H - 12, 0.15), CFrame.new(CX, FLOOR + 12 + (H - 12) / 2 - 0.5, -152), GOLD, Enum.Material.Metal, { CanCollide = false })
+	local pend = part(m, "Pendant", Vector3.new(2.4, 1, 2.4), CFrame.new(CX, FLOOR + 11.5, -152), rgb(255, 235, 190), Enum.Material.Neon, { CanCollide = false })
+	local pl = Instance.new("PointLight")
+	pl.Color = rgb(255, 228, 175)
+	pl.Range = 24
+	pl.Brightness = 1.3
+	pl.Parent = pend
+end
+
 local function buildHall(m)
 	local W, D, H = B.x1 - B.x0, B.z1 - B.z0, B.h
 	local cx, cz = (B.x0 + B.x1) / 2, (B.z0 + B.z1) / 2
@@ -310,7 +429,8 @@ local function buildHall(m)
 		part(m, "Panelling", Vector3.new(span[2] - span[1], 5, 0.3), CFrame.new((span[1] + span[2]) / 2, FLOOR + 2.5, B.z1 - 0.95), rgb(100, 64, 40), Enum.Material.Wood)
 	end
 	part(m, "Ceiling", Vector3.new(W - 1.6, 0.4, D - 1.6), CFrame.new(cx, FLOOR + H - 0.3, cz), rgb(240, 234, 220), Enum.Material.Plaster)
-	part(m, "Carpet", Vector3.new(12, 0.06, D - 4), CFrame.new(CX, FLOOR + 0.03, cz), rgb(110, 30, 50), Enum.Material.Fabric, { CanCollide = false })
+	-- (the long carpet stops at the office partition: the office has its own rug)
+	part(m, "Carpet", Vector3.new(12, 0.06, B.z1 - 2 + 146.6), CFrame.new(CX, FLOOR + 0.03, (B.z1 - 2 - 146.6) / 2), rgb(110, 30, 50), Enum.Material.Fabric, { CanCollide = false })
 	for _, x in { B.x0 + 0.9, B.x1 - 0.9 } do
 		part(m, "Panelling", Vector3.new(0.3, 5, D - 2), CFrame.new(x + (x < cx and 0.2 or -0.2), FLOOR + 2.5, cz), rgb(100, 64, 40), Enum.Material.Wood)
 	end
@@ -357,6 +477,7 @@ local function buildHall(m)
 	for i = 0, 3 do
 		cyl(m, "Trophy", 0.8, 1.4, Vector3.new(CX - 3 + i * 2, FLOOR + 5.2, -158.4), GOLD, Enum.Material.Metal)
 	end
+	buildOffice(m)
 end
 
 ---------------------------------------------------------------------------

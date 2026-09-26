@@ -471,7 +471,7 @@ local function worldTarget()
 	elseif g == "place:VexPrepLookout" then
 		return Vector3.new(427, 1, -36)
 	elseif g == "sewer" then
-		-- down the pothole; once down in the tunnels, the ladder under her office
+		-- down the pothole; once down in the tunnels, the ladder under the Headmaster's office
 		if root and root.Position.Y < -30 then return Vector3.new(440, -47, -152) end
 		return Vector3.new(466, 0.8, -7)
 	end
