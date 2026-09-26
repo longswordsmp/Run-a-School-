@@ -271,6 +271,53 @@ function Kit.bench(parent, x, z, face)
 	end
 end
 
+-- a triangular pediment over a portico, seen from the front: two wedges sloping down to either side
+-- (x, y at its base centre, z), `w` wide, `h` tall, `t` thick, on a wall facing along z
+function Kit.pediment(parent, x, y, z, w, h, t, color, material)
+	Kit.wedge(parent, "Pediment", Vector3.new(t, h, w / 2), Vector3.new(x + w / 4, y + h / 2, z), "+x", color, material)
+	Kit.wedge(parent, "Pediment", Vector3.new(t, h, w / 2), Vector3.new(x - w / 4, y + h / 2, z), "-x", color, material)
+end
+
+function Kit.flagpole(parent, x, z, color)
+	part(parent, "FlagBase", Vector3.new(2.4, 0.8, 2.4), CFrame.new(x, 0.4, z), Kit.C.stone, Enum.Material.Concrete)
+	part(parent, "FlagPole", Vector3.new(0.35, 18, 0.35), CFrame.new(x, 9.4, z), rgb(225, 225, 230), Enum.Material.Metal)
+	Kit.ball(parent, "Finial", 0.7, Vector3.new(x, 18.7, z), rgb(240, 200, 90), Enum.Material.Metal)
+	part(parent, "Flag", Vector3.new(4.5, 2.8, 0.1), CFrame.new(x + 2.4, 16.6, z), color, Enum.Material.Fabric)
+end
+
+-- a parked car facing `face` ("+x", "-x", "+z", "-z"); opts.police adds a light bar and stripes
+function Kit.car(parent, x, z, face, color, opts)
+	opts = opts or {}
+	local yaw = ({ ["+x"] = 0, ["-x"] = 180, ["+z"] = -90, ["-z"] = 90 })[face] or 0
+	local cf = CFrame.new(x, 0, z) * CFrame.Angles(0, math.rad(yaw), 0) -- (the car's nose points along local +x)
+	local car = Kit.folder(parent, "Car")
+	part(car, "CarBody", Vector3.new(11, 2.2, 5.2), cf * CFrame.new(0, 1.9, 0), color, Enum.Material.Metal)
+	part(car, "CarCabin", Vector3.new(5.6, 1.9, 4.8), cf * CFrame.new(-0.6, 3.9, 0), color, Enum.Material.Metal)
+	part(car, "Windshield", Vector3.new(0.2, 1.6, 4.4), cf * CFrame.new(2.25, 3.9, 0) * CFrame.Angles(0, 0, math.rad(-25)), rgb(40, 50, 70), Enum.Material.Glass)
+	for _, s in { -1, 1 } do
+		part(car, "SideGlass", Vector3.new(4.6, 1.3, 0.1), cf * CFrame.new(-0.6, 4, s * 2.42), rgb(40, 50, 70), Enum.Material.Glass)
+		part(car, "Headlight", Vector3.new(0.2, 0.6, 1), cf * CFrame.new(5.52, 2.2, s * 1.8), rgb(255, 250, 220), Enum.Material.Neon)
+		part(car, "Taillight", Vector3.new(0.2, 0.6, 1), cf * CFrame.new(-5.52, 2.2, s * 1.8), rgb(230, 30, 40), Enum.Material.Neon)
+		for _, dx in { -3.4, 3.4 } do
+			local w = part(car, "Wheel", Vector3.new(0.9, 2.2, 2.2), cf * CFrame.new(dx, 1.1, s * 2.4) * CFrame.Angles(0, math.rad(90), 0), rgb(24, 24, 26))
+			w.Shape = Enum.PartType.Cylinder
+			local hub = part(car, "Hub", Vector3.new(0.95, 1.2, 1.2), cf * CFrame.new(dx, 1.1, s * 2.4) * CFrame.Angles(0, math.rad(90), 0), rgb(200, 200, 208), Enum.Material.Metal)
+			hub.Shape = Enum.PartType.Cylinder
+		end
+	end
+	part(car, "Bumper", Vector3.new(0.4, 0.6, 5.3), cf * CFrame.new(5.6, 1.3, 0), rgb(200, 200, 208), Enum.Material.Metal)
+	part(car, "Bumper", Vector3.new(0.4, 0.6, 5.3), cf * CFrame.new(-5.6, 1.3, 0), rgb(200, 200, 208), Enum.Material.Metal)
+	if opts.police then
+		for _, s in { -1, 1 } do
+			part(car, "PoliceStripe", Vector3.new(11.1, 0.6, 0.1), cf * CFrame.new(0, 2, s * 2.62), rgb(30, 50, 140))
+			local bulb = part(car, "Siren", Vector3.new(1, 0.5, 1.6), cf * CFrame.new(-0.6, 5.1, s * 0.9), s < 0 and rgb(240, 40, 40) or rgb(40, 90, 255), Enum.Material.Neon)
+			_ = bulb
+		end
+	end
+	for _, p in car:GetChildren() do p.CanCollide = p.Name == "CarBody" or p.Name == "CarCabin" end
+	return car
+end
+
 function Kit.flowerBed(parent, x, z, w, d, colors)
 	part(parent, "Bed", Vector3.new(w, 0.8, d), CFrame.new(x, 0.4, z), rgb(110, 76, 50), Enum.Material.Ground)
 	colors = colors or { rgb(240, 70, 90), rgb(255, 210, 60), rgb(160, 90, 230), rgb(255, 255, 255) }
@@ -421,6 +468,60 @@ function Kit.building(parent, spec)
 	end
 	m:SetAttribute("Door", (frontCF * CFrame.new(spec.door and spec.door.x or 0, 0, -4)).Position)
 	return m, (frontCF * CFrame.new(spec.door and spec.door.x or 0, 0, -4)).Position
+end
+
+---------------------------------------------------------------------------
+-- an enterable building: floor, four walls (the front one a glass shopfront with a door gap),
+-- a ceiling with lights, a flat roof. Same local frame as Kit.building (front = local +z, `face`
+-- turns it). Returns the model and a function at(x, y, z) that turns local positions into world
+-- CFrames (for the fittings inside).
+function Kit.hollow(parent, spec)
+	local m = Kit.folder(parent, spec.name or "Store")
+	local yaw = ({ ["-z"] = 180, ["+x"] = 90, ["+z"] = 0, ["-x"] = -90 })[spec.face or "+z"]
+	local base = CFrame.new(spec.x, 0, spec.z) * CFrame.Angles(0, math.rad(yaw), 0)
+	local function at(x, y, z) return base * CFrame.new(x, y, z) end
+	local w, d, h, t = spec.w, spec.d, spec.h, 1.2
+	local wall, trim = spec.wall, spec.trim or Kit.C.white
+	local mat = spec.material or Enum.Material.SmoothPlastic
+	part(m, "Floor", Vector3.new(w, 0.6, d), at(0, 0.3, 0), spec.floor or rgb(236, 232, 222), spec.floorMat or Enum.Material.SmoothPlastic)
+	part(m, "Wall", Vector3.new(w, h, t), at(0, h / 2, -d / 2 + t / 2), wall, mat)
+	part(m, "Wall", Vector3.new(t, h, d), at(-w / 2 + t / 2, h / 2, 0), wall, mat)
+	part(m, "Wall", Vector3.new(t, h, d), at(w / 2 - t / 2, h / 2, 0), wall, mat)
+	-- the front: a knee wall, big glass, a band above; the door gap in the middle
+	local dw = spec.doorW or 8
+	local dh = spec.doorH or 9
+	local seg = (w - dw) / 2
+	for _, s in { -1, 1 } do
+		local cx = s * (dw / 2 + seg / 2)
+		part(m, "KneeWall", Vector3.new(seg, 2.4, t), at(cx, 1.2, d / 2 - t / 2), wall, mat)
+		part(m, "Shopfront", Vector3.new(seg - 0.4, dh - 2.4, 0.3), at(cx, 2.4 + (dh - 2.4) / 2, d / 2 - t / 2), Kit.C.glass, Enum.Material.Glass, { Transparency = 0.45 })
+		for i = 0, math.floor(seg / 6) do
+			part(m, "Mullion", Vector3.new(0.35, dh - 2.4, 0.5), at(cx - seg / 2 + i * (seg / math.max(1, math.floor(seg / 6))), 2.4 + (dh - 2.4) / 2, d / 2 - t / 2), trim)
+		end
+	end
+	part(m, "Header", Vector3.new(w, h - dh, t), at(0, dh + (h - dh) / 2, d / 2 - t / 2), wall, mat)
+	part(m, "DoorFrame", Vector3.new(dw + 1, 0.6, t + 0.3), at(0, dh + 0.3, d / 2 - t / 2), trim)
+	for _, s in { -1, 1 } do
+		part(m, "DoorFrame", Vector3.new(0.5, dh, t + 0.3), at(s * (dw / 2 + 0.25), dh / 2, d / 2 - t / 2), trim)
+	end
+	part(m, "Ceiling", Vector3.new(w, 0.5, d), at(0, h - 0.25, 0), spec.ceiling or rgb(245, 245, 240))
+	part(m, "Roof", Vector3.new(w + 1, 0.6, d + 1), at(0, h + 0.3, 0), spec.roof or rgb(90, 90, 100), Enum.Material.Slate)
+	for _, s in { -1, 1 } do
+		part(m, "Parapet", Vector3.new(w + 1, 1.6, 0.8), at(0, h + 1.4, s * (d / 2 + 0.1)), trim)
+		part(m, "Parapet", Vector3.new(0.8, 1.6, d + 1), at(s * (w / 2 + 0.1), h + 1.4, 0), trim)
+	end
+	-- ceiling lights in a grid
+	for x = -w / 2 + 8, w / 2 - 8, 14 do
+		for z = -d / 2 + 8, d / 2 - 8, 12 do
+			local l = part(m, "CeilingLight", Vector3.new(5, 0.3, 1.4), at(x, h - 0.6, z), rgb(255, 250, 235), Enum.Material.Neon)
+			Kit.light(l, 18, 0.6, rgb(255, 245, 225))
+		end
+	end
+	if spec.sign then
+		local board = part(m, "Sign", Vector3.new(spec.sign.w or math.min(w - 6, 36), spec.sign.h or 4, 0.5), at(0, dh + (h - dh) / 2, d / 2 + 0.2) * CFrame.Angles(0, math.rad(180), 0), spec.sign.bg or trim)
+		Kit.sign(board, Enum.NormalId.Front, spec.sign.text, spec.sign.color or Kit.C.white, spec.sign.bg or trim, spec.sign.font or Enum.Font.LuckiestGuy, spec.sign.stroke)
+	end
+	return m, at
 end
 
 ---------------------------------------------------------------------------
