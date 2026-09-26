@@ -76,6 +76,45 @@ Remotes:WaitForChild("Sfx").OnClientEvent:Connect(playSfx)
 sfxBus.Event:Connect(playSfx)
 
 ---------------------------------------------------------------------------
+-- voices: ClientBus.Talk(speaker, volume?) plays one mumble blip in that speaker's voice (a pitch
+-- worked out from their name, so each character always sounds the same), a touch of wobble on top
+---------------------------------------------------------------------------
+local talkBus = bus:FindFirstChild("Talk")
+if not talkBus then
+	talkBus = Instance.new("BindableEvent")
+	talkBus.Name = "Talk"
+	talkBus.Parent = bus
+end
+local voiceOf = {}
+local function voice(speaker)
+	speaker = tostring(speaker or "")
+	local v = voiceOf[speaker]
+	if not v then
+		local h = 0
+		for i = 1, #speaker do h = (h * 31 + string.byte(speaker, i)) % 1000 end
+		v = 0.78 + (h / 1000) * 0.62 -- 0.78 (deep) .. 1.4 (squeaky)
+		voiceOf[speaker] = v
+	end
+	return v
+end
+local lastTalk = 0
+talkBus.Event:Connect(function(speaker, volume)
+	local def = Sounds.Talk
+	if not def then return end
+	local now = os.clock()
+	if now - lastTalk < 0.05 then return end
+	lastTalk = now
+	local s = Instance.new("Sound")
+	s.SoundId = def.id
+	s.Volume = (def.volume or 0.3) * (volume or 1)
+	s.PlaybackSpeed = voice(speaker) * (0.94 + math.random() * 0.12)
+	s.SoundGroup = sfxGroup
+	s.Parent = SoundService
+	s:Play()
+	task.delay(0.4, function() s:Destroy() end)
+end)
+
+---------------------------------------------------------------------------
 -- music: Relaxed Scene, on a loop
 ---------------------------------------------------------------------------
 local music = Instance.new("Sound")

@@ -326,10 +326,12 @@ local function buildFloor(school, L, f, floors, look, isRoof)
 	wallZ(walls, L, BX, ZB + WT / 2, ZF - WT / 2, y0, y1, windowsAt({ -55, -41, -27, 8 }, 8, sill, top), wall, trim)
 	-- inside skin: pale plaster above a wainscot band, cut around the same openings
 	do
+		-- (each opening cut a hair wider in the skin, so the skin's edge stands back from the window
+		-- reveal instead of sharing its plane and flickering against it)
 		local function open(list)
 			local out = {}
 			for _, op in list do
-				table.insert(out, { a = op.a, b = op.b, bottom = op.bottom, top = op.top, kind = "open" })
+				table.insert(out, { a = op.a - 0.04, b = op.b + 0.04, bottom = op.bottom - 0.04, top = op.top + 0.04, kind = "open" })
 			end
 			return out
 		end
@@ -416,11 +418,12 @@ local function buildFloor(school, L, f, floors, look, isRoof)
 	part(classroom, "ChalkTray", Vector3.new(30, 0.3, 0.8), L(0, ft + 3.4, boardZ + 0.4), rgb(150, 100, 60), Enum.Material.Wood)
 	local lesson = surfaceText(board, Enum.NormalId.Back, f == 1 and "Welcome to class!" or ("Floor " .. f), rgb(240, 240, 230), nil, Enum.Font.PermanentMarker)
 	lesson.Name = "Lesson"
-	local clock = cyl(classroom, "Clock", 2.6, 0.3, L(0, ft + 12.3, boardZ + 0.1) * CFrame.Angles(0, math.rad(90), 0), WHITE)
-	cyl(classroom, "ClockRim", 2.9, 0.2, L(0, ft + 12.3, boardZ) * CFrame.Angles(0, math.rad(90), 0), rgb(40, 40, 45))
-	part(classroom, "Hand", Vector3.new(0.12, 0.9, 0.05), L(0, ft + 12.65, boardZ + 0.3), rgb(20, 20, 20))
-	part(classroom, "Hand", Vector3.new(0.7, 0.12, 0.05), L(0.3, ft + 12.3, boardZ + 0.3), rgb(20, 20, 20))
-	local abc = part(classroom, "Alphabet", Vector3.new(34, 1.2, 0.1), L(0, ft + 10.9, boardZ), WHITE)
+	-- the alphabet strip just above the board, the clock above that, clear of each other
+	local clock = cyl(classroom, "Clock", 2.1, 0.3, L(0, ft + 13.6, boardZ + 0.1) * CFrame.Angles(0, math.rad(90), 0), WHITE)
+	cyl(classroom, "ClockRim", 2.4, 0.2, L(0, ft + 13.6, boardZ) * CFrame.Angles(0, math.rad(90), 0), rgb(40, 40, 45))
+	part(classroom, "Hand", Vector3.new(0.12, 0.75, 0.05), L(0, ft + 13.9, boardZ + 0.3), rgb(20, 20, 20))
+	part(classroom, "Hand", Vector3.new(0.6, 0.12, 0.05), L(0.25, ft + 13.6, boardZ + 0.3), rgb(20, 20, 20))
+	local abc = part(classroom, "Alphabet", Vector3.new(34, 1.2, 0.1), L(0, ft + 11.8, boardZ), WHITE)
 	surfaceText(abc, Enum.NormalId.Back, "Aa  Bb  Cc  Dd  Ee  Ff  Gg  Hh  Ii  Jj", rgb(60, 60, 80), WHITE)
 	_ = clock
 	-- teacher's desk with a globe and an apple, and the spot the teacher stands on
@@ -461,6 +464,142 @@ local function buildFloor(school, L, f, floors, look, isRoof)
 	for _, lx in { -22, 22 } do
 		local lamp = part(classroom, "CeilingLight", Vector3.new(4, 0.25, 2), L(lx, ft + 14.8, 9), rgb(255, 252, 240), Enum.Material.Neon, { CastShadow = false })
 		light(lamp, 18, 0.3)
+	end
+
+	-- a proper ceiling: pale tiles on a thin grid (it was the bare underside of the roof slab), open
+	-- over the stair going up
+	do
+		local ceil = Instance.new("Folder")
+		ceil.Name = "Ceiling"
+		ceil.Parent = fm
+		local cy, cc = ft + 15.0, look.ceiling or rgb(246, 243, 236)
+		local function panel(x0, x1, z0, z1)
+			if x1 - x0 < 0.5 or z1 - z0 < 0.5 then return end
+			part(ceil, "CeilingPanel", Vector3.new(x1 - x0, 0.1, z1 - z0), L((x0 + x1) / 2, cy, (z0 + z1) / 2), cc, Enum.Material.SmoothPlastic, { CastShadow = false })
+		end
+		local x0, x1 = -BX + WT / 2, BX - WT / 2
+		local z0, z1 = ZB + WT / 2, ZF - WT / 2
+		panel(-32, 32, z0, z1)
+		for _, side in { "left", "right" } do
+			local a, b = side == "left" and x0 or 32, side == "left" and -32 or x1
+			if upSide == side then
+				panel(a, b, z0, STAIR_Z1)
+				panel(a, b, 14, z1)
+			else
+				panel(a, b, z0, z1)
+			end
+		end
+		local grid = rgb(222, 218, 210)
+		for gx = -32, 32, 8 do
+			part(ceil, "CeilingGrid", Vector3.new(0.18, 0.04, z1 - z0), L(gx, cy - 0.07, (z0 + z1) / 2), grid, nil, { CastShadow = false, CanCollide = false, CanQuery = false })
+		end
+		for gz = ZB + 4, ZF - 4, 8 do
+			part(ceil, "CeilingGrid", Vector3.new(64, 0.04, 0.18), L(0, cy - 0.07, gz), grid, nil, { CastShadow = false, CanCollide = false, CanQuery = false })
+		end
+	end
+
+	-- the little ones' corner (Kindergarten and Elementary): story rug, reading nook, cubbies, the
+	-- class hamster, plants, paper bunting and the kids' drawings
+	if (look.tier or 1) <= 2 then
+		local kc = Instance.new("Folder")
+		kc.Name = "KinderCorner"
+		kc.Parent = classroom
+		-- the story-time rug in front of the board: rings of colour (the teacher stands on it)
+		local rings = { rgb(240, 80, 80), rgb(255, 180, 60), rgb(90, 190, 120), rgb(70, 150, 240), rgb(170, 100, 230) }
+		for i, c in rings do
+			local d = 13 - (i - 1) * 2.4
+			cyl(kc, "Rug", d, 0.06 + i * 0.04, L(0, ft + 0.05 + i * 0.02, ZB + 7) * CFrame.Angles(0, 0, math.rad(90)), c, Enum.Material.Fabric)
+		end
+		-- the reading nook, left wall: a little rug, two beanbags, a low shelf of picture books
+		local nx, nz = -BX + 5.5, -34
+		part(kc, "NookRug", Vector3.new(8, 0.07, 9), L(nx, ft + 0.05, nz), rgb(120, 200, 190), Enum.Material.Fabric)
+		for i, c in { rgb(240, 90, 120), rgb(90, 160, 240) } do
+			local bag = part(kc, "Beanbag", Vector3.new(3.2, 2, 3.2), L(nx + (i == 1 and -1.4 or 1.8), ft + 1, nz + (i == 1 and -2 or 2)), c, Enum.Material.Fabric)
+			local m = Instance.new("SpecialMesh")
+			m.MeshType = Enum.MeshType.Sphere
+			m.Parent = bag
+		end
+		part(kc, "LowShelf", Vector3.new(1.4, 2.6, 7), L(-BX + WT / 2 + 0.9, ft + 1.3, nz), rgb(200, 150, 95), Enum.Material.Wood)
+		for i = 0, 7 do
+			local c = ({ rgb(240, 80, 80), rgb(255, 200, 60), rgb(90, 190, 120), rgb(70, 150, 240) })[i % 4 + 1]
+			part(kc, "PictureBook", Vector3.new(0.9, 1.4, 0.35), L(-BX + WT / 2 + 1.1, ft + 2.8 + 0.05, nz - 3 + i * 0.8) * CFrame.Angles(0, 0, math.rad(-8)), c)
+		end
+		-- cubbies with backpacks, right wall
+		local cx, cz0 = BX - WT / 2 - 0.9, -30
+		part(kc, "Cubbies", Vector3.new(1.6, 4.2, 12), L(cx, ft + 2.1, cz0 + 6), rgb(235, 225, 205), Enum.Material.Wood)
+		for i = 0, 5 do
+			for row = 0, 1 do
+				local by, bz = ft + 1.15 + row * 2, cz0 + 1 + i * 2
+				part(kc, "CubbyHole", Vector3.new(0.2, 1.6, 1.6), L(cx - 0.72, by, bz), rgb(170, 150, 120), Enum.Material.Wood)
+				local c = ({ rgb(240, 80, 80), rgb(70, 150, 240), rgb(90, 190, 120), rgb(255, 180, 60), rgb(170, 100, 230), rgb(240, 120, 200) })[(i + row * 3) % 6 + 1]
+				if (i + row) % 3 ~= 2 then
+					part(kc, "Backpack", Vector3.new(1, 1.2, 1.2), L(cx - 0.95, by - 0.1, bz), c, Enum.Material.Fabric)
+				end
+			end
+		end
+		-- the class hamster: a table, a cage, the hamster in its wheel
+		local hx, hz = BX - 6, -50
+		part(kc, "PetTable", Vector3.new(4, 0.4, 3), L(hx, ft + 2.8, hz), rgb(200, 150, 95), Enum.Material.Wood)
+		for _, e in { { -1.7, -1.2 }, { 1.7, -1.2 }, { -1.7, 1.2 }, { 1.7, 1.2 } } do
+			part(kc, "PetTableLeg", Vector3.new(0.3, 2.6, 0.3), L(hx + e[1], ft + 1.3, hz + e[2]), rgb(170, 120, 75), Enum.Material.Wood)
+		end
+		part(kc, "CageBase", Vector3.new(3.2, 0.4, 2.2), L(hx, ft + 3.2, hz), rgb(90, 190, 220))
+		part(kc, "CageBars", Vector3.new(3.2, 1.8, 2.2), L(hx, ft + 4.3, hz), rgb(230, 230, 235), Enum.Material.ForceField, { CanCollide = false })
+		cyl(kc, "Wheel", 1.3, 0.3, L(hx + 0.6, ft + 4.1, hz) * CFrame.Angles(0, math.rad(90), 0), rgb(255, 180, 60))
+		ball(kc, "Hamster", 0.6, L(hx - 0.7, ft + 3.7, hz), rgb(230, 170, 110))
+		-- plants
+		for _, e in { { BX - 3, -60 }, { -BX + 3, -52 }, { BX - 3, -40 } } do
+			cyl(kc, "PlantPot", 1.4, 1.2, L(e[1], ft + 0.6, e[2]) * CFrame.Angles(0, 0, math.rad(90)), rgb(200, 110, 70))
+			local leaf = ball(kc, "Plant", 2.2, L(e[1], ft + 2, e[2]), rgb(80, 170, 90))
+			leaf.Material = Enum.Material.Grass
+		end
+		-- paper bunting across the room: a sagging string wall to wall with little triangle pennants
+		-- hanging off it (each pennant is two mirrored wedges, point down)
+		local function pennant(x, top, z, w, h, c)
+			for _, s in { -1, 1 } do
+				local wp = Instance.new("WedgePart")
+				wp.Name = "Bunting"
+				wp.Size = Vector3.new(0.05, h, w / 2)
+				-- (the wedge's square corner sits at the top middle; its legs run out along the string
+				-- and down to the point)
+				local right = s < 0 and Vector3.zAxis or -Vector3.zAxis
+				wp.CFrame = L(x + s * w / 4, top - h / 2, z) * CFrame.fromMatrix(Vector3.zero, right, -Vector3.yAxis, Vector3.xAxis * -s)
+				wp.Color = c
+				wp.Material = Enum.Material.SmoothPlastic
+				wp.Anchored = true
+				wp.CanCollide = false
+				wp.CastShadow = false
+				wp.Parent = kc
+			end
+		end
+		for _, bz in { -18, -44 } do
+			local x0, x1, top, sag = -BX + WT / 2, BX - WT / 2, ft + 14.4, 1.4
+			local function yAt(x) return top - math.sin((x - x0) / (x1 - x0) * math.pi) * sag end
+			local n = 12
+			for i = 0, n - 1 do
+				local a, b = x0 + (x1 - x0) * i / n, x0 + (x1 - x0) * (i + 1) / n
+				local pa, pb = L(a, yAt(a), bz).Position, L(b, yAt(b), bz).Position
+				part(kc, "BuntingString", Vector3.new(0.07, 0.07, (pb - pa).Magnitude + 0.05), CFrame.lookAt((pa + pb) / 2, pb), rgb(250, 250, 250), nil, { CanCollide = false, CastShadow = false })
+			end
+			for i = 0, 16 do
+				local bxp = -34 + i * 4.25
+				pennant(bxp, yAt(bxp) - 0.03, bz, 1.5, 1.7, rings[i % #rings + 1])
+			end
+		end
+		-- the kids' drawings: a cork board either side of the chalkboard (between it and the back
+		-- windows), two crayon pictures pinned to each
+		local PICTURES = { "🌈", "🐶", "🌻", "🏠" }
+		for _, side in { -1, 1 } do
+			local wz = ZB + WT / 2
+			part(kc, "CorkBoard", Vector3.new(3.4, 7, 0.12), L(side * 18, ft + 7.4, wz + 0.06), rgb(196, 150, 100), Enum.Material.Fabric)
+			for i = 0, 1 do
+				local tilt = CFrame.Angles(0, 0, math.rad((i == 0 and 3 or -4) * side))
+				local paper = part(kc, "Drawing", Vector3.new(2.8, 2.6, 0.05), L(side * 18, ft + 9.1 - i * 3.3, wz + 0.15) * tilt, rgb(252, 250, 245), nil, { CanCollide = false })
+				local pic = surfaceText(paper, Enum.NormalId.Back, PICTURES[(side > 0 and 2 or 0) + i + 1], rgb(40, 40, 40))
+				pic.Name = "Picture"
+				ball(kc, "Pin", 0.25, L(side * 18, ft + 10.3 - i * 3.3, wz + 0.2), rings[(i + (side > 0 and 2 or 0)) % #rings + 1])
+			end
+		end
 	end
 
 	-- desks
@@ -1312,8 +1451,8 @@ function SchoolBuilder.decorate(plot, owned)
 					p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 					p.CanCollide, p.CanQuery, p.CanTouch = false, false, false
 					p.CastShadow = false
-					-- locked desks show their supplies as ghosts like the desk itself
-					if locked then p.Transparency = math.max(p.Transparency, 0.85) end
+					-- (a locked desk is hidden, and so are its supplies)
+					if locked then p.Transparency = 1 end
 				end
 			end
 		end
@@ -1657,6 +1796,8 @@ function SchoolBuilder.build(plot, opts)
 	local base = plot.Origin.CFrame
 	local function L(x, y, z) return base * CFrame.new(x, y, z) end
 
+	look = table.clone(look)
+	look.tier = opts.tier
 	for f = 1, opts.floors do
 		buildFloor(school, L, f, opts.floors, look)
 	end

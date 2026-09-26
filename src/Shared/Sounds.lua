@@ -23,4 +23,8 @@ Sounds.Sfx = {
 	Error = { id = id(16903690359), volume = 0.2, max = 0.5, gap = 0.5 },
 }
 
+-- a voice: one short blip per couple of letters while someone talks, pitched per speaker, so lines
+-- sound like mumbling, never words (loaded in Studio: 0.10 s)
+Sounds.Talk = { id = id(18567622631), volume = 0.32 }
+
 return Sounds

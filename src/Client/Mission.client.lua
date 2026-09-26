@@ -17,6 +17,12 @@ local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Action = Remotes:WaitForChild("Action")
 
 local player = Players.LocalPlayer
+-- (voices: Audio.client's ClientBus.Talk mumbles a line in the speaker's voice)
+local talkBus
+task.spawn(function()
+	local b = ReplicatedStorage:WaitForChild("ClientBus", 20)
+	talkBus = b and b:WaitForChild("Talk", 20)
+end)
 
 local gui = UI.new("ScreenGui", {
 	Name = "Mission",
@@ -249,6 +255,8 @@ local function conversation(lines, buttons, title, nearWob)
 			for c = 1, #words do
 				if skipTyping or closed then break end
 				text.Text = words:sub(1, c)
+				-- (mumbling in their voice as it types)
+				if c % 2 == 0 and words:sub(c, c) ~= " " and talkBus then talkBus:Fire(who) end
 				task.wait(0.022)
 			end
 			conn:Disconnect()

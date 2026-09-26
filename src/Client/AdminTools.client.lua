@@ -10,13 +10,22 @@ local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local FLY_SPEED = 70
 
+-- the movement stick, when the game has Roblox's PlayerModule (else WASD straight from the keyboard)
 local controls
 task.spawn(function()
-	local ok, mod = pcall(function()
-		return require(player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule")):GetControls()
-	end)
+	local pm = player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule", 10)
+	if not pm then return end
+	local ok, mod = pcall(function() return require(pm):GetControls() end)
 	if ok then controls = mod end
 end)
+local function keyboardMove()
+	local x, z = 0, 0
+	if UserInputService:IsKeyDown(Enum.KeyCode.W) then z -= 1 end
+	if UserInputService:IsKeyDown(Enum.KeyCode.S) then z += 1 end
+	if UserInputService:IsKeyDown(Enum.KeyCode.A) then x -= 1 end
+	if UserInputService:IsKeyDown(Enum.KeyCode.D) then x += 1 end
+	return Vector3.new(x, 0, z)
+end
 
 local flying -- { lv, ao, att }
 local function stopFly()
@@ -70,7 +79,7 @@ RunService.RenderStepped:Connect(function()
 	if want and not flying then startFly() elseif not want and flying then stopFly() end
 	if flying then
 		local cam = workspace.CurrentCamera
-		local move = controls and controls:GetMoveVector() or Vector3.zero
+		local move = controls and controls:GetMoveVector() or keyboardMove()
 		-- (the move vector is camera-relative: x right, z back)
 		local dir = cam.CFrame.RightVector * move.X - cam.CFrame.LookVector * move.Z
 		if held(Enum.KeyCode.Space) then dir += Vector3.yAxis end

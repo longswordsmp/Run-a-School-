@@ -153,6 +153,17 @@ end
 Players.PlayerAdded:Connect(onPlayer)
 for _, p in Players:GetPlayers() do task.spawn(onPlayer, p) end
 
+-- no two surfaces in one plane (they flicker between colours): once the town is up, and again on a
+-- school each time it's rebuilt
+do
+	local Unfight = require(Server.Unfight)
+	task.delay(8, function()
+		local n = Unfight.run(workspace)
+		print(("[Unfight] %d parts nudged clear of a coplanar neighbour"):format(n))
+	end)
+	Unfight.watch(workspace:WaitForChild("Plots"))
+end
+
 Players.PlayerRemoving:Connect(function(player)
 	-- a co-op crew first: members go home (or out), a host's crew goes back to their own schools
 	CrewService.onRemoving(player)

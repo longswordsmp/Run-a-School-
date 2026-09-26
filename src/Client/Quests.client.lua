@@ -1,7 +1,7 @@
 -- StarterPlayer.StarterPlayerScripts.Quests
--- The Principal's To-Do card (top left) and the guide: the thing the step is about glows (an
--- outline, seen through walls when it's far), or the side-bar button pulses when the step
--- happens in a menu.
+-- The Principal's To-Do card (top left) and the guide: an arrow bobs over the thing the step is
+-- about (a chevron at the screen's edge when it's off-screen), or the side-bar button pulses when
+-- the step happens in a menu.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -53,45 +53,101 @@ local go = UI.button(card, { text = "GO!", color = UI.C.orange, size = UDim2.fro
 local state
 
 ---------------------------------------------------------------------------
--- the guide: what the step is about glows. The thing itself (the kid to grab, the pad, Crumpet,
--- the lock button, the pen) pulses with a warm glow, drawn through walls when it's hidden; a ring
--- of light pulses on the ground under it; and when it's more than a street away a soft pillar of
--- light rises from it, so you can spot it across the map. No arrows and no beam from you to it:
--- they were loud, and the owner wanted them gone. (A Highlight alone was too faint: its outline
--- is a pixel wide, and a white fill vanishes on a light shirt.)
+-- the guide: a chunky arrow bobs over the thing the step is about (the kid to grab, the pad, Crumpet,
+-- the lock button, the pen), turning slowly. When the thing is off-screen, a chevron at the edge of
+-- the screen points the way and says how far it is; when it's on screen but behind a wall (a pad
+-- inside the school), the chevron hangs over the spot, pointing down. Menu steps pulse their
+-- side-bar button instead.
+-- (It replaced a neon ring and a pillar of light, which the owner didn't like, and before that a
+-- flat neon arrow with a beam from you to it.)
 ---------------------------------------------------------------------------
 local guideFolder = Instance.new("Folder")
 guideFolder.Name = "QuestGuide"
 guideFolder.Parent = workspace
 
-local GLOW = Color3.fromRGB(70, 225, 255) -- (cyan: it reads on grass, the white sidewalk and the red carpet alike)
-local glow = Instance.new("Highlight")
-glow.Name = "QuestGlow"
-glow.FillColor = GLOW
-glow.OutlineColor = Color3.new(1, 1, 1)
-glow.Enabled = false
-glow.Parent = guideFolder
+local ARROW = Color3.fromRGB(255, 196, 40) -- (warm yellow: reads on grass, sidewalk, the red carpet and the classroom floor)
+local ARROW_DARK = Color3.fromRGB(230, 140, 20)
+local OUTLINE = Color3.fromRGB(40, 32, 48) -- (the chevron's rim)
 
--- the pillar: a tall soft column of light, fading upward
-local pillar = Instance.new("Part")
-pillar.Name = "Pillar"
-pillar.Shape = Enum.PartType.Cylinder
-pillar.Size = Vector3.new(60, 2.2, 2.2)
-pillar.Material = Enum.Material.Neon
-pillar.Color = GLOW
-pillar.Transparency = 1
-pillar.Anchored, pillar.CanCollide, pillar.CanQuery, pillar.CanTouch, pillar.CastShadow = true, false, false, false, false
-pillar.Parent = guideFolder
+-- the 3D arrow: a square shaft over a pyramid head (four corner wedges, point down), solid plastic
+local arrow = Instance.new("Model")
+arrow.Name = "Arrow"
+local function arrowPart(class, name, color)
+	local p = Instance.new(class)
+	p.Name = name
+	p.Color = color
+	p.Material = Enum.Material.SmoothPlastic
+	p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+	p.Parent = arrow
+	return p
+end
+local shaft = arrowPart("Part", "Shaft", ARROW)
+local head = {}
+for i = 1, 4 do
+	-- (two opposite faces a shade darker, so the turning head reads as a solid point)
+	head[i] = arrowPart("CornerWedgePart", "Head", i % 2 == 0 and ARROW_DARK or ARROW)
+end
 
-local ring = Instance.new("Part")
-ring.Name = "Ring"
-ring.Shape = Enum.PartType.Cylinder
-ring.Size = Vector3.new(0.12, 7, 7)
-ring.Material = Enum.Material.Neon
-ring.Color = GLOW
-ring.Transparency = 1
-ring.Anchored, ring.CanCollide, ring.CanQuery, ring.CanTouch, ring.CastShadow = true, false, false, false, false
-ring.Parent = guideFolder
+local HEAD_W, HEAD_H, SHAFT_W, SHAFT_H = 3.2, 2.3, 1.3, 2.3
+-- each corner wedge's point is at its own (+X, +Y, -Z) corner; four of them turned 90 degrees apart,
+-- one per quadrant, make a pyramid with the point in the middle
+local QUAD = { { 0, -1, 1 }, { 90, 1, 1 }, { 180, 1, -1 }, { 270, -1, -1 } }
+local function placeArrow(tip, scale, spin)
+	local a, h = HEAD_W / 2 * scale, HEAD_H * scale
+	local base = CFrame.new(tip) * CFrame.Angles(0, spin, 0)
+	local headCf = base * CFrame.new(0, h / 2, 0) * CFrame.Angles(math.pi, 0, 0)
+	for i, q in QUAD do
+		head[i].Size = Vector3.new(a, h, a)
+		head[i].CFrame = headCf * CFrame.new(q[2] * a / 2, 0, q[3] * a / 2) * CFrame.Angles(0, math.rad(q[1]), 0)
+	end
+	shaft.Size = Vector3.new(SHAFT_W, SHAFT_H, SHAFT_W) * scale
+	shaft.CFrame = base * CFrame.new(0, h + SHAFT_H * scale / 2 - 0.02, 0)
+end
+
+-- the edge-of-screen chevron: a ">" of two rounded bars with a dark rim, turned toward the target
+local edgeGui = UI.new("ScreenGui", {
+	Name = "GuideEdge",
+	ResetOnSpawn = false,
+	IgnoreGuiInset = true, -- (so its pixels are the camera's viewport pixels)
+	DisplayOrder = 3,
+	Parent = player:WaitForChild("PlayerGui"),
+})
+local edge = UI.new("Frame", {
+	Name = "Chevron",
+	Size = UDim2.fromOffset(64, 64),
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	BackgroundTransparency = 1,
+	Visible = false,
+	Parent = edgeGui,
+})
+local edgeScale = Instance.new("UIScale")
+edgeScale.Parent = edge
+do
+	local L, T = 34, 12
+	local dx, dy = (L / 2 - T / 2) * math.cos(math.rad(40)), (L / 2 - T / 2) * math.sin(math.rad(40))
+	for layer, grow in { 6, 0 } do
+		for _, s in { -1, 1 } do
+			local bar = UI.new("Frame", {
+				Size = UDim2.fromOffset(L + grow, T + grow),
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(0.5, 14 - dx, 0.5, -s * dy),
+				Rotation = s * 40,
+				BackgroundColor3 = layer == 1 and OUTLINE or ARROW,
+				ZIndex = layer,
+				Parent = edge,
+			})
+			UI.corner(bar, (T + grow) / 2)
+		end
+	end
+end
+local edgeDist = UI.label(edgeGui, {
+	Name = "Distance",
+	Text = "",
+	Size = UDim2.fromOffset(90, 26),
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Visible = false,
+	stroke = 2,
+})
 
 local function myPlot()
 	local name = player:GetAttribute("Plot")
@@ -260,79 +316,108 @@ go.button.Activated:Connect(function()
 	end
 end)
 
--- (is the target hidden behind something, or far? then its outline is drawn through walls)
+-- (is the arrow's spot hidden behind something? then the chevron marks it on screen)
 local seeParams = RaycastParams.new()
 seeParams.FilterType = Enum.RaycastFilterType.Exclude
-local lastSee, throughWalls = 0, true
-local function checkVisible(target, pos)
+local function hidden(target, pos)
 	local cam = workspace.CurrentCamera
-	local exclude = { guideFolder, target }
-	if player.Character then table.insert(exclude, player.Character) end
+	-- (walls and roofs count; people walking past and see-through glass don't)
+	local exclude = { guideFolder }
+	for _, name in { "Hall", "Raids", "Runners" } do
+		local f = workspace:FindFirstChild(name)
+		if f then table.insert(exclude, f) end
+	end
+	if typeof(target) == "Instance" then table.insert(exclude, target) end
+	for _, pl in Players:GetPlayers() do
+		if pl.Character then table.insert(exclude, pl.Character) end
+	end
 	seeParams.FilterDescendantsInstances = exclude
 	local from = cam.CFrame.Position
-	local far = (pos - from).Magnitude > 70
 	local hit = workspace:Raycast(from, pos - from, seeParams)
-	return far or hit ~= nil
+	return hit ~= nil and hit.Instance.Transparency < 0.5
 end
 
-local pulseT = 0
-local ringFor, ringY
-RunService.RenderStepped:Connect(function(dt)
-	pulseT += dt
-	local target = gui.Enabled and card.Visible and worldTarget() or nil
-	local pulse = (math.sin(pulseT * 3.2) + 1) / 2
-	local spot -- where the ring and the pillar go
-	if typeof(target) == "Instance" and target.Parent then
-		local pos = target:IsA("Model") and target:GetPivot().Position or target.Position
-		if glow.Adornee ~= target then
-			glow.Adornee = target
-			lastSee = 0
+-- where the arrow's point goes: over a kid's name tag, else just over the top of the thing
+local function tipAbove(target)
+	if typeof(target) == "Vector3" then return target + Vector3.new(0, 3, 0) end
+	if target:IsA("Model") then
+		local tag = target:FindFirstChild("Tag", true)
+		if tag and tag:IsA("BillboardGui") and tag.Enabled then
+			local at = tag.Adornee or tag.Parent
+			if at and at:IsA("BasePart") then
+				return at.Position + tag.StudsOffsetWorldSpace + Vector3.new(0, tag.Size.Y.Scale / 2 + 0.6, 0)
+			end
 		end
-		if os.clock() - lastSee > 0.25 then
-			lastSee = os.clock()
-			throughWalls = checkVisible(target, pos)
-		end
-		glow.DepthMode = throughWalls and Enum.HighlightDepthMode.AlwaysOnTop or Enum.HighlightDepthMode.Occluded
-		glow.FillTransparency = 0.3 + 0.4 * pulse
-		glow.OutlineTransparency = 0
-		glow.Enabled = true
-		spot = pos
-	elseif typeof(target) == "Vector3" then
-		glow.Enabled = false
-		glow.Adornee = nil
-		spot = target
-	else
-		glow.Enabled = false
-		glow.Adornee = nil
+		local cf, size = target:GetBoundingBox()
+		return cf.Position + Vector3.new(0, size.Y / 2 + 1, 0)
 	end
-	if spot then
-		-- (on the ground under it; looked up again only when it moves)
-		if not ringFor or (ringFor - spot).Magnitude > 0.5 then
-			ringFor = spot
-			local exclude = { guideFolder }
-			if player.Character then table.insert(exclude, player.Character) end
-			if typeof(target) == "Instance" then table.insert(exclude, target) end
-			seeParams.FilterDescendantsInstances = exclude
-			local hit = workspace:Raycast(spot + Vector3.new(0, 2, 0), Vector3.new(0, -30, 0), seeParams)
-			ringY = hit and hit.Position.Y + 0.08 or spot.Y - 3
+	return target.Position + Vector3.new(0, target.Size.Y / 2 + 1, 0)
+end
+
+local t0 = 0
+local lastSee, isHidden = 0, false
+local lastTarget
+RunService.RenderStepped:Connect(function(dt)
+	t0 += dt
+	local target = gui.Enabled and card.Visible and worldTarget() or nil
+	if typeof(target) == "Instance" and not target.Parent then target = nil end
+	local cam = workspace.CurrentCamera
+	if target then
+		local tip = tipAbove(target)
+		local dist = (tip - cam.CFrame.Position).Magnitude
+		local scale = math.clamp(dist / 40, 1, 3.2)
+		-- bob up and down, turn slowly
+		local bob = (math.sin(t0 * 3.4) + 1) / 2 * 0.9 * scale
+		placeArrow(tip + Vector3.new(0, bob, 0), scale, t0 * 1.7)
+		if arrow.Parent ~= guideFolder then arrow.Parent = guideFolder end
+		if target ~= lastTarget or os.clock() - lastSee > 0.25 then
+			lastTarget, lastSee = target, os.clock()
+			isHidden = hidden(target, tip)
 		end
-		local s = 5.5 + pulse * 1.8
-		ring.Size = Vector3.new(0.12, s, s)
-		ring.CFrame = CFrame.new(spot.X, ringY, spot.Z) * CFrame.Angles(0, 0, math.rad(90))
-		ring.Transparency = 0.25 + 0.4 * pulse
+
+		local vp = cam.ViewportSize
+		local v = cam:WorldToViewportPoint(tip)
+		local m = 70
+		local onScreen = v.Z > 0 and v.X > m and v.X < vp.X - m and v.Y > m and v.Y < vp.Y - m
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-		local far = root and (Vector3.new(spot.X, 0, spot.Z) - Vector3.new(root.Position.X, 0, root.Position.Z)).Magnitude > 25
-		pillar.CFrame = CFrame.new(spot.X, ringY + 30, spot.Z) * CFrame.Angles(0, 0, math.rad(90))
-		pillar.Transparency = far and (0.72 + 0.1 * pulse) or 1
+		local away = root and math.floor((tip - root.Position).Magnitude + 0.5)
+		if onScreen and not isHidden and dist < 160 then
+			-- in plain sight: the arrow does the job
+			edge.Visible, edgeDist.Visible = false, false
+		elseif onScreen then
+			-- behind a wall, or far: the chevron hangs over the spot, pointing down, with the distance
+			edge.Position = UDim2.fromOffset(v.X, v.Y - 28)
+			edge.Rotation = 90
+			edgeScale.Scale = 1 + math.abs(math.sin(t0 * 4)) * 0.12
+			edgeDist.Position = UDim2.fromOffset(v.X, v.Y - 74)
+			edgeDist.Text = away and (away .. "m") or ""
+			edge.Visible, edgeDist.Visible = true, away ~= nil
+		else
+			-- off-screen: the chevron at the edge, pointing the way
+			local c = vp / 2
+			local d = Vector2.new(v.X, v.Y) - c
+			if v.Z < 0 then d = -d end
+			if d.Magnitude < 1 then d = Vector2.new(0, 1) end
+			local k = math.min((c.X - m) / math.max(math.abs(d.X), 1e-3), (c.Y - m) / math.max(math.abs(d.Y), 1e-3))
+			local at = c + d * k
+			edge.Position = UDim2.fromOffset(at.X, at.Y)
+			edge.Rotation = math.deg(math.atan2(d.Y, d.X))
+			edgeScale.Scale = 1 + math.abs(math.sin(t0 * 4)) * 0.12
+			local inward = at - d.Unit * 50
+			edgeDist.Position = UDim2.fromOffset(inward.X, inward.Y)
+			edgeDist.Text = away and (away .. "m") or ""
+			edge.Visible, edgeDist.Visible = true, away ~= nil
+		end
 	else
-		ring.Transparency = 1
-		pillar.Transparency = 1
+		if arrow.Parent then arrow.Parent = nil end
+		lastTarget = nil
+		edge.Visible, edgeDist.Visible = false, false
 	end
 	-- pulse the side-bar button for menu steps
 	local btn = gui.Enabled and card.Visible and menuTarget()
 	if btn then
 		local sc = btn:FindFirstChildOfClass("UIScale")
-		if sc then sc.Scale = 1 + math.abs(math.sin(pulseT * 4)) * 0.14 end
+		if sc then sc.Scale = 1 + math.abs(math.sin(t0 * 4)) * 0.14 end
 	end
 	go.button.Visible = btn ~= nil
 end)

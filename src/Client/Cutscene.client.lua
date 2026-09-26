@@ -49,6 +49,11 @@ local function sfx(name, pos)
 	if bus and bus:FindFirstChild("Sfx") then bus.Sfx:Fire(name, pos) end
 end
 
+-- a mumble blip in this speaker's voice (Audio.client)
+local function talk(speaker)
+	if bus and bus:FindFirstChild("Talk") then bus.Talk:Fire(speaker) end
+end
+
 local function fade(to, t)
 	local tw = TweenService:Create(black, TweenInfo.new(t or 0.35), { BackgroundTransparency = to })
 	tw:Play()
@@ -186,7 +191,7 @@ local function sayLine(speaker, templateId, line)
 	hint.Visible = false
 	for c = 1, #line do
 		text.Text = line:sub(1, c)
-		if c % 3 == 0 then sfx("Coin") end
+		if c % 2 == 0 and line:sub(c, c) ~= " " then talk(speaker) end
 		task.wait(0.025)
 	end
 	task.wait(math.clamp(#line * 0.03, 1.1, 2.2))
@@ -324,7 +329,7 @@ local function intro(data)
 		for c = 1, #line do
 			if clicked then break end
 			text.Text = line:sub(1, c)
-			if c % 3 == 0 then sfx("Blip") end
+			if c % 2 == 0 and line:sub(c, c) ~= " " then talk("THE BOARD CHAIR") end
 			task.wait(0.026)
 		end
 		text.Text = line
@@ -813,7 +818,7 @@ local function playScene(id, data)
 			for c = 1, #line do
 				if clicked then break end
 				text.Text = line:sub(1, c)
-				if c % 3 == 0 then sfx("Coin") end
+				if c % 2 == 0 and line:sub(c, c) ~= " " then talk(s.say[1]) end
 				task.wait(0.025)
 			end
 			text.Text = line
