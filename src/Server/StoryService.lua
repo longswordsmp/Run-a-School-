@@ -405,26 +405,62 @@ local function buildLimo()
 		x.Parent = limo
 		return x
 	end
+	-- a long black stretch limo: front +X, chrome everywhere, purple underglow and flags
 	local black = Color3.fromRGB(20, 20, 26)
-	local body = p("Body", Vector3.new(30, 3.4, 8), CFrame.new(0, 2.6, 0), black, Enum.Material.Metal)
+	local chrome = Color3.fromRGB(210, 212, 222)
+	local tint = Color3.fromRGB(34, 30, 48)
+	local front = CFrame.Angles(0, math.rad(-90), 0) -- (wedges sloping down towards +X)
+	local back = CFrame.Angles(0, math.rad(90), 0) -- (wedges sloping down towards -X)
+	local function wedge(name, size, cf, color, mat)
+		local w = Instance.new("WedgePart")
+		w.Name = name
+		w.Size = size
+		w.CFrame = cf
+		w.Color = color
+		w.Material = mat or Enum.Material.Metal
+		w.Anchored, w.CanCollide = true, false
+		w.Parent = limo
+		return w
+	end
+	local function wheel(x, z)
+		local r = CFrame.new(x, 1.5, z) * CFrame.Angles(0, math.rad(90), 0) -- (round faces across the car)
+		p("Wheel", Vector3.new(1.2, 3, 3), r, Color3.fromRGB(15, 15, 17), nil, Enum.PartType.Cylinder)
+		p("Rim", Vector3.new(1.26, 1.8, 1.8), r, chrome, Enum.Material.Metal, Enum.PartType.Cylinder)
+		p("RimCap", Vector3.new(1.3, 0.6, 0.6), r, Color3.fromRGB(120, 50, 170), Enum.Material.Metal, Enum.PartType.Cylinder)
+	end
+	local body = p("Body", Vector3.new(30, 3, 8), CFrame.new(0, 2.5, 0), black, Enum.Material.Metal)
 	limo.PrimaryPart = body
-	p("Cabin", Vector3.new(20, 2.6, 7.4), CFrame.new(-1, 5.4, 0), black, Enum.Material.Metal)
-	for _, z in { -3.75, 3.75 } do
-		p("Windows", Vector3.new(18, 1.8, 0.1), CFrame.new(-1, 5.5, z), Color3.fromRGB(40, 40, 60), Enum.Material.Glass)
-		p("Chrome", Vector3.new(30, 0.25, 0.1), CFrame.new(0, 3.4, z * 1.07), Color3.fromRGB(210, 210, 220), Enum.Material.Metal)
-	end
-	for _, x in { -11, 11 } do
-		for _, z in { -4, 4 } do
-			p("Wheel", Vector3.new(1.4, 3, 3), CFrame.new(x, 1.5, z) * CFrame.Angles(0, 0, math.rad(90)), Color3.fromRGB(15, 15, 15), nil, Enum.PartType.Cylinder)
+	-- the long cabin with a raked windshield and a sloping back window
+	p("Cabin", Vector3.new(19, 2.6, 7.4), CFrame.new(-1.5, 5.3, 0), black, Enum.Material.Metal)
+	wedge("Windshield", Vector3.new(7.2, 2.6, 2.4), CFrame.new(9.2, 5.3, 0) * front, tint, Enum.Material.Glass)
+	wedge("BackWindow", Vector3.new(7.2, 2.6, 2), CFrame.new(-12, 5.3, 0) * back, tint, Enum.Material.Glass)
+	wedge("Hood", Vector3.new(7.8, 0.5, 4.6), CFrame.new(12.7, 4.25, 0) * front, black)
+	for _, z in { -3.72, 3.72 } do
+		-- tinted windows in chrome frames, a chrome belt line and a sill
+		p("WindowFrame", Vector3.new(17.4, 2, 0.06), CFrame.new(-1.5, 5.35, z), chrome, Enum.Material.Metal)
+		for i = 0, 3 do
+			p("Windows", Vector3.new(3.9, 1.7, 0.06), CFrame.new(-8.7 + i * 4.3, 5.35, z * 1.016), tint, Enum.Material.Glass)
 		end
+		p("Chrome", Vector3.new(30, 0.2, 0.1), CFrame.new(0, 3.95, z * 1.077), chrome, Enum.Material.Metal)
+		p("Sill", Vector3.new(22, 0.3, 0.1), CFrame.new(0, 1.3, z * 1.077), chrome, Enum.Material.Metal)
 	end
-	for _, z in { -2.6, 2.6 } do
-		p("Headlight", Vector3.new(0.3, 0.8, 1.4), CFrame.new(15.1, 3, z), Color3.fromRGB(255, 250, 220), Enum.Material.Neon)
-		p("Taillight", Vector3.new(0.3, 0.8, 1.4), CFrame.new(-15.1, 3, z), Color3.fromRGB(220, 30, 40), Enum.Material.Neon)
+	-- the front: a tall chrome grille, rectangular lights, a bumper; flags on the fenders
+	p("Grille", Vector3.new(0.2, 2, 3.6), CFrame.new(15.05, 2.6, 0), chrome, Enum.Material.Metal)
+	for i = -3, 3 do p("GrilleBar", Vector3.new(0.12, 1.8, 0.12), CFrame.new(15.2, 2.6, i * 0.45), Color3.fromRGB(40, 40, 50), Enum.Material.Metal) end
+	for _, z in { -2.9, 2.9 } do
+		p("Headlight", Vector3.new(0.3, 0.6, 1.6), CFrame.new(15.1, 3.1, z), Color3.fromRGB(255, 250, 220), Enum.Material.Neon)
+		p("Taillight", Vector3.new(0.3, 0.7, 1.6), CFrame.new(-15.1, 3.1, z), Color3.fromRGB(220, 30, 40), Enum.Material.Neon)
+		p("FlagPole", Vector3.new(0.12, 2, 0.12), CFrame.new(13.8, 5, z * 1.2), chrome, Enum.Material.Metal)
+		p("Flag", Vector3.new(1.4, 0.9, 0.05), CFrame.new(13.1, 5.5, z * 1.2), Color3.fromRGB(140, 50, 210), Enum.Material.Fabric)
 	end
-	local plate = p("Plate", Vector3.new(0.2, 1, 3), CFrame.new(-15.2, 2.2, 0), Color3.fromRGB(250, 250, 240))
+	p("Bumper", Vector3.new(0.6, 0.7, 8.2), CFrame.new(15.3, 1.4, 0), chrome, Enum.Material.Metal)
+	p("RearBumper", Vector3.new(0.6, 0.7, 8.2), CFrame.new(-15.3, 1.4, 0), chrome, Enum.Material.Metal)
+	for _, x in { -11, 11 } do
+		for _, z in { -3.75, 3.75 } do wheel(x, z) end
+	end
+	local plate = p("Plate", Vector3.new(0.2, 1, 3), CFrame.new(-15.2, 2.3, 0), Color3.fromRGB(250, 250, 240))
 	local g = Instance.new("SurfaceGui")
-	g.Face = Enum.NormalId.Back
+	g.Face = Enum.NormalId.Left
 	g.Parent = plate
 	local t = Instance.new("TextLabel")
 	t.Size = UDim2.fromScale(1, 1)

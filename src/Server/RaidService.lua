@@ -124,10 +124,12 @@ end
 -- parked alongside the curb in front of the plot; its length runs along the street (lot X)
 local VAN_PARK = Vector3.new(18, 0, 89)
 local function buildVan()
+	-- a purple VexCorp panel van: front +X, the sliding door on -Z (the school side), built around the
+	-- road point under its middle (the pivot, so PivotTo puts the wheels on the ground)
 	local van = Instance.new("Model")
 	van.Name = "VexVan"
-	local function p(name, size, cf, color, mat)
-		local x = Instance.new("Part")
+	local function p(name, size, cf, color, mat, shape)
+		local x = Instance.new(shape == "wedge" and "WedgePart" or "Part")
 		x.Name = name
 		x.Size = size
 		x.CFrame = cf
@@ -135,59 +137,110 @@ local function buildVan()
 		x.Material = mat or Enum.Material.SmoothPlastic
 		x.Anchored, x.CanCollide, x.CanQuery = true, false, false
 		x.TopSurface, x.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+		if shape and shape ~= "wedge" then x.Shape = shape end
 		x.Parent = van
 		return x
 	end
-	local purple, dark = Color3.fromRGB(105, 45, 150), Color3.fromRGB(35, 30, 45)
-	p("Body", Vector3.new(16, 6.2, 7.6), CFrame.new(-1, 4.4, 0), purple, Enum.Material.Metal)
-	p("Cab", Vector3.new(4.2, 4.6, 7.4), CFrame.new(8.9, 3.6, 0), purple, Enum.Material.Metal)
-	p("Windshield", Vector3.new(0.2, 2.2, 6.6), CFrame.new(11, 4.6, 0), Color3.fromRGB(40, 45, 70), Enum.Material.Glass)
-	for _, z in { -3.85, 3.85 } do
-		p("SideWindow", Vector3.new(2.6, 1.8, 0.1), CFrame.new(9.2, 4.7, z), Color3.fromRGB(40, 45, 70), Enum.Material.Glass)
-		p("Stripe", Vector3.new(16.2, 0.45, 0.1), CFrame.new(-1, 2.7, z * 1.005), Color3.fromRGB(200, 150, 255), Enum.Material.Neon)
+	local function acrossZ(name, d, len, pos, color, mat)
+		return p(name, Vector3.new(len, d, d), CFrame.new(pos) * CFrame.Angles(0, math.rad(90), 0), color, mat, Enum.PartType.Cylinder)
 	end
-	p("Bumper", Vector3.new(0.5, 0.8, 7.8), CFrame.new(11.2, 1.7, 0), dark, Enum.Material.Metal)
-	p("RearBumper", Vector3.new(0.5, 0.8, 7.8), CFrame.new(-9.2, 1.7, 0), dark, Enum.Material.Metal)
-	for _, z in { -2.6, 2.6 } do
-		p("Headlight", Vector3.new(0.2, 0.7, 1.3), CFrame.new(11.1, 2.9, z), Color3.fromRGB(255, 250, 220), Enum.Material.Neon)
-		p("Taillight", Vector3.new(0.2, 0.9, 1), CFrame.new(-9.1, 3.2, z), Color3.fromRGB(230, 30, 50), Enum.Material.Neon)
+	local function alongX(name, d, len, pos, color, mat)
+		return p(name, Vector3.new(len, d, d), CFrame.new(pos), color, mat, Enum.PartType.Cylinder)
 	end
-	for _, x in { -6, 7.5 } do
-		for _, z in { -3.7, 3.7 } do
-			local w = p("Wheel", Vector3.new(1.3, 2.8, 2.8), CFrame.new(x, 1.4, z) * CFrame.Angles(0, math.rad(90), 0), Color3.fromRGB(20, 20, 22), Enum.Material.SmoothPlastic)
-			w.Shape = Enum.PartType.Cylinder
-		end
-	end
-	-- the sliding door on the kerb side (-Z faces the school) and the VexCorp logo on both sides
-	p("Door", Vector3.new(4.2, 5, 0.12), CFrame.new(2.6, 4, -3.86), Color3.fromRGB(85, 35, 125), Enum.Material.Metal)
-	for _, face in { { z = -3.87, n = Enum.NormalId.Front }, { z = 3.87, n = Enum.NormalId.Back } } do
-		local logo = p("Logo", Vector3.new(7, 2.6, 0.08), CFrame.new(-4.2, 4.9, face.z), purple, Enum.Material.Metal)
-		logo.Transparency = 1
+	local function text(part, face, str, color, font, stroke)
 		local g = Instance.new("SurfaceGui")
-		g.Face = face.n
+		g.Face = face
 		g.LightInfluence = 0.2
-		g.Parent = logo
+		g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		g.PixelsPerStud = 40
+		g.Parent = part
 		local t = Instance.new("TextLabel")
 		t.Size = UDim2.fromScale(1, 1)
 		t.BackgroundTransparency = 1
-		t.Font = Enum.Font.LuckiestGuy
+		t.Font = font or Enum.Font.LuckiestGuy
 		t.TextScaled = true
-		t.Text = "VEXCORP"
-		t.TextColor3 = Color3.fromRGB(250, 245, 255)
+		t.Text = str
+		t.TextColor3 = color
 		t.Parent = g
-		local s = Instance.new("UIStroke")
-		s.Thickness = 3
-		s.Color = Color3.fromRGB(40, 15, 60)
-		s.Parent = t
+		if stroke then
+			local st = Instance.new("UIStroke")
+			st.Thickness = 3
+			st.Color = stroke
+			st.Parent = t
+		end
+		return t
 	end
-	-- a rooftop siren bar that flashes while the raid is on
-	local bar = p("Siren", Vector3.new(1, 0.5, 3.6), CFrame.new(3, 7.75, 0), Color3.fromRGB(255, 50, 80), Enum.Material.Neon)
+	local purple, deep, dark = Color3.fromRGB(110, 48, 160), Color3.fromRGB(80, 32, 118), Color3.fromRGB(30, 26, 38)
+	local tint, chrome = Color3.fromRGB(28, 26, 44), Color3.fromRGB(205, 205, 215)
+	local neon = Color3.fromRGB(205, 150, 255)
+	local front = CFrame.Angles(0, math.rad(-90), 0) -- (a wedge that slopes down towards +X)
+
+	-- the body: a lower and an upper box, a darker roof with rounded edges
+	p("Body", Vector3.new(17, 3, 7.6), CFrame.new(-0.5, 3.2, 0), purple, Enum.Material.Metal)
+	p("Body", Vector3.new(15.2, 3, 7.6), CFrame.new(-1.4, 6.2, 0), purple, Enum.Material.Metal)
+	p("Roof", Vector3.new(15.2, 0.3, 7), CFrame.new(-1.4, 7.85, 0), deep, Enum.Material.Metal)
+	for _, z in { -3.45, 3.45 } do alongX("RoofEdge", 0.8, 15.2, Vector3.new(-1.4, 7.6, z), purple, Enum.Material.Metal) end
+	p("Skirt", Vector3.new(19.4, 0.5, 7.7), CFrame.new(0.6, 1.65, 0), dark)
+	-- the cab: a raked, tinted windshield and a short sloping hood
+	p("Windshield", Vector3.new(7.4, 3, 2.2), CFrame.new(7.3, 6.1, 0) * front, tint, Enum.Material.Glass, "wedge")
+	p("Hood", Vector3.new(2.3, 2.6, 7.4), CFrame.new(9.15, 3.1, 0), purple, Enum.Material.Metal)
+	p("HoodTop", Vector3.new(7.4, 0.6, 2.3), CFrame.new(9.15, 4.7, 0) * front, purple, Enum.Material.Metal, "wedge")
+	p("Grille", Vector3.new(0.15, 1.6, 4.8), CFrame.new(10.35, 3.0, 0), dark)
+	for _, y in { 2.4, 3.0, 3.6 } do p("GrilleBar", Vector3.new(0.1, 0.12, 4.6), CFrame.new(10.45, y, 0), chrome, Enum.Material.Metal) end
+	local badge = alongX("Emblem", 1.1, 0.12, Vector3.new(10.5, 3.0, 0), chrome, Enum.Material.Metal)
+	text(badge, Enum.NormalId.Right, "V", Color3.fromRGB(120, 40, 170), Enum.Font.LuckiestGuy)
+	for _, s in { -1, 1 } do
+		p("Headlight", Vector3.new(0.2, 0.5, 1.5), CFrame.new(10.35, 3.95, s * 2.95), Color3.fromRGB(255, 250, 225), Enum.Material.Neon)
+		alongX("FogLight", 0.5, 0.15, Vector3.new(10.9, 1.95, s * 3.1), Color3.fromRGB(255, 240, 200), Enum.Material.Neon)
+		p("Mirror", Vector3.new(0.5, 0.9, 0.3), CFrame.new(6.6, 5.4, s * 4.05), dark)
+		p("MirrorArm", Vector3.new(0.5, 0.15, 0.4), CFrame.new(6.6, 5.2, s * 3.85), dark)
+		-- the cab's side window and the neon stripe down each side
+		p("SideWindow", Vector3.new(2.6, 1.8, 0.1), CFrame.new(4.6, 6.2, s * 3.83), tint, Enum.Material.Glass)
+		p("Stripe", Vector3.new(19, 0.3, 0.1), CFrame.new(0.4, 2.35, s * 3.86), neon, Enum.Material.SmoothPlastic)
+	end
+	p("Bumper", Vector3.new(0.6, 0.9, 7.8), CFrame.new(10.65, 1.75, 0), dark, Enum.Material.Metal)
+	p("RearBumper", Vector3.new(0.6, 0.9, 7.8), CFrame.new(-9.3, 1.75, 0), dark, Enum.Material.Metal)
+	-- the back: two doors, dark little windows, tall tail lights and a plate
+	p("RearDoor", Vector3.new(0.1, 5.4, 7.2), CFrame.new(-9.05, 4.6, 0), deep, Enum.Material.Metal)
+	p("RearSeam", Vector3.new(0.12, 5.4, 0.12), CFrame.new(-9.08, 4.6, 0), dark)
+	for _, s in { -1, 1 } do
+		p("RearWindow", Vector3.new(0.12, 1.4, 2.4), CFrame.new(-9.1, 6.2, s * 1.7), tint, Enum.Material.Glass)
+		p("Taillight", Vector3.new(0.15, 2.6, 0.5), CFrame.new(-9.1, 4, s * 3.5), Color3.fromRGB(230, 30, 50), Enum.Material.Neon)
+	end
+	local plate = p("Plate", Vector3.new(0.1, 0.8, 2), CFrame.new(-9.65, 1.75, 0), Color3.fromRGB(250, 248, 240))
+	text(plate, Enum.NormalId.Left, "VEX 666", Color3.fromRGB(90, 30, 130), Enum.Font.Arcade)
+	-- the sliding door on the school side, with a seam and a chrome handle
+	p("Door", Vector3.new(4.2, 5.4, 0.12), CFrame.new(1.4, 4.6, -3.86), deep, Enum.Material.Metal)
+	for _, x in { -0.7, 3.5 } do p("DoorSeam", Vector3.new(0.1, 5.4, 0.14), CFrame.new(x, 4.6, -3.87), dark) end
+	p("Handle", Vector3.new(0.9, 0.2, 0.2), CFrame.new(3, 4.4, -3.95), chrome, Enum.Material.Metal)
+	-- the wheels in black arches, with chrome hubs
+	for _, x in { -5.8, 7.2 } do
+		for _, s in { -1, 1 } do
+			acrossZ("WheelArch", 3.7, 0.1, Vector3.new(x, 1.5, s * 3.82), dark)
+			acrossZ("Wheel", 2.9, 1.1, Vector3.new(x, 1.45, s * 3.6), Color3.fromRGB(20, 20, 22))
+			acrossZ("Hub", 1.6, 1.16, Vector3.new(x, 1.45, s * 3.6), chrome, Enum.Material.Metal)
+			acrossZ("HubCap", 0.6, 1.2, Vector3.new(x, 1.45, s * 3.6), purple, Enum.Material.Metal)
+		end
+	end
+	-- VEXCORP on both sides of the cargo box
+	for _, face in { { z = -3.87, n = Enum.NormalId.Front }, { z = 3.87, n = Enum.NormalId.Back } } do
+		local logo = p("Logo", Vector3.new(6.4, 2.2, 0.08), CFrame.new(-5.4, 5.9, face.z), purple, Enum.Material.Metal)
+		logo.Transparency = 1
+		text(logo, face.n, "VEXCORP", Color3.fromRGB(250, 245, 255), Enum.Font.LuckiestGuy, Color3.fromRGB(40, 15, 60))
+		local sub = p("Logo", Vector3.new(6.4, 0.7, 0.08), CFrame.new(-5.4, 4.4, face.z), purple, Enum.Material.Metal)
+		sub.Transparency = 1
+		text(sub, face.n, "educational solutions", neon, Enum.Font.GothamBold)
+	end
+	-- a light bar on the roof: red and blue, flashing while the raid is on
+	p("LightBarBase", Vector3.new(1.3, 0.3, 4.6), CFrame.new(2.4, 8.15, 0), dark)
+	local bar = p("Siren", Vector3.new(1, 0.45, 2.1), CFrame.new(2.4, 8.5, -1.1), Color3.fromRGB(255, 50, 80), Enum.Material.Neon)
+	p("SirenBlue", Vector3.new(1, 0.45, 2.1), CFrame.new(2.4, 8.5, 1.1), Color3.fromRGB(60, 120, 255), Enum.Material.Neon)
+	p("Antenna", Vector3.new(0.08, 2.4, 0.08), CFrame.new(-7.5, 9.1, 2.8), dark)
 	local l = Instance.new("PointLight")
 	l.Color = Color3.fromRGB(255, 60, 90)
 	l.Range = 16
 	l.Brightness = 2
 	l.Parent = bar
-	-- the pivot sits on the road under the middle of the van, so PivotTo puts the wheels on the ground
 	van.WorldPivot = CFrame.new()
 	return van
 end

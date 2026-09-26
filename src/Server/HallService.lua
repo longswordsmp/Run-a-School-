@@ -234,7 +234,7 @@ end
 ---------------------------------------------------------------------------
 local busTemplate = map.SchoolBus
 local PARK = CFrame.new(-305, 0, 26) -- ahead of the regular bus, door facing the carpet
-local function makeBus(label, color)
+local function makeBus(label, color, textColor)
 	local bus = busTemplate:Clone()
 	bus.Name = label:gsub(" ", "")
 	for _, n in { "Body", "Hood" } do
@@ -242,13 +242,19 @@ local function makeBus(label, color)
 			if part.Name == n then part.Color = color end
 		end
 	end
-	for _, g in bus.Sign:GetChildren() do
-		if g:IsA("SurfaceGui") then
-			g.Label.Text = label
-			g.Label.BackgroundColor3 = color
+	-- the name on both sides (and the front and back signs keep saying SCHOOL BUS)
+	for _, sign in bus:GetChildren() do
+		if sign.Name == "Sign" then
+			sign.Color = color
+			for _, g in sign:GetChildren() do
+				if g:IsA("SurfaceGui") then
+					g.Label.Text = label
+					g.Label.BackgroundColor3 = color
+					if textColor then g.Label.TextColor3 = textColor end
+				end
+			end
 		end
 	end
-	bus.Sign.Color = color
 	return bus
 end
 
@@ -290,7 +296,7 @@ function HallService.specialBus(kind, byName)
 	if kind == "Lucky" then
 		weights = { Legendary = 70, Mythic = 24, Prodigy = 5, Secret = 1 }
 	end
-	local bus = makeBus(label, color)
+	local bus = makeBus(label, color, style.text)
 	-- the template faces +X with its door on -Z; park it with the same orientation
 	local pivot0 = busTemplate:GetPivot()
 	local parked = PARK * pivot0.Rotation + Vector3.new(0, pivot0.Position.Y, 0)
