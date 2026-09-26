@@ -112,7 +112,8 @@ function DailyService.badge(player)
 	local box = (r.done[1] and r.done[2] and r.done[3] and not r.box) or r.owedBox == true
 	local w = recWeekly(player, p)
 	box = box or (w.done[1] and w.done[2] and w.done[3] and not w.chest) or w.owedChest == true
-	player:SetAttribute("DailyReady", player:GetAttribute("UI_Daily") == true and (not streak.claimed or box) or false)
+	-- (no badge while the First Morning runs: one thing at a time)
+	player:SetAttribute("DailyReady", player:GetAttribute("UI_Daily") == true and not player:GetAttribute("InTutorial") and (not streak.claimed or box) or false)
 end
 
 function DailyService.weeklyState(player)

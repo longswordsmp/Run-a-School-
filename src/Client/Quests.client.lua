@@ -54,7 +54,8 @@ local state
 
 ---------------------------------------------------------------------------
 -- the guide: a chunky arrow bobs over the thing the step is about (the kid to grab, the pad, Crumpet,
--- the lock button, the pen), turning slowly. When the thing is off-screen, a chevron at the edge of
+-- the lock button, the pen), turning slowly, and a trail of chevrons on the ground leads you there
+-- along a route you can walk. When the thing is off-screen, a chevron at the edge of
 -- the screen points the way and says how far it is; when it's on screen but behind a wall (a pad
 -- inside the school), the chevron hangs over the spot, pointing down. Menu steps pulse their
 -- side-bar button instead.
@@ -102,6 +103,144 @@ local function placeArrow(tip, scale, spin)
 	end
 	shaft.Size = Vector3.new(SHAFT_W, SHAFT_H, SHAFT_W) * scale
 	shaft.CFrame = base * CFrame.new(0, h + SHAFT_H * scale / 2 - 0.02, 0)
+end
+
+-- the trail: yellow chevrons on the ground from you to the target, flowing toward it along a route
+-- you can walk (PathfindingService, worked out again as you move), or a straight line when there is
+-- no route. It draws the next 130 studs or so; the edge chevron covers the rest.
+local PathfindingService = game:GetService("PathfindingService")
+local TRAIL_GAP, TRAIL_COUNT, TRAIL_SPEED = 3.4, 38, 7
+local trailFolder = Instance.new("Folder")
+trailFolder.Name = "Trail"
+trailFolder.Parent = guideFolder
+local chevrons = {}
+for i = 1, TRAIL_COUNT do
+	local pair = {}
+	for s = 1, 2 do
+		local p = Instance.new("Part")
+		p.Name = "Chevron"
+		p.Size = Vector3.new(0.34, 0.08, 1.3)
+		p.Color = ARROW
+		p.Material = Enum.Material.SmoothPlastic
+		p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = true, false, false, false, false
+		p.Transparency = 1
+		p.Parent = trailFolder
+		pair[s] = p
+	end
+	chevrons[i] = pair
+end
+local function placeChevron(pair, pos, dir, alpha)
+	-- a ">" lying flat, its point ahead along dir
+	local right = dir:Cross(Vector3.yAxis)
+	local tip = pos + dir * 0.45
+	for s, p in pair do
+		local side = s == 1 and -1 or 1
+		local tail = tip - dir * 0.85 + right * side * 0.72
+		p.CFrame = CFrame.lookAt((tip + tail) / 2, tip)
+		p.Transparency = alpha
+	end
+end
+local function hideTrail()
+	for _, pair in chevrons do
+		if pair[1].Transparency < 1 then
+			pair[1].Transparency, pair[2].Transparency = 1, 1
+		end
+	end
+end
+
+local trailPath = PathfindingService:CreatePath({ AgentRadius = 1.6, AgentHeight = 5, AgentCanJump = true, WaypointSpacing = 4 })
+local route, routeGoal, routeAt, routing = nil, nil, 0, false
+local groundParams = RaycastParams.new()
+groundParams.FilterType = Enum.RaycastFilterType.Exclude
+local function ground(pos, also)
+	local exclude = { guideFolder, also }
+	for _, pl in Players:GetPlayers() do
+		if pl.Character then table.insert(exclude, pl.Character) end
+	end
+	groundParams.FilterDescendantsInstances = exclude
+	local hit = workspace:Raycast(pos + Vector3.new(0, 6, 0), Vector3.new(0, -40, 0), groundParams)
+	return hit and hit.Position or pos
+end
+local function straightRoute(from, to)
+	local pts = {}
+	local flat = Vector3.new(to.X - from.X, 0, to.Z - from.Z)
+	local n = math.clamp(math.ceil(flat.Magnitude / 5), 1, 60)
+	for i = 0, n do
+		local a = i / n
+		table.insert(pts, ground(from:Lerp(to, a)))
+	end
+	return pts
+end
+local function findRoute(from, goal)
+	routing = true
+	routeAt = os.clock()
+	task.spawn(function()
+		local ok = pcall(trailPath.ComputeAsync, trailPath, from, goal)
+		local pts
+		if ok and trailPath.Status == Enum.PathStatus.Success then
+			pts = {}
+			for _, w in trailPath:GetWaypoints() do table.insert(pts, w.Position) end
+		else
+			pts = straightRoute(from, goal)
+		end
+		route, routeGoal, routing = pts, goal, false
+	end)
+end
+
+-- where along the route you are now: the nearest point on it, and the index of the segment
+local function nearestOnRoute(pos)
+	local best, bestD, bestI = nil, math.huge, 1
+	for i = 1, #route - 1 do
+		local a, b = route[i], route[i + 1]
+		local ab = b - a
+		local t = ab.Magnitude > 1e-3 and math.clamp((pos - a):Dot(ab) / ab:Dot(ab), 0, 1) or 0
+		local q = a + ab * t
+		local d = (Vector3.new(q.X, 0, q.Z) - Vector3.new(pos.X, 0, pos.Z)).Magnitude
+		if d < bestD then best, bestD, bestI = q, d, i end
+	end
+	return best, bestD, bestI
+end
+
+local function drawTrail(feet, goal, t)
+	-- a new route when the target moved, you wandered off it, or every couple of seconds
+	local stale = not route or not routeGoal or (routeGoal - goal).Magnitude > 6 or os.clock() - routeAt > 2.5
+	local q, off, i0
+	if route and #route >= 2 then q, off, i0 = nearestOnRoute(feet) end
+	if not routing and (stale or not q or off > 10) then findRoute(feet, goal) end
+	if not q then hideTrail() return end
+	-- walk the route from where you are, dropping a chevron every TRAIL_GAP, sliding forward in time
+	local shift = (t * TRAIL_SPEED) % TRAIL_GAP
+	local want = shift + 2.2 -- (none right under your feet)
+	local walked, k = 0, 1
+	local a = q
+	local i = i0
+	local total = 0
+	for j = i0, #route - 1 do total += ((j == i0 and q or route[j]) - route[j + 1]).Magnitude end
+	while k <= TRAIL_COUNT and i <= #route - 1 do
+		local b = route[i + 1]
+		local seg = b - a
+		local len = seg.Magnitude
+		if walked + len >= want and len > 1e-3 then
+			local pos = a + seg * ((want - walked) / len)
+			local flat = Vector3.new(seg.X, 0, seg.Z)
+			local dir = flat.Magnitude > 1e-3 and flat.Unit or Vector3.new(0, 0, -1)
+			-- fade in near you, out near the end
+			local toEnd = total - want
+			local alpha = math.max(0, 1 - math.min(want - 1.2, toEnd - 1.5, 3) / 3)
+			if toEnd < 1.5 then break end
+			placeChevron(chevrons[k], pos + Vector3.new(0, 0.12, 0), dir, 0.08 + alpha * 0.92)
+			k += 1
+			want += TRAIL_GAP
+		else
+			walked += len
+			a = b
+			i += 1
+		end
+	end
+	for j = k, TRAIL_COUNT do
+		local pair = chevrons[j]
+		if pair[1].Transparency < 1 then pair[1].Transparency, pair[2].Transparency = 1, 1 end
+	end
 end
 
 -- the edge-of-screen chevron: a ">" of two rounded bars with a dark rim, turned toward the target
@@ -357,6 +496,7 @@ end
 local t0 = 0
 local lastSee, isHidden = 0, false
 local lastTarget
+local goalFor, goalPos -- (the target's position, and the ground under it)
 RunService.RenderStepped:Connect(function(dt)
 	t0 += dt
 	local target = gui.Enabled and card.Visible and worldTarget() or nil
@@ -381,6 +521,21 @@ RunService.RenderStepped:Connect(function(dt)
 		local onScreen = v.Z > 0 and v.X > m and v.X < vp.X - m and v.Y > m and v.Y < vp.Y - m
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		local away = root and math.floor((tip - root.Position).Magnitude + 0.5)
+
+		-- the trail on the ground, from your feet to the spot under the target
+		if root then
+			local at = typeof(target) == "Vector3" and target or (target:IsA("Model") and target:GetPivot().Position or target.Position)
+			if not goalFor or (goalFor - at).Magnitude > 1 then
+				goalFor = at
+				goalPos = ground(at, typeof(target) == "Instance" and target or nil)
+			end
+			local feet = ground(root.Position)
+			if (Vector3.new(goalPos.X, 0, goalPos.Z) - Vector3.new(feet.X, 0, feet.Z)).Magnitude > 9 then
+				drawTrail(feet, goalPos, t0)
+			else
+				hideTrail()
+			end
+		end
 		if onScreen and not isHidden and dist < 160 then
 			-- in plain sight: the arrow does the job
 			edge.Visible, edgeDist.Visible = false, false
@@ -412,6 +567,8 @@ RunService.RenderStepped:Connect(function(dt)
 		if arrow.Parent then arrow.Parent = nil end
 		lastTarget = nil
 		edge.Visible, edgeDist.Visible = false, false
+		hideTrail()
+		route, routeGoal, goalFor = nil, nil, nil
 	end
 	-- pulse the side-bar button for menu steps
 	local btn = gui.Enabled and card.Visible and menuTarget()

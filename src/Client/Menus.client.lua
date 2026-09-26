@@ -1075,7 +1075,8 @@ do
 	task.delay(8, function()
 		local s = call("daily")
 		local prof = call("profile")
-		if s and s.ok ~= false and not s.claimed and player:GetAttribute("UI_Daily") then
+		-- (never over a brand-new principal's First Morning: the Daily button is there from the start now)
+		if s and s.ok ~= false and not s.claimed and player:GetAttribute("UI_Daily") and not player:GetAttribute("InTutorial") then
 			panel.open()
 		end
 	end)
