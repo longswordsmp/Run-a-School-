@@ -244,6 +244,9 @@ Config.DeskRows = {
 }
 Config.DesksPerRow = 4
 
+-- the kids grow up with the school: a seated kid's size by tier (Kindergarten little, college grown)
+Config.AgeScale = { 0.8, 0.87, 0.94, 1, 1.04, 1.07, 1.12, 1.14, 1.16, 1.16, 1.17, 1.18 }
+
 -- how each tier's building looks. wall/cap: outside walls and trim; inner: interior walls;
 -- floor/tile: classroom checker; lobby; locker; chair; door; roof; foundation; sign; column;
 -- tower: nil | "clock" | "bell" | "spires" | "rocket" | "portal"

@@ -39,12 +39,12 @@ the town, the quest engine and the cutscene engine; this file covers everything 
 | # | Piece | State |
 |---|---|---|
 | 1 | Scenery: nature models, textured lake | done c077a94 |
-| 2 | Townspeople: 29 NPCs, tags, chatter, talk prompt, walkers | built, verifying |
-| 3 | Quest engine: `Shared/Quests.lua`, `TownQuestService`, Quest Log, tracker, beam, "!" markers | |
-| 4 | Cutscene engine: `Shared/Cutscenes.lua`, data-driven player | |
+| 2 | Townspeople: 29 NPCs, tags, chatter, talk prompt, walkers | done d5078d0 |
+| 3 | Quest engine: `Shared/Quests.lua`, `TownQuestService`, Quest Log, tracker, beam, "!" markers, goons + chase steps | done d5078d0, f4a8f5b |
+| 4 | Cutscene engine: `Shared/Cutscenes.lua`, data-driven player, place-based shots | done f4a8f5b |
 | 5 | Story content: 30 story quests (Dr. Vex arc), district unlocks move to story quests | |
 | 6 | VexCorp HQ, huge: 6 floors with a challenge each (cubicle stealth + keycard, laser vault, camera server farm, acid lab + pod rescue, goon arena + Crumpet boss, executive vault code), feeding the Lair | done 83f7279..(floor 7) |
-| 7 | School growth: the building gets bigger per tier (wings, more floors, campus for college), kids age with the tier (size, clothes, props), better stuff per tier | |
+| 7 | School growth: the building gets bigger per tier (wings, more floors, campus for college), kids age with the tier (size, clothes, props), better stuff per tier | building + size done (next: per-tier clothes/props, better stuff) |
 | 8 | Prestige: GOLD, DIAMOND, then ALIEN (the abduction questline + cutscenes), permanent multipliers | |
 | 9 | Town quests: 70 (Downtown 20, Maple 20, Park 14, Industrial 10, Lab/Vex Prep 6) | |
 | 10 | 50 cutscenes | |

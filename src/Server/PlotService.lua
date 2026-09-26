@@ -295,6 +295,9 @@ function PlotService.place(player, slot)
 	model:SetAttribute("OwnerId", Data.hostOf(player).UserId)
 	model:SetAttribute("Slot", slot)
 	Factory.setMode(model, "owned")
+	-- the kids grow up with the school (a kindergartner is little, a college kid is grown)
+	local age = Config.AgeScale[p.tier or 1] or 1
+	if math.abs(age - 1) > 0.01 then pcall(function() model:ScaleTo(model:GetScale() * age) end) end
 	model.PrimaryPart.CFrame = sitCFrame(desk, model)
 	local folder = plot:FindFirstChild("Students")
 	if not folder then

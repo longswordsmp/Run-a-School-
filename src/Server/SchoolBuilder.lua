@@ -521,6 +521,21 @@ local WIN_W, WIN_SILL, WIN_TOP = 7, 3.5, 11
 ---------------------------------------------------------------------------
 -- facade, roof and tier features
 ---------------------------------------------------------------------------
+-- the low-poly nature models (ServerStorage.TownAssets, see TownKit) when the place has them
+local assets = game:GetService("ServerStorage"):FindFirstChild("TownAssets")
+local function asset(parent, name, cf, scale, tintLeaves)
+	local t = assets and assets:FindFirstChild(name)
+	if not t then return nil end
+	local m = t:Clone()
+	if scale and math.abs(scale - 1) > 0.01 then m:ScaleTo(scale) end
+	m:PivotTo(cf)
+	for _, d in m:GetDescendants() do
+		if tintLeaves and d:IsA("BasePart") and d.Name == "Leaves" then d.Color = tintLeaves end
+	end
+	m.Parent = parent
+	return m
+end
+
 local function buildFacade(school, L, floors, look, tierIndex, name)
 	local ext = Instance.new("Folder")
 	ext.Name = "Exterior"
@@ -565,7 +580,9 @@ local function buildFacade(school, L, floors, look, tierIndex, name)
 	end
 	-- bushes along the front
 	for _, bx in { -36, -30, -24, -14, 14, 24, 30, 36 } do
-		ball(ext, "Bush", 3.4, L(bx, 1.4, ZF + WT / 2 + 2.2), look.bush or rgb(60, 160, 70))
+		if not asset(ext, "Bush", L(bx, 0.2, ZF + WT / 2 + 2.4) * CFrame.Angles(0, math.rad(bx * 23 % 360), 0), 0.45, look.bush or rgb(60, 160, 70)) then
+			ball(ext, "Bush", 3.4, L(bx, 1.4, ZF + WT / 2 + 2.2), look.bush or rgb(60, 160, 70))
+		end
 	end
 
 	-- roof: slab, parapet, rooftop units
@@ -695,6 +712,7 @@ end
 -- yard
 ---------------------------------------------------------------------------
 local function tree(parent, L, x, z, s, leaf)
+	if asset(parent, "Oak", L(x, -0.2, z) * CFrame.Angles(0, math.rad((x * 37 + z * 11) % 360), 0), s * 1.15, leaf) then return end
 	part(parent, "Trunk", Vector3.new(1.6, 7, 1.6) * s, L(x, 3.5 * s, z), rgb(120, 80, 50))
 	part(parent, "Leaves", Vector3.new(9, 4.5, 9) * s, L(x, 8 * s, z), leaf or rgb(60, 170, 70))
 	part(parent, "Leaves", Vector3.new(6.5, 3.5, 6.5) * s, L(x, 11 * s, z), (leaf or rgb(60, 170, 70)):Lerp(WHITE, 0.08))
@@ -1364,6 +1382,173 @@ end
 -- build / rebuild a campus
 ---------------------------------------------------------------------------
 -- opts: { tier = index, floors = n, name = string, items = { [itemId] = true } }
+---------------------------------------------------------------------------
+-- growth: the school gets bigger as it climbs the tiers (docs/ROADMAP.md, 7)
+--   extra    grand storeys on top of the working floors (lit lecture halls behind the glass)
+--   gym      a gymnasium wing on the left: a barrel roof, GYMNASIUM over big doors  (High School+)
+--   library  a library wing on the right: tall arched windows                        (Prep School+)
+--   dome     a dome on the library                                                    (University+)
+--   ivy      ivy climbing the walls                                                   (Ivy League)
+---------------------------------------------------------------------------
+local GROWTH = {
+	[4] = { gym = true },
+	[5] = { gym = true, library = true },
+	[6] = { gym = true, library = true, extra = 1 },
+	[7] = { gym = true, library = true, extra = 1 },
+	[8] = { gym = true, library = true, extra = 2, dome = true },
+	[9] = { gym = true, library = true, extra = 2, dome = true, ivy = true },
+	[10] = { gym = true, library = true, extra = 2, dome = true },
+	[11] = { gym = true, library = true, extra = 2 },
+	[12] = { gym = true, library = true, extra = 3, dome = true },
+}
+SchoolBuilder.GROWTH = GROWTH
+
+local function buildUpper(school, L, floors, extra, look)
+	local up = Instance.new("Folder")
+	up.Name = "Upper"
+	up.Parent = school
+	local wall, trim = look.wall, look.cap
+	local glow = look.glow or rgb(255, 232, 186)
+	for s = 1, extra do
+		local ft = floorTop(floors + s)
+		local y0, y1 = ft - 1, ft + 15
+		local sill, top = ft + 3.5, ft + 11
+		part(up, "Slab", Vector3.new(BX * 2, 1, ZF - ZB), L(0, ft - 0.5, (ZF + ZB) / 2), look.floor)
+		wallX(up, L, ZF, -BX, BX, y0, y1, windowsAt({ -30, -18, 0, 18, 30 }, 7, sill, top), wall, trim)
+		wallX(up, L, ZB, -BX, BX, y0, y1, windowsAt({ -24, 24 }, 7, sill, top), wall, trim)
+		wallZ(up, L, -BX, ZB + WT / 2, ZF - WT / 2, y0, y1, windowsAt({ -55, -41, -27, 8 }, 8, sill, top), wall, trim)
+		wallZ(up, L, BX, ZB + WT / 2, ZF - WT / 2, y0, y1, windowsAt({ -55, -41, -27, 8 }, 8, sill, top), wall, trim)
+		-- behind the glass: a warm lit room, so the grand storeys look lived in (and glow at night)
+		for _, x in { -30, -18, 0, 18, 30 } do
+			part(up, "LitRoom", Vector3.new(7.4, 8, 0.2), L(x, (sill + top) / 2, ZF - 2.5), glow, Enum.Material.Neon, { CanCollide = false, CastShadow = false, Transparency = 0.35 })
+		end
+		for _, z in { -55, -41, -27, 8 } do
+			for _, sx in { -1, 1 } do
+				part(up, "LitRoom", Vector3.new(0.2, 8, 8.4), L(sx * (BX - 2.5), (sill + top) / 2, z), glow, Enum.Material.Neon, { CanCollide = false, CastShadow = false, Transparency = 0.35 })
+			end
+		end
+		part(up, "Band", Vector3.new(BX * 2 + 1.2, 0.8, 0.6), L(0, y1 + 0.2, ZF + WT / 2 + 0.3), trim)
+		part(up, "Band", Vector3.new(BX * 2 + 1.2, 0.8, 0.6), L(0, y1 + 0.2, ZB - WT / 2 - 0.3), trim)
+		part(up, "Band", Vector3.new(0.6, 0.8, ZF - ZB + 1.2), L(-BX - WT / 2 - 0.3, y1 + 0.2, (ZF + ZB) / 2), trim)
+		part(up, "Band", Vector3.new(0.6, 0.8, ZF - ZB + 1.2), L(BX + WT / 2 + 0.3, y1 + 0.2, (ZF + ZB) / 2), trim)
+	end
+end
+
+-- a dome on a drum (the library, from University up)
+local function dome(parent, L, x, y, z, w, look)
+	local drumH = 7
+	cyl(parent, "DomeDrum", w * 0.72, drumH, L(x, y + drumH / 2, z) * CFrame.Angles(0, 0, math.rad(90)), look.wall)
+	-- columns round the drum
+	for k = 0, 11 do
+		local a = math.rad(k * 30)
+		local r = w * 0.36 + 0.2
+		cyl(parent, "DrumColumn", 0.8, drumH, L(x + math.cos(a) * r, y + drumH / 2, z + math.sin(a) * r) * CFrame.Angles(0, 0, math.rad(90)), look.column or WHITE)
+	end
+	cyl(parent, "DomeRing", w * 0.8, 1, L(x, y + drumH + 0.3, z) * CFrame.Angles(0, 0, math.rad(90)), look.cap)
+	ball(parent, "Dome", w * 0.7, L(x, y + drumH + 0.5, z), look.roof or rgb(120, 120, 130), Enum.Material.Metal)
+	local top = y + drumH + 0.5 + w * 0.35
+	cyl(parent, "Lantern", 2.4, 4, L(x, top + 1.6, z) * CFrame.Angles(0, 0, math.rad(90)), look.cap)
+	ball(parent, "Finial", 1.6, L(x, top + 4.2, z), look.cap, Enum.Material.Metal)
+end
+
+local function buildWings(school, L, look, g, storeys, name)
+	if not (g.gym or g.library) then return end
+	local wings = Instance.new("Folder")
+	wings.Name = "Wings"
+	wings.Parent = school
+	local wall, trim, roofC = look.wall, look.cap, look.roof or rgb(120, 120, 130)
+	-- a wing stands 5 studs off the main building (so the classrooms keep their side windows),
+	-- joined to it by a covered link between the windows
+	local IN, OUT = BX + 5, 58.5
+	local Z0, Z1 = -60, 6
+	local W, D = OUT - IN, Z1 - Z0
+	local function side(s, x) return s * x end
+	local function link(s, h)
+		part(wings, "Link", Vector3.new(IN - BX, h, 7), L(s * (BX + IN) / 2, h / 2, -14), look.wall)
+		part(wings, "LinkRoof", Vector3.new(IN - BX + 0.8, 0.8, 7.8), L(s * (BX + IN) / 2, h + 0.4, -14), look.cap)
+	end
+	-- the GYMNASIUM (left): two storeys, a barrel roof, big doors, a band of high windows
+	if g.gym then
+		local s, h = -1, F1 + 2 * FLOOR_H - 2
+		local cx = side(s, (IN + OUT) / 2)
+		link(s, 12)
+		part(wings, "GymBody", Vector3.new(W, h, D), L(cx, h / 2, (Z0 + Z1) / 2), wall)
+		part(wings, "GymBase", Vector3.new(W + 0.6, 2, D + 0.6), L(cx, 1, (Z0 + Z1) / 2), look.foundation)
+		cyl(wings, "GymRoof", W + 1.4, D + 1.4, L(cx, h, (Z0 + Z1) / 2) * CFrame.Angles(0, math.rad(90), 0), roofC)
+		part(wings, "GymEave", Vector3.new(W + 1.6, 0.8, D + 1.6), L(cx, h - 0.2, (Z0 + Z1) / 2), trim)
+		-- the high windows: a glass band round the top
+		part(wings, "GymGlass", Vector3.new(W - 2, 4, 0.3), L(cx, h - 4, Z1 + 0.1), rgb(190, 225, 255), Enum.Material.Glass, { Transparency = 0.3 })
+		part(wings, "GymGlass", Vector3.new(0.3, 4, D - 4), L(side(s, OUT) + s * 0.1, h - 4, (Z0 + Z1) / 2), rgb(190, 225, 255), Enum.Material.Glass, { Transparency = 0.3 })
+		for k = 0, 5 do
+			part(wings, "GymMullion", Vector3.new(0.4, 4, 0.5), L(side(s, OUT) + s * 0.15, h - 4, Z0 + 4 + k * (D - 8) / 5), trim)
+		end
+		-- the doors and the sign
+		part(wings, "GymDoors", Vector3.new(8, 9, 0.4), L(cx, F1 + 4.5, Z1 + 0.25), look.door or rgb(60, 60, 70))
+		part(wings, "GymDoorSeam", Vector3.new(0.2, 9, 0.45), L(cx, F1 + 4.5, Z1 + 0.28), trim)
+		part(wings, "GymDoorFrame", Vector3.new(9, 0.8, 0.6), L(cx, F1 + 9.4, Z1 + 0.3), trim)
+		local sign = part(wings, "GymSign", Vector3.new(W - 2, 3, 0.4), L(cx, F1 + 13, Z1 + 0.3), look.sign)
+		surfaceText(sign, Enum.NormalId.Back, "GYMNASIUM", WHITE, look.sign, Enum.Font.LuckiestGuy)
+		part(wings, "GymStep", Vector3.new(10, 0.6, 3), L(cx, 0.5, Z1 + 1.6), look.foundation)
+	end
+	-- the LIBRARY (right): as tall as the school minus a storey, tall arched windows, a dome later
+	if g.library then
+		local s = 1
+		local h = floorTop(math.max(2, storeys - 1)) + 15
+		local cx = side(s, (IN + OUT) / 2)
+		link(s, 12)
+		part(wings, "LibraryBody", Vector3.new(W, h, D), L(cx, h / 2, (Z0 + Z1) / 2), wall)
+		part(wings, "LibraryBase", Vector3.new(W + 0.6, 2, D + 0.6), L(cx, 1, (Z0 + Z1) / 2), look.foundation)
+		part(wings, "LibraryRoof", Vector3.new(W + 1, 1, D + 1), L(cx, h + 0.5, (Z0 + Z1) / 2), roofC)
+		for _, e in { { W + 1.4, 0.8, 0.6, 0, Z1 + 0.3 }, { W + 1.4, 0.8, 0.6, 0, Z0 - 0.3 } } do
+			part(wings, "LibraryParapet", Vector3.new(e[1], 2, e[3]), L(cx, h + 1.5, e[5]), trim)
+		end
+		part(wings, "LibraryParapet", Vector3.new(0.6, 2, D + 1.4), L(side(s, OUT) + 0.3, h + 1.5, (Z0 + Z1) / 2), trim)
+		-- tall windows on the front and the outer side, two storeys high each
+		local wh = math.min(h - 8, 22)
+		local function tallWindow(cf, w)
+			part(wings, "LibGlass", Vector3.new(w, wh, 0.3), cf, rgb(190, 225, 255), Enum.Material.Glass, { Transparency = 0.3 })
+			part(wings, "LibFrame", Vector3.new(w + 1, 0.8, 0.6), cf * CFrame.new(0, wh / 2 + 0.4, 0), trim)
+			part(wings, "LibFrame", Vector3.new(w + 1.6, 0.8, 1), cf * CFrame.new(0, -wh / 2 - 0.4, 0), trim)
+			part(wings, "LibMullion", Vector3.new(0.4, wh, 0.5), cf, trim)
+			-- the round top: a disc in the wall's plane
+			cyl(wings, "LibArch", w, 0.3, cf * CFrame.new(0, wh / 2, 0) * CFrame.Angles(0, math.rad(90), 0), rgb(190, 225, 255), Enum.Material.Glass)
+			cyl(wings, "LibArchRim", w + 1, 0.4, cf * CFrame.new(0, wh / 2, -0.05) * CFrame.Angles(0, math.rad(90), 0), trim)
+		end
+		tallWindow(L(cx, 4 + wh / 2, Z1 + 0.1), 7)
+		for k = 0, 3 do
+			tallWindow(L(side(s, OUT) + 0.1, 4 + wh / 2, Z0 + 9 + k * 15) * CFrame.Angles(0, math.rad(90), 0), 6)
+		end
+		local sign = part(wings, "LibrarySign", Vector3.new(W - 2, 2.6, 0.4), L(cx, 4 + wh + 3, Z1 + 0.3), look.sign)
+		surfaceText(sign, Enum.NormalId.Back, "LIBRARY", WHITE, look.sign, Enum.Font.LuckiestGuy)
+		if g.dome then
+			-- a big dome on a drum, as wide as the wing (it reads from across the street)
+			dome(wings, L, cx, h + 1, (Z0 + Z1) / 2, W * 1.35, look)
+		end
+	end
+	-- ivy up the walls (Ivy League)
+	if g.ivy then
+		local rng = Random.new(9)
+		local IVY = { rgb(60, 130, 60), rgb(76, 150, 70), rgb(50, 110, 55) }
+		local function patch(cf, w, h)
+			part(wings, "Ivy", Vector3.new(w, h, 0.25), cf, IVY[rng:NextInteger(1, 3)], Enum.Material.Grass, { CanCollide = false })
+		end
+		for k = 0, 9 do
+			local x = rng:NextNumber(-BX + 3, BX - 3)
+			local hgt = rng:NextNumber(8, floorTop(storeys) + 10)
+			if math.abs(x) > 10 then
+				patch(L(x, hgt / 2, ZF + WT / 2 + 0.2), rng:NextNumber(3, 6), hgt)
+			end
+		end
+		for _, s in { -1, 1 } do
+			for k = 0, 4 do
+				local hgt = rng:NextNumber(8, 24)
+				patch(L(s * (OUT + 0.2), hgt / 2, rng:NextNumber(Z0 + 4, Z1 - 4)) * CFrame.Angles(0, math.rad(90), 0), rng:NextNumber(4, 8), hgt)
+			end
+		end
+	end
+	_ = name
+end
+
 function SchoolBuilder.build(plot, opts)
 	local old = plot:FindFirstChild("School")
 	if old then old:Destroy() end
@@ -1379,7 +1564,12 @@ function SchoolBuilder.build(plot, opts)
 	for f = 1, opts.floors do
 		buildFloor(school, L, f, opts.floors, look)
 	end
-	local roofY = buildFacade(school, L, opts.floors, look, opts.tier, opts.name or "Empty School")
+	-- grand storeys on top, then the facade and roof over all of them, then the wings
+	local g = GROWTH[opts.tier] or {}
+	local storeys = opts.floors + (g.extra or 0)
+	if (g.extra or 0) > 0 then buildUpper(school, L, opts.floors, g.extra, look) end
+	local roofY = buildFacade(school, L, storeys, look, opts.tier, opts.name or "Empty School")
+	buildWings(school, L, look, g, storeys, opts.name)
 	buildYard(school, L, look)
 	school:SetAttribute("Floors", opts.floors)
 	school:SetAttribute("RoofY", roofY)
