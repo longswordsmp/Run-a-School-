@@ -388,12 +388,87 @@ local function useGear(player, def, tool)
 	end
 end
 
+---------------------------------------------------------------------------
+-- the Hoverboard: equipped, you stand on a glowing board a little off the ground and ride 60% faster
+-- (MoveService reads the Hover attribute); unequipped, you step off. Off inside the secured places.
+---------------------------------------------------------------------------
+local function buildBoard()
+	local m = Instance.new("Model")
+	m.Name = "HoverboardRide"
+	local function bp(name, size, cf, color, material, shape)
+		local b = Instance.new("Part")
+		b.Name = name
+		b.Size = size
+		b.CFrame = cf
+		b.Color = color
+		b.Material = material or Enum.Material.SmoothPlastic
+		b.CanCollide, b.CanQuery, b.CanTouch, b.Massless = false, false, false, true
+		if shape then b.Shape = shape end
+		b.Parent = m
+		return b
+	end
+	local deck = bp("Deck", Vector3.new(1.5, 0.28, 4.4), CFrame.new(), rgb(120, 60, 200))
+	m.PrimaryPart = deck
+	for _, z in { -2.05, 2.05 } do
+		bp("Nose", Vector3.new(1.5, 0.28, 1.5), CFrame.new(0, 0, z) * CFrame.Angles(0, 0, math.rad(90)), rgb(120, 60, 200), nil, Enum.PartType.Cylinder)
+	end
+	bp("Grip", Vector3.new(1.3, 0.05, 3.8), CFrame.new(0, 0.16, 0), rgb(30, 30, 36))
+	bp("Stripe", Vector3.new(0.3, 0.06, 3.6), CFrame.new(0, 0.17, 0), rgb(255, 200, 60))
+	local glow = bp("Glow", Vector3.new(1.2, 0.08, 3.8), CFrame.new(0, -0.18, 0), rgb(120, 230, 255), Enum.Material.Neon)
+	local light = Instance.new("PointLight")
+	light.Color = rgb(120, 230, 255)
+	light.Range = 8
+	light.Brightness = 1.4
+	light.Parent = glow
+	for _, b in m:GetChildren() do
+		if b:IsA("BasePart") and b ~= deck then
+			local w = Instance.new("WeldConstraint")
+			w.Part0, w.Part1 = deck, b
+			w.Parent = b
+		end
+	end
+	return m
+end
+
+local LIFT = 1.3
+local function ride(player, on)
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if not hum or not root then return end
+	local old = char:FindFirstChild("HoverboardRide")
+	if old then old:Destroy() end
+	if on and not player:GetAttribute("Hover") then
+		hum.HipHeight += LIFT
+		local board = buildBoard()
+		-- (under the feet, which are now LIFT off the ground)
+		local feet = root.Size.Y / 2 + hum.HipHeight
+		board:PivotTo(root.CFrame * CFrame.new(0, -feet + 0.2, 0) * CFrame.Angles(0, math.rad(90), 0))
+		local w = Instance.new("WeldConstraint")
+		w.Part0, w.Part1 = root, board.PrimaryPart
+		w.Parent = board.PrimaryPart
+		board.Parent = char
+		player:SetAttribute("Hover", true)
+	elseif not on and player:GetAttribute("Hover") then
+		hum.HipHeight = math.max(0, hum.HipHeight - LIFT)
+		player:SetAttribute("Hover", nil)
+	end
+	require(script.Parent.StealService).setSpeed(player)
+end
+GearService.ride = ride
+
 local function makeTool(player, def, n)
 	local tool = Instance.new("Tool")
 	tool.Name = toolName(def, n or 1)
 	tool.ToolTip = def.desc
 	tool.CanBeDropped = false
 	tool:SetAttribute("GearId", def.id)
+	if def.id == "Hoverboard" then
+		tool.RequiresHandle = false
+		tool.Equipped:Connect(function() ride(player, true) end)
+		tool.Unequipped:Connect(function() ride(player, false) end)
+		return tool
+	end
 	if def.id == "CardboardBox" then
 		tool.RequiresHandle = false
 		tool.Equipped:Connect(function() wearBox(player, true) end)
@@ -447,6 +522,7 @@ Actions.register("gearShop", function(player, p)
 	local gear = gearOf(p)
 	local items = {}
 	for _, def in Config.Gear do
+		if def.notSold then continue end
 		table.insert(items, {
 			id = def.id,
 			price = GearService.price(player, def),
@@ -475,6 +551,7 @@ Actions.register("buyGear", function(player, p, id)
 	local def = Config.GearById[id]
 	if not def then return { ok = false, err = "Unknown gear" } end
 	local gear = gearOf(p)
+	if def.notSold then return { ok = false, err = "Not for sale" } end
 	if def.kind ~= "use" and gear.owned[id] then return { ok = false, err = "You already have it" } end
 	if def.kind == "use" and (gear.uses[id] or 0) >= Config.GearUse.max then return { ok = false, err = "Your pockets are full" } end
 	local price = GearService.price(player, def)
@@ -580,6 +657,31 @@ local function buildStall()
 end
 
 function GearService.start()
+	-- the hoverboard: off inside the Factory and Vex Prep (except on the Vex Prep Job), and a new
+	-- character starts on foot
+	task.spawn(function()
+		while true do
+			task.wait(0.4)
+			for _, player in Players:GetPlayers() do
+				if player:GetAttribute("Hover") then
+					local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+					local pos = root and root.Position
+					local RivalService = require(script.Parent.RivalService)
+					local blocked = pos and pos.Y > -30 and (
+						(pos.X > -33 and pos.X < 33 and pos.Z > 34 and pos.Z < 134) -- (the Factory grounds)
+						or (RivalService.inLot(pos) and not player:GetAttribute("VexPrepHeist")))
+					if blocked then
+						local hum = player.Character:FindFirstChildOfClass("Humanoid")
+						if hum then hum:UnequipTools() end
+						Remotes.Notify:FireClient(player, "No hoverboards in here! You hop off.", "info")
+					end
+				end
+			end
+		end
+	end)
+	Players.PlayerAdded:Connect(function(player)
+		player.CharacterAdded:Connect(function() player:SetAttribute("Hover", nil) end)
+	end)
 	task.spawn(buildStall)
 	local function watch(player)
 		player.CharacterAdded:Connect(function()

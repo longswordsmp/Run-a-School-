@@ -39,7 +39,10 @@ local function energized(player)
 	return (player:GetAttribute("EnergyUntil") or 0) > workspace:GetServerTimeNow()
 end
 
+MoveService.HOVER = 1.6
 function MoveService.mult(player)
+	-- (on the hoverboard: one steady speed, no sprinting or sneaking on top)
+	if player:GetAttribute("Hover") then return MoveService.HOVER end
 	local sneak = SNEAK * (player:GetAttribute("SilentSneakers") and 1.35 or 1)
 	-- (a kid in a cardboard box shuffles)
 	if player:GetAttribute("Boxed") then return sneak end

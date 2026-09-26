@@ -132,7 +132,11 @@ Actions.register("buyUpgrade", function(player, p, id)
 	return { ok = true }
 end)
 
-Actions.register("buyRow", function(player, p, floor)
+-- the next row of desks on a floor (the Upgrades panel, and the prompt on the see-through desks)
+function UpgradeService.buyRow(player, floor)
+	local p = Data.get(player)
+	if not p then return { ok = false } end
+	if p.reviewing then return { ok = false, err = "The Board is meeting" } end
 	floor = tonumber(floor)
 	if not floor or floor ~= math.floor(floor) or floor < 1 or floor > PlotService.floorsOf(p) then return { ok = false, err = "Locked floor" } end
 	local owned = p.rows[floor] or 0
@@ -147,6 +151,10 @@ Actions.register("buyRow", function(player, p, floor)
 	Signals.fire("desks", player, PlotService.deskCount(p))
 	Signals.fire("upgrade", player, "Desks", p.rows[floor])
 	return { ok = true }
+end
+
+Actions.register("buyRow", function(player, _, floor)
+	return UpgradeService.buyRow(player, floor)
 end)
 
 function UpgradeService.start()

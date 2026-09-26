@@ -296,7 +296,7 @@ local function hector()
 			end
 		end
 	end)
-	-- patrol the sidewalk
+	-- patrol the sidewalk (stopping to talk: MissionService sets QuietUntil when you do)
 	task.spawn(function()
 		while m.Parent do
 			for _, x in { 250, -250 } do
@@ -306,6 +306,14 @@ local function hector()
 				local t0 = os.clock()
 				while not done and m.Parent do
 					task.wait(0.5)
+					if (m:GetAttribute("QuietUntil") or 0) > os.clock() then
+						Walkers.stop(m)
+						Factory.play(m, "idle")
+						while m.Parent and (m:GetAttribute("QuietUntil") or 0) > os.clock() do task.wait(0.5) end
+						if not m.Parent then return end
+						Factory.play(m, "walk")
+						Walkers.walk(m, { Vector3.new(x, y, -13) }, 7, function() done = true end)
+					end
 					if os.clock() - t0 > 18 and math.random() < 0.15 then
 						t0 = os.clock()
 						say(npc, LINES.Hector)
@@ -533,6 +541,131 @@ end
 
 StoryService.buildLimo = buildLimo -- (StreetService parks one at the plaza)
 
+---------------------------------------------------------------------------
+-- the First Morning's "LOCK YOUR GATE!": Vex's limo pulls up at your curb with Skater Kid in a cage on
+-- the roof, she says her piece, a van of goons comes for your gate (RaidService.lockDemo), and once
+-- the gate is locked she drives off to her Factory with him ("Free Skater Kid!" is next)
+---------------------------------------------------------------------------
+local tutorialLimos = {} -- [player] = limo
+local function roofCage(limo)
+	local bars = Color3.fromRGB(45, 45, 55)
+	local function bar(size, cf)
+		local x = Instance.new("Part")
+		x.Name = "Cage"
+		x.Size = size
+		x.CFrame = cf
+		x.Color = bars
+		x.Material = Enum.Material.Metal
+		x.Anchored, x.CanCollide = true, false
+		x.Parent = limo
+	end
+	local cx, base = -8, 6.7
+	bar(Vector3.new(3.6, 0.25, 3.6), CFrame.new(cx, base + 0.12, 0))
+	bar(Vector3.new(3.8, 0.25, 3.8), CFrame.new(cx, base + 3.9, 0))
+	for _, a in { -1.65, 1.65 } do
+		for _, b in { -1.65, 1.65 } do
+			bar(Vector3.new(0.22, 3.6, 0.22), CFrame.new(cx + a, base + 2, b))
+		end
+		for _, t in { -0.55, 0.55 } do
+			bar(Vector3.new(0.12, 3.6, 0.12), CFrame.new(cx + a, base + 2, t))
+			bar(Vector3.new(0.12, 3.6, 0.12), CFrame.new(cx + t, base + 2, a))
+		end
+	end
+	return Vector3.new(cx, base + 0.25, 0)
+end
+
+function StoryService.tutorialLimo(player)
+	local PlotService = require(script.Parent.PlotService)
+	local Data = require(script.Parent.DataService)
+	local plot = PlotService.getPlot(player)
+	if not plot or tutorialLimos[player] then return end
+	local limo, vex = buildLimo()
+	limo.Name = "VexLimoTutorial"
+	tutorialLimos[player] = limo
+	local side = plot.Origin.Position.Z < 0 and -1 or 1
+	-- Skater Kid, caged on the roof, facing your school, tagged STOLEN!
+	local floor = roofCage(limo)
+	local kid = Factory.build(Config.StudentById.SkaterKid, "Normal")
+	Factory.setMode(kid, "carried")
+	local kso = Factory.standOffset(kid)
+	kid.PrimaryPart.CFrame = CFrame.lookAt(floor + Vector3.new(0, kso, 0), floor + Vector3.new(0, kso, side * 5))
+	kid.Parent = limo
+	local kidNpc = { model = kid }
+	kidNpc.bubble, kidNpc.text = speech(kid)
+	local npc = { model = vex }
+	npc.bubble, npc.text = speech(vex)
+	local z = side * 19
+	-- (on the far side of the gate from where the goons' van parks)
+	local stopX = (plot.Origin.CFrame * CFrame.new(-26, 0, 0)).Position.X
+	local function at(x) return CFrame.new(x, 0, z) end
+	local function drive(fromX, toX, speed)
+		local dist = math.abs(toX - fromX)
+		local t0, dur = os.clock(), math.max(0.1, dist / speed)
+		while limo.Parent do
+			local a = math.min(1, (os.clock() - t0) / dur)
+			-- (easing in to the stop)
+			local e = 1 - (1 - a) * (1 - a)
+			limo:PivotTo(at(fromX + (toX - fromX) * e))
+			if a >= 1 then break end
+			task.wait()
+		end
+	end
+	local function line(who, text, secs)
+		who.text.Text = text
+		who.bubble.Enabled = true
+		task.delay(secs or 3.5, function() if who.bubble.Parent then who.bubble.Enabled = false end end)
+	end
+	local function atLock()
+		local p = Data.get(player)
+		local st = p and Config.Tutorial[p.tutorial or 1]
+		return st ~= nil and st.id == "lock"
+	end
+	task.spawn(function()
+		limo:PivotTo(at(stopX - 170))
+		limo.Parent = folder
+		Remotes.Sfx:FireClient(player, "BusHorn")
+		drive(stopX - 170, stopX, 45)
+		if not player.Parent or not limo.Parent then limo:Destroy() tutorialLimos[player] = nil return end
+		local vr = vex.PrimaryPart
+		vr.CFrame = CFrame.lookAt(vr.Position, Vector3.new(plot.Entry.Position.X, vr.Position.Y, plot.Entry.Position.Z))
+		Factory.emote(vex, "point")
+		line(npc, "Cute school. I'll take it.")
+		task.wait(1.2)
+		line(kidNpc, "HELP! Principal, HELP!", 4)
+		Factory.emote(kid, "wave")
+		task.wait(1.5)
+		-- her goons, for your gate
+		if atLock() then pcall(require(script.Parent.RaidService).lockDemo, player) end
+		-- she waits for the lock (or a while), then off to the Factory with him
+		local t0 = os.clock()
+		local banged = 0
+		while player.Parent and atLock() and os.clock() - t0 < 120 do
+			task.wait(0.5)
+			banged += 0.5
+			if banged >= 5 then
+				banged = 0
+				Factory.emote(kid, "wave")
+				line(kidNpc, ({ "HELP!", "Let me OUT!", "Principal!!" })[math.random(3)], 2.5)
+			end
+		end
+		if not player.Parent then limo:Destroy() tutorialLimos[player] = nil return end
+		line(npc, "Tick tock, Principal.")
+		Factory.emote(vex, "laugh")
+		task.wait(2.5)
+		-- to the VexCorp Factory (across the middle of the street), then gone
+		drive(stopX, 0, 40)
+		task.wait(0.3)
+		limo:Destroy()
+		tutorialLimos[player] = nil
+	end)
+end
+
+Players.PlayerRemoving:Connect(function(player)
+	local limo = tutorialLimos[player]
+	if limo then limo:Destroy() end
+	tutorialLimos[player] = nil
+end)
+
 function StoryService.start()
 	folder = workspace:FindFirstChild("StoryNPCs") or Instance.new("Folder")
 	folder.Name = "StoryNPCs"
@@ -561,6 +694,11 @@ function StoryService.start()
 	local closet = spotOf("ConfiscationCloset")
 	if closet then run(stan, closet) end
 	run(hector)
+	-- the First Morning's lock step: Vex's limo (and her goons) at your gate
+	local Signals = require(script.Parent.Signals)
+	Signals.on("questStep", function(player, id)
+		if id == "lock" then task.delay(0.5, function() if player.Parent then run(StoryService.tutorialLimo, player) end end) end
+	end)
 	local shack = spotOf("SugarShack")
 	if shack then run(baron, shack) end
 	run(otis)

@@ -120,6 +120,11 @@ function HallService.enroll(player, model)
 		Remotes.Notify:FireClient(player, "That kid is reserved for someone else!", "bad")
 		return
 	end
+	local hold = model:GetAttribute("HoldUntilTier")
+	if hold and (p.tier or 1) < hold then
+		Remotes.Notify:FireClient(player, ("%s joins after the School Board review!"):format(def.name), "info")
+		return
+	end
 	local price = model:GetAttribute("Free") and 0 or def.price
 	if p.cash < price then
 		Remotes.Notify:FireClient(player, "Not enough cash!", "bad")
@@ -127,8 +132,27 @@ function HallService.enroll(player, model)
 		return
 	end
 	local slot = PlotService.freeSlot(player)
+	if not slot and model:GetAttribute("Free") then
+		-- a free kid (a star you picked, a gift, a rescued kid) never bounces off a full school: the
+		-- lowest earner goes home to make room (never a Hall Monitor)
+		local worst, worstInc
+		for s, e in p.students do
+			if not e.arriving and not e.carried and not e.away and e.id ~= "HallMonitor" then
+				local inc = PlotService.incomeOf(player, e, s)
+				if not worst or inc < worstInc then worst, worstInc = s, inc end
+			end
+		end
+		if worst then
+			local gone = Config.StudentById[p.students[worst].id]
+			PlotService.sell(player, plot, worst)
+			Remotes.Notify:FireClient(player, ("Made room: %s went home."):format(gone.name), "info")
+			slot = PlotService.freeSlot(player)
+		end
+	end
 	if not slot then
-		Remotes.Notify:FireClient(player, "Your school is full! Sell a student or add desks.", "bad")
+		local p2 = Data.get(player)
+		local canAdd = player:GetAttribute("UI_Upgrades") or (p2 and p2.unlocked and p2.unlocked.Upgrades)
+		Remotes.Notify:FireClient(player, canAdd and "Your school is full! Sell a student or add desks." or "Your school is full! Hold F on a kid to sell them.", "bad")
 		Remotes.Sfx:FireClient(player, "Error")
 		return
 	end
@@ -151,6 +175,7 @@ function HallService.enroll(player, model)
 	Signals.fire("enroll", player, def, grade, firstTime)
 	if model:GetAttribute("OnBench") then Signals.fire("benchEnroll", player, def) end
 	if model:GetAttribute("Bus") then Signals.fire("busEnroll", player, model:GetAttribute("Bus"), def) end
+	if model:GetAttribute("Pick") then task.spawn(HallService.onPick, player, model) end
 
 	Factory.setMode(model, "walking", Data.hostOf(player).DisplayName)
 	Walkers.stop(model)
@@ -464,7 +489,12 @@ function HallService.welcomeSpots(plot)
 	}
 end
 
-function HallService.welcomeBus(player, ids)
+-- opts.pick: the "Pick ONE star!" bus: the kids are free stars standing apart (every other spot),
+-- the bus waits with its door open, and when you enroll one the others climb back on and it leaves
+-- (HallService.onPick)
+local pickState = {} -- [player] = { bus, kids, park, door }
+function HallService.welcomeBus(player, ids, opts)
+	opts = opts or {}
 	local plot = PlotService.getPlot(player)
 	local spots = HallService.welcomeSpots(plot)
 	if not spots then return nil end
@@ -472,7 +502,7 @@ function HallService.welcomeBus(player, ids)
 	local park = spots.park
 	local startX = math.max(OFFSTAGE.Position.X, park.Position.X - 170)
 	local start = CFrame.new(startX, park.Position.Y, park.Position.Z) * park.Rotation
-	local bus = makeBus("WELCOME BUS", BUSES.Welcome.color)
+	local bus = makeBus(opts.pick and "\u{2605} STAR BUS \u{2605}" or "WELCOME BUS", BUSES.Welcome.color)
 	bus.Name = "WelcomeBus"
 	bus:SetAttribute("For", player.UserId)
 	bus:PivotTo(start)
@@ -486,7 +516,8 @@ function HallService.welcomeBus(player, ids)
 		setDoor(bus, true)
 		local door = doorSpot(bus)
 		local kids = {}
-		welcomeKids[player] = kids
+		welcomeKids[player] = welcomeKids[player] or {}
+		if opts.pick then pickState[player] = { bus = bus, kids = kids, park = park, door = door } end
 		for i, id in ids do
 			local def = Config.StudentById[id]
 			if not def then continue end
@@ -495,13 +526,22 @@ function HallService.welcomeBus(player, ids)
 			model:SetAttribute("ReservedFor", player.UserId)
 			model:SetAttribute("Welcome", true)
 			model:SetAttribute("Bus", "Welcome")
+			if opts.pick then
+				model:SetAttribute("Free", true)
+				model:SetAttribute("Pick", true)
+				local price = model.Head:FindFirstChild("Tag") and model.Head.Tag:FindFirstChild("Price")
+				if price then
+					price.Text = ('FREE \u{2605}  <font color="#6EFF6E">%s/s</font>'):format(Config.formatCash(def.income))
+					price.TextColor3 = Color3.fromRGB(120, 255, 120)
+				end
+			end
 			local so = Factory.standOffset(model)
 			local y = FLOOR_Y + so
 			model.PrimaryPart.CFrame = CFrame.lookAt(Vector3.new(door.X, y, door.Z), Vector3.new(door.X, y, door.Z - 5))
 			model.Parent = hall
 			local prompt = Instance.new("ProximityPrompt")
 			prompt.Name = "EnrollPrompt"
-			prompt.ActionText = "Enroll " .. Config.formatCash(def.price)
+			prompt.ActionText = opts.pick and "Pick me! (free)" or ("Enroll " .. Config.formatCash(def.price))
 			prompt.ObjectText = def.name
 			prompt.HoldDuration = 0
 			prompt.RequiresLineOfSight = false
@@ -511,8 +551,10 @@ function HallService.welcomeBus(player, ids)
 			prompt.Parent = model.PrimaryPart
 			prompt.Triggered:Connect(function(who) HallService.enroll(who, model) end)
 			table.insert(kids, model)
+			table.insert(welcomeKids[player], model)
 			-- out of the door, along the bus to past its front, then to their spot in the row
-			local spot = spots.wait[i]
+			-- (the stars stand apart, on every other spot)
+			local spot = opts.pick and spots.wait[math.min(6, i * 2)] or spots.wait[i]
 			local front = park.Position.X + 27
 			local pts = { Vector3.new(door.X, 0, door.Z - 2.5), Vector3.new(front, 0, door.Z - 2.5), spot }
 			Walkers.walk(model, pts, Config.WalkSpeed, function()
@@ -521,9 +563,14 @@ function HallService.welcomeBus(player, ids)
 				local root = model.PrimaryPart
 				local lookAt = Vector3.new(spots.gate.X, root.Position.Y, spots.gate.Z + spots.side * 20)
 				root.CFrame = CFrame.lookAt(root.Position, lookAt)
-				Factory.emote(model, "wave")
+				Factory.emote(model, opts.pick and "cheer" or "wave")
 			end)
-			task.wait(0.5)
+			task.wait(opts.pick and 0.7 or 0.5)
+		end
+		if opts.pick then
+			-- the bus waits, door open, for the pick (onPick sends it off)
+			Signals.fire("pickArrived", player)
+			return
 		end
 		Signals.fire("welcomeArrived", player)
 		task.wait(1.2)
@@ -547,11 +594,70 @@ function HallService.welcomeBus(player, ids)
 	return spots
 end
 
+-- the star you picked: the other two wave, climb back on, and the bus goes
+function HallService.onPick(player, picked)
+	local st = pickState[player]
+	if not st then return end
+	pickState[player] = nil
+	local p = Data.get(Data.hostOf(player)) or Data.get(player)
+	local others = {}
+	for _, m in st.kids do
+		if m ~= picked and m.Parent and m:GetAttribute("State") == "Hall" then
+			table.insert(others, m:GetAttribute("StudentId"))
+			m:SetAttribute("State", "Leaving")
+			local prompt = m.PrimaryPart and m.PrimaryPart:FindFirstChild("EnrollPrompt")
+			if prompt then prompt:Destroy() end
+			Factory.emote(m, "wave")
+			task.delay(1.2, function()
+				if not m.Parent then return end
+				local so = Factory.standOffset(m)
+				local front = st.park.Position.X + 27
+				Factory.play(m, "walk")
+				Walkers.walk(m, { Vector3.new(front, FLOOR_Y + so, st.door.Z - 2.5), Vector3.new(st.door.X, FLOOR_Y + so, st.door.Z - 2.5) }, Config.WalkSpeed, function()
+					m:Destroy()
+				end, { flat = false })
+			end)
+		end
+	end
+	if p then
+		p.scholarPick = picked:GetAttribute("StudentId")
+		p.scholarOthers = others
+		p.scholarshipUsed = true -- (the random free Scholarship letter: this was it)
+	end
+	local def = Config.StudentById[picked:GetAttribute("StudentId")]
+	if def then
+		Remotes.Announce:FireClient(player, ("RARE! +%s/s"):format(Config.formatCash(def.income)), Config.rarityAccent(def.rarity))
+	end
+	Signals.fire("scholarPick", player, def)
+	task.spawn(function()
+		task.wait(6)
+		local bus = st.bus
+		if not bus.Parent then return end
+		setDoor(bus, false)
+		local away = st.park * CFrame.new(140, 0, 0)
+		task.delay(2.6, function() if bus.Parent then fadeBus(bus, 0, 1, 1.2) end end)
+		drive(bus, st.park, away, 4)
+		bus:Destroy()
+	end)
+end
+
+-- the "Pick ONE star!" step: the bus with the three stars (once; again after a rejoin)
+function HallService.pickBus(player)
+	if pickState[player] then return end
+	local p = Data.get(player)
+	if not p or p.scholarPick then return end
+	for _, b in workspace:GetChildren() do
+		if b.Name == "WelcomeBus" and b:GetAttribute("For") == player.UserId then return end
+	end
+	return HallService.welcomeBus(player, Config.ScholarPicks, { pick = true })
+end
+
 Players.PlayerRemoving:Connect(function(player)
 	for _, m in welcomeKids[player] or {} do
 		if m.Parent and m:GetAttribute("State") == "Hall" then m:Destroy() end
 	end
 	welcomeKids[player] = nil
+	pickState[player] = nil
 	for _, b in workspace:GetChildren() do
 		if b.Name == "WelcomeBus" and b:GetAttribute("For") == player.UserId then b:Destroy() end
 	end
@@ -636,6 +742,14 @@ local function busLoop()
 end
 
 function HallService.start()
+	-- the First Morning's "Pick ONE star!": the star bus
+	Signals.on("questStep", function(player, id)
+		if id == "scholar" then
+			task.delay(0.8, function()
+				if player.Parent then pcall(HallService.pickBus, player) end
+			end)
+		end
+	end)
 	-- the bus stop (the regular bus and the event buses)
 	task.spawn(function()
 		while true do

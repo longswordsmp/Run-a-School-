@@ -61,6 +61,12 @@ local function eject(plot, char)
 end
 
 function GateService.start()
+	-- the First Morning's "LOCK YOUR GATE!": whatever you did before, the button works right now
+	Signals.on("questStep", function(player, id)
+		if id ~= "lock" then return end
+		local plot = PlotService.getPlot(player)
+		if plot and not GateService.isLocked(plot) then plot:SetAttribute("CooldownUntil", 0) end
+	end)
 	for _, plot in plotsFolder:GetChildren() do
 		local btn = plot.LockButton.Button
 		local pp = Instance.new("ProximityPrompt")

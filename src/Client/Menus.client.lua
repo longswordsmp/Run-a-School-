@@ -537,7 +537,7 @@ end
 ---------------------------------------------------------------------------
 local prestigeBtn
 do
-	local panel = UI.panel(gui, { name = "Board", title = "SCHOOL BOARD", color = UI.C.purple, size = UDim2.fromOffset(620, 470) })
+	local panel = UI.panel(gui, { name = "Board", title = "SCHOOL BOARD", color = UI.C.purple, size = UDim2.fromOffset(620, 540) })
 	panels.Board = panel
 	local b = panel.body
 	local now = UI.label(b, { Text = "", TextColor3 = UI.C.navy, Size = UDim2.new(1, 0, 0, 24), ZIndex = 12, stroke = 0 })
@@ -557,8 +557,10 @@ do
 	end
 	local cashReq = req(84)
 	local studentReq = req(156)
-	local reward = UI.label(b, { Text = "", TextColor3 = Color3.fromRGB(40, 150, 70), Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 230), ZIndex = 12, stroke = 0 })
-	local warn = UI.label(b, { Text = "Your cash and students go back to the start (graduate kids first for Diplomas: hold G). Supplies, teachers, builds, upgrades and desks stay.", TextWrapped = true, TextColor3 = Color3.fromRGB(150, 60, 60), Size = UDim2.new(1, -20, 0, 40), Position = UDim2.fromOffset(10, 258), ZIndex = 12, stroke = 0 })
+	-- (a story the Board waits on: Chapter 1's Vex Prep Job before Elementary)
+	local storyReq = req(228)
+	local reward = UI.label(b, { Text = "", TextColor3 = Color3.fromRGB(40, 150, 70), Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 302), ZIndex = 12, stroke = 0 })
+	local warn = UI.label(b, { Text = "Spend on Upgrades first: they stay! Your cash and students go back to the start (graduate kids first for Diplomas: hold G). Supplies, teachers, builds, upgrades and desks stay.", TextWrapped = true, TextColor3 = Color3.fromRGB(150, 60, 60), Size = UDim2.new(1, -20, 0, 48), Position = UDim2.fromOffset(10, 330), ZIndex = 12, stroke = 0 })
 	_ = warn
 	local go = UI.button(b, { text = "REQUEST REVIEW", color = UI.C.purple, size = UDim2.fromOffset(300, 64), position = UDim2.new(0.5, 0, 1, -4), anchor = Vector2.new(0.5, 1), font = UI.BIG })
 	lift(go.button, 12)
@@ -587,8 +589,17 @@ do
 			studentReq.text.Text = "No special student needed"
 			studentReq.fill.Size = UDim2.fromScale(1, 1)
 		end
+		if info.story then
+			storyReq.check.Text = info.story.done and "\u{2705}" or "\u{1F3EB}"
+			storyReq.text.Text = "Finish Chapter 1: " .. info.story.name
+			storyReq.fill.Size = UDim2.fromScale(info.story.done and 1 or 0, 1)
+		else
+			storyReq.check.Text = "\u{2705}"
+			storyReq.text.Text = "No story to finish first"
+			storyReq.fill.Size = UDim2.fromScale(1, 1)
+		end
 		reward.Text = ("Reward: tuition x%s%s"):format(tostring(info.mult), (info.floors and info.floors > 1) and ("  \u{2022}  " .. info.floors .. " floors") or "")
-		go.setEnabled(info.hasCash and info.hasNeeded)
+		go.setEnabled(info.hasCash and info.hasNeeded and (not info.story or info.story.done))
 		prestigeBtn.button.Visible = info.tier == #Config.Tiers
 	end
 	go.button.Activated:Connect(function()

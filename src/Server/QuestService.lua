@@ -1,7 +1,8 @@
 -- ServerScriptService.Server.QuestService
--- The Principal's To-Do: a tutorial chain for the first session (Config.Tutorial), then goals
+-- The Principal's To-Do: the First Morning and Chapter 1 (Config.Tutorial, one list), then goals
 -- in rotation (Config.Goals). The client gets Remotes.Push("quest", state) and draws the card
--- and the guide.
+-- and the guide. "In the tutorial" below means anywhere on that list; the InTutorial player
+-- attribute (which keeps server-wide news and pop quizzes away) covers only the First Morning.
 --
 -- A To-Do step completes from STATE, not only from the moment it happens: every step id can have
 -- a check (DONE below) that reads the save (desks filled, gate locked, pencils owned...), plus a
@@ -31,20 +32,58 @@ end
 QuestService.stepIndex = stepIndex
 
 -- the step is stored by id (so a reordered list resumes on the right step); p.tutorial stays the
--- index, which the unlock rules and other services read
+-- index, which the unlock rules and other services read. Saves from the older lists land on the
+-- nearest new step (the state checks then fast-forward whatever they had already done).
+local MIGRATE = {
+	enroll1 = "welcome", enroll4 = "welcome", fill = "welcome",
+	pencils = "k01_pencils", hire = "k02_teacher", name = "k03_name",
+	rows = "desks", upgrade = "desks", hallmonitor = "k04_hector",
+}
 local function syncIndex(p)
 	if p.tutorialId == "done" then
 		p.tutorial = #Config.Tutorial + 1
 	elseif p.tutorialId then
-		p.tutorial = stepIndex(p.tutorialId) or p.tutorial
+		local i = stepIndex(p.tutorialId) or stepIndex(MIGRATE[p.tutorialId] or "")
+		if not i then
+			-- (an id no list knows: from the start; a finished school is past it anyway)
+			i = (p.tier or 1) >= 2 and #Config.Tutorial + 1 or 1
+		end
+		p.tutorial = i
+		local st = Config.Tutorial[i]
+		p.tutorialId = st and st.id or "done"
 	elseif p.tutorial then
 		local s = Config.Tutorial[p.tutorial]
 		p.tutorialId = s and s.id or "done"
 	end
 end
+QuestService.syncIndex = syncIndex
 
 local function inTutorial(p)
 	return p.tutorial and p.tutorial <= #Config.Tutorial
+end
+-- the First Morning: the first steps, where nothing else is allowed to interrupt
+local function inMorning(p)
+	local last = stepIndex("desks")
+	return p.tutorial ~= nil and last ~= nil and p.tutorial <= last
+end
+QuestService.inMorning = function(player)
+	local p = Data.get(player)
+	return p ~= nil and inMorning(p)
+end
+-- is this player's To-Do on (or past) a step
+function QuestService.atOrPast(player, id)
+	local p = Data.get(player)
+	local i = stepIndex(id)
+	if not p or not i then return false end
+	syncIndex(p)
+	return (p.tutorial or 1) >= i
+end
+function QuestService.pastStep(player, id)
+	local p = Data.get(player)
+	local i = stepIndex(id)
+	if not p or not i then return false end
+	syncIndex(p)
+	return (p.tutorial or 1) > i
 end
 QuestService.inTutorial = function(player)
 	local p = Data.get(player)
@@ -81,55 +120,111 @@ local function plotOf(player)
 	return PlotService.getPlot(Data.hostOf(player))
 end
 
+local function seatedKid(p, id)
+	for _, e in p.students do
+		if e.id == id and not e.arriving then return true end
+	end
+	return false
+end
+local function won(p, id) return p.missions ~= nil and p.missions[id] == true end
+local function yes(v) return v and 1 or 0 end
+
 local DONE = {
+	-- the First Morning
 	welcome = function(_, p) return seated(p) end,
-	enroll1 = function(_, p) return seated(p) end,
-	enroll4 = function(_, p) return seated(p) end,
-	fill = function(_, p) return seated(p) end,
+	scholar = function(_, p) return yes(p.scholarPick ~= nil) end,
 	collect = function(_, p) return did(p, "collect") end,
+	bonk = function(_, p) return did(p, "bonkCrumpet") end,
+	-- (locked right now: the goons are about to walk into it. An old lock that ran out doesn't count,
+	-- but the step clears the cooldown when it starts, so the button always works)
+	-- (and nobody's kid still in a goon's arms: locked too late, you bonk them first)
 	lock = function(player, p)
 		local plot = plotOf(player)
 		local locked = plot and (plot:GetAttribute("LockedUntil") or 0) > workspace:GetServerTimeNow()
-		return (locked or did(p, "lock") > 0) and 1 or 0
+		return yes(locked and require(script.Parent.RaidService).holding(player) == 0)
 	end,
-	bonk = function(_, p) return did(p, "bonkCrumpet") end,
 	rescue = function(_, p) return did(p, "rescued") end,
-	pencils = function(_, p) return (p.supplies and p.supplies.Pencils) and 1 or 0 end,
-	hire = function(_, p) return p.teachers[1] ~= nil and 1 or 0 end,
-	rows = function(_, p) return (p.rows[1] or 0) >= 3 and 1 or 0 end,
-	upgrade = function(_, p) return (p.rows[1] or 0) >= 3 and 1 or 0 end,
-	name = function(_, p) return p.schoolName ~= nil and 1 or 0 end,
-	hallmonitor = function(_, p)
-		for _, e in p.students do
-			if e.id == "HallMonitor" and not e.arriving then return 1 end
-		end
-		return 0
-	end,
-	board = function(_, p) return (p.tier or 1) >= 2 and 1 or 0 end,
+	desks = function(_, p) return yes((p.rows[1] or 0) >= 3) end,
+	-- Chapter 1
+	k01_pencils = function(_, p) return yes(p.supplies and p.supplies.Pencils) end,
+	k02_teacher = function(_, p) return yes(p.teachers[1] ~= nil) end,
+	k03_name = function(_, p) return yes(p.schoolName ~= nil) end,
+	k04_hector = function(_, p) return yes(won(p, "k_hallrun") and seatedKid(p, "HallMonitor")) end,
+	k05_janitor = function(_, p) return yes((p.upgrades and p.upgrades.Janitor or 0) >= 1) end,
+	k06_thief = function(_, p) return yes(won(p, "k_tiara") and seatedKid(p, "DramaQueen")) end,
+	k07_row4 = function(_, p) return yes((p.rows[1] or 0) >= 4) end,
+	k08_crew = function(_, p) return yes(won(p, "k_crew")) end,
+	k09_map = function(_, p) return yes(won(p, "k_map")) end,
+	k10_peek = function(_, p) return yes(p.rivalSeen) end,
+	k11_pothole = function(_, p) return yes(p.sewerScouted) end,
+	k12_heist = function(_, p) return yes(won(p, "k_heist")) end,
+	board = function(_, p) return yes((p.tier or 1) >= 2) end,
 }
 QuestService.Done = DONE
 
 local function rewardOf(player, q, kind)
-	if kind == "tutorial" then return q.reward end
+	if kind == "tutorial" and not q.secs then return q.reward or 0 end
 	local inc = player:GetAttribute("BaseIncome") or 0
 	return math.floor(math.max(q.min or 0, inc * (q.secs or 120)))
 end
+
+-- where the step is within its part ("3 of 7" in the First Morning, "5 of 13" in Chapter 1)
+local function partPos(i)
+	local q = Config.Tutorial[i]
+	if not q then return nil end
+	local n, total = 0, 0
+	for j, s in Config.Tutorial do
+		if s.part == q.part then
+			total += 1
+			if j <= i then n += 1 end
+		end
+	end
+	return n, total
+end
+
+-- a gift from a won mission sits on your bench until you enroll it: the card says so, and the guide
+-- points at the bench
+local GIFT_STEP = { k04_hector = "k_hallrun", k06_thief = "k_tiara" }
 
 function QuestService.state(player)
 	local p = Data.get(player)
 	if not p then return nil end
 	local q, kind = current(p)
+	local n, total
+	if kind == "tutorial" then n, total = partPos(p.tutorial) end
+	local short, text, guide = q.short, q.text, q.guide
+	if q.id == "lock" and kind == "tutorial" then
+		local ok, holding = pcall(function() return require(script.Parent.RaidService).holding(player) end)
+		if ok and holding > 0 then
+			short = "Bonk the goons!"
+			text = "They grabbed kids before the gate was locked: bonk them to get the kids back"
+			guide = "thief"
+		end
+	end
+	local giftMission = GIFT_STEP[q.id]
+	local benchKid
+	if giftMission and won(p, giftMission) then
+		local def = Config.StudentById[Config.Missions[giftMission].give]
+		benchKid = def and def.id
+		short = "Enroll " .. (def and def.name or "your new kid")
+		text = "They're waiting on your bench by the gate (free)"
+		guide = "bench"
+	end
 	return {
 		kind = kind,
 		id = q.id,
-		step = kind == "tutorial" and p.tutorial or nil,
-		steps = #Config.Tutorial,
-		text = q.text,
-		short = q.short,
+		part = q.part,
+		icon = q.icon,
+		step = n,
+		steps = total,
+		text = text,
+		short = short,
 		progress = p.quests.progress or 0,
 		count = q.count,
 		reward = rewardOf(player, q, kind),
-		guide = q.guide,
+		guide = guide,
+		npc = q.guide and q.guide:match("^npc:(%w+)$") or nil,
+		benchKid = benchKid, -- (the "bench" guide points at this kid)
 	}
 end
 
@@ -137,15 +232,16 @@ end
 function QuestService.push(player)
 	local s = QuestService.state(player)
 	if s then Remotes.Push:FireClient(player, "quest", s) end
-	-- (server-wide news and pop quizzes skip whoever is still on the To-Do list: Remotes.announceAll)
+	-- (server-wide news and pop quizzes skip whoever is still in the First Morning: Remotes.announceAll)
 	local p = Data.get(player)
 	for _, pl in Data.schoolPlayers(player) do
-		pl:SetAttribute("InTutorial", (p and inTutorial(p)) or nil)
+		pl:SetAttribute("InTutorial", (p and inMorning(p)) or nil)
 	end
 end
 
 -- the client asks once its quest card is ready; a rejoin mid-tutorial replays the step's moment
 local replayed = {}
+local lockHolding = {} -- [player] = the lock step's goons had kids at the last look
 Actions.register("quest", function(player, p)
 	syncIndex(p)
 	if not replayed[player] and not Data.isMember(player) and p.tutorial and p.tutorial > 1 and Config.Tutorial[p.tutorial] then
@@ -159,6 +255,7 @@ Actions.register("quest", function(player, p)
 end)
 Players.PlayerRemoving:Connect(function(player)
 	replayed[player] = nil
+	lockHolding[player] = nil
 end)
 
 -- onboarding funnel (Creator Hub > Analytics): one event per To-Do step reached
@@ -187,6 +284,10 @@ local function advance(player, p, q, kind)
 					Signals.fire("questStep", host, nextStep.id)
 				end
 			end)
+			-- the last step of the First Morning: its stamp, and Chapter 1 begins
+			if q.part == "morning" and nextStep.part ~= "morning" then
+				task.defer(Signals.fire, "firstMorningDone", host)
+			end
 		end
 	else
 		p.quests.chain = (p.quests.chain or 1) + 1
@@ -256,6 +357,16 @@ function QuestService.start()
 	Signals.on("questStep", function(player)
 		task.defer(QuestService.recheck, player)
 	end)
+	-- the First Morning's stamp (Cutscene "FirstMorning"), with what you did in it
+	Signals.on("firstMorningDone", function(player)
+		local p = Data.get(player)
+		if not p then return end
+		local inc = player:GetAttribute("BaseIncome") or 0
+		local summary = ("%d kids  \u{2022}  %s/s  \u{2022}  1 butler bonked  \u{2022}  1 kid freed"):format(seated(p), Config.formatCash(inc))
+		for _, pl in Data.schoolPlayers(player) do
+			Remotes.Cutscene:FireClient(pl, "FirstMorning", { summary = summary })
+		end
+	end)
 	local function on(name, map)
 		Signals.on(name, function(player, ...)
 			if typeof(player) ~= "Instance" then return end
@@ -285,7 +396,7 @@ function QuestService.start()
 	Signals.on("tutorialBonk", function(player, owner)
 		if owner and Data.hostOf(player) == Data.hostOf(owner) then remember(player, "bonkCrumpet") end
 	end)
-	for _, name in { "sell", "supply", "hire", "upgrade", "review", "nameSchool", "build" } do
+	for _, name in { "sell", "supply", "hire", "upgrade", "review", "nameSchool", "build", "missionWon", "desks", "enroll", "benchEnroll", "scholarPick" } do
 		Signals.on(name, function(player)
 			if typeof(player) == "Instance" then task.defer(QuestService.recheck, player) end
 		end)
@@ -317,9 +428,19 @@ function QuestService.start()
 			for _, player in Players:GetPlayers() do
 				local p = Data.get(player)
 				if p then
-					local on = inTutorial(p) or nil
-					if player:GetAttribute("InTutorial") ~= on then player:SetAttribute("InTutorial", on) end
-					if on and not Data.isMember(player) then pcall(QuestService.recheck, player) end
+					local morning = inMorning(p) or nil
+					if player:GetAttribute("InTutorial") ~= morning then player:SetAttribute("InTutorial", morning) end
+					if inTutorial(p) and not Data.isMember(player) then pcall(QuestService.recheck, player) end
+					-- (the lock step's card turns into "Bonk the goons!" while they hold kids, and back)
+					local st = Config.Tutorial[p.tutorial or 1]
+					if st and st.id == "lock" then
+						local ok, holding = pcall(function() return require(script.Parent.RaidService).holding(player) > 0 end)
+						holding = ok and holding or false
+						if holding ~= lockHolding[player] then
+							lockHolding[player] = holding
+							QuestService.push(player)
+						end
+					end
 				end
 			end
 		end

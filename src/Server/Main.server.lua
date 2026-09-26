@@ -91,6 +91,7 @@ require(Server.HouseService).start()
 HQService.start(TownService.root)
 TownNPCService.start()
 TownQuestService.start_service()
+require(Server.SewerHeist).start_service() -- (Chapter 1: the pothole, the sewer, the Vex Prep Job)
 TownQuestService.targets.hqFloor = function(player, s) return HQService.target(player, s.arg) end
 require(Server.QuestGoons).start(TownQuestService)
 
@@ -270,6 +271,7 @@ require(Server.DebugBridge).start({
 		for i, q in Config.Tutorial do
 			if q.id == id then
 				p.tutorial = i
+				p.tutorialId = q.id -- (the save keeps the id: without it the step snaps back)
 				p.quests.progress = 0
 				require(Server.Signals).fire("questStep", player, id)
 				require(Server.QuestService).push(player)
@@ -388,6 +390,7 @@ require(Server.DebugBridge).start({
 	tutorialDone = function(player)
 		local p = Data.get(player)
 		p.tutorial = #Config.Tutorial + 1
+		p.tutorialId = "done"
 		p.quests.progress = 0
 		require(Server.QuestService).push(player)
 		require(Server.UnlockService).refresh(player)
@@ -571,6 +574,72 @@ require(Server.DebugBridge).start({
 	end,
 	action = function(player, name, ...)
 		return Actions.invoke(player, name, ...)
+	end,
+	-- the First Morning and Chapter 1, one step at a time (what the prompts would do)
+	ch1 = function(player, what, arg)
+		local QuestService = require(Server.QuestService)
+		local p = Data.get(player)
+		if what == "state" then
+			local s = QuestService.state(player)
+			local seated = 0
+			for _ in p.students do seated += 1 end
+			return {
+				id = p.tutorialId, step = s and s.step, steps = s and s.steps, part = s and s.part, short = s and s.short,
+				progress = s and s.progress, count = s and s.count, guide = s and s.guide, reward = s and s.reward,
+				cash = math.floor(p.cash), seated = seated, desks = PlotService.deskCount(p), pick = p.scholarPick,
+				others = p.scholarOthers, missions = p.missions, inTut = player:GetAttribute("InTutorial"),
+				giver = player:GetAttribute("MissionGiver"), ready = player:GetAttribute("MissionReady"),
+				mission = player:GetAttribute("Mission"), raid = player:GetAttribute("Raid"),
+				ui = { Shop = player:GetAttribute("UI_Shop"), Upgrades = player:GetAttribute("UI_Upgrades"), Board = player:GetAttribute("UI_Board"), Name = player:GetAttribute("UI_Name") },
+			}
+		elseif what == "welcome" then
+			local n = 0
+			for _, m in workspace.Hall:GetChildren() do
+				if n < (arg or 6) and m:GetAttribute("ReservedFor") == player.UserId and m:GetAttribute("Welcome") and not m:GetAttribute("Pick") and m:GetAttribute("State") == "Hall" then
+					HallService.enroll(player, m)
+					n += 1
+				end
+			end
+			return n
+		elseif what == "picks" then
+			local out = {}
+			for _, m in workspace.Hall:GetChildren() do
+				if m:GetAttribute("Pick") and m:GetAttribute("State") == "Hall" then table.insert(out, m:GetAttribute("StudentId")) end
+			end
+			return out
+		elseif what == "pick" then
+			for _, m in workspace.Hall:GetChildren() do
+				if m:GetAttribute("Pick") and m:GetAttribute("State") == "Hall" and (not arg or m:GetAttribute("StudentId") == arg) then
+					HallService.enroll(player, m)
+					return m:GetAttribute("StudentId")
+				end
+			end
+			return false
+		elseif what == "collect" then
+			for slot in p.students do PlotService.collect(player, slot) end
+			return true
+		elseif what == "lock" then
+			return require(Server.GateService).lock(player)
+		elseif what == "row" then
+			return require(Server.UpgradeService).buyRow(player, arg or 1)
+		elseif what == "talk" then
+			return require(Server.MissionService).giverTalk(player, arg)
+		elseif what == "start" then
+			return require(Server.MissionService).start(player, arg)
+		elseif what == "sewer" then
+			return require(Server.SewerHeist).debugDo(player, arg)
+		elseif what == "boss" then
+			return require(Server.QuestGoons).debugHitBoss(player)
+		elseif what == "bench" then
+			for _, m in workspace.Hall:GetChildren() do
+				if m:GetAttribute("ReservedFor") == player.UserId and m:GetAttribute("OnBench") and m:GetAttribute("State") == "Hall" and (not arg or m:GetAttribute("StudentId") == arg) then
+					HallService.enroll(player, m)
+					return m:GetAttribute("StudentId")
+				end
+			end
+			return false
+		end
+		return "unknown: " .. tostring(what)
 	end,
 	roundTrip = function(player)
 		local before = Data.get(player)

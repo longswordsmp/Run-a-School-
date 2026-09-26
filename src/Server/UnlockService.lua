@@ -1,10 +1,11 @@
 -- ServerScriptService.Server.UnlockService
 -- The side buttons appear when the player first needs them, not all at once on the first minute:
 --   Home, Settings, Coop, Store, Daily   always
---   Yearbook         once 5 kids have been enrolled
---   Shop             at the tutorial's "buy pencils" step
---   Board            at the tutorial's "impress the Board" step
---   Upgrades, Name   when the tutorial is done
+--   Upgrades         at the First Morning's "Build 4 desks" step
+--   Shop, Board      when Chapter 1 starts (the First Morning is over)
+--   Yearbook         after the First Morning, once 5 kids have been enrolled
+--   Name             at Chapter 1's "Name your school" step
+--   Quests           when Chapter 1 is done
 -- Unlocks are kept in the profile (p.unlocked) so a button never disappears again, mirrored onto
 -- player attributes UI_<Button> for the client, and a fresh unlock is pushed ("unlock") so the
 -- client can pop the button in with a NEW! badge.
@@ -29,19 +30,14 @@ local RULES = {
 	{ name = "Home", ok = function() return true end },
 	{ name = "Settings", ok = function() return true end },
 	{ name = "Coop", ok = function() return true end }, -- (co-op is for the very first minute too)
-	{ name = "Yearbook", ok = function(p) return (p.stats.enrolled or 0) >= 5 end },
-	-- (the Shop as soon as there's tuition to spend: it used to wait for step 7, minutes of cash
-	-- piling up with nothing to buy)
-	{ name = "Shop", ok = function(p) return (p.tutorial or 1) > math.min(stepIndex("collect"), stepIndex("pencils")) end },
-	{ name = "Board", ok = function(p) return (p.tutorial or 1) >= stepIndex("board") end },
-	-- (desk rows once the school is nearly full: before, a Kindergarten was stuck on 8 desks until
+	{ name = "Yearbook", ok = function(p) return (p.stats.enrolled or 0) >= 5 and (p.tutorial or 1) > stepIndex("desks") end },
+	-- (one new button per beat: nothing in the First Morning but what its step needs)
+	{ name = "Shop", ok = function(p) return (p.tutorial or 1) >= stepIndex("k01_pencils") end },
+	{ name = "Board", ok = function(p) return (p.tutorial or 1) >= stepIndex("k01_pencils") end },
+	-- (desk rows from the First Morning's last step: before, a Kindergarten was stuck on 8 desks until
 	-- the first Board review, and to the owner "the upgrades gui is gone")
-	{ name = "Upgrades", ok = function(p)
-		local n = 0
-		for _ in p.students do n += 1 end
-		return n >= 6 or (p.stats.enrolled or 0) >= 8 or (p.tutorial or 1) > #Config.Tutorial
-	end },
-	{ name = "Name", ok = function(p) return (p.tutorial or 1) > #Config.Tutorial end },
+	{ name = "Upgrades", ok = function(p) return (p.tutorial or 1) >= stepIndex("desks") end },
+	{ name = "Name", ok = function(p) return (p.tutorial or 1) >= stepIndex("k03_name") end },
 	-- (the Store and the Daily rewards are always there: the owner wants them from the first minute)
 	{ name = "Daily", ok = function() return true end },
 	{ name = "Store", ok = function() return true end },

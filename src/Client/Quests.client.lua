@@ -30,7 +30,7 @@ local uiRoot, uiScale = UI.autoScale(gui)
 local card = UI.new("Frame", {
 	Name = "Card",
 	Position = UDim2.fromOffset(12, 8),
-	Size = UDim2.fromOffset(360, 112),
+	Size = UDim2.fromOffset(360, 128),
 	BackgroundColor3 = UI.C.cream,
 	Visible = false,
 	Parent = gui,
@@ -41,8 +41,11 @@ local header = UI.new("Frame", { Size = UDim2.new(1, 0, 0, 30), BackgroundColor3
 UI.corner(header, 14)
 local headerGrad = UI.gradient(header, UI.lighten(UI.C.blue, 0.3), UI.C.blue)
 local title = UI.label(header, { Text = "", Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -20, 1, -6), Position = UDim2.fromOffset(10, 3), stroke = 2 })
-local text = UI.label(card, { Text = "", TextColor3 = UI.C.ink, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, Size = UDim2.new(1, -110, 0, 40), Position = UDim2.fromOffset(12, 34), stroke = 0 })
-local barBg = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(70, 70, 80), Size = UDim2.new(1, -110, 0, 18), Position = UDim2.fromOffset(12, 82), Parent = card })
+-- the step in four words or fewer, big, with its icon; the how-to underneath, small
+-- (fixed sizes: an emoji in the line made TextScaled shrink the whole line to a speck)
+local text = UI.label(card, { Text = "", Font = UI.BIG, TextScaled = false, TextSize = 25, TextColor3 = UI.C.ink, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Size = UDim2.new(1, -110, 0, 30), Position = UDim2.fromOffset(12, 34), stroke = 0 })
+local hintL = UI.label(card, { Text = "", TextScaled = false, TextSize = 15, TextColor3 = Color3.fromRGB(95, 95, 110), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, Size = UDim2.new(1, -24, 0, 30), Position = UDim2.fromOffset(12, 65), stroke = 0 })
+local barBg = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(70, 70, 80), Size = UDim2.new(1, -110, 0, 18), Position = UDim2.fromOffset(12, 98), Parent = card })
 UI.corner(barBg, 9)
 local fill = UI.new("Frame", { BackgroundColor3 = UI.C.green, Size = UDim2.fromScale(0, 1), Parent = barBg })
 UI.corner(fill, 9)
@@ -319,6 +322,7 @@ local function missionTarget()
 			end
 			return nil
 		end
+		if def.kind == "sewer" then return nil, "sewer" end
 		if def.item and not player:GetAttribute("Heist") then
 			local fac = workspace:FindFirstChild("VexFactory")
 			return fac and fac:FindFirstChild("VexDesk", true)
@@ -420,16 +424,46 @@ local function worldTarget()
 		end
 		return nil
 	elseif g == "bench" then
+		-- (the kid the step is about, if it names one: a gift among other bench kids)
 		local hall = workspace:FindFirstChild("Hall")
+		local any
 		for _, m in hall and hall:GetChildren() or {} do
-			if Crew.owns(player, m:GetAttribute("ReservedFor")) and m:GetAttribute("OnBench") then return m end
+			if Crew.owns(player, m:GetAttribute("ReservedFor")) and m:GetAttribute("OnBench") then
+				if not state.benchKid or m:GetAttribute("StudentId") == state.benchKid then return m end
+				any = any or m
+			end
 		end
-		return nil
+		return any
 	elseif g == "lock" then
 		local plot = myPlot()
 		return plot and plot:FindFirstChild("LockButton")
-	elseif g == "npc" and state and state.npc then
-		return story(state.npc)
+	elseif g == "pick" then
+		-- the three stars off the Star Bus
+		local hall = workspace:FindFirstChild("Hall")
+		local picks = {}
+		for _, m in hall and hall:GetChildren() or {} do
+			if m:GetAttribute("Pick") and m:GetAttribute("State") == "Hall" and Crew.owns(player, m:GetAttribute("ReservedFor")) then
+				table.insert(picks, m)
+			end
+		end
+		return nearest(picks, root)
+	elseif g == "ghostrow" then
+		-- the next row of see-through desks (they carry the "Build 4 desks" prompt)
+		local plot = myPlot()
+		local school = plot and plot:FindFirstChild("School")
+		local rows = {}
+		for _, d in school and school:GetDescendants() or {} do
+			if d.Name == "BuyRowPrompt" and d.Parent then table.insert(rows, d.Parent) end
+		end
+		return nearest(rows, root)
+	elseif g:match("^npc:") then
+		return story(g:sub(5))
+	elseif g == "place:VexPrepLookout" then
+		return Vector3.new(427, 1, -36)
+	elseif g == "sewer" then
+		-- down the pothole; once down in the tunnels, the ladder under her office
+		if root and root.Position.Y < -30 then return Vector3.new(440, -47, -152) end
+		return Vector3.new(466, 0.8, -7)
 	end
 	return nil
 end
@@ -438,7 +472,7 @@ end
 local function menuTarget()
 	if not state or not state.guide then return nil end
 	local kind, arg = state.guide:match("^(%a+):(%w+)$")
-	if not kind then return nil end
+	if kind ~= "shop" and kind ~= "panel" then return nil end
 	local caption = ({ Shop = "Shop", Upgrades = "Upgrades", Board = "Board", NameSchool = "Name" })[kind == "shop" and "Shop" or arg]
 	local menus = player.PlayerGui:FindFirstChild("Menus")
 	local bar = menus and menus:FindFirstChild("SideBar", true)
@@ -502,6 +536,8 @@ RunService.RenderStepped:Connect(function(dt)
 	local target = gui.Enabled and card.Visible and worldTarget() or nil
 	if typeof(target) == "Instance" and not target.Parent then target = nil end
 	local cam = workspace.CurrentCamera
+	-- (an NPC who already has the bouncing "!" over his head doesn't get the arrow on top of it)
+	local markerNpc = state and state.npc and player:GetAttribute("MissionReady") and player:GetAttribute("MissionGiver") == state.npc
 	if target then
 		local tip = tipAbove(target)
 		local dist = (tip - cam.CFrame.Position).Magnitude
@@ -509,7 +545,9 @@ RunService.RenderStepped:Connect(function(dt)
 		-- bob up and down, turn slowly
 		local bob = (math.sin(t0 * 3.4) + 1) / 2 * 0.9 * scale
 		placeArrow(tip + Vector3.new(0, bob, 0), scale, t0 * 1.7)
-		if arrow.Parent ~= guideFolder then arrow.Parent = guideFolder end
+		local wantArrow = not markerNpc
+		if wantArrow and arrow.Parent ~= guideFolder then arrow.Parent = guideFolder
+		elseif not wantArrow and arrow.Parent then arrow.Parent = nil end
 		if target ~= lastTarget or os.clock() - lastSee > 0.25 then
 			lastTarget, lastSee = target, os.clock()
 			isHidden = hidden(target, tip)
@@ -590,13 +628,20 @@ local function show(s)
 	state = s
 	card.Visible = true
 	if s.kind == "tutorial" then
-		title.Text = ("\u{1F4CB} PRINCIPAL'S TO-DO  %d/%d"):format(s.step, s.steps)
-		headerGrad.Color = ColorSequence.new(UI.lighten(UI.C.blue, 0.3), UI.C.blue)
+		local part = Config.TutorialParts[s.part or ""] or { title = "PRINCIPAL'S TO-DO", color = UI.C.blue }
+		title.Text = ("%s  %d/%d"):format(part.title, s.step or 1, s.steps or 1)
+		headerGrad.Color = ColorSequence.new(UI.lighten(part.color, 0.3), part.color)
 	else
 		title.Text = "\u{1F3AF} GOAL"
 		headerGrad.Color = ColorSequence.new(UI.lighten(UI.C.purple, 0.3), UI.C.purple)
 	end
-	text.Text = s.text
+	if s.short then
+		text.Text = ((s.icon and (s.icon .. " ")) or "") .. s.short
+		hintL.Text = s.text or ""
+	else
+		text.Text = s.text
+		hintL.Text = ""
+	end
 	local p = math.clamp(s.progress / s.count, 0, 1)
 	TweenService:Create(fill, TweenInfo.new(0.3), { Size = UDim2.fromScale(p, 1) }):Play()
 	count.Text = ("%d / %d"):format(math.min(s.progress, s.count), s.count)

@@ -169,12 +169,13 @@ for _, g in Config.Grades do Config.GradeById[g.id] = g end
 ---------------------------------------------------------------------------
 -- School Board tiers (rebirths). Index 1 is where everyone starts.
 -- cash: what the Board wants to see; needs: a student id that must sit at one of your desks
--- ("Secret" = any Secret). mult: permanent tuition multiplier. floors: floors of desks.
+-- ("Secret" = any Secret); story: a mission that must be won first (Chapter 1's finale, the Vex Prep
+-- Job, for Elementary). mult: permanent tuition multiplier. floors: floors of desks.
 -- tools/econ_sim.py reads these lines; keep one tier per line.
 ---------------------------------------------------------------------------
 Config.Tiers = {
 	{ name = "Kindergarten", cash = 0, needs = nil, mult = 1, floors = 1, lock = 60 },
-	{ name = "Elementary School", cash = 680e3, needs = "HallMonitor", mult = 1.5, floors = 1, lock = 70 },
+	{ name = "Elementary School", cash = 5e6, needs = "HallMonitor", story = "k_heist", mult = 1.5, floors = 1, lock = 70 },
 	{ name = "Middle School", cash = 67e6, needs = "BandGeek", mult = 2, floors = 2, lock = 75 },
 	{ name = "High School", cash = 1.8e9, needs = "Quarterback", mult = 3, floors = 2, lock = 80 },
 	{ name = "Prep School", cash = 100e9, needs = "Valedictorian", mult = 4.5, floors = 3, lock = 85 },
@@ -407,21 +408,52 @@ for i, b in Config.Builds do
 end
 
 ---------------------------------------------------------------------------
--- The first session: nine steps, action from minute two. Scripted moments start on questStep:
--- bonk -> Crumpet raids your school (RaidService.tutorialRaid), rescue -> Skater Kid is waiting
--- in a VexCorp Factory pen and the guards go easy on you (FactoryService).
+-- The To-Do list: the FIRST MORNING (7 steps, the first five minutes) and then CHAPTER 1, "Down the
+-- Pothole" (13 steps, Kindergarten, up to the first Board review). One list; the save keeps the
+-- step's id (QuestService), so the list can change without breaking saves.
+--   part     which header the card shows ("morning": FIRST MORNING n/7, "ch1": CHAPTER 1 n/13)
+--   short    the card's words (four or fewer); text: the hint underneath
+--   secs/min the reward: max(min, tuition per second x secs); reward: a flat amount instead
+--   guide    what the arrow and the trail point at (Quests.client)
+--   mission  a Config.Missions id the step plays (MissionService hands it out through its giver)
+-- Every step completes from state (QuestService.Done): doing a thing early still counts.
+-- Scripted moments start on questStep: scholar -> the Welcome Bus comes back with three stars
+-- (HallService), bonk -> Crumpet (RaidService.tutorialRaid), lock -> Vex's limo and a van of goons
+-- who bounce off the lasers (StoryService, RaidService), rescue -> Skater Kid in a Factory pen with
+-- the guards going easy (FactoryService).
 ---------------------------------------------------------------------------
 Config.Tutorial = {
-	{ id = "enroll1", text = "Enroll a kid off the Welcome Bus (walk up and press E)", signal = "enroll", count = 1, reward = 40, guide = "carpet" },
-	{ id = "collect", text = "Walk over the glowing pad to collect tuition", signal = "collect", count = 1, reward = 60, guide = "pad" },
-	{ id = "enroll4", text = "Fill 4 desks", signal = "enroll", count = 4, reward = 80, guide = "carpet" },
-	{ id = "bonk", text = "Crumpet grabbed a kid! Chase him and click to bonk him with your Ruler", signal = "bonkSave", count = 1, reward = 150, guide = "thief" },
-	{ id = "lock", text = "Vex will send more goons. Lock your gate (the red button) to keep them out", signal = "lock", count = 1, reward = 200, guide = "lock" },
-	{ id = "rescue", text = "Vex snatched Skater Kid on your first morning! Sneak into the VexCorp Factory and bring him home", signal = "rescued", count = 1, reward = 300, guide = "factory" },
-	{ id = "pencils", text = "Buy Sharpened Pencils in the Shop (smarter kids earn more)", signal = "supply", count = 1, reward = 120, guide = "shop:1" },
-	{ id = "hire", text = "Hire a teacher for Floor 1", signal = "hire", count = 1, reward = 250, guide = "shop:2" },
-	{ id = "board", text = "Impress the School Board: become an Elementary School", signal = "review", count = 1, reward = 0, guide = "panel:Board" },
+	-- THE FIRST MORNING
+	{ id = "welcome", part = "morning", icon = "\u{1F68C}", short = "Grab the kids!", text = "Walk up to the kids by your gate and press E", count = 6, reward = 50, guide = "carpet" },
+	{ id = "scholar", part = "morning", icon = "\u{2B50}", short = "Pick ONE star!", text = "Three star students want your school. Press E on one: it's free!", count = 1, reward = 0, guide = "pick" },
+	{ id = "collect", part = "morning", icon = "\u{1F4B5}", short = "Scoop the cash!", text = "Walk over the glowing pads by the desks", count = 1, secs = 30, min = 60, guide = "pad" },
+	{ id = "bonk", part = "morning", icon = "\u{1F3A9}", short = "Bonk Crumpet!", text = "Catch the butler and click to swing your Ruler", count = 1, secs = 20, min = 150, guide = "thief" },
+	{ id = "lock", part = "morning", icon = "\u{1F512}", short = "LOCK YOUR GATE!", text = "Goons are coming! Press E on the red button by your gate", count = 1, secs = 20, min = 200, guide = "lock" },
+	{ id = "rescue", part = "morning", icon = "\u{1F6F9}", short = "Free Skater Kid!", text = "Vex has him in her Factory. Sneak in and carry him out", count = 1, secs = 30, min = 300, guide = "factory" },
+	{ id = "desks", part = "morning", icon = "\u{1FA91}", short = "Build 4 desks!", text = "Press E on the see-through desks in your classroom ($5,000)", count = 1, secs = 30, min = 250, guide = "ghostrow" },
+	-- CHAPTER 1: DOWN THE POTHOLE
+	{ id = "k01_pencils", part = "ch1", icon = "\u{270F}\u{FE0F}", short = "Buy Pencils", text = "Shop > Supplies: sharp pencils make smarter kids", count = 1, secs = 60, min = 500, guide = "shop:1" },
+	{ id = "k02_teacher", part = "ch1", icon = "\u{1F469}\u{200D}\u{1F3EB}", short = "Hire a teacher", text = "Shop > Teachers: Substitute Steve works cheap", count = 1, secs = 60, min = 500, guide = "shop:2" },
+	{ id = "k03_name", part = "ch1", icon = "\u{1F3EB}", short = "Name your school", text = "Give your school a name for the sign over the gate", count = 1, secs = 60, min = 1000, guide = "panel:NameSchool" },
+	{ id = "k04_hector", part = "ch1", icon = "\u{1F397}\u{FE0F}", short = "Help Hector", text = "Talk to Hall Monitor Hector on the sidewalk", count = 1, secs = 90, min = 2000, guide = "npc:Hector", mission = "k_hallrun" },
+	{ id = "k05_janitor", part = "ch1", icon = "\u{1F9F9}", short = "Janitor's Cart", text = "Upgrades > Janitor's Cart: it collects tuition for you", count = 1, secs = 90, min = 3000, guide = "panel:Upgrades" },
+	{ id = "k06_thief", part = "ch1", icon = "\u{1F451}", short = "Stop, thief!", text = "Mr. Wobblesworth at the fountain needs you", count = 1, secs = 90, min = 5000, guide = "npc:Wobblesworth", mission = "k_tiara" },
+	{ id = "k07_row4", part = "ch1", icon = "\u{1FA91}", short = "Fill 16 desks", text = "Build the last row of desks in your classroom", count = 1, secs = 120, min = 10000, guide = "ghostrow" },
+	{ id = "k08_crew", part = "ch1", icon = "\u{1F690}", short = "Crumpet's Crew", text = "Mr. Wobblesworth has news about Vex's goons", count = 1, secs = 120, min = 10000, guide = "npc:Wobblesworth", mission = "k_crew" },
+	{ id = "k09_map", part = "ch1", icon = "\u{1F5FA}\u{FE0F}", short = "Steal the map", text = "Janitor Stan by the Confiscation Closet has a job", count = 1, secs = 120, min = 10000, guide = "npc:JanitorStan", mission = "k_map" },
+	{ id = "k10_peek", part = "ch1", icon = "\u{1F440}", short = "Scout Vex Prep", text = "Walk up to the Vex Prep gate at the east end of the street", count = 1, secs = 60, min = 10000, guide = "place:VexPrepLookout" },
+	{ id = "k11_pothole", part = "ch1", icon = "\u{1F573}\u{FE0F}", short = "Down the pothole", text = "Climb down the pothole by Vex Prep and find the ladder under her office", count = 1, secs = 120, min = 15000, guide = "sewer" },
+	{ id = "k12_heist", part = "ch1", icon = "\u{1F3EB}", short = "The Vex Prep Job", text = "Mr. Wobblesworth has the plan. Tonight's the night", count = 1, secs = 180, min = 25000, guide = "npc:Wobblesworth", mission = "k_heist" },
+	{ id = "board", part = "ch1", icon = "\u{2B50}", short = "Face the Board", text = "Become an Elementary School", count = 1, reward = 0, guide = "panel:Board" },
 }
+-- the header each part shows on the To-Do card
+Config.TutorialParts = {
+	morning = { title = "FIRST MORNING", color = rgb(70, 150, 255) },
+	ch1 = { title = "CHAPTER 1: DOWN THE POTHOLE", color = rgb(255, 140, 40) },
+}
+-- the three stars the Welcome Bus brings back at "Pick ONE star!" (the two you pass on turn up again
+-- at Vex Prep, in the Chapter 1 finale)
+Config.ScholarPicks = { "Mathlete", "BandGeek", "CheerCaptain" }
 -- after the tutorial: goals in rotation; reward = max(min, tuition per second x secs)
 Config.Goals = {
 	{ text = "Enroll 10 kids", signal = "enroll", count = 10, secs = 150, min = 500 },
@@ -543,6 +575,45 @@ Config.Chapters = {
 --   heist:  a story kid (kid) or Vex's blueprints (item) sit in the VexCorp Factory; get them out
 -- lines: { speaker, portrait template id, text }
 Config.Missions = {
+	-- CHAPTER 1 (Kindergarten, the To-Do list). giver: who hands it out (default Mr. Wobblesworth);
+	-- give: a student id delivered free to your Waiting Bench when you win
+	k_hallrun = { title = "Hector's Hall Pass", kind = "chase", runner = "hallrunner", hp = 3, route = "hector_run", giver = "Hector",
+		give = "HallMonitor", giveNote = "FREE! Hector's trainee",
+		lines = {
+			{ "HALL MONITOR HECTOR", "Hector", "A school with NO hall monitor? That's CHAOS!" },
+			{ "HALL MONITOR HECTOR", "Hector", "That kid is RUNNING. Tag him with your ruler. Three times!" },
+		},
+		objective = "Tag the runner 3 times",
+		win = "You've got a monitor's eye. Take my best trainee." },
+	k_tiara = { title = "Stop, Thief!", kind = "chase", runner = "crumpet", hp = 3, route = "hub_to_bus",
+		give = "DramaQueen", giveNote = "FREE! She's transferring",
+		lines = {
+			{ "MR. WOBBLESWORTH", "Wobblesworth", "The Drama Queen came to audition for YOUR school..." },
+			{ "MR. WOBBLESWORTH", "Wobblesworth", "...and Crumpet stole her tiara! Bonk him three times before he reaches the bus stop!" },
+		},
+		objective = "Bonk Crumpet 3 times before the bus stop",
+		win = "A principal who BONKS for me? I'm transferring!", winSpeaker = { "DRAMA QUEEN", "DramaQueen" } },
+	k_crew = { title = "Crumpet's Crew", kind = "defend", goons = 3, hp = 1,
+		lines = {
+			{ "MR. WOBBLESWORTH", "Wobblesworth", "Principal! Vex has hired a whole crew of goons, and they're on their way to your school!" },
+			{ "MR. WOBBLESWORTH", "Wobblesworth", "Get back there and knock out all three. Don't let a single one get away with a child!" },
+		},
+		objective = "Knock out all 3 goons at your school",
+		win = "Three goons down! Back in MY day we had ONE goon, and we SHARED him!" },
+	k_map = { title = "The Old Sewer Map", kind = "heist", item = "SewerMap", itemName = "Old Sewer Map", giver = "JanitorStan",
+		lines = {
+			{ "JANITOR STAN", "Stan", "Rats in my closet. From that pothole by Vex Prep." },
+			{ "JANITOR STAN", "Stan", "There's an old sewer down there. Vex has the only map, on her desk in the Factory. Get it." },
+		},
+		objective = "Steal the Old Sewer Map from Vex's desk and get out of the Factory",
+		win = "Heh. The tunnel runs right under her office." },
+	k_heist = { title = "The Vex Prep Job", kind = "sewer",
+		lines = {
+			{ "MR. WOBBLESWORTH", "Wobblesworth", "Tonight's the night, Principal. Down the pothole, up into Vex Prep." },
+			{ "MR. WOBBLESWORTH", "Wobblesworth", "Bring back one of her students. Don't let a single monitor see you!" },
+		},
+		objective = "Get into Vex Prep through the sewer and steal a student unseen",
+		win = "PRINCIPAAAAL!", winSpeaker = { "DR. VERONICA VEX", "Vex" } },
 	crumpets_crew = { title = "Crumpet's Crew", kind = "defend", goons = 3, hp = 1,
 		lines = {
 			{ "MR. WOBBLESWORTH", "Wobblesworth", "Principal! Vex has hired a whole crew of goons, and they're on their way to your school!" },
@@ -623,6 +694,8 @@ Config.Missions = {
 }
 -- the chase routes (world waypoints, ground level)
 Config.ChaseRoutes = {
+	-- Hector's runner: down the north sidewalk, past the Hub, towards the east end
+	hector_run = { Vector3.new(-200, 0, -13), Vector3.new(-120, 0, -13), Vector3.new(-40, 0, -13), Vector3.new(40, 0, -13), Vector3.new(130, 0, -13) },
 	factory_to_shack = { Vector3.new(0, 0, 30), Vector3.new(20, 0, 24), Vector3.new(80, 0, 22), Vector3.new(140, 0, 22), Vector3.new(190, 0, 26), Vector3.new(190, 0, 52) },
 	hub_to_bus = { Vector3.new(-14, 0, -64), Vector3.new(-14, 0, -40), Vector3.new(-40, 0, -17), Vector3.new(-100, 0, -17), Vector3.new(-170, 0, -17), Vector3.new(-240, 0, -17), Vector3.new(-318, 0, -17) },
 	shack_to_hub = { Vector3.new(190, 0, 60), Vector3.new(190, 0, 26), Vector3.new(150, 0, 17), Vector3.new(100, 0, -17), Vector3.new(40, 0, -17), Vector3.new(0, 0, -44), Vector3.new(-40, 0, -17), Vector3.new(-110, 0, 17), Vector3.new(-160, 0, 17), Vector3.new(-176, 0, 40) },
@@ -630,6 +703,8 @@ Config.ChaseRoutes = {
 -- speed vs your 16: you close 2-3 studs a second, so keep swinging and you catch him; each hit makes him
 -- dash away for dashTime seconds (and he can't be hit again for 1.6 s)
 Config.ChaseRunners = {
+	-- (student: the runner is that kid, built as a student)
+	hallrunner = { student = "ClassClown", name = "Class Clown", speed = 12, dash = 17, dashTime = 0.8 },
 	courier = { id = "VexGoon", name = "Candy Courier", title = "VexCorp", mult = 1, outfit = "goon", speed = 13, dash = 19, dashTime = 0.8 },
 	crumpet = { id = "Crumpet", name = "Crumpet", title = "Butler", mult = 1, outfit = "butler", speed = 13.5, dash = 19.5, dashTime = 0.8 },
 	baron = { id = "Baron", name = "The Sugar Baron", title = "???", mult = 1, outfit = "baron", speed = 14, dash = 20, dashTime = 0.9 },
@@ -832,6 +907,9 @@ Config.Gear = {
 		desc = "50% more stamina, and it comes back faster" },
 	{ id = "LockpickSet", name = "Lockpick Set", icon = "\u{1F511}", kind = "perk", secs = 600, floor = 800,
 		desc = "Grab kids out of pens and desks twice as fast" },
+	-- (won, never sold: Headmaster Grindle drops it in Chapter 1's finale)
+	{ id = "Hoverboard", name = "Hoverboard", icon = "\u{1F6F9}", kind = "ride", secs = 0, floor = 0, notSold = true,
+		desc = "Equip it to ride: 60% faster, and silent. (Not inside the Factory, the Lab or Vex Prep.)" },
 }
 Config.GearById = {}
 for i, g in Config.Gear do

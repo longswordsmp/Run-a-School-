@@ -458,7 +458,7 @@ end
 ---------------------------------------------------------------------------
 -- Rival: the first look at Vex Prep Academy (one campus for the whole server, across the street)
 ---------------------------------------------------------------------------
-local function rival()
+local function rival(data)
 	if busy then return end
 	busy = true
 	pcall(function() player:RequestStreamAroundAsync(Vector3.new(427, 5, -100), 4) end)
@@ -492,10 +492,22 @@ local function rival()
 	camera.CFrame = CFrame.lookAt(Vector3.new(446, 8, -28), Vector3.new(427, 9, -60))
 	move = TweenService:Create(camera, TweenInfo.new(8, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(Vector3.new(438, 7, -34), Vector3.new(427, 9, -60)) })
 	move:Play()
-	sayLine("MR. WOBBLESWORTH", "Wobblesworth", "Psst! Sneak in, grab a kid, carry them out through the gate. Every kid you take, Vex sends smarter ones... and angrier goons.")
-	local c3 = caption("ONE VEX PREP. EVERY SCHOOL ON THE STREET WANTS ITS KIDS.", Color3.fromRGB(255, 200, 140), 0.2, 40)
-	task.wait(2.6)
-	c3:Destroy()
+	if data and data.chapter1 then
+		-- Chapter 1: the front door is no good; Stan's map says there's a way in from below
+		sayLine("MR. WOBBLESWORTH", "Wobblesworth", "The front door is guarded day and night. But Stan's map says there's a way in... from BELOW.")
+		move:Cancel()
+		camera.CFrame = CFrame.lookAt(Vector3.new(452, 9, 14), Vector3.new(466, 0.5, -7))
+		move = TweenService:Create(camera, TweenInfo.new(5, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(Vector3.new(459, 4.5, 4), Vector3.new(466, 0.3, -7)) })
+		move:Play()
+		local c3 = caption("THE POTHOLE", Color3.fromRGB(255, 200, 140), 0.2, 56)
+		task.wait(2.6)
+		c3:Destroy()
+	else
+		sayLine("MR. WOBBLESWORTH", "Wobblesworth", "Psst! Sneak in, grab a kid, carry them out through the gate. Every kid you take, Vex sends smarter ones... and angrier goons.")
+		local c3 = caption("ONE VEX PREP. EVERY SCHOOL ON THE STREET WANTS ITS KIDS.", Color3.fromRGB(255, 200, 140), 0.2, 40)
+		task.wait(2.6)
+		c3:Destroy()
+	end
 	fade(0, 0.35)
 	move:Cancel()
 	camera.CameraType = prevType == Enum.CameraType.Scriptable and Enum.CameraType.Custom or prevType
@@ -925,6 +937,84 @@ local function prestige(data)
 	busy = false
 end
 
+---------------------------------------------------------------------------
+-- the First Morning is done: a stamp and what you did, then Chapter 1 opens on the pothole by Vex Prep
+---------------------------------------------------------------------------
+local function firstMorning(data)
+	if busy then return end
+	busy = true
+	sfx("Cheer")
+	local stamp = caption("\u{2714} FIRST MORNING DONE!", Color3.fromRGB(120, 255, 140), 0.3, 72)
+	local sub = caption(data and data.summary or "", Color3.new(1, 1, 1), 0.42, 30)
+	task.wait(2.8)
+	stamp:Destroy()
+	sub:Destroy()
+	pcall(function() player:RequestStreamAroundAsync(Vector3.new(466, 2, -7), 3) end)
+	fade(0, 0.35)
+	hideHud(true)
+	letterbox(true)
+	local prevType = camera.CameraType
+	camera.CameraType = Enum.CameraType.Scriptable
+	camera.CFrame = CFrame.lookAt(Vector3.new(440, 16, 26), Vector3.new(466, 0.5, -7))
+	fade(1, 0.45)
+	local move = TweenService:Create(camera, TweenInfo.new(6, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(Vector3.new(458, 5, 5), Vector3.new(466, 0.3, -7)) })
+	move:Play()
+	local c = caption("CHAPTER 1: DOWN THE POTHOLE", Color3.fromRGB(255, 170, 70), 0.2, 64)
+	sayLine("MR. WOBBLESWORTH", "Wobblesworth", "Splendid first morning, Principal! She'll be back, you know. So we grow BIGGER.")
+	c:Destroy()
+	fade(0, 0.35)
+	move:Cancel()
+	camera.CameraType = prevType == Enum.CameraType.Scriptable and Enum.CameraType.Custom or prevType
+	letterbox(false)
+	hideHud(false)
+	task.wait(0.2)
+	fade(1, 0.5)
+	busy = false
+end
+
+---------------------------------------------------------------------------
+-- the Vex Prep Job is done: Vex finds the empty desk
+---------------------------------------------------------------------------
+local function vexPA(data)
+	if busy then return end
+	busy = true
+	pcall(function() player:RequestStreamAroundAsync(Vector3.new(397, 5, -130), 3) end)
+	fade(0, 0.35)
+	hideHud(true)
+	letterbox(true)
+	local prevType = camera.CameraType
+	camera.CameraType = Enum.CameraType.Scriptable
+	local desk = Vector3.new(397, 3, -130)
+	camera.CFrame = CFrame.lookAt(Vector3.new(412, 12, -112), desk)
+	fade(1, 0.4)
+	local c1 = caption("MEANWHILE, AT VEX PREP...", Color3.new(1, 1, 1), 0.2, 44)
+	task.wait(1.6)
+	c1:Destroy()
+	sfx("GavelBig")
+	-- the shout: the camera shakes
+	local shake = true
+	task.spawn(function()
+		local base = camera.CFrame
+		local t0 = os.clock()
+		while shake and os.clock() - t0 < 2.5 do
+			camera.CFrame = base * CFrame.new((math.random() - 0.5) * 0.6, (math.random() - 0.5) * 0.6, 0)
+			task.wait()
+		end
+		camera.CFrame = base
+	end)
+	local c2 = caption("PRINCIPAAAAL!", Color3.fromRGB(205, 150, 255), 0.35, 96)
+	sayLine("DR. VERONICA VEX", "Vex", ("Where is %s?! Who took my student?! PRINCIPAAAAL!"):format(data and data.name or "my student"))
+	shake = false
+	c2:Destroy()
+	fade(0, 0.35)
+	camera.CameraType = prevType == Enum.CameraType.Scriptable and Enum.CameraType.Custom or prevType
+	letterbox(false)
+	hideHud(false)
+	task.wait(0.2)
+	fade(1, 0.5)
+	busy = false
+end
+
 Remotes:WaitForChild("Cutscene").OnClientEvent:Connect(function(name, data, extra)
 	if name == "Play" then
 		-- ("Play", sceneId, extras)
@@ -943,5 +1033,9 @@ Remotes:WaitForChild("Cutscene").OnClientEvent:Connect(function(name, data, extr
 		task.spawn(safely, board, data)
 	elseif name == "Intro" then
 		task.spawn(safely, intro, data)
+	elseif name == "FirstMorning" then
+		task.spawn(safely, firstMorning, data)
+	elseif name == "VexPA" then
+		task.spawn(safely, vexPA, data)
 	end
 end)

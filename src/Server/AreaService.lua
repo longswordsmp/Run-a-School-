@@ -48,6 +48,8 @@ end
 function AreaService.isOpen(player, id)
 	local area = Config.AreaById[id]
 	if not area then return true end
+	-- (Chapter 1's Vex Prep Job: in through the office floor, SewerHeist sets this)
+	if id == "VexPrep" and player:GetAttribute("VexPrepHeist") then return true end
 	local own = Data.own(player)
 	if own and own.areas and own.areas[id] then return true end
 	return earned(player, area)

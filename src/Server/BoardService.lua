@@ -19,6 +19,7 @@ function BoardService.next(p)
 	if nxt then
 		return {
 			name = nxt.name, cash = nxt.cash, needs = nxt.needs, mult = nxt.mult, floors = nxt.floors, lock = nxt.lock,
+			story = nxt.story,
 		}
 	end
 	local last = Config.Tiers[#Config.Tiers]
@@ -32,6 +33,11 @@ function BoardService.next(p)
 		lock = last.lock,
 		star = star,
 	}
+end
+
+-- a story mission the Board waits on (Chapter 1's finale for Elementary)
+local function storyDone(p, story)
+	return not story or (p.missions ~= nil and p.missions[story] == true)
 end
 
 local function hasNeeded(p, needs)
@@ -64,6 +70,7 @@ Actions.register("boardInfo", function(player, p)
 		mult = n.star and (PlotService.tierOf(p).mult * (1 + Config.PrestigeStep.bonus * n.star)) or n.mult,
 		floors = n.floors,
 		star = n.star,
+		story = n.story and { name = Config.Missions[n.story] and Config.Missions[n.story].title or n.story, done = storyDone(p, n.story) } or nil,
 	}
 end)
 
@@ -74,6 +81,10 @@ Actions.register("review", function(player, p)
 	local n = BoardService.next(p)
 	if p.cash < n.cash then return { ok = false, err = "The Board wants " .. Config.formatCash(n.cash) } end
 	if not hasNeeded(p, n.needs) then return { ok = false, err = "Bring the student the Board asked for" } end
+	if not storyDone(p, n.story) then
+		local m = Config.Missions[n.story]
+		return { ok = false, err = "Finish Chapter 1 first: " .. (m and m.title or "the story") }
+	end
 	busy[key] = true
 	-- nothing can be bought or sold while the Board meets (Actions refuses spending while this is set)
 	p.reviewing = true

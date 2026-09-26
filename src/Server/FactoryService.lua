@@ -388,9 +388,10 @@ local function buildPen(m, i)
 	return pen
 end
 
--- Vex's desk, in the aisle in front of the pens. The "Vex's Blueprints" mission (MissionService)
--- steals the rolled-up plans off it; only a player on that mission sees the prompt (HUD's fixPrompt
--- reads MissionOnly). Everyone on the mission gets their own copy, so nobody waits on anyone.
+-- Vex's desk, in the aisle in front of the pens. A mission with an item (Config.Missions: "Vex's
+-- Blueprints", Chapter 1's "Old Sewer Map") steals it off the desk; only a player on such a mission
+-- sees the prompt (HUD's fixPrompt reads MissionOnly, a list of mission ids, and shows the item's
+-- name). Everyone on the mission gets their own copy, so nobody waits on anyone.
 local desk
 local DESK_Z = 104
 local BLUEPRINT = rgb(45, 110, 200)
@@ -449,7 +450,12 @@ local function buildDesk(m)
 	prompt.KeyboardKeyCode = Enum.KeyCode.E
 	prompt.RequiresLineOfSight = false
 	prompt.MaxActivationDistance = 7
-	prompt:SetAttribute("MissionOnly", "vex_blueprints")
+	local itemMissions = {}
+	for id, def in Config.Missions do
+		if def.item then table.insert(itemMissions, id) end
+	end
+	table.sort(itemMissions)
+	prompt:SetAttribute("MissionOnly", table.concat(itemMissions, ","))
 	prompt:SetAttribute("Color", rgb(120, 200, 255))
 	prompt.Parent = hold
 	desk = { model = model, prompt = prompt, kind = "item", mission = "vex_blueprints", roll = roll, glow = glow }
@@ -820,10 +826,19 @@ local function escaped(player)
 		clearPenKid(pen)
 		pen.label.Text = ""
 		pen.model:SetAttribute("OwnerId", nil)
-		if not LetterService.deliver(player, hs.def, true, hs.grade) then
+		local benchKid = LetterService.deliver(player, hs.def, true, hs.grade)
+		if not benchKid then
 			-- the bench is full of gifts: they'll be there next time (as they were)
 			p.pendingBench = p.pendingBench or {}
 			table.insert(p.pendingBench, { id = hs.def.id, grade = hs.grade })
+		elseif story == "rescue" then
+			-- the First Morning's Skater Kid doesn't wait on the bench: he heads straight for a desk
+			-- (a free kid makes room in a full school: HallService.enroll)
+			task.delay(1, function()
+				if benchKid.Parent and benchKid:GetAttribute("State") == "Hall" then
+					require(script.Parent.HallService).enroll(player, benchKid)
+				end
+			end)
 		end
 		Remotes.Push:FireClient(player, "heist", { state = "rescued", name = hs.def.name })
 		Remotes.Notify:FireClient(player, ("You rescued %s! They're walking home to your Waiting Bench."):format(hs.def.name), "good")
@@ -850,8 +865,8 @@ local function escaped(player)
 		Remotes.Notify:FireClient(player, ("You stole Vex's captive: %s (%s)! They're on your Waiting Bench."):format(def.name, rarity), "good")
 		Signals.fire("rescued", player, def, true)
 	elseif pen.kind == "item" then
-		Remotes.Push:FireClient(player, "heist", { state = "item", name = "Vex's Blueprints" })
-		task.defer(Signals.fire, "storyRescued", player, pen.mission)
+		Remotes.Push:FireClient(player, "heist", { state = "item", name = hs.itemName or "Vex's Blueprints" })
+		task.defer(Signals.fire, "storyRescued", player, hs.mission or pen.mission)
 	end
 	if not anyHeist() then alarm(false) end
 	FactoryService.refresh()
@@ -922,7 +937,12 @@ local function takeKid(player, i)
 end
 
 local function takePlans(player)
-	if heists[player] or player:GetAttribute("Carrying") or player:GetAttribute("Mission") ~= desk.mission then return end
+	local mid = player:GetAttribute("Mission")
+	local mdef = mid and Config.Missions[mid]
+	if heists[player] or player:GetAttribute("Carrying") or not (mdef and mdef.item) then return end
+	local itemName = mdef.itemName or "Vex's Blueprints"
+	-- (the old sewer map is parchment; the plans are blueprint blue)
+	local rollColor = mdef.item == "SewerMap" and rgb(222, 196, 140) or BLUEPRINT
 	local char = player.Character
 	local proot = char and char:FindFirstChild("HumanoidRootPart")
 	if not proot or (stunUntil[player] or 0) > now() then return end
@@ -932,7 +952,7 @@ local function takePlans(player)
 	roll.Name = "CarriedPlans"
 	roll.Shape = Enum.PartType.Cylinder
 	roll.Size = Vector3.new(3.4, 0.8, 0.8)
-	roll.Color = BLUEPRINT
+	roll.Color = rollColor
 	roll.Material = Enum.Material.SmoothPlastic
 	roll.Massless = true
 	roll.CanCollide = false
@@ -961,11 +981,11 @@ local function takePlans(player)
 	glow.OutlineColor = rgb(120, 200, 255)
 	glow.Parent = roll
 	roll.Parent = char
-	heists[player] = { pen = desk, kid = roll, item = true, lastPos = proot.Position, lastT = now() }
-	player:SetAttribute("Heist", "Vex's Blueprints")
+	heists[player] = { pen = desk, kid = roll, item = true, mission = mid, itemName = itemName, lastPos = proot.Position, lastT = now() }
+	player:SetAttribute("Heist", itemName)
 	setCarrySpeed(player, true)
 	alarm(true)
-	Remotes.Push:FireClient(player, "heist", { state = "carrying", name = "Vex's Blueprints" })
+	Remotes.Push:FireClient(player, "heist", { state = "carrying", name = itemName })
 	alertNearest(player, proot)
 end
 
@@ -1269,12 +1289,14 @@ end
 
 -- the blueprints glow on the desk while anyone is on that mission
 function FactoryService.storyItem(player, missionId)
-	if desk and desk.mission == missionId then desk.glow.Enabled = true end
+	local def = Config.Missions[missionId]
+	if desk and def and def.item then desk.glow.Enabled = true end
 end
 function FactoryService.storyItemDone()
 	if not desk then return end
 	for _, pl in Players:GetPlayers() do
-		if pl:GetAttribute("Mission") == desk.mission then return end
+		local mid = pl:GetAttribute("Mission")
+		if mid and Config.Missions[mid] and Config.Missions[mid].item then return end
 	end
 	desk.glow.Enabled = false
 end

@@ -129,6 +129,8 @@ end)
 local function talk(player)
 	local p = Data.get(player)
 	if not p then return end
+	-- (Chapter 1: Stan's own story job comes first)
+	if require(script.Parent.MissionService).giverTalk(player, "JanitorStan") then return end
 	local m = active[player]
 	if m then
 		Remotes.Notify:FireClient(player, "You're on a job: " .. m.def.objective, "info")
@@ -395,6 +397,7 @@ function SecretService.debugStart(player, id)
 	if p then
 		p.secretNextAt = 0
 		p.tutorial = math.max(p.tutorial or 1, #Config.Tutorial + 1)
+		p.tutorialId = "done"
 	end
 	player:SetAttribute("Mission", nil)
 	active[player] = nil

@@ -5,6 +5,10 @@
 -- flying and flees; tougher goons take more hits before they're out cold. A goon who makes it back
 -- to the van takes the kid to the VexCorp Factory, where you can break in and rescue them.
 -- A locked laser gate keeps goons out: they bang on it and give up.
+-- The First Morning has two scripted raids: Crumpet alone (tutorial: he goes for your best kid and
+-- never really leaves with anyone) and the "lock demo" (three goons who wait until you're home,
+-- taunt, then walk at your gate: locked, they get zapped off the lasers; not locked, they grab kids
+-- but wait at the van for you to bonk them, like Crumpet).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -362,11 +366,22 @@ local function runToVan(raid, g, speed)
 	Factory.play(g.model, "run", speed)
 	Walkers.walk(g.model, back, speed, function()
 		if g.gone then return end
-		if g.kid and raid.tutorial then
+		if g.kid and (raid.tutorial or raid.lockDemo) then
 			-- the tutorial thief waits at the van, daring you to stop him
 			goonSay(g, "Well? Aren't you going to stop me?")
 			g.waiting = true
 			Factory.play(g.model, "idle")
+			-- (and if nobody comes for a minute, he gives the kid back and goes: nothing is ever lost
+			-- in the First Morning)
+			local kid = g.kid
+			task.delay(60, function()
+				if g.gone or not g.waiting or g.kid ~= kid then return end
+				goonSay(g, "Fine. FINE. Keep your kid.")
+				giveBack(raid.player, g)
+				g.model:SetAttribute("Carrying", nil)
+				task.wait(1)
+				removeGoon(raid, g)
+			end)
 			return
 		end
 		if g.kid then
@@ -424,7 +439,7 @@ local function lift(raid, g)
 	goonSay(g, "Got one! Run!")
 	g.model:SetAttribute("Carrying", true)
 	Remotes.Notify:FireClient(player, ("\u{1F6A8} A goon grabbed %s! Chase him down and bonk him!"):format(def.name), "bad")
-	runToVan(raid, g, raid.tutorial and R.tutorialCarrySpeed or R.carrySpeed)
+	runToVan(raid, g, (raid.tutorial or raid.lockDemo) and R.tutorialCarrySpeed or R.carrySpeed)
 end
 
 -- into the school from wherever the goon is: to the gate first if he's still outside (a locked
@@ -454,10 +469,32 @@ sendGoon = function(raid, g)
 		goIn()
 		return
 	end
-	Factory.play(g.model, "run", R.runSpeed)
-	Walkers.walk(g.model, { g.path[2] }, R.runSpeed, function()
+	local approach = raid.lockDemo and 5 or R.runSpeed
+	Factory.play(g.model, raid.lockDemo and "walk" or "run", approach)
+	Walkers.walk(g.model, { g.path[2] }, approach, function()
 		if g.gone then return end
 		local lockedUntil = plot:GetAttribute("LockedUntil") or 0
+		if raid.lockDemo and lockedUntil > workspace:GetServerTimeNow() then
+			-- the lock demo: straight into the lasers, ZAP, flung back, and off to the van
+			goonSay(g, "It's LOCKED?!")
+			Factory.play(g.model, "idle")
+			task.wait(1.2)
+			if g.gone or not g.model.Parent then return end
+			local groot = g.model.PrimaryPart
+			if groot then
+				burst(groot.Position + Vector3.new(0, 1.5, 0), Color3.fromRGB(255, 80, 80), 30)
+				for _, pl in Data.schoolPlayers(raid.player) do Remotes.Sfx:FireClient(pl, "Zap", groot.Position) end
+				local away = (g.path[1] - groot.Position)
+				knockback(g, away, 8, 3, 0.5)
+			end
+			if g.gone or not g.model.Parent then return end
+			goonSay(g, "OW! RUN!")
+			raid.repelled += 1
+			task.wait(0.6)
+			if g.gone or not g.model.Parent then return end
+			runToVan(raid, g, R.fleeSpeed)
+			return
+		end
 		-- (the tutorial's Crumpet has a key: the lock is the step after him)
 		if not raid.tutorial and not raid.story and lockedUntil > workspace:GetServerTimeNow() then
 			goonSay(g, "It's LOCKED?! Ugh.")
@@ -590,7 +627,7 @@ end
 ---------------------------------------------------------------------------
 -- a raid
 ---------------------------------------------------------------------------
-local function targets(player, plot, p, n)
+local function targets(player, plot, p, n, exact)
 	local list = {}
 	for slot, e in p.students do
 		if PlotService.earning(e) and not e.away and not e.carried and PlotService.seatedModel(plot, slot) then
@@ -603,7 +640,7 @@ local function targets(player, plot, p, n)
 	end)
 	local out = {}
 	for i = 1, math.min(n, #list) do
-		local pickFrom = math.min(#list, i + 2)
+		local pickFrom = exact and i or math.min(#list, i + 2)
 		local k = math.random(i, pickFrom)
 		list[i], list[k] = list[k], list[i]
 		table.insert(out, list[i])
@@ -625,6 +662,17 @@ raidEnded = function(raid)
 	nextRaid[player] = now() + math.random(R.every[1], R.every[2])
 	player:SetAttribute("Raid", nil)
 	if not player.Parent then return end
+	if raid.lockDemo then
+		local p = Data.get(player)
+		local step = p and p.tutorial and Config.Tutorial[p.tutorial]
+		if step and step.id == "lock" then
+			task.delay(10, function()
+				local pp = Data.get(player)
+				local st = pp and pp.tutorial and Config.Tutorial[pp.tutorial]
+				if player.Parent and st and st.id == "lock" and not raids[player] then RaidService.lockDemo(player) end
+			end)
+		end
+	end
 	if raid.tutorial then
 		local p = Data.get(player)
 		local step = p and p.tutorial and Config.Tutorial[p.tutorial]
@@ -637,7 +685,7 @@ raidEnded = function(raid)
 			end)
 		end
 	end
-	if raid.lost == 0 and not raid.tutorial and (raid.saved > 0 or raid.ko > 0 or raid.repelled > 0) then
+	if raid.lost == 0 and not raid.tutorial and not raid.lockDemo and (raid.saved > 0 or raid.ko > 0 or raid.repelled > 0) then
 		local cash = reward(player, R.defendSecs, R.defendFloor)
 		Data.addCash(player, cash)
 		Remotes.Push:FireClient(player, "raidOver", { defended = true, cash = cash, saved = raid.saved, ko = raid.ko })
@@ -656,7 +704,7 @@ function RaidService.start_raid(player, opts)
 	local p = Data.get(player)
 	if not plot or not p or p.reviewing then return false end
 	local n = opts.goons or R.goonsByTier[tierOf(p)]
-	local slots = targets(player, plot, p, n)
+	local slots = targets(player, plot, p, n, opts.tutorial)
 	if #slots == 0 then return false end
 	-- a story crew is always its full size: short of kids, two goons go for the same one
 	local k = 1
@@ -666,7 +714,7 @@ function RaidService.start_raid(player, opts)
 	end
 	local raid = {
 		player = player, plot = plot, goons = {}, van = buildVan(),
-		saved = 0, lost = 0, ko = 0, repelled = 0, tutorial = opts.tutorial,
+		saved = 0, lost = 0, ko = 0, repelled = 0, tutorial = opts.tutorial, lockDemo = opts.lockDemo,
 		-- a story raid (MissionService): the gate lock doesn't stop them, a goon who loses his kid comes
 		-- back for more instead of fleeing, and the mission hears about every KO, loss and the end
 		story = opts.story, onEnd = opts.onEnd, onKO = opts.onKO, onLost = opts.onLost, count = #slots,
@@ -712,6 +760,29 @@ function RaidService.start_raid(player, opts)
 			local g = { model = model, slot = slot, e = e, path = path, hp = hp, stunUntil = 0 }
 			table.insert(raid.goons, g)
 			if opts.tutorial then goonSay(g, "Terribly sorry. Just passing through.") end
+			if opts.lockDemo then
+				spawned()
+				Factory.play(model, "idle")
+				task.spawn(function()
+					if i == 1 then goonSay(g, "Grab the shiny one!") elseif i == 2 then goonSay(g, "Heh heh heh.") end
+					Factory.emote(model, i == 1 and "point" or "laugh")
+					-- (a fair fight: they wait for you to get home, up to half a minute)
+					local t0 = now()
+					while now() - t0 < 30 and not raid.ended and not g.gone do
+						local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+						if r and (r.Position - plot.Entry.Position).Magnitude < 60 then break end
+						task.wait(0.3)
+					end
+					-- (a good long swagger at the van first: time to find the lock button)
+					for k = 1, 4 do
+						task.wait(2)
+						if raid.ended or g.gone or not model.Parent then return end
+						if k == 2 and i == 1 then goonSay(g, "Nice gate. Shame if it was OPEN.") end
+					end
+					sendGoon(raid, g)
+				end)
+				return
+			end
 			sendGoon(raid, g)
 			spawned()
 		end)
@@ -740,6 +811,31 @@ function RaidService.tutorialRaid(player)
 			local p = Data.get(player)
 			local st = p and Config.Tutorial[p.tutorial or 1]
 			if player.Parent and st and st.id == "bonk" and not raids[player] then RaidService.tutorialRaid(player) end
+		end)
+	end
+	return ok
+end
+
+-- how many of this school's raiders are holding a kid right now
+function RaidService.holding(player)
+	local raid = raids[Data.hostOf(player)]
+	local n = 0
+	for _, g in raid and raid.goons or {} do
+		if g.kid and not g.gone then n += 1 end
+	end
+	return n
+end
+
+-- the First Morning's lock demo: three goons for the gate (StoryService's limo brings them)
+function RaidService.lockDemo(player)
+	player = Data.hostOf(player)
+	if raids[player] then return false end
+	local ok = RaidService.start_raid(player, { goons = 3, hp = 1, lockDemo = true })
+	if not ok then
+		task.delay(6, function()
+			local p = Data.get(player)
+			local st = p and Config.Tutorial[p.tutorial or 1]
+			if player.Parent and st and st.id == "lock" and not raids[player] then RaidService.lockDemo(player) end
 		end)
 	end
 	return ok
@@ -784,6 +880,10 @@ function RaidService.start()
 		cleanup(player)
 		nextRaid[player], lastMove[player], lastPos[player] = nil, nil, nil
 	end)
+	-- the first random raid comes a while after Crumpet's Crew is beaten
+	Signals.on("questDone", function(player, q)
+		if typeof(player) == "Instance" and q and q.id == "k08_crew" then nextRaid[player] = now() + R.first end
+	end)
 	task.spawn(function()
 		while true do
 			task.wait(1)
@@ -796,7 +896,9 @@ function RaidService.start()
 						lastMove[player] = now()
 					end
 				end
-				local tutorialDone = (p.tutorial or 1) > #Config.Tutorial
+				-- (random raids start once Chapter 1's "Crumpet's Crew" is done)
+				local QuestService = require(script.Parent.QuestService)
+				local tutorialDone = (p.tutorial or 1) > #Config.Tutorial or QuestService.pastStep(player, "k08_crew")
 				if not nextRaid[player] then nextRaid[player] = now() + R.first end
 				if tutorialDone and not raids[player] and now() >= nextRaid[player] and not p.reviewing and not p.finalePending
 					and lastMove[player] and now() - lastMove[player] < 90 then

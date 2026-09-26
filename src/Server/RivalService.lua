@@ -93,7 +93,8 @@ end
 local function inBox(pos, b) return pos.X > b.x0 and pos.X < b.x1 and pos.Z > b.z0 and pos.Z < b.z1 end
 local function inLot(pos) return inBox(pos, LOT) end
 local function guardArea(pos)
-	return pos.X > B.x0 + 2 and pos.X < B.x1 - 2 and pos.Z > B.z0 + 2 and pos.Z < B.z1 - 2
+	-- (the Great Hall; not the headmaster's office behind the partition at z -146: monitors don't go in)
+	return pos.X > B.x0 + 2 and pos.X < B.x1 - 2 and pos.Z > -145 and pos.Z < B.z1 - 2
 end
 
 ---------------------------------------------------------------------------
@@ -314,7 +315,7 @@ local function buildHall(m)
 	for _, x in { -21, 21 } do
 		part(m, "BoardFrame", Vector3.new(21, 8.2, 0.3), CFrame.new(CX + x, FLOOR + 8.5, -145.35), rgb(70, 44, 28), Enum.Material.Wood)
 		local bb = part(m, "Blackboard", Vector3.new(20, 7.2, 0.3), CFrame.new(CX + x, FLOOR + 8.5, -145.2), rgb(34, 56, 44), Enum.Material.Slate)
-		sign(bb, Enum.NormalId.Back, x < 0 and "HOMEWORK IS THE FUTURE\nHOMEWORK IS THE FUTURE\nHOMEWORK IS THE FUTURE" or "RECESS: CANCELLED\nLUNCH: 4 MINUTES\nFUN: SEE HEADMISTRESS", rgb(235, 235, 225), Enum.Font.PermanentMarker)
+		sign(bb, Enum.NormalId.Back, x < 0 and "HOMEWORK IS THE FUTURE\nHOMEWORK IS THE FUTURE\nHOMEWORK IS THE FUTURE" or "RECESS: CANCELLED\nLUNCH: 4 MINUTES\nFUN: SEE HEADMASTER", rgb(235, 235, 225), Enum.Font.PermanentMarker)
 		part(m, "ChalkTray", Vector3.new(20, 0.3, 0.6), CFrame.new(CX + x, FLOOR + 4.8, -144.9), rgb(70, 44, 28), Enum.Material.Wood)
 	end
 	-- portraits along the side walls: the founder and her friends
@@ -331,7 +332,7 @@ local function buildHall(m)
 	part(m, "Partition", Vector3.new(1, 1, 1), CFrame.new(), rgb(100, 64, 40), Enum.Material.Wood, { Size = Vector3.new(B.x1 - 1 - (CX + 4), H - 1, 1), CFrame = CFrame.new((B.x1 - 1 + CX + 4) / 2, FLOOR + (H - 1) / 2, -146) })
 	part(m, "OfficeLintel", Vector3.new(8, H - 10, 1), CFrame.new(CX, FLOOR + 10 + (H - 10) / 2, -146), rgb(100, 64, 40), Enum.Material.Wood)
 	local plate = part(m, "OfficeSign", Vector3.new(6, 1.2, 0.2), CFrame.new(CX, FLOOR + 11, -145.4), GOLD, Enum.Material.Metal)
-	sign(plate, Enum.NormalId.Back, "HEADMISTRESS", rgb(40, 20, 20), Enum.Font.Fantasy)
+	sign(plate, Enum.NormalId.Back, "HEADMASTER", rgb(40, 20, 20), Enum.Font.Fantasy)
 	-- the office: a desk, a globe, a trophy case
 	part(m, "OfficeDesk", Vector3.new(8, 3.2, 3), CFrame.new(CX, FLOOR + 1.6, -154), rgb(80, 48, 30), Enum.Material.Wood)
 	cyl(m, "Globe", 1.6, 1.6, Vector3.new(CX + 3, FLOOR + 4, -154), rgb(90, 150, 210), Enum.Material.SmoothPlastic, { Shape = Enum.PartType.Ball, Size = Vector3.new(1.6, 1.6, 1.6) })
@@ -518,13 +519,17 @@ local function tick(dt)
 		-- the first time someone walks up to the gate: the Vex Prep cutscene (once per save)
 		if not seen[player] then
 			local dx, dz = pos.X - CX, pos.Z - LOT.z1
-			if dx * dx + dz * dz < 75 * 75 and player:GetAttribute("Ready") and not player:GetAttribute("Mission") and not player:GetAttribute("InTutorial") then
+			-- (in Chapter 1 it waits for "Scout Vex Prep": its last line sends you down the pothole)
+			local QuestService = require(script.Parent.QuestService)
+			if dx * dx + dz * dz < 75 * 75 and player:GetAttribute("Ready") and not player:GetAttribute("Mission") and not player:GetAttribute("InTutorial")
+				and QuestService.atOrPast(player, "k10_peek") then
 				local p = Data.own(player)
 				if p then
 					seen[player] = true
 					if not p.rivalSeen then
 						p.rivalSeen = true
-						Remotes.Cutscene:FireClient(player, "Rival")
+						-- (in Chapter 1 it ends on the pothole)
+						Remotes.Cutscene:FireClient(player, "Rival", { chapter1 = (p.tutorial or 1) <= #Config.Tutorial })
 					end
 				end
 			end
@@ -605,7 +610,11 @@ function RivalService.start()
 		sight = { sight = 26, angle = 100, hear = 5 },
 		patrolSpeed = 7, chaseSpeed = 14.5, carrySpeed = 13,
 		isCarrying = function(player) return carrying[player] ~= nil end,
-		onCatch = function(player) thrownOut(player) end,
+		onCatch = function(player)
+			-- (on Chapter 1's Vex Prep Job, SewerHeist puts you back in the office instead)
+			if RivalService.heistCatch and RivalService.heistCatch(player) then return end
+			thrownOut(player)
+		end,
 	})
 	guards:add({ Vector3.new(389, FLOOR, -104), Vector3.new(418, FLOOR, -104), Vector3.new(418, FLOOR, -140), Vector3.new(389, FLOOR, -140) })
 	guards:add({ Vector3.new(465, FLOOR, -140), Vector3.new(436, FLOOR, -140), Vector3.new(436, FLOOR, -104), Vector3.new(465, FLOOR, -104) })
@@ -663,6 +672,18 @@ function RivalService.start()
 end
 
 function RivalService.inLot(pos) return inLot(pos) end
+RivalService.FLOOR = FLOOR
+-- for the Vex Prep Job (SewerHeist): can a hall monitor see this player right now; the desks
+function RivalService.seenByMonitor(player)
+	local char = player.Character
+	if not char or not guards then return false end
+	for _, g in guards.list do
+		if g.model.PrimaryPart and (not g.stunUntil or os.clock() >= g.stunUntil) and guards:canSee(g, char) then return true end
+	end
+	return false
+end
+function RivalService.desk(i) return desks[i] end
+function RivalService.reseat(d) seatKid(d) end
 function RivalService.debugTake(player, i)
 	local d = desks[i or 1]
 	if not d then return false end

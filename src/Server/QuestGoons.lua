@@ -27,6 +27,7 @@ local LOOKS = {
 	crumpet = { id = "Crumpet", name = "Crumpet", title = "Butler", mult = 1, outfit = "butler" },
 	guard = { id = "VexGuard", name = "Security", title = "VexCorp Security", mult = 1, outfit = "guard" },
 	hazmat = { id = "LabGuard", name = "Hazmat", title = "Lab Security", mult = 1, outfit = "hazmat" },
+	headmaster = { id = "Headmaster", name = "Headmaster Grindle", title = "Vex Prep", mult = 1, outfit = "dean" },
 }
 local TAUNTS = { "Get 'em!", "Homework time!", "Dr. Vex says hi!", "No recess for YOU!", "Get back here!" }
 
@@ -458,6 +459,16 @@ local function bossTick(dt)
 			if b.lines and math.random() < 0.6 then bubble(b.model, b.lines[math.random(#b.lines)]) end
 		end
 	end
+end
+
+-- Studio: bonk the player's boss as if swinging from right in front of him
+function QuestGoons.debugHitBoss(player)
+	local b = bosses[player]
+	local broot = b and b.model.PrimaryPart
+	if not broot then return false end
+	b.stunUntil = 0
+	onSwing(player, { Position = broot.Position - broot.CFrame.LookVector * 2, CFrame = broot.CFrame })
+	return b.hp
 end
 
 function QuestGoons.start(tqs)

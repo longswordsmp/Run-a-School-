@@ -305,6 +305,7 @@ function ChapterService.debugSet(player, n)
 	local p = Data.get(player)
 	if not p then return false end
 	p.tutorial = math.max(p.tutorial or 1, #Config.Tutorial + 1)
+	p.tutorialId = "done"
 	p.chapter = { n = n, done = { false, false, false, false, false }, prog = { 0, 0, 0, 0 } }
 	require(script.Parent.QuestService).push(player)
 	evaluate(player)

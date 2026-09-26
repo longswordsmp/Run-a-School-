@@ -84,7 +84,8 @@ local function npcHead(name)
 	local npc = (story and story:FindFirstChild(name)) or (town and town:FindFirstChild(name))
 	return npc and (npc:FindFirstChild("Head") or npc.PrimaryPart)
 end
-local function wobbleHead() return npcHead("Wobblesworth") end
+-- (whoever has your mission: Mr. Wobblesworth, or Hector / Stan in Chapter 1)
+local function wobbleHead() return npcHead(player:GetAttribute("MissionGiver") or "Wobblesworth") end
 
 local function refreshMarker()
 	local head = wobbleHead()
@@ -95,6 +96,7 @@ local function refreshMarker()
 	stanMarker.Enabled = stan ~= nil and player:GetAttribute("SecretReady") ~= nil and player:GetAttribute("Mission") == nil and not talkingNow()
 end
 player:GetAttributeChangedSignal("MissionReady"):Connect(refreshMarker)
+player:GetAttributeChangedSignal("MissionGiver"):Connect(refreshMarker)
 player:GetAttributeChangedSignal("SecretReady"):Connect(refreshMarker)
 player:GetAttributeChangedSignal("Mission"):Connect(refreshMarker)
 task.spawn(function()

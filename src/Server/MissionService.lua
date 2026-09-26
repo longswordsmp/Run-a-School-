@@ -7,6 +7,11 @@
 --   chase:  a runner sets off down Recess Row; bonk them hp times before the end of the route
 --   heist:  a story kid or Vex's blueprints wait in the VexCorp Factory (FactoryService); get them out
 -- Fail a mission and you can talk to him again to retry. Winning completes the chapter's mission step.
+-- Chapter 1 (the To-Do list, Kindergarten) plays its missions from the list: the current step's
+-- mission is the one that's ready, and it has its own giver (def.giver: Hall Monitor Hector, Janitor
+-- Stan, or Mr. Wobblesworth by default). The player attribute MissionGiver says who has the "!".
+-- def.give: a student delivered free to your Waiting Bench when you win.
+--   sewer: the Vex Prep Job, Chapter 1's finale (SewerHeist)
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -30,7 +35,14 @@ local function now() return os.clock() end
 -- the mission your current chapter is waiting on (nil if none, or it's done)
 function MissionService.ready(player)
 	local p = Data.get(player)
-	if not p or (p.tutorial or 1) <= #Config.Tutorial then return nil end
+	if not p then return nil end
+	if (p.tutorial or 1) <= #Config.Tutorial then
+		-- Chapter 1: the To-Do step's own mission
+		local step = Config.Tutorial[p.tutorial or 1]
+		local id = step and step.mission
+		if id and Config.Missions[id] and not (p.missions and p.missions[id]) then return id end
+		return nil
+	end
 	local c = p.chapter
 	local ch = c and Config.Chapters[c.n]
 	if not ch then return nil end
@@ -62,7 +74,9 @@ local function refreshReady(player)
 		player:SetAttribute("MissionReady", nil)
 		return
 	end
-	player:SetAttribute("MissionReady", (not active[player] and not mateOnMission(player)) and MissionService.ready(player) or nil)
+	local ready = (not active[player] and not mateOnMission(player)) and MissionService.ready(player) or nil
+	player:SetAttribute("MissionReady", ready)
+	player:SetAttribute("MissionGiver", ready and (Config.Missions[ready].giver or "Wobblesworth") or nil)
 	player:SetAttribute("Mission", active[player] and active[player].id or nil)
 end
 MissionService.refreshReady = refreshReady
@@ -84,11 +98,23 @@ local function finish(player, won)
 	if won and p then
 		p.missions = p.missions or {}
 		p.missions[m.id] = true
-		Remotes.Push:FireClient(player, "mission", { state = "won", title = m.def.title, line = m.def.win, speaker = m.def.lines[1][1], portrait = m.def.lines[1][2] })
+		local who = m.def.winSpeaker or m.def.lines[1]
+		Remotes.Push:FireClient(player, "mission", { state = "won", title = m.def.title, line = m.def.win, speaker = who[1], portrait = who[2] })
+		local gift = m.def.give and Config.StudentById[m.def.give]
+		if gift then
+			local LetterService = require(script.Parent.LetterService)
+			if not LetterService.deliver(Data.hostOf(player), gift, true, "Normal", m.def.giveNote) then
+				p.pendingBench = p.pendingBench or {}
+				table.insert(p.pendingBench, { id = gift.id, grade = "Normal" })
+			end
+			Remotes.Notify:FireClient(player, ("%s is waiting on your bench: enroll them free!"):format(gift.name), "good")
+		end
 		Signals.fire("missionWon", player, m.id)
 	elseif player.Parent then
+		local giver = Config.Missions[m.id] and Config.Missions[m.id].giver
+		local name = giver == "Hector" and "Hall Monitor Hector" or giver == "JanitorStan" and "Janitor Stan" or "Mr. Wobblesworth"
 		Remotes.Push:FireClient(player, "mission", { state = "failed", title = m.def.title })
-		Remotes.Notify:FireClient(player, "Mission failed. Talk to Mr. Wobblesworth to try again.", "bad")
+		Remotes.Notify:FireClient(player, ("Mission failed. Talk to %s to try again."):format(name), "bad")
 	end
 	refreshReady(player)
 end
@@ -213,7 +239,13 @@ end
 local function startChase(player, m)
 	local spec = Config.ChaseRunners[m.def.runner]
 	local route = Config.ChaseRoutes[m.def.route]
-	local model = Factory.buildTeacher(spec, 1)
+	-- (a kid runner is built as a student; the rest as grown-ups)
+	local kidDef = spec.student and Config.StudentById[spec.student]
+	local model = kidDef and Factory.build(kidDef, "Normal") or Factory.buildTeacher(spec, 1)
+	if kidDef then
+		local tag = model:FindFirstChild("Head") and model.Head:FindFirstChild("Tag")
+		if tag then tag:Destroy() end
+	end
 	model.Name = "Runner"
 	model:SetAttribute("Runner", player.UserId)
 	local so = Factory.standOffset(model)
@@ -356,9 +388,16 @@ function MissionService.start(player, id)
 		startHeist(player, m)
 	elseif def.kind == "chase" then
 		startChase(player, m)
+	elseif def.kind == "sewer" then
+		local SewerHeist = require(script.Parent.SewerHeist)
+		m.cleanup = function() SewerHeist.stop(player) end
+		SewerHeist.start(player, m, function(won) if active[player] == m then finish(player, won) end end)
+		push(player, "started", { guide = "sewer" })
 	end
 	return active[player] == m
 end
+MissionService.finish = finish
+function MissionService.active(player) return active[player] end
 
 -- the client asks to begin once the story lines have played
 Actions.register("missionStart", function(player, p, id)
@@ -366,22 +405,37 @@ Actions.register("missionStart", function(player, p, id)
 	return { ok = MissionService.start(player, id) }
 end)
 
--- talking to Mr. Wobblesworth
-local function talk(player)
+-- talking to a giver (Mr. Wobblesworth, or Hector / Stan in Chapter 1): true if they had a mission for you
+local IDLE = {
+	Wobblesworth = { "MR. WOBBLESWORTH", "Wobblesworth", "Nothing for now. Grow your school and face the Board, and I'll have news." },
+	Hector = { "HALL MONITOR HECTOR", "Hector", "No running in the halls! Carry on, Principal." },
+}
+function MissionService.giverTalk(player, giver)
+	giver = giver or "Wobblesworth"
 	if active[player] then
-		Remotes.Notify:FireClient(player, "You're already on a mission: " .. active[player].def.objective, "info")
-		return
+		if giver == "Wobblesworth" or active[player].def.giver == giver then
+			Remotes.Notify:FireClient(player, "You're already on a mission: " .. active[player].def.objective, "info")
+			return true
+		end
+		return false
 	end
 	local id = MissionService.ready(player)
-	if not id then
-		local p = Data.get(player)
-		local line = (p and (p.tutorial or 1) <= #Config.Tutorial) and "Finish your first day, then come and see me!"
-			or "Nothing for now. Grow your school and face the Board, and I'll have news."
-		Remotes.Push:FireClient(player, "missionTalk", { lines = { { "MR. WOBBLESWORTH", "Wobblesworth", line } } })
-		return
+	if not id or (Config.Missions[id].giver or "Wobblesworth") ~= giver then
+		if IDLE[giver] then
+			local p = Data.get(player)
+			local line = IDLE[giver]
+			if giver == "Wobblesworth" and p and (p.tutorial or 1) <= #Config.Tutorial then
+				line = { line[1], line[2], "Keep at your To-Do list, Principal. I'll call when I need you!" }
+			end
+			Remotes.Push:FireClient(player, "missionTalk", { lines = { line }, npc = giver ~= "Wobblesworth" and giver or nil })
+			return true
+		end
+		return false
 	end
-	Remotes.Push:FireClient(player, "missionTalk", { id = id, title = Config.Missions[id].title, lines = Config.Missions[id].lines })
+	Remotes.Push:FireClient(player, "missionTalk", { id = id, title = Config.Missions[id].title, lines = Config.Missions[id].lines, npc = giver ~= "Wobblesworth" and giver or nil })
+	return true
 end
+local function talk(player) MissionService.giverTalk(player, "Wobblesworth") end
 local talkRaw = talk
 talk = function(player)
 	local wob = workspace:FindFirstChild("StoryNPCs") and workspace.StoryNPCs:FindFirstChild("Wobblesworth")
@@ -410,6 +464,26 @@ function MissionService.start_service()
 		prompt:SetAttribute("Color", Color3.fromRGB(255, 210, 90))
 		prompt.Parent = wob.PrimaryPart
 		prompt.Triggered:Connect(talk)
+	end)
+	-- and on Hall Monitor Hector (he patrols the north sidewalk)
+	task.spawn(function()
+		local story = workspace:WaitForChild("StoryNPCs", 30)
+		local hector = story and story:WaitForChild("Hector", 30)
+		if not hector or not hector.PrimaryPart then return end
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.Name = "TalkPrompt"
+		prompt.ActionText = "Talk"
+		prompt.ObjectText = "Hall Monitor Hector"
+		prompt.HoldDuration = 0
+		prompt.KeyboardKeyCode = Enum.KeyCode.E
+		prompt.RequiresLineOfSight = false
+		prompt.MaxActivationDistance = 10
+		prompt:SetAttribute("Color", Color3.fromRGB(255, 160, 40))
+		prompt.Parent = hector.PrimaryPart
+		prompt.Triggered:Connect(function(player)
+			hector:SetAttribute("QuietUntil", os.clock() + 20)
+			MissionService.giverTalk(player, "Hector")
+		end)
 	end)
 	-- heists: the Factory reports a story kid or the blueprints getting out
 	Signals.on("storyRescued", function(player, id)
@@ -450,11 +524,22 @@ function MissionService.debugStart(player, id)
 		active[player] = nil
 		if cur.cleanup then pcall(cur.cleanup) end
 	end
+	-- a Chapter 1 mission: jump the To-Do list to its step
+	for i, step in Config.Tutorial do
+		if step.mission == id then
+			p.tutorial = i
+			p.tutorialId = step.id
+			p.quests.progress = 0
+			if p.missions then p.missions[id] = nil end
+			return MissionService.start(player, id)
+		end
+	end
 	-- jump straight to the chapter that has this mission
 	for n, ch in Config.Chapters do
 		for _, step in ch.steps do
 			if step.kind == "mission" and step.id == id then
 				p.tutorial = math.max(p.tutorial or 1, #Config.Tutorial + 1)
+				p.tutorialId = "done"
 				p.chapter = { n = n, done = { false, false, false, false, false }, prog = { 0, 0, 0, 0 } }
 				if p.missions then p.missions[id] = nil end
 			end

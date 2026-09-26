@@ -189,6 +189,40 @@ function PlotService.applyDesks(player)
 					end
 				end
 				d.CollectPad.Cash.Enabled = unlocked
+				-- the next row you can buy: a prompt on each of its see-through desks
+				local buy = d:FindFirstChild("BuyRowPrompt", true)
+				local nextRow = (p.rows[f] or 0) + 1
+				local cost = Config.DeskRows[f] and Config.DeskRows[f][nextRow]
+				local wanted = not unlocked and cost ~= nil and PlotService.slotRow(d:GetAttribute("Slot")) == nextRow
+				if wanted and not buy then
+					local top = d:FindFirstChild("Top")
+					if top then
+						buy = Instance.new("ProximityPrompt")
+						buy.Name = "BuyRowPrompt"
+						buy.HoldDuration = 0.35
+						buy.RequiresLineOfSight = false
+						buy.MaxActivationDistance = 9
+						buy:SetAttribute("OwnerOnly", true)
+						buy:SetAttribute("Color", Color3.fromRGB(80, 220, 110))
+						buy.Parent = top
+						local floor = f
+						buy.Triggered:Connect(function(who)
+							if Data.hostOf(who) ~= player then return end
+							local res = require(script.Parent.UpgradeService).buyRow(who, floor)
+							if res and not res.ok and res.err then
+								Remotes.Notify:FireClient(who, res.err, "bad")
+								Remotes.Sfx:FireClient(who, "Error")
+							end
+						end)
+					end
+				elseif buy and not wanted then
+					buy:Destroy()
+					buy = nil
+				end
+				if buy then
+					buy.ActionText = "Build 4 desks"
+					buy.ObjectText = Config.formatCash(cost)
+				end
 			end
 		end
 	end

@@ -282,10 +282,18 @@ end)
 -- desk prompts: the owner (and their co-op crew) sees Sell, everyone else sees Steal
 local function fixPrompt(prompt)
 	if not prompt:IsA("ProximityPrompt") then return end
-	-- a mission's own prompt (Vex's desk): only while you're on that mission
+	-- a mission's own prompt (Vex's desk): only while you're on one of those missions (a list of
+	-- ids), showing that mission's item
 	local mission = prompt:GetAttribute("MissionOnly")
 	if mission then
-		prompt.Enabled = player:GetAttribute("Mission") == mission
+		local mine = player:GetAttribute("Mission")
+		local on = false
+		for id in string.gmatch(mission, "[^,]+") do
+			if id == mine then on = true end
+		end
+		prompt.Enabled = on
+		local def = on and Config.Missions[mine]
+		if def and def.itemName then prompt.ObjectText = def.itemName end
 		return
 	end
 	local owner = prompt:FindFirstAncestorOfClass("Model")
