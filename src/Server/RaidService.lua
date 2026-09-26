@@ -309,16 +309,15 @@ local function knockback(g, dir, dist, height, dur)
 	local y0 = start.Position.Y
 	local flat = Vector3.new(dir.X, 0, dir.Z)
 	flat = flat.Magnitude > 1e-3 and flat.Unit or -start.LookVector
+	-- (in this thread, so nothing writes the root after it returns and the KO pose sticks)
 	local t0 = now()
-	local conn
-	conn = RunService.Heartbeat:Connect(function()
+	while root.Parent do
 		local a = math.min(1, (now() - t0) / dur)
-		if not root.Parent then conn:Disconnect() return end
 		local pos = start.Position + flat * dist * a + Vector3.new(0, math.sin(a * math.pi) * height, 0)
 		root.CFrame = CFrame.new(pos.X, math.max(y0, pos.Y), pos.Z) * (start - start.Position) * CFrame.Angles(0, a * math.pi * 2, 0)
-		if a >= 1 then conn:Disconnect() end
-	end)
-	task.wait(dur)
+		if a >= 1 then break end
+		RunService.Heartbeat:Wait()
+	end
 end
 
 -- the kid goes back to their desk
@@ -360,7 +359,7 @@ local function runToVan(raid, g, speed)
 		if d < bestD then best, bestD = i, d end
 	end
 	for i = best, 1, -1 do table.insert(back, g.path[i]) end
-	Factory.play(g.model, "run")
+	Factory.play(g.model, "run", speed)
 	Walkers.walk(g.model, back, speed, function()
 		if g.gone then return end
 		if g.kid and raid.tutorial then
@@ -419,22 +418,7 @@ local function lift(raid, g)
 	local def = Config.StudentById[e.id]
 	local kid = Factory.build(def, e.grade)
 	Factory.setMode(kid, "carried")
-	for _, bp in kid:GetDescendants() do
-		if bp:IsA("BasePart") then
-			bp.Anchored = false
-			bp.Massless = true
-			bp.CanCollide = false
-		end
-	end
-	local root = g.model.PrimaryPart
-	local off = 3.4 + Factory.standOffset(kid) * 0.9
-	kid.PrimaryPart.CFrame = root.CFrame * CFrame.new(0, off, 0)
-	local w = Instance.new("Weld")
-	w.Part0, w.Part1 = root, kid.PrimaryPart
-	w.C0 = CFrame.new(0, off, 0) * CFrame.Angles(0, 0, math.rad(8))
-	w.Parent = kid.PrimaryPart
-	kid.Parent = g.model
-	Factory.play(kid, "sit")
+	Factory.carryOverhead(g.model, kid, CFrame.Angles(0, 0, math.rad(8)), Config.AgeScale[p.tier or 1])
 	g.kid = kid
 	outline(g.model, Color3.fromRGB(255, 60, 80))
 	goonSay(g, "Got one! Run!")
@@ -460,7 +444,7 @@ sendGoon = function(raid, g)
 		end
 		local rest = {}
 		for i = best, #g.path do table.insert(rest, g.path[i]) end
-		Factory.play(g.model, "run")
+		Factory.play(g.model, "run", R.runSpeed)
 		Walkers.walk(g.model, rest, R.runSpeed, function()
 			if g.gone then return end
 			lift(raid, g)
@@ -470,7 +454,7 @@ sendGoon = function(raid, g)
 		goIn()
 		return
 	end
-	Factory.play(g.model, "run")
+	Factory.play(g.model, "run", R.runSpeed)
 	Walkers.walk(g.model, { g.path[2] }, R.runSpeed, function()
 		if g.gone then return end
 		local lockedUntil = plot:GetAttribute("LockedUntil") or 0
@@ -543,7 +527,7 @@ local function hitGoon(player, raid, g, root)
 			goonSay(g, "Ow ow OW...")
 			knockback(g, dir, 9, 4, 0.5)
 			if g.gone or not groot.Parent then return end
-			groot.CFrame = groot.CFrame * CFrame.Angles(math.rad(-80), 0, 0)
+			Factory.lieDown(g.model)
 			g.stunUntil = now() + 1.4
 			spinStars(g)
 			task.wait(1.4)

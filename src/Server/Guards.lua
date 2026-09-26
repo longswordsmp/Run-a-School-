@@ -39,6 +39,27 @@ function Guards.new(opts)
 	return self
 end
 
+-- one clip at a time per guard, switched only when it changes (so a chase doesn't restart the run
+-- every frame), and paced to the speed he is moving at
+local function anim(g, which, speed)
+	if g.anim ~= which then
+		g.anim = which
+		Factory.play(g.model, which, speed)
+	elseif speed then
+		Factory.pace(g.model, speed)
+	end
+end
+Guards.anim = anim
+
+-- turn a guard's root towards a flat direction at a capped rate (no one-frame about-turns)
+local REACT_TURN, CHASE_TURN = 12, 9 -- radians a second
+local function faceToward(root, dir, maxA)
+	local lv = root.CFrame.LookVector
+	local cur = Vector3.new(lv.X, 0, lv.Z)
+	cur = cur.Magnitude > 1e-3 and cur.Unit or dir
+	return Walkers.turn(cur, dir, maxA)
+end
+
 local function tag(g, text, color)
 	if g.label then
 		g.label.Text = text
@@ -89,9 +110,10 @@ end
 function Guards:patrol(g)
 	g.state = "patrol"
 	g.target = nil
+	g.blocked = nil
 	tag(g, "")
-	Factory.play(g.model, "walk")
 	local speed = self.patrolSpeed
+	anim(g, "walk", speed)
 	local function nextLeg()
 		if g.state ~= "patrol" or not g.model.Parent then return end
 		g.leg = g.leg % #g.route + 1
@@ -115,8 +137,21 @@ function Guards:chase(g, player, reaction)
 	g.target = player
 	g.seenAt = now()
 	g.reactUntil = now() + (reaction or self.reaction)
+	g.blocked = nil
 	tag(g, "!", rgb(255, 70, 70))
-	Factory.play(g.model, "idle")
+	anim(g, "idle")
+end
+
+-- stand every guard still for a while (Studio tests)
+function Guards:calm(secs)
+	for _, g in self.list do
+		Walkers.stop(g.model)
+		g.state = "stunned"
+		g.target = nil
+		g.stunUntil = now() + (secs or 30)
+		anim(g, "idle")
+	end
+	return #self.list
 end
 
 -- everyone after this player (an alarm)
@@ -143,15 +178,16 @@ function Guards:noise(pos, radius)
 	for _, g in self.list do
 		local r = g.model.PrimaryPart
 		if r and (g.state == "patrol" or g.state == "investigate") and (r.Position - pos).Magnitude < (radius or 45) then
+			-- (a noise he may not go to leaves him on his patrol, not stuck jogging on the spot)
+			local to = Vector3.new(pos.X, g.y, pos.Z)
+			if self.opts.area and not self.opts.area(to) then continue end
 			g.state = "investigate"
 			g.target = nil
 			tag(g, "?", rgb(255, 230, 90))
-			Factory.play(g.model, "run")
-			local to = Vector3.new(pos.X, g.y, pos.Z)
-			if self.opts.area and not self.opts.area(to) then continue end
+			anim(g, "run", 11)
 			Walkers.walk(g.model, { to }, 11, function()
 				if g.state ~= "investigate" then return end
-				Factory.play(g.model, "idle")
+				anim(g, "idle")
 				tag(g, "Huh?", rgb(255, 230, 90))
 				task.delay(3.5, function()
 					if g.state == "investigate" then self:patrol(g) end
@@ -171,7 +207,7 @@ function Guards:smoke(player, pos)
 			g.state = "stunned"
 			g.stunUntil = now() + 3
 			tag(g, "*cough cough*", rgb(220, 220, 230))
-			Factory.play(g.model, "idle")
+			anim(g, "idle")
 		elseif g.target == player then
 			self:patrol(g)
 		end
@@ -192,19 +228,26 @@ function Guards:onSwing(player, proot)
 				Walkers.stop(g.model)
 				g.state = "stunned"
 				tag(g, "@#!", rgb(255, 230, 90))
-				Factory.play(g.model, "fall")
+				anim(g, "fall")
 				if self.opts.onBonk then task.spawn(self.opts.onBonk, player, root.Position) end
 				local start = root.CFrame
 				local dir = flat.Magnitude > 1e-3 and flat.Unit or look
+				-- a shorter shove where the full one would leave his area (no slide out and snap back)
+				local dist = 7
+				local area = self.opts.area
+				while area and dist > 0 and not area(start.Position + dir * dist) do dist -= 0.5 end
 				local t0 = now()
 				local conn
 				conn = RunService.Heartbeat:Connect(function()
 					local a = math.min(1, (now() - t0) / 0.35)
 					if not root.Parent then conn:Disconnect() return end
-					local pos = start.Position + dir * 7 * a + Vector3.new(0, math.sin(a * math.pi) * 2.2, 0)
-					if self.opts.area and not self.opts.area(pos) then pos = start.Position end
+					local pos = start.Position + dir * dist * a + Vector3.new(0, math.sin(a * math.pi) * 2.2, 0)
 					root.CFrame = CFrame.new(pos) * (start - start.Position)
-					if a >= 1 then conn:Disconnect() end
+					if a >= 1 then
+						conn:Disconnect()
+						-- landed: stand there dazed for the rest of the stun, not flailing on the floor
+						if g.state == "stunned" then anim(g, "idle") end
+					end
 				end)
 				return true
 			end
@@ -255,13 +298,12 @@ function Guards:tick(dt)
 			local d = proot.Position - root.Position
 			local flat = Vector3.new(d.X, 0, d.Z)
 			if g.reactUntil and now() < g.reactUntil then
-				if flat.Magnitude > 1e-3 then root.CFrame = CFrame.lookAt(root.Position, root.Position + flat.Unit) end
+				if flat.Magnitude > 1e-3 then
+					root.CFrame = CFrame.lookAt(root.Position, root.Position + faceToward(root, flat.Unit, REACT_TURN * dt))
+				end
 				continue
 			end
-			if g.reactUntil then
-				g.reactUntil = nil
-				Factory.play(g.model, "run")
-			end
+			g.reactUntil = nil
 			if flat.Magnitude < self.catchRange then
 				if o.onCatch then task.spawn(o.onCatch, player, g) end
 				self:patrol(g)
@@ -269,14 +311,30 @@ function Guards:tick(dt)
 			end
 			local speed = carrying and self.carrySpeed or self.chaseSpeed
 			local step = math.min(flat.Magnitude, speed * dt)
-			local np = root.Position + flat.Unit * step
-			np = Vector3.new(np.X, g.y, np.Z)
+			-- he turns towards the player at a capped rate and runs the way he faces
+			local face = faceToward(root, flat.Unit, CHASE_TURN * dt)
+			local pos = root.Position
+			local np = Vector3.new(pos.X + face.X * step, g.y, pos.Z + face.Z * step)
 			if o.area and not o.area(np) then
-				-- (stops at the edge of where it may go)
-				root.CFrame = CFrame.lookAt(root.Position, root.Position + flat.Unit)
+				-- at the edge of where he may go: slide along it if one axis is free, else stand and glare
+				local alongX = Vector3.new(np.X, g.y, pos.Z)
+				local alongZ = Vector3.new(pos.X, g.y, np.Z)
+				if math.abs(face.X) * step > 0.01 and o.area(alongX) then
+					np = alongX
+				elseif math.abs(face.Z) * step > 0.01 and o.area(alongZ) then
+					np = alongZ
+				else
+					np = nil
+				end
+			end
+			if not np then
+				anim(g, "idle")
+				root.CFrame = CFrame.lookAt(pos, pos + face)
 				continue
 			end
-			root.CFrame = CFrame.lookAt(np, np + flat.Unit)
+			anim(g, "run", speed)
+			local mv = Vector3.new(np.X - pos.X, 0, np.Z - pos.Z)
+			root.CFrame = CFrame.lookAt(np, np + (mv.Magnitude > 1e-3 and mv.Unit or face))
 		end
 	end
 end

@@ -242,10 +242,12 @@ local function startChase(player, m)
 		end
 		local rest = {}
 		for i = math.min(best + 1, #pts), #pts do table.insert(rest, pts[i]) end
-		Factory.play(model, "run")
+		Factory.play(model, "run", speed)
 		Walkers.walk(model, rest, speed, function()
 			if active[player] ~= m then return end
 			-- made it: the mission is lost
+			Factory.play(model, "idle")
+			Factory.emote(model, "laugh")
 			runnerTag(model, "Too slow!")
 			task.delay(1, function() finish(player, false) end)
 		end, { flat = false })
@@ -290,8 +292,7 @@ local function hitRunner(player, m, root)
 	push(player, "progress", { progress = m.def.hp - r.hp, count = m.def.hp })
 	if r.hp <= 0 then
 		runnerTag(model, "OOF!")
-		Factory.play(model, "fall")
-		mroot.CFrame = mroot.CFrame * CFrame.Angles(math.rad(-80), 0, 0)
+		Factory.lieDown(model)
 		task.delay(1.2, function() finish(player, true) end)
 		return
 	end

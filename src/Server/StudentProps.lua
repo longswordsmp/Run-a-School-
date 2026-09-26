@@ -60,6 +60,28 @@ local function cylZ(model, to, d, len, offset, color, material)
 	return weld(mk(model, Enum.PartType.Cylinder, Vector3.new(len, d, d), color, material), to, offset * CFrame.Angles(0, math.rad(90), 0))
 end
 
+-- the light a guard "sees" with. It hangs off the root, which the animations never move and which
+-- Stealth.canSee looks along, so the beam always shows where he's looking. (On the lens in his hand
+-- it swung from the floor to the ceiling with every step.)
+local function sightLight(model, color, angle, range, brightness, shadows)
+	local root = model:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	local eye = Instance.new("Attachment")
+	eye.Name = "BeamEmitter"
+	eye.Position = Vector3.new(0.5, 0.9, -0.6)
+	eye.Parent = root
+	local spot = Instance.new("SpotLight")
+	spot.Name = "Beam"
+	spot.Face = Enum.NormalId.Front
+	spot.Angle = angle
+	spot.Range = range
+	spot.Brightness = brightness
+	spot.Color = color
+	spot.Shadows = shadows or false
+	spot.Parent = eye
+	return spot
+end
+
 -- thin wire glasses: round rims built from short segments, a clear lens, a bridge.
 -- (a solid disc behind a lens reads as sunglasses or black eyes from any distance)
 local function wireGlasses(model, head, hs, y, radius, color)
@@ -303,8 +325,8 @@ B.Football = function(model, head, hs)
 		cylY(model, head, 0.08, hs.X * 0.9, CFrame.new(0, hs.Y * y, -hs.Z * 0.66) * CFrame.Angles(0, 0, math.rad(90)), grey, Enum.Material.Metal)
 	end
 	local hand = model:FindFirstChild("RightHand")
-	blob(model, hand, Vector3.new(0.65, 0.65, 1.1), CFrame.new(0.1, 0, -0.35), Color3.fromRGB(130, 70, 35))
-	block(model, hand, Vector3.new(0.05, 0.05, 0.45), CFrame.new(0.1, 0.32, -0.35), Color3.fromRGB(250, 250, 250))
+	blob(model, hand, Vector3.new(0.65, 0.65, 1.1), CFrame.new(0.1, -0.15, -0.55), Color3.fromRGB(130, 70, 35))
+	block(model, hand, Vector3.new(0.05, 0.05, 0.45), CFrame.new(0.1, 0.17, -0.55), Color3.fromRGB(250, 250, 250))
 end
 
 B.Goggles = function(model, head, hs)
@@ -352,8 +374,8 @@ end
 B.Gavel = function(model, head, hs)
 	local hand = model:FindFirstChild("RightHand")
 	local wood = Color3.fromRGB(120, 70, 35)
-	cylY(model, hand, 0.14, 1.1, CFrame.new(0, 0.35, -0.1), wood, Enum.Material.Wood)
-	cylZ(model, hand, 0.42, 0.85, CFrame.new(0, 0.95, -0.1), wood, Enum.Material.Wood)
+	cylZ(model, hand, 0.14, 1.1, CFrame.new(0, -0.1, -0.75), wood, Enum.Material.Wood)
+	cylY(model, hand, 0.42, 0.85, CFrame.new(0, -0.1, -1.35), wood, Enum.Material.Wood)
 	-- PREZ badge
 	local torso = model:FindFirstChild("UpperTorso")
 	local ts = torso.Size
@@ -544,8 +566,9 @@ B.HectorSash = function(model, head, hs)
 	end
 	block(model, torso, Vector3.new(0.3, 0.18, 0.35), CFrame.new(ts.X * 0.25, ts.Y * 0.35, -ts.Z * 0.62), rgb(200, 200, 210), Enum.Material.Metal)
 	local hand = part(model, "RightHand")
-	cylY(model, hand, 0.14, 2.2, CFrame.new(0, 0.9, -0.2), rgb(120, 120, 130), Enum.Material.Metal)
-	local stop = cylZ(model, hand, 1.6, 0.12, CFrame.new(0, 2.2, -0.2), rgb(220, 30, 40))
+	-- the pole leans out from his fist so it clears his arm, and the sign rides beside his head
+	cylY(model, hand, 0.14, 2.4, CFrame.new(0.89, 0.81, 0) * CFrame.Angles(0, 0, math.rad(-22)), rgb(120, 120, 130), Enum.Material.Metal)
+	local stop = cylZ(model, hand, 1.6, 0.12, CFrame.new(1.34, 1.93, 0), rgb(220, 30, 40))
 	local g = Instance.new("SurfaceGui")
 	g.Face = Enum.NormalId.Right -- the cylinder's round face, turned to face forward
 	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
@@ -753,10 +776,10 @@ end
 B.Puppy = function(model, head, hs)
 	-- the homework, with a bite out of it
 	local left = part(model, "LeftHand")
-	local paper = block(model, left, Vector3.new(1.1, 0.7, 0.05), CFrame.new(0, 0.1, -0.35), rgb(250, 250, 250))
-	block(model, left, Vector3.new(0.6, 0.5, 0.05), CFrame.new(-0.25, 0.65, -0.35), rgb(250, 250, 250))
+	local paper = block(model, left, Vector3.new(1.1, 0.7, 0.05), CFrame.new(-0.2, -0.1, -0.55), rgb(250, 250, 250))
+	block(model, left, Vector3.new(0.6, 0.5, 0.05), CFrame.new(-0.45, 0.45, -0.55), rgb(250, 250, 250))
 	for i = 0, 2 do
-		block(model, left, Vector3.new(0.12, 0.12, 0.06), CFrame.new(0.12 + i * 0.13, 0.5, -0.35) * CFrame.Angles(0, 0, math.rad(45)), rgb(250, 250, 250))
+		block(model, left, Vector3.new(0.12, 0.12, 0.06), CFrame.new(-0.08 + i * 0.13, 0.3, -0.55) * CFrame.Angles(0, 0, math.rad(45)), rgb(250, 250, 250))
 	end
 	local g = Instance.new("SurfaceGui")
 	g.Face = Enum.NormalId.Front
@@ -1002,12 +1025,12 @@ end
 
 B.PetRock = function(model, head, hs)
 	local hand = part(model, "RightHand")
-	local rock = blob(model, hand, Vector3.new(0.9, 0.7, 0.8), CFrame.new(-0.3, 0.1, -0.5), rgb(130, 130, 135))
+	local rock = blob(model, hand, Vector3.new(0.9, 0.7, 0.8), CFrame.new(0.1, -0.1, -0.62), rgb(130, 130, 135))
 	for _, x in { -0.18, 0.18 } do
-		ball(model, hand, 0.24, CFrame.new(-0.3 + x, 0.25, -0.88), rgb(255, 255, 255))
-		ball(model, hand, 0.1, CFrame.new(-0.3 + x, 0.23, -0.99), rgb(10, 10, 10))
+		ball(model, hand, 0.24, CFrame.new(0.1 + x, 0.05, -1.0), rgb(255, 255, 255))
+		ball(model, hand, 0.1, CFrame.new(0.1 + x, 0.03, -1.11), rgb(10, 10, 10))
 	end
-	block(model, hand, Vector3.new(0.3, 0.12, 0.08), CFrame.new(-0.3, 0.52, -0.6), rgb(255, 80, 120))
+	block(model, hand, Vector3.new(0.3, 0.12, 0.08), CFrame.new(0.1, 0.32, -0.72), rgb(255, 80, 120))
 	-- her own hair bow
 	block(model, head, Vector3.new(hs.X * 0.5, hs.Y * 0.18, hs.Z * 0.12), CFrame.new(0, hs.Y * 0.55, hs.Z * 0.1), rgb(255, 80, 120))
 	return rock
@@ -1059,11 +1082,11 @@ end
 -- Rare ------------------------------------------------------------------
 B.Calculator = function(model, head, hs)
 	local hand = part(model, "RightHand")
-	local calc = block(model, hand, Vector3.new(0.9, 1.3, 0.16), CFrame.new(0, 0.3, -0.35), rgb(70, 75, 85))
-	block(model, hand, Vector3.new(0.7, 0.3, 0.17), CFrame.new(0, 0.72, -0.35), rgb(150, 230, 150), Enum.Material.Neon)
+	local calc = block(model, hand, Vector3.new(0.9, 1.3, 0.16), CFrame.new(0, 0.1, -0.62), rgb(70, 75, 85))
+	block(model, hand, Vector3.new(0.7, 0.3, 0.17), CFrame.new(0, 0.52, -0.63), rgb(150, 230, 150), Enum.Material.Neon)
 	for r = 0, 3 do
 		for c = 0, 2 do
-			block(model, hand, Vector3.new(0.16, 0.14, 0.18), CFrame.new(-0.24 + c * 0.24, 0.42 - r * 0.2, -0.35), c == 2 and rgb(255, 140, 40) or rgb(220, 220, 225))
+			block(model, hand, Vector3.new(0.16, 0.14, 0.18), CFrame.new(-0.24 + c * 0.24, 0.22 - r * 0.2, -0.64), c == 2 and rgb(255, 140, 40) or rgb(220, 220, 225))
 		end
 	end
 	cylY(model, head, 0.09, hs.Y * 0.8, CFrame.new(hs.X * 0.56, hs.Y * 0.05, 0) * CFrame.Angles(math.rad(35), 0, 0), rgb(255, 205, 40))
@@ -1075,7 +1098,7 @@ B.PomPoms = function(model, head, hs)
 		local hand = part(model, side)
 		for i = 0, 6 do
 			local a = i * 0.9
-			ball(model, hand, 0.42, CFrame.new(math.cos(a) * 0.22, 0.1 + (i % 3) * 0.12, -0.2 + math.sin(a) * 0.22), i % 2 == 0 and rgb(230, 40, 60) or rgb(255, 255, 255))
+			ball(model, hand, 0.42, CFrame.new(math.cos(a) * 0.22, -0.2 + (i % 3) * 0.12, -0.2 + math.sin(a) * 0.22), i % 2 == 0 and rgb(230, 40, 60) or rgb(255, 255, 255))
 		end
 	end
 	-- skirt and a high ponytail with a bow
@@ -1095,8 +1118,8 @@ B.Palette = function(model, head, hs)
 		ball(model, left, 0.2, CFrame.new(math.cos(a) * 0.35, 0.16, -0.35 + math.sin(a) * 0.25), c)
 	end
 	local right = part(model, "RightHand")
-	cylY(model, right, 0.08, 1.1, CFrame.new(0, 0.3, -0.25) * CFrame.Angles(math.rad(-20), 0, 0), rgb(150, 100, 50), Enum.Material.Wood)
-	ball(model, right, 0.14, CFrame.new(0, 0.82, -0.44), rgb(40, 120, 230))
+	cylY(model, right, 0.08, 1.1, CFrame.new(0, 0.3, -0.65) * CFrame.Angles(math.rad(-20), 0, 0), rgb(150, 100, 50), Enum.Material.Wood)
+	ball(model, right, 0.14, CFrame.new(0, 0.82, -0.84), rgb(40, 120, 230))
 	-- paint splats on the smock
 	local torso = part(model, "UpperTorso")
 	local ts = torso.Size
@@ -1109,12 +1132,12 @@ end
 B.ChessKing = function(model, head, hs)
 	local hand = part(model, "RightHand")
 	local black = rgb(25, 25, 30)
-	cylY(model, hand, 0.7, 0.2, CFrame.new(0, -0.1, -0.35), black)
-	cylY(model, hand, 0.45, 0.9, CFrame.new(0, 0.45, -0.35), black)
-	cylY(model, hand, 0.6, 0.12, CFrame.new(0, 0.95, -0.35), black)
-	blob(model, hand, Vector3.new(0.5, 0.35, 0.5), CFrame.new(0, 1.15, -0.35), black)
-	block(model, hand, Vector3.new(0.1, 0.4, 0.1), CFrame.new(0, 1.5, -0.35), black)
-	block(model, hand, Vector3.new(0.3, 0.1, 0.1), CFrame.new(0, 1.55, -0.35), black)
+	cylY(model, hand, 0.7, 0.2, CFrame.new(0, -0.45, -0.8), black)
+	cylY(model, hand, 0.45, 0.9, CFrame.new(0, 0.1, -0.8), black)
+	cylY(model, hand, 0.6, 0.12, CFrame.new(0, 0.6, -0.8), black)
+	blob(model, hand, Vector3.new(0.5, 0.35, 0.5), CFrame.new(0, 0.8, -0.8), black)
+	block(model, hand, Vector3.new(0.1, 0.4, 0.1), CFrame.new(0, 1.15, -0.8), black)
+	block(model, hand, Vector3.new(0.3, 0.1, 0.1), CFrame.new(0, 1.2, -0.8), black)
 	-- medal
 	local torso = part(model, "UpperTorso")
 	local ts = torso.Size
@@ -1490,7 +1513,7 @@ B.HomeworkVillain = function(model, head, hs)
 	-- the stack of homework he reminded everyone about
 	local hand = part(model, "RightHand")
 	for i = 0, 9 do
-		block(model, hand, Vector3.new(0.9, 0.08, 1.2), CFrame.new(-0.3 + (i % 3) * 0.04, 0.2 + i * 0.09, -0.5) * CFrame.Angles(0, math.rad((i * 37) % 11 - 5), 0), rgb(250, 250, 245))
+		block(model, hand, Vector3.new(0.9, 0.08, 1.2), CFrame.new(-0.3 + (i % 3) * 0.04, -0.3 + i * 0.09, -1.05) * CFrame.Angles(0, math.rad((i * 37) % 11 - 5), 0), rgb(250, 250, 245))
 	end
 	-- villain cape
 	local torso = part(model, "UpperTorso")
@@ -1548,8 +1571,8 @@ B.Grandpa = function(model, head, hs)
 	block(model, torso, Vector3.new(ts.X * 0.08, ts.Y * 0.3, 0.07), CFrame.new(-ts.X * 0.28, ts.Y * 0.1, -ts.Z * 0.56), rgb(160, 30, 40))
 	block(model, torso, Vector3.new(ts.X * 0.18, ts.Y * 0.07, 0.07), CFrame.new(-ts.X * 0.22, -ts.Y * 0.02, -ts.Z * 0.56), rgb(160, 30, 40))
 	local hand = part(model, "RightHand")
-	cylY(model, hand, 0.12, 2.4, CFrame.new(0, -0.9, -0.2), rgb(120, 70, 30), Enum.Material.Wood)
-	cylX(model, hand, 0.12, 0.4, CFrame.new(-0.15, 0.3, -0.2), rgb(120, 70, 30), Enum.Material.Wood)
+	cylY(model, hand, 0.12, 1.6, CFrame.new(0, -0.75, -0.45), rgb(120, 70, 30), Enum.Material.Wood)
+	cylX(model, hand, 0.12, 0.4, CFrame.new(-0.15, 0.05, -0.45), rgb(120, 70, 30), Enum.Material.Wood)
 	wireGlasses(model, head, hs, 0.04, 0.14, rgb(170, 170, 180))
 	blob(model, head, Vector3.new(hs.X * 0.6, hs.Y * 0.14, 0.15), CFrame.new(0, -hs.Y * 0.12, -hs.Z * 0.52), rgb(235, 235, 240))
 end
@@ -1619,11 +1642,105 @@ B.TinyPrincipal = function(model, head, hs)
 	block(model, torso, Vector3.new(0.14, 0.14, 0.3), CFrame.new(-ts.X * 0.15, -ts.Y * 0.05, -ts.Z * 0.62), rgb(200, 200, 210), Enum.Material.Metal)
 end
 
+-- Things held in a hand, nudged clear of the rest of the body. With the arms hanging, the hand's +Y
+-- runs up the forearm, so an item authored "above the fist" sat inside the arm (a third of the looks
+-- did: books, clipboards, ladles, trophies through the wrist), and a wide one pushed into the hip.
+-- Each hand's items move together, forward off the arm and outward off the body, a twentieth of a
+-- stud at a time, until they are clear. The rule has to hold in every pose, not just the rest pose:
+-- mid-stride the elbow bends and anything standing up out of the fist swings into the upper arm. So
+-- the whole column above the fist, as wide and deep as the forearm plus a margin, is off limits, and
+-- the body gets a margin for the arm swing. (Gloves and mitts, which sit on the hand, are left alone.)
+local ARM = { RightHand = "RightLowerArm", LeftHand = "LeftLowerArm" }
+local TRUNK = { "Head", "UpperTorso", "LowerTorso", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg" }
+local function insideBox(box, pt, grow)
+	local l = box.CFrame:PointToObjectSpace(pt)
+	local h = box.Size / 2 + Vector3.one * (grow or 0)
+	return math.abs(l.X) < h.X and math.abs(l.Y) < h.Y and math.abs(l.Z) < h.Z
+end
+-- in the forearm's column above the fist (in hand space)
+local function inArmColumn(hand, forearm, pt)
+	local l = hand.CFrame:PointToObjectSpace(pt)
+	local hx, hz = forearm.Size.X / 2 + 0.1, forearm.Size.Z / 2 + 0.12
+	return l.Y > hand.Size.Y / 2 - 0.1 and math.abs(l.X) < hx and l.Z > -hz and l.Z < hz
+end
+-- points on (inside) a part's actual shape, in its own space
+local function samplePoints(p)
+	local h = p.Size / 2 * 0.9
+	local pts = { Vector3.zero }
+	local round = p:FindFirstChildOfClass("SpecialMesh") or (p:IsA("Part") and p.Shape ~= Enum.PartType.Block)
+	if p:IsA("Part") and p.Shape == Enum.PartType.Cylinder then
+		-- axis along X; rings at the two ends and the middle
+		local r = math.min(h.Y, h.Z)
+		for _, x in { -h.X, 0, h.X } do
+			for k = 0, 7 do
+				local a = k * math.pi / 4
+				table.insert(pts, Vector3.new(x, math.cos(a) * r, math.sin(a) * r))
+			end
+		end
+	elseif round then
+		for _, v in { Vector3.xAxis, -Vector3.xAxis, Vector3.yAxis, -Vector3.yAxis, Vector3.zAxis, -Vector3.zAxis } do
+			table.insert(pts, v * h)
+		end
+	else
+		for sx = -1, 1 do for sy = -1, 1 do for sz = -1, 1 do
+			table.insert(pts, Vector3.new(h.X * sx, h.Y * sy, h.Z * sz))
+		end end end
+	end
+	return pts
+end
+function Props.declash(model)
+	local folder = model:FindFirstChild("Props")
+	if not folder then return end
+	for handName, armName in ARM do
+		local hand = model:FindFirstChild(handName)
+		local forearm = model:FindFirstChild(armName)
+		if not (hand and forearm) then continue end
+		local items = {}
+		for _, p in folder:GetDescendants() do
+			if p:IsA("BasePart") then
+				local w = p:FindFirstChildOfClass("Weld")
+				if w and w.Part0 == hand and w.C0.Position.Magnitude >= 0.15 then
+					table.insert(items, { part = p, weld = w, pts = samplePoints(p) })
+				end
+			end
+		end
+		if #items == 0 then continue end
+		local out = handName == "RightHand" and 1 or -1 -- (the hand's +X is the rig's right)
+		local dx, dz = 0, 0
+		for _ = 1, 40 do
+			local hitArm, hitBody = false, false
+			for _, it in items do
+				local cf = hand.CFrame * CFrame.new(dx, 0, dz) * it.weld.C0
+				for _, v in it.pts do
+					local pt = cf:PointToWorldSpace(v)
+					if not hitArm and inArmColumn(hand, forearm, pt) then hitArm = true end
+					if not hitBody then
+						for _, n in TRUNK do
+							local b = model:FindFirstChild(n)
+							if b and insideBox(b, pt, 0.12) then hitBody = true break end
+						end
+					end
+				end
+			end
+			if not hitArm and not hitBody then break end
+			if hitArm then dz -= 0.05 end
+			if hitBody then dx += 0.05 * out end
+		end
+		if dx ~= 0 or dz ~= 0 then
+			for _, it in items do
+				it.weld.C0 = CFrame.new(dx, 0, dz) * it.weld.C0
+				it.part.CFrame = hand.CFrame * it.weld.C0
+			end
+		end
+	end
+end
+
 function Props.add(model, def)
 	local build = B[def.prop]
 	if not build then return end
 	local head = model:FindFirstChild("Head")
 	build(model, head, head.Size)
+	Props.declash(model)
 end
 
 ---------------------------------------------------------------------------
@@ -1728,8 +1845,8 @@ T.honey = function(model, head, hs, torso, ts)
 		lens.Transparency = 0.5
 	end
 	local hand = part(model, "LeftHand")
-	block(model, hand, Vector3.new(0.5, 1.5, 1.2), CFrame.new(0, 0.3, -0.3), rgb(40, 90, 170))
-	block(model, hand, Vector3.new(0.52, 1.4, 1.05), CFrame.new(0, 0.3, -0.36), rgb(250, 245, 225))
+	block(model, hand, Vector3.new(0.5, 1.5, 1.2), CFrame.new(0, -0.55, -0.3), rgb(40, 90, 170))
+	block(model, hand, Vector3.new(0.52, 1.4, 1.05), CFrame.new(0, -0.55, -0.36), rgb(250, 245, 225))
 	-- pearls
 	for i = -3, 3 do
 		ball(model, torso, 0.16, CFrame.new(i * ts.X * 0.07, ts.Y * (0.38 - math.abs(i) * -0.02 - 0.06), -ts.Z * 0.55), rgb(250, 250, 245))
@@ -1780,10 +1897,10 @@ T.beaker = function(model, head, hs, torso, ts)
 		block(model, torso, Vector3.new(0.06, 0.35, 0.06), CFrame.new(-ts.X * (0.2 + i * 0.06), ts.Y * 0.28, -ts.Z * 0.56), c)
 	end
 	local hand = part(model, "RightHand")
-	local glass = cylY(model, hand, 0.95, 1.2, CFrame.new(0, 0.35, -0.55), rgb(220, 240, 255), Enum.Material.Glass)
+	local glass = cylY(model, hand, 0.95, 1.2, CFrame.new(0, 0.15, -1.0), rgb(220, 240, 255), Enum.Material.Glass)
 	glass.Transparency = 0.45
-	cylY(model, hand, 0.85, 0.75, CFrame.new(0, 0.15, -0.55), rgb(90, 255, 90), Enum.Material.Neon)
-	cylY(model, hand, 0.4, 0.5, CFrame.new(0, 1.1, -0.55), rgb(220, 240, 255), Enum.Material.Glass).Transparency = 0.45
+	cylY(model, hand, 0.85, 0.75, CFrame.new(0, -0.05, -1.0), rgb(90, 255, 90), Enum.Material.Neon)
+	cylY(model, hand, 0.4, 0.5, CFrame.new(0, 0.9, -1.0), rgb(220, 240, 255), Enum.Material.Glass).Transparency = 0.45
 	sparkles(glass, rgb(140, 255, 140), 6)
 end
 
@@ -1797,9 +1914,9 @@ T.verse = function(model, head, hs, torso, ts)
 	end
 	block(model, torso, Vector3.new(0.35, ts.Y * 0.7, 0.1), CFrame.new(ts.X * 0.18, ts.Y * 0.05, -ts.Z * 0.56), rgb(250, 200, 60))
 	local hand = part(model, "RightHand")
-	cylY(model, hand, 0.07, 1.6, CFrame.new(0, 0.7, -0.25) * CFrame.Angles(math.rad(-20), 0, 0), rgb(40, 30, 30))
-	blob(model, hand, Vector3.new(0.12, 1.5, 0.6), CFrame.new(0, 1.3, -0.5) * CFrame.Angles(math.rad(-20), 0, 0), rgb(200, 90, 255))
-	blob(model, hand, Vector3.new(0.13, 0.9, 0.3), CFrame.new(0, 1.3, -0.52) * CFrame.Angles(math.rad(-20), 0, 0), rgb(255, 170, 230))
+	cylY(model, hand, 0.07, 1.6, CFrame.new(0, 0.7, -0.75) * CFrame.Angles(math.rad(-20), 0, 0), rgb(40, 30, 30))
+	blob(model, hand, Vector3.new(0.12, 1.5, 0.6), CFrame.new(0, 1.3, -1.0) * CFrame.Angles(math.rad(-20), 0, 0), rgb(200, 90, 255))
+	blob(model, hand, Vector3.new(0.13, 0.9, 0.3), CFrame.new(0, 1.3, -1.02) * CFrame.Angles(math.rad(-20), 0, 0), rgb(255, 170, 230))
 end
 
 -- Professor Tweed: white beard and side hair, bow tie, elbow patches, a stack of books
@@ -1916,11 +2033,13 @@ T.wobble = function(model, head, hs, torso, ts)
 		ball(model, torso, 0.14, CFrame.new(0, ts.Y * (0.25 - i * 0.2), -ts.Z * 0.55), rgb(90, 60, 40))
 	end
 	-- the pencil cane
+	-- (in front of his fist, the lead tip just touching the ground: it used to reach 1.6 into the
+	-- plaza and its eraser end ran up inside his arm)
 	local hand = part(model, "RightHand")
-	cylY(model, hand, 0.45, 4.5, CFrame.new(0.15, -1.6, -0.25), rgb(255, 205, 50))
-	cylY(model, hand, 0.47, 0.5, CFrame.new(0.15, 0.55, -0.25), rgb(255, 150, 170))
-	cylY(model, hand, 0.46, 0.25, CFrame.new(0.15, 0.2, -0.25), rgb(200, 200, 210), Enum.Material.Metal)
-	cylY(model, hand, 0.25, 0.4, CFrame.new(0.15, -3.95, -0.25), rgb(240, 210, 170))
+	cylY(model, hand, 0.45, 2.9, CFrame.new(0.15, -0.8, -0.75), rgb(255, 205, 50))
+	cylY(model, hand, 0.47, 0.5, CFrame.new(0.15, 0.55, -0.75), rgb(255, 150, 170))
+	cylY(model, hand, 0.46, 0.25, CFrame.new(0.15, 0.2, -0.75), rgb(200, 200, 210), Enum.Material.Metal)
+	cylY(model, hand, 0.25, 0.4, CFrame.new(0.15, -2.45, -0.75), rgb(240, 210, 170))
 end
 
 -- Janitor Stan: blue overalls, a grey cap, a ring of keys and a mop
@@ -1936,10 +2055,20 @@ T.stan = function(model, head, hs, torso, ts)
 	for i = 0, 5 do
 		block(model, lower, Vector3.new(0.12, 0.35, 0.05), CFrame.new(ts.X * 0.45, -0.1 - (i % 2) * 0.08, -0.3 + i * 0.12) * CFrame.Angles(0, 0, math.rad(i * 15)), rgb(200, 200, 205), Enum.Material.Metal)
 	end
-	local hand = part(model, "RightHand")
-	cylY(model, hand, 0.18, 5.2, CFrame.new(0, -1.3, -0.35) * CFrame.Angles(math.rad(20), 0, 0), rgb(150, 110, 70), Enum.Material.Wood)
-	for i = 0, 5 do
-		block(model, hand, Vector3.new(0.12, 1.1, 0.12), CFrame.new(-0.3 + i * 0.12, -3.9, -1.2) * CFrame.Angles(math.rad(20), 0, math.rad((i - 2.5) * 6)), rgb(240, 240, 235))
+	-- the mop: fixed to his body, not his swinging hand, so its head stays on the sidewalk while he
+	-- walks (on the hand it dipped 2 studs under the pavement and whipped up to his hip each step).
+	-- The handle passes through where his right hand hangs; the strands rest on the ground.
+	local root = model:FindFirstChild("HumanoidRootPart")
+	local hum = model:FindFirstChildOfClass("Humanoid")
+	if root and hum then
+		local floor = -(hum.HipHeight + root.Size.Y / 2)
+		local tilt = CFrame.Angles(math.rad(20), 0, 0)
+		local u = tilt.UpVector
+		local bottom = Vector3.new(1.65, floor + 0.45, -0.65)
+		cylY(model, root, 0.18, 2.35, CFrame.new(bottom + u * 1.175) * tilt, rgb(150, 110, 70), Enum.Material.Wood)
+		for i = 0, 5 do
+			block(model, root, Vector3.new(0.12, 0.6, 0.12), CFrame.new(1.35 + i * 0.12, floor + 0.28, -0.7 - (i % 2) * 0.12) * CFrame.Angles(math.rad(10), 0, math.rad((i - 2.5) * 8)), rgb(240, 240, 235))
+		end
 	end
 end
 
@@ -1959,8 +2088,8 @@ T.loretta = function(model, head, hs, torso, ts)
 		if hand then blob(model, hand, Vector3.new(0.7, 0.7, 0.7), CFrame.new(), rgb(230, 60, 60)) end
 	end
 	local hand = part(model, "RightHand")
-	cylY(model, hand, 0.14, 2.6, CFrame.new(0, 0.9, -0.3) * CFrame.Angles(math.rad(-15), 0, 0), rgb(200, 200, 210), Enum.Material.Metal)
-	ball(model, hand, 0.9, CFrame.new(0, 2.25, -0.65), rgb(200, 200, 210), Enum.Material.Metal)
+	cylY(model, hand, 0.14, 1.9, CFrame.new(0, -0.9, -0.45), rgb(200, 200, 210), Enum.Material.Metal)
+	ball(model, hand, 0.9, CFrame.new(0, -1.95, -0.6), rgb(200, 200, 210), Enum.Material.Metal)
 end
 
 -- the Sugar Baron: trench coat, a top hat made of cake, glowing pink eyes, face in shadow
@@ -1979,9 +2108,10 @@ T.baron = function(model, head, hs, torso, ts)
 	local lower = part(model, "LowerTorso")
 	blob(model, lower, Vector3.new(ts.X * 1.3, ts.Y * 1.6, ts.Z * 1.4), CFrame.new(0, -ts.Y * 0.6, 0), rgb(120, 60, 90))
 	local hand = part(model, "RightHand")
-	cylY(model, hand, 0.18, 3.5, CFrame.new(0, -1, -0.3), rgb(250, 250, 250))
+	-- (from his fist to the roof, in front of the forearm)
+	cylY(model, hand, 0.18, 2.6, CFrame.new(0, -1.25, -0.6), rgb(250, 250, 250))
 	for i = 0, 5 do
-		block(model, hand, Vector3.new(0.2, 0.1, 0.2), CFrame.new(0, -2.5 + i * 0.5, -0.3) * CFrame.Angles(0, 0, math.rad(35)), rgb(230, 30, 50))
+		block(model, hand, Vector3.new(0.2, 0.1, 0.2), CFrame.new(0, -2.4 + i * 0.45, -0.6) * CFrame.Angles(0, 0, math.rad(35)), rgb(230, 30, 50))
 	end
 end
 
@@ -2100,15 +2230,7 @@ T.guard = function(model, head, hs, torso, ts)
 		local body = cylZ(model, hand, 0.34, 1.3, CFrame.new(0, -0.1, -0.6), rgb(30, 30, 34), Enum.Material.Metal)
 		local lens = cylZ(model, hand, 0.42, 0.12, CFrame.new(0, -0.1, -1.28), rgb(255, 250, 215), Enum.Material.Neon)
 		lens.Name = "FlashlightLens"
-		local spot = Instance.new("SpotLight")
-		spot.Name = "Beam"
-		spot.Face = Enum.NormalId.Right
-		spot.Angle = 70
-		spot.Range = 26
-		spot.Brightness = 3
-		spot.Color = Color3.fromRGB(255, 245, 200)
-		spot.Shadows = true
-		spot.Parent = lens
+		sightLight(model, Color3.fromRGB(255, 245, 200), 70, 26, 3, true)
 		_ = body
 	end
 end
@@ -2153,14 +2275,7 @@ T.hazmat = function(model, head, hs, torso, ts)
 		cylZ(model, hand, 0.4, 1.1, CFrame.new(0, -0.1, -0.5), rgb(40, 40, 46), Enum.Material.Metal)
 		local lens = cylZ(model, hand, 0.46, 0.12, CFrame.new(0, -0.1, -1.1), rgb(140, 255, 110), Enum.Material.Neon)
 		lens.Name = "FlashlightLens"
-		local spot = Instance.new("SpotLight")
-		spot.Name = "Beam"
-		spot.Face = Enum.NormalId.Right
-		spot.Angle = 60
-		spot.Range = 24
-		spot.Brightness = 3
-		spot.Color = Color3.fromRGB(150, 255, 120)
-		spot.Parent = lens
+		sightLight(model, Color3.fromRGB(150, 255, 120), 60, 24, 3)
 	end
 end
 
@@ -2195,13 +2310,7 @@ T.prefect = function(model, head, hs, torso, ts)
 		local lens = cylZ(model, rhand, 0.36, 0.12, CFrame.new(0, -0.1, -0.9), rgb(255, 250, 215), Enum.Material.Neon)
 		cylZ(model, rhand, 0.3, 0.9, CFrame.new(0, -0.1, -0.4), rgb(40, 40, 46), Enum.Material.Metal)
 		lens.Name = "FlashlightLens"
-		local spot = Instance.new("SpotLight")
-		spot.Name = "Beam"
-		spot.Face = Enum.NormalId.Right
-		spot.Angle = 60
-		spot.Range = 22
-		spot.Brightness = 2.5
-		spot.Parent = lens
+		sightLight(model, Color3.new(1, 1, 1), 60, 22, 2.5)
 	end
 end
 
@@ -2241,12 +2350,14 @@ T.butler = function(model, head, hs, torso, ts)
 	end
 	-- a very thin moustache
 	block(model, head, Vector3.new(hs.X * 0.4, hs.Y * 0.04, 0.05), CFrame.new(0, -hs.Y * 0.14, -hs.Z * 0.51), rgb(25, 22, 20))
+	-- the silver tray, held out clear of his hip (the left hand's -X is outward)
 	local left = part(model, "LeftHand")
-	cylY(model, left, 1.6, 0.08, CFrame.new(0, 0.1, -0.5), rgb(200, 205, 215), Enum.Material.Metal)
+	cylY(model, left, 1.6, 0.08, CFrame.new(-0.45, 0.1, -0.5), rgb(200, 205, 215), Enum.Material.Metal)
+	-- the feather duster, sticking out of the front of his fist
 	local right = part(model, "RightHand")
-	cylY(model, right, 0.1, 1.2, CFrame.new(0, 0.5, -0.2), rgb(120, 80, 40), Enum.Material.Wood)
+	cylZ(model, right, 0.1, 1.3, CFrame.new(0, -0.1, -1.05), rgb(120, 80, 40), Enum.Material.Wood)
 	for i = 0, 4 do
-		blob(model, right, Vector3.new(0.25, 0.8, 0.12), CFrame.new(0, 1.3, -0.2) * CFrame.Angles(0, math.rad(i * 36), math.rad(18)), ({ rgb(255, 120, 180), rgb(255, 200, 80), rgb(120, 200, 255) })[i % 3 + 1])
+		blob(model, right, Vector3.new(0.25, 0.12, 0.8), CFrame.new(0, -0.1, -1.95) * CFrame.Angles(0, 0, math.rad(i * 72)) * CFrame.Angles(math.rad(20), 0, 0), ({ rgb(255, 120, 180), rgb(255, 200, 80), rgb(120, 200, 255) })[i % 3 + 1])
 	end
 end
 
@@ -2271,9 +2382,9 @@ T.kevin = function(model, head, hs, torso, ts)
 	end
 	-- the cereal bowl
 	local left = part(model, "LeftHand")
-	cylY(model, left, 1.1, 0.45, CFrame.new(0, 0.15, -0.55), rgb(250, 250, 250))
+	cylY(model, left, 1.1, 0.45, CFrame.new(0, 0, -0.78), rgb(250, 250, 250))
 	for i = 0, 5 do
-		ball(model, left, 0.22, CFrame.new(math.cos(i) * 0.3, 0.42, -0.55 + math.sin(i) * 0.3), colors[i % 4 + 1])
+		ball(model, left, 0.22, CFrame.new(math.cos(i) * 0.3, 0.27, -0.78 + math.sin(i) * 0.3), colors[i % 4 + 1])
 	end
 end
 
@@ -2333,7 +2444,7 @@ T.librarian = function(model, head, hs, torso, ts)
 	hairCap(model, head, hs, rgb(170, 170, 175), 0.4)
 	wireGlasses(model, head, hs)
 	for _, x in { -1, 1 } do block(model, torso, Vector3.new(ts.X * 0.14, ts.Y * 0.1, 0.08), CFrame.new(x * ts.X * 0.08, ts.Y * 0.42, -ts.Z * 0.55) * CFrame.Angles(0, 0, math.rad(x * 20)), rgb(150, 30, 40)) end
-	inHand(model, "LeftHand", function(h) block(model, h, Vector3.new(0.3, 1.2, 0.9), CFrame.new(0, 0, -0.4), rgb(60, 90, 160)) end)
+	inHand(model, "LeftHand", function(h) block(model, h, Vector3.new(0.3, 1.2, 0.9), CFrame.new(0, -0.45, -0.35), rgb(60, 90, 160)) end)
 end
 
 Props.TeacherLooks.arcade = { skin = "tan", shirt = rgb(30, 30, 36), pants = rgb(40, 50, 90) }
@@ -2353,8 +2464,9 @@ T.cook = function(model, head, hs, torso, ts)
 	for i = 0, 2 do ball(model, torso, 0.16, CFrame.new(ts.X * 0.18, ts.Y * (0.3 - i * 0.25), -ts.Z * 0.53), rgb(40, 40, 46)) end
 	blob(model, head, Vector3.new(hs.X * 0.35, hs.Y * 0.6, hs.Z * 0.3), CFrame.new(hs.X * 0.5, -hs.Y * 0.05, 0), rgb(200, 60, 40))
 	inHand(model, "RightHand", function(h)
-		cylY(model, h, 0.15, 1.6, CFrame.new(0, 0.2, -0.3), rgb(40, 40, 46))
-		block(model, h, Vector3.new(0.9, 0.06, 0.7), CFrame.new(0, 1.05, -0.3), rgb(200, 200, 210), Enum.Material.Metal)
+		-- (a spatula hanging from the fist: up the forearm it went through the arm)
+		cylY(model, h, 0.15, 1.6, CFrame.new(0, -0.6, -0.45), rgb(40, 40, 46))
+		block(model, h, Vector3.new(0.7, 0.9, 0.06), CFrame.new(0, -1.75, -0.45), rgb(200, 200, 210), Enum.Material.Metal)
 	end)
 end
 
@@ -2371,8 +2483,9 @@ T.scoops = function(model, head, hs, torso, ts)
 	block(model, head, Vector3.new(hs.X * 1.02, hs.Y * 0.3, hs.Z * 0.6), CFrame.new(0, hs.Y * 0.55, 0), rgb(250, 250, 250))
 	for i = 0, 3 do block(model, torso, Vector3.new(ts.X * 1.02, 0.18, ts.Z * 1.03), CFrame.new(0, ts.Y * (0.35 - i * 0.22), 0), rgb(250, 250, 250)) end
 	inHand(model, "RightHand", function(h)
-		block(model, h, Vector3.new(0.5, 0.9, 0.5), CFrame.new(0, 0.5, -0.3), rgb(220, 170, 100))
-		ball(model, h, 0.7, CFrame.new(0, 1.2, -0.3), rgb(150, 230, 180))
+		-- (held out in front of the fist, clear of the forearm)
+		block(model, h, Vector3.new(0.5, 0.9, 0.5), CFrame.new(0, 0.35, -0.8), rgb(220, 170, 100))
+		ball(model, h, 0.7, CFrame.new(0, 0.95, -0.85), rgb(150, 230, 180))
 	end)
 end
 
@@ -2449,7 +2562,8 @@ T.grumbles = function(model, head, hs, torso, ts)
 	cap(model, head, hs, rgb(110, 100, 90))
 	for _, x in { -1, 1 } do blob(model, head, Vector3.new(hs.X * 0.35, hs.Y * 0.14, 0.2), CFrame.new(x * hs.X * 0.22, hs.Y * 0.2, -hs.Z * 0.5) * CFrame.Angles(0, 0, math.rad(x * -15)), rgb(240, 240, 240)) end
 	stache(model, head, hs, rgb(240, 240, 240))
-	inHand(model, "RightHand", function(h) cylY(model, h, 0.25, 4, CFrame.new(0, -1.5, -0.3), rgb(110, 70, 40), Enum.Material.Wood) end)
+	-- a walking stick from the fist to the ground (it went 0.7 into the pavement and up his arm)
+	inHand(model, "RightHand", function(h) cylY(model, h, 0.25, 2.5, CFrame.new(0, -1.3, -0.55), rgb(110, 70, 40), Enum.Material.Wood) end)
 end
 
 Props.TeacherLooks.nurse = { skin = "brown", shirt = rgb(150, 210, 230), pants = rgb(150, 210, 230) }
@@ -2495,7 +2609,8 @@ T.fisher = function(model, head, hs, torso, ts)
 	blob(model, head, Vector3.new(hs.X * 1.3, hs.Y * 0.5, hs.Z * 1.3), CFrame.new(0, hs.Y * 0.38, 0), rgb(250, 210, 50))
 	beard(model, head, hs, rgb(200, 200, 205))
 	inHand(model, "RightHand", function(h)
-		cylY(model, h, 0.12, 7, CFrame.new(0, 2.8, -0.4) * CFrame.Angles(math.rad(-25), 0, 0), rgb(110, 70, 40), Enum.Material.Wood)
+		-- the rod runs through his fist and angles forward, clear of the forearm
+		cylY(model, h, 0.12, 7, CFrame.new(0, 1.99, -2.37) * CFrame.Angles(math.rad(-50), 0, 0), rgb(110, 70, 40), Enum.Material.Wood)
 	end)
 end
 
@@ -2511,7 +2626,7 @@ Props.TeacherLooks.counselor = { skin = "dark", shirt = rgb(255, 150, 50), pants
 T.counselor = function(model, head, hs, torso, ts)
 	cap(model, head, hs, rgb(60, 130, 70))
 	block(model, torso, Vector3.new(ts.X * 0.8, 0.5, 0.06), CFrame.new(0, ts.Y * 0.1, -ts.Z * 0.53), rgb(250, 250, 250))
-	inHand(model, "LeftHand", function(h) block(model, h, Vector3.new(0.9, 1.2, 0.1), CFrame.new(0, 0, -0.4), rgb(150, 110, 70), Enum.Material.Wood) end)
+	inHand(model, "LeftHand", function(h) block(model, h, Vector3.new(0.9, 1.2, 0.1), CFrame.new(0, 0, -0.62), rgb(150, 110, 70), Enum.Material.Wood) end)
 end
 
 Props.TeacherLooks.scout = { skin = "tan", shirt = rgb(150, 170, 90), pants = rgb(90, 90, 70) }
@@ -2528,7 +2643,7 @@ T.engineer = function(model, head, hs, torso, ts)
 	blob(model, head, Vector3.new(hs.X * 0.9, hs.Y * 0.5, hs.Z * 0.3), CFrame.new(0, -hs.Y * 0.1, hs.Z * 0.45), rgb(230, 110, 40))
 	for _, x in { -0.22, 0.22 } do cylZ(model, head, hs.X * 0.3, 0.2, CFrame.new(hs.X * x, hs.Y * 0.38, -hs.Z * 0.48), rgb(120, 220, 255), Enum.Material.Glass) end
 	block(model, head, Vector3.new(hs.X * 1.05, 0.12, hs.Z * 1.05), CFrame.new(0, hs.Y * 0.38, 0), rgb(40, 40, 46))
-	inHand(model, "RightHand", function(h) block(model, h, Vector3.new(0.2, 1.6, 0.3), CFrame.new(0, 0.3, -0.3), rgb(180, 180, 190), Enum.Material.Metal) end)
+	inHand(model, "RightHand", function(h) block(model, h, Vector3.new(0.2, 1.6, 0.3), CFrame.new(0, -0.6, -0.35), rgb(180, 180, 190), Enum.Material.Metal) end)
 end
 
 Props.TeacherLooks.robot = { skin = "light", shirt = rgb(190, 195, 205), pants = rgb(150, 155, 165) }
@@ -2582,7 +2697,7 @@ T.alienblue = function(model, head, hs, torso, ts)
 	alienSkin(model, skin)
 	alienFace(model, head, hs, rgb(255, 120, 220), skin)
 	block(model, torso, Vector3.new(ts.X * 1.02, 0.25, ts.Z * 1.02), CFrame.new(0, -ts.Y * 0.1, 0), rgb(255, 120, 220), Enum.Material.Neon)
-	inHand(model, "RightHand", function(h) cylY(model, h, 0.3, 1.8, CFrame.new(0, 0.2, -0.4), rgb(200, 200, 210), Enum.Material.Metal) ball(model, h, 0.5, CFrame.new(0, 1.2, -0.4), rgb(255, 120, 220), Enum.Material.Neon) end)
+	inHand(model, "RightHand", function(h) cylZ(model, h, 0.3, 1.8, CFrame.new(0, -0.1, -1.0), rgb(200, 200, 210), Enum.Material.Metal) ball(model, h, 0.5, CFrame.new(0, -0.1, -1.95), rgb(255, 120, 220), Enum.Material.Neon) end)
 end
 Props.TeacherLooks.aliencaptain = { skinColor = ALIEN, shirt = rgb(70, 40, 120), pants = rgb(40, 30, 70) }
 T.aliencaptain = function(model, head, hs, torso, ts)
@@ -2600,6 +2715,7 @@ function Props.teacher(model, outfit)
 	local head = model:FindFirstChild("Head")
 	local torso = model:FindFirstChild("UpperTorso")
 	build(model, head, head.Size, torso, torso.Size)
+	Props.declash(model)
 end
 
 local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"

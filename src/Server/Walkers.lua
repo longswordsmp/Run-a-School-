@@ -25,6 +25,20 @@ end
 function Walkers.walk(model, points, speed, onDone, opts)
 	local flat = not (opts and opts.flat == false)
 	active[model] = { hrp = model.PrimaryPart, points = points, i = 1, speed = speed, onDone = onDone, flat = flat }
+	-- the legs keep pace with the feet (the walk/run clip is sped to match)
+	require(script.Parent.StudentFactory).pace(model, speed)
+end
+
+-- how fast a walker is moving (nil when it isn't)
+function Walkers.speedOf(model)
+	local w = active[model]
+	return w and w.speed
+end
+
+-- the waypoint a walker is heading for (nil once it has arrived)
+function Walkers.index(model)
+	local w = active[model]
+	return w and w.i
 end
 
 function Walkers.stop(model)

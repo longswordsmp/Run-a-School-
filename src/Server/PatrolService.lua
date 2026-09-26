@@ -407,11 +407,15 @@ local function dealerLeave(player, s, busted, by)
 		if label then label.Text = "SEE YA!" end
 		Remotes.Notify:FireClient(player, ("%s got away with %s of your tuition!"):format(d.def.name, Config.formatCash(took)), "bad")
 	end
-	-- run back out the gate
+	-- run back out the gate, from wherever he is on his way in (busted mid-walk, he turns round
+	-- where he stands rather than first running on in to the desk)
+	local wi = Walkers.index(d.model)
+	local from = wi and math.max(wi - 1, 1) or #d.path
 	local back = {}
-	for i = #d.path, 1, -1 do table.insert(back, d.path[i]) end
-	Factory.play(d.model, "walk")
-	Walkers.walk(d.model, back, busted and 20 or 10, function()
+	for i = from, 1, -1 do table.insert(back, d.path[i]) end
+	local speed = busted and 20 or 10
+	Factory.play(d.model, "walk", speed)
+	Walkers.walk(d.model, back, speed, function()
 		d.model:Destroy()
 		if s.dealer == d then s.dealer = nil end
 	end, { flat = false })

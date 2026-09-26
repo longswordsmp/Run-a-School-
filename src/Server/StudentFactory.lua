@@ -317,10 +317,38 @@ function Factory.setMode(model, mode, extra)
 	end
 end
 
-function Factory.play(model, which)
+-- The ground speed (studs/s) each looped move clip covers at 1x on the adult rig (HipHeight 2.366),
+-- measured in play from the planted foot. Stride scales with leg length, so a kid's is shorter.
+-- Played at a fixed 1x the legs cycled up to 3.6x too fast for a slow walker (Stan) and too slow
+-- for a sprinter: the planted foot skated, which read as "walking weirdly".
+local GROUND = { walk = 12.6, run = 13.2 }
+local REF_HIP = 2.366
+local current = setmetatable({}, { __mode = "k" }) -- model -> { track, which }
+
+local function natural(model, which)
+	local hum = model:FindFirstChildOfClass("Humanoid")
+	return GROUND[which] and hum and GROUND[which] * math.max(hum.HipHeight, 0.6) / REF_HIP
+end
+
+-- match a rig's playing walk/run clip to the speed it is moving at
+function Factory.pace(model, speed)
+	local c = current[model]
+	if not (c and speed and c.track.IsPlaying) then return end
+	local nat = natural(model, c.which)
+	if nat then c.track:AdjustSpeed(math.clamp(speed / nat, 0.3, 2.2)) end
+end
+
+-- which: a Factory.Anims name. speed (optional): the studs a second the rig is moving; a walk that
+-- fast becomes a run and a run that slow a walk, and the clip is sped to match. A rig that Walkers is
+-- already moving picks up its walker's speed.
+function Factory.play(model, which, speed)
 	local hum = model:FindFirstChildOfClass("Humanoid")
 	local animator = hum and hum:FindFirstChildOfClass("Animator")
 	if not animator then return end
+	if speed and which == "walk" and speed > natural(model, "walk") * 1.3 then which = "run" end
+	if speed and which == "run" and speed < natural(model, "walk") * 0.95 then which = "walk" end
+	-- (the walker's speed only paces the clip: callers often start a run before the new walk)
+	if not speed and GROUND[which] then speed = require(script.Parent.Walkers).speedOf(model) end
 	for _, tr in animator:GetPlayingAnimationTracks() do tr:Stop(0.15) end
 	local a = Instance.new("Animation")
 	a.AnimationId = Factory.Anims[which]
@@ -328,6 +356,8 @@ function Factory.play(model, which)
 	track.Looped = true
 	track.Priority = which == "sit" and Enum.AnimationPriority.Action or Enum.AnimationPriority.Movement
 	track:Play(0.15)
+	current[model] = { track = track, which = which }
+	if speed then Factory.pace(model, speed) end
 	return track
 end
 
@@ -358,6 +388,78 @@ end
 function Factory.standOffset(model)
 	local hum = model:FindFirstChildOfClass("Humanoid")
 	return hum.HipHeight + model.PrimaryPart.Size.Y / 2 + (model:GetAttribute("Hover") or 0)
+end
+
+-- both arms straight up (carrying something overhead), or back down. Works on player characters
+-- (Motor6D shoulders) and on the NPC rigs (AnimationConstraint shoulders); the walk or run swing
+-- then plays around the raised arms.
+function Factory.raiseArms(rig, up)
+	for _, name in { "RightShoulder", "LeftShoulder" } do
+		local joint = rig:FindFirstChild(name, true)
+		local target, prop = Factory.poseTarget(joint)
+		if target then
+			local rest = joint:GetAttribute("RestPose")
+			if up and not rest then
+				joint:SetAttribute("RestPose", target[prop])
+				target[prop] = target[prop] * CFrame.Angles(math.rad(165), 0, 0)
+			elseif not up and rest then
+				target[prop] = rest
+				joint:SetAttribute("RestPose", nil)
+			end
+		end
+	end
+end
+
+-- a kid carried overhead by `carrier` (a goon, a thief, a player): sitting on the raised hands just
+-- above the head. (It used to float a couple of studs over the head with the carrier's arms at his
+-- sides.) ageScale: the kid's size at its school (Config.AgeScale), so it doesn't grow or shrink
+-- when picked up. The arms come down again when the kid is taken away.
+function Factory.carryOverhead(carrier, kid, tilt, ageScale)
+	local root = carrier:FindFirstChild("HumanoidRootPart") or carrier.PrimaryPart
+	if not (root and kid.PrimaryPart) then return end
+	if ageScale and math.abs(ageScale - 1) > 0.01 then pcall(function() kid:ScaleTo(kid:GetScale() * ageScale) end) end
+	for _, bp in kid:GetDescendants() do
+		if bp:IsA("BasePart") then
+			bp.Anchored = false
+			bp.Massless = true
+			bp.CanCollide = false
+			bp.CanQuery = false
+		end
+	end
+	local head = carrier:FindFirstChild("Head")
+	local top = head and (root.CFrame:PointToObjectSpace(head.Position).Y + head.Size.Y / 2) or 2.3
+	local khum = kid:FindFirstChildOfClass("Humanoid")
+	-- (a sitting kid's seat is about half its root plus a tenth of its hip height below the root)
+	local seat = kid.PrimaryPart.Size.Y * 0.5 + (khum and khum.HipHeight * 0.1 or 0.2)
+	local c0 = CFrame.new(0, top + 0.9 + seat, 0) * (tilt or CFrame.identity)
+	kid.PrimaryPart.CFrame = root.CFrame * c0
+	local w = Instance.new("Weld")
+	w.Part0, w.Part1 = root, kid.PrimaryPart
+	w.C0 = c0
+	w.Parent = kid.PrimaryPart
+	kid.Parent = carrier
+	Factory.play(kid, "sit")
+	Factory.raiseArms(carrier, true)
+	kid.AncestryChanged:Connect(function()
+		if not kid:IsDescendantOf(carrier) and carrier.Parent then Factory.raiseArms(carrier, false) end
+	end)
+	return kid
+end
+
+-- knocked out cold: lying flat on his back on the floor, limbs still (not tilted over in mid-air
+-- at standing height with the fall clip still flailing)
+function Factory.lieDown(model)
+	local root = model.PrimaryPart
+	local hum = model:FindFirstChildOfClass("Humanoid")
+	local an = hum and hum:FindFirstChildOfClass("Animator")
+	if an then for _, tr in an:GetPlayingAnimationTracks() do tr:Stop(0.1) end end
+	current[model] = nil
+	if not (root and hum) then return end
+	local so = Factory.standOffset(model)
+	local lv = root.CFrame.LookVector
+	local flat = Vector3.new(lv.X, 0, lv.Z)
+	flat = flat.Magnitude > 1e-3 and flat.Unit or Vector3.new(0, 0, -1)
+	root.CFrame = CFrame.lookAt(root.Position, root.Position + flat) * CFrame.new(0, -(so - 0.8), 0) * CFrame.Angles(math.rad(90), 0, 0)
 end
 
 -- teachers: adult proportions, their own template folder (the Shop renders them in viewports)

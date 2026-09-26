@@ -589,22 +589,7 @@ local function takeMutant(player, t)
 	-- the mutant over your head
 	local kid = Factory.build(def, "Mutated")
 	Factory.setMode(kid, "carried")
-	for _, bp in kid:GetDescendants() do
-		if bp:IsA("BasePart") then
-			bp.Anchored = false
-			bp.Massless = true
-			bp.CanCollide = false
-			bp.CanQuery = false
-		end
-	end
-	local off = 3.4 + Factory.standOffset(kid) * 0.9
-	kid.PrimaryPart.CFrame = proot.CFrame * CFrame.new(0, off, 0)
-	local w = Instance.new("Weld")
-	w.Part0, w.Part1 = proot, kid.PrimaryPart
-	w.C0 = CFrame.new(0, off, 0)
-	w.Parent = kid.PrimaryPart
-	kid.Parent = char
-	Factory.play(kid, "sit")
+	Factory.carryOverhead(char, kid)
 	carrying[player] = { tube = t, kid = kid, def = def, lastPos = proot.Position, lastT = now() }
 	player:SetAttribute("Heist", "Mutant " .. def.name)
 	StealService.setSpeed(player)
@@ -848,13 +833,7 @@ function LabService.debugTake(player, i)
 end
 -- Studio: every Lab guard out cold for `secs` (to test a job without the guards)
 function LabService.debugCalm(secs)
-	for _, g in guards.list do
-		g.state = "stunned"
-		g.target = nil
-		g.stunUntil = now() + (secs or 30)
-		require(script.Parent.Walkers).stop(g.model)
-	end
-	return #guards.list
+	return guards:calm(secs)
 end
 function LabService.debugState()
 	local out = { alarm = alarmUntil > now(), tubes = {}, guards = {} }

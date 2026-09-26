@@ -171,7 +171,7 @@ function LetterService.deliver(player, def, free, gradeOverride, note)
 	model.PrimaryPart.CFrame = CFrame.new(pts[1] + Vector3.new(0, 0, 0))
 	model.Parent = workspace:FindFirstChild("Hall")
 	benches[player][seat] = model
-	Factory.play(model, "walk")
+	Factory.play(model, "walk", 12)
 
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.Name = "EnrollPrompt"

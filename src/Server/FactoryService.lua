@@ -669,12 +669,15 @@ local function makeGuard(route)
 	return g
 end
 
+-- (one clip at a time, paced to his speed: the same helper the other squads use)
+local anim = require(script.Parent.Guards).anim
+
 local function patrol(g)
 	g.state = "patrol"
 	g.target = nil
 	g.slow = nil
 	guardTag(g, "")
-	Factory.play(g.model, "walk")
+	anim(g, "walk", H.patrolSpeed)
 	local function nextLeg()
 		if g.state ~= "patrol" or not g.model.Parent then return end
 		g.leg = g.leg % #g.route + 1
@@ -701,7 +704,7 @@ local function chase(g, player, reaction)
 	g.seenAt = now()
 	g.reactUntil = now() + (reaction or H.reaction)
 	guardTag(g, "!", rgb(255, 70, 70))
-	Factory.play(g.model, "idle")
+	anim(g, "idle")
 end
 
 -- (the one rule every guard uses: sneaking, sprinting, the Cardboard Box, smoke; see Stealth)
@@ -715,11 +718,11 @@ local function investigate(g, pos)
 	g.state = "investigate"
 	g.target = nil
 	guardTag(g, "?", rgb(255, 230, 90))
-	Factory.play(g.model, "run")
+	anim(g, "run", 11)
 	local to = Vector3.new(math.clamp(pos.X, B.x0 + 2, B.x1 - 2), 0.55 + g.so, math.clamp(pos.Z, B.z0 + 2, B.z1 - 2))
 	Walkers.walk(g.model, { to }, 11, function()
 		if g.state ~= "investigate" then return end
-		Factory.play(g.model, "idle")
+		anim(g, "idle")
 		guardTag(g, "Huh?", rgb(255, 230, 90))
 		task.delay(3.5, function()
 			if g.state == "investigate" then patrol(g) end
@@ -893,22 +896,7 @@ local function takeKid(player, i)
 	local kid = Factory.build(def, grade)
 	Factory.setMode(kid, "carried")
 	if prize then silhouette(kid) end
-	for _, bp in kid:GetDescendants() do
-		if bp:IsA("BasePart") then
-			bp.Anchored = false
-			bp.Massless = true
-			bp.CanCollide = false
-			bp.CanQuery = false
-		end
-	end
-	local off = 3.4 + Factory.standOffset(kid) * 0.9
-	kid.PrimaryPart.CFrame = proot.CFrame * CFrame.new(0, off, 0)
-	local w = Instance.new("Weld")
-	w.Part0, w.Part1 = proot, kid.PrimaryPart
-	w.C0 = CFrame.new(0, off, 0)
-	w.Parent = kid.PrimaryPart
-	kid.Parent = char
-	Factory.play(kid, "sit")
+	Factory.carryOverhead(char, kid)
 	heists[player] = { pen = pen, kid = kid, def = def, grade = grade, lastPos = proot.Position, lastT = now() }
 	local shown = prize and "Vex's captive" or def.name
 	player:SetAttribute("Heist", shown)
@@ -996,7 +984,7 @@ local function onSwing(player, proot)
 				Walkers.stop(g.model)
 				g.state = "stunned"
 				guardTag(g, "@#!", rgb(255, 230, 90))
-				Factory.play(g.model, "fall")
+				anim(g, "fall")
 				Remotes.Sfx:FireClient(player, "Bonk")
 				Remotes.Push:FireClient(player, "hit", { pos = root.Position + Vector3.new(0, 2, 0) })
 				-- knocked back along the swing, a little hop
@@ -1010,7 +998,11 @@ local function onSwing(player, proot)
 					local pos = start.Position + dir * 7 * a + Vector3.new(0, math.sin(a * math.pi) * 2.2, 0)
 					if not inBuilding(pos) then pos = Vector3.new(math.clamp(pos.X, B.x0 + 2, B.x1 - 2), pos.Y, math.clamp(pos.Z, B.z0 + 2, B.z1 - 2)) end
 					root.CFrame = CFrame.new(pos) * (start - start.Position)
-					if a >= 1 then conn:Disconnect() end
+					if a >= 1 then
+						conn:Disconnect()
+						-- landed: dazed, not flailing on the floor for the rest of the stun
+						if g.state == "stunned" then anim(g, "idle") end
+					end
 				end)
 				return
 			end
@@ -1081,23 +1073,40 @@ local function tick(dt)
 			local d = proot.Position - root.Position
 			local flat = Vector3.new(d.X, 0, d.Z)
 			if g.reactUntil and now() < g.reactUntil then
-				if flat.Magnitude > 1e-3 then root.CFrame = CFrame.lookAt(root.Position, root.Position + flat.Unit) end
+				if flat.Magnitude > 1e-3 then
+					local lv = root.CFrame.LookVector
+					local face = Walkers.turn(Vector3.new(lv.X, 0, lv.Z).Unit, flat.Unit, 12 * dt)
+					root.CFrame = CFrame.lookAt(root.Position, root.Position + face)
+				end
 				continue
 			end
-			if g.reactUntil then
-				g.reactUntil = nil
-				Factory.play(g.model, "run")
-			end
+			g.reactUntil = nil
 			if flat.Magnitude < H.catchRange then
 				thrownOut(player)
 				patrol(g)
 				continue
 			end
 			local speed = carrying and (g.slow and H.tutorialChase or H.chaseSpeedCarry) or H.chaseSpeed
-			local step = math.min(flat.Magnitude, speed * dt)
-			local np = root.Position + flat.Unit * step
-			np = Vector3.new(math.clamp(np.X, B.x0 + 2, B.x1 - 2), 0.55 + g.so, math.clamp(np.Z, B.z0 + 2, B.z1 - 2))
-			root.CFrame = CFrame.lookAt(np, np + flat.Unit)
+			-- aim at the nearest point to them inside the building: he runs where he faces, and when
+			-- they're outside and he's pinned against the wall he stands and glares (no crab-walk,
+			-- no running on the spot)
+			local y = 0.55 + g.so
+			local pos = root.Position
+			local goal = Vector3.new(math.clamp(proot.Position.X, B.x0 + 2, B.x1 - 2), y, math.clamp(proot.Position.Z, B.z0 + 2, B.z1 - 2))
+			local to = Vector3.new(goal.X - pos.X, 0, goal.Z - pos.Z)
+			if to.Magnitude < (g.anim == "idle" and 1.5 or 0.5) then
+				anim(g, "idle")
+				local lv = root.CFrame.LookVector
+				local face = Walkers.turn(Vector3.new(lv.X, 0, lv.Z).Unit, flat.Unit, 9 * dt)
+				root.CFrame = CFrame.lookAt(pos, pos + face)
+				continue
+			end
+			anim(g, "run", speed)
+			local lv = root.CFrame.LookVector
+			local face = Walkers.turn(Vector3.new(lv.X, 0, lv.Z).Unit, to.Unit, 9 * dt)
+			local step = math.min(to.Magnitude, speed * dt)
+			local np = Vector3.new(math.clamp(pos.X + face.X * step, B.x0 + 2, B.x1 - 2), y, math.clamp(pos.Z + face.Z * step, B.z0 + 2, B.z1 - 2))
+			root.CFrame = CFrame.lookAt(np, np + face)
 		end
 	end
 	-- carriers who got out of the grounds are safe; anyone inside a pen stays inside

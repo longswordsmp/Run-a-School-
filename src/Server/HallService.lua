@@ -154,7 +154,7 @@ function HallService.enroll(player, model)
 
 	Factory.setMode(model, "walking", Data.hostOf(player).DisplayName)
 	Walkers.stop(model)
-	Factory.play(model, "walk")
+	Factory.play(model, "walk", 16) -- (16 studs a second is a run for a kid)
 	local points
 	if model:GetAttribute("OnBench") then
 		-- from the Waiting Bench: onto the front walk, then the normal route in

@@ -59,31 +59,14 @@ local function setSpeed(player)
 	hum.WalkSpeed = speed * require(script.Parent.MoveService).mult(player)
 end
 
--- put the carried student over the thief's head
-local function carryModel(thief, def, grade)
+-- put the carried student over the thief's head (at the size they were at their school)
+local function carryModel(thief, def, grade, ownerTier)
 	local _, root = humanoid(thief)
 	if not root then return nil end
 	local model = Factory.build(def, grade)
 	model.Name = "Carried"
 	Factory.setMode(model, "carried")
-	for _, p in model:GetDescendants() do
-		if p:IsA("BasePart") then
-			p.Anchored = false
-			p.Massless = true
-			p.CanCollide = false
-			p.CanQuery = false
-		end
-	end
-	local hrp = model.PrimaryPart
-	local offset = 2.4 + Factory.standOffset(model) * 0.9
-	hrp.CFrame = root.CFrame * CFrame.new(0, offset, 0)
-	local w = Instance.new("Weld")
-	w.Part0 = root
-	w.Part1 = hrp
-	w.C0 = CFrame.new(0, offset, 0) * CFrame.Angles(0, math.rad(8), math.rad(6))
-	w.Parent = hrp
-	model.Parent = thief.Character
-	Factory.play(model, "sit")
+	Factory.carryOverhead(thief.Character, model, CFrame.Angles(0, math.rad(8), math.rad(6)), Config.AgeScale[ownerTier or 1])
 	return model
 end
 
@@ -185,7 +168,7 @@ function StealService.begin(thief, plot, slot)
 	PlotService.detachModel(plot, slot)
 	PlotService.updatePad(plot, slot, e.stored or 0)
 	PlotService.updateIncome(owner)
-	local model = carryModel(thief, def, e.grade)
+	local model = carryModel(thief, def, e.grade, op.tier)
 	local _, root0 = humanoid(thief)
 	local c = { owner = owner, plot = plot, slot = slot, entry = e, def = def, model = model, started = os.clock(), lastPos = root0 and root0.Position, lastAt = os.clock() }
 	carrying[thief] = c

@@ -225,7 +225,7 @@ local function makeTool(player, def, n)
 			h = handle(tool, Vector3.new(0.3, 1.4, 1.4), rgb(235, 80, 140))
 			h.Shape = Enum.PartType.Cylinder
 		else
-			h = handle(tool, Vector3.new(0.6, 1.1, 0.6), rgb(60, 200, 255), Enum.Material.Metal)
+			h = handle(tool, Vector3.new(1.1, 0.6, 0.6), rgb(60, 200, 255), Enum.Material.Metal)
 			h.Shape = Enum.PartType.Cylinder
 			tool.Grip = CFrame.Angles(0, 0, math.rad(90))
 		end
