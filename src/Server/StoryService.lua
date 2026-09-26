@@ -494,6 +494,8 @@ local function vexDriveBy()
 	limo:Destroy()
 end
 
+StoryService.buildLimo = buildLimo -- (StreetService parks one at the plaza)
+
 function StoryService.start()
 	folder = workspace:FindFirstChild("StoryNPCs") or Instance.new("Folder")
 	folder.Name = "StoryNPCs"

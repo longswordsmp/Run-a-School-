@@ -34,6 +34,7 @@ local AlumniService = require(Server.AlumniService)
 local RaidService = require(Server.RaidService)
 local FactoryService = require(Server.FactoryService)
 local MissionService = require(Server.MissionService)
+local StreetService = require(Server.StreetService)
 
 Factory.preload()
 PlotService.start()
@@ -59,6 +60,7 @@ AlumniService.start()
 RaidService.start()
 FactoryService.start()
 MissionService.start_service()
+StreetService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -236,6 +238,11 @@ require(Server.DebugBridge).start({
 	end,
 	factoryTake = function(player, i)
 		return FactoryService.debugTake(player, i)
+	end,
+	-- the street at a chapter, without touching the save (nil = back to your real chapter)
+	street = function(player, n)
+		player:SetAttribute("DebugChapter", n)
+		return true
 	end,
 	mission = function(player, id)
 		return MissionService.debugStart(player, id)

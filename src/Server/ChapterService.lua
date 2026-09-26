@@ -164,6 +164,13 @@ end
 
 function ChapterService.push(player)
 	Remotes.Push:FireClient(player, "chapter", ChapterService.state(player))
+	-- the street follows your story (Street.client): 1-11, and 12 once it's all done
+	local p = Data.get(player)
+	if p and player.Parent then
+		local n = tutorialDone(p) and p.chapter and p.chapter.n or nil
+		if n and ((p.stars or 0) >= 1 or n > #Config.Chapters) then n = #Config.Chapters + 1 end
+		player:SetAttribute("Chapter", n)
+	end
 end
 
 local evaluate
