@@ -29,7 +29,7 @@ done after it's been played in Studio and checked on screen. "Built, not verifie
 
 ## P2: quality, one thing at a time
 
-- [ ] Hoverboard: the board model and a proper riding pose and motion.
+- [x] Hoverboard: the board model and a proper riding pose and motion. New board (upturned tips, chrome rails, two thruster pods with glowing rings, underglow), mounted along the way you ride (it was across it); a surf stance instead of running on the spot (side-on, knees bent, leading arm up, head looking ahead), bobbing on the thrusters and banking into turns; a light trail and thruster sparkles while ridden. Screenshots standing, riding and carving. (Found on the way: this place's avatars use AnimationConstraint joints, and rigged accessories carry joints with the same names, so the pose code only touches the body's own joints.)
 - [ ] Gear (Smoke Bomb, Whoopee Cushion, Energy Drink, Cardboard Box): models, held look, use animations.
 - [ ] NPCs hold items weirdly (props through hands, wrong grips; the Ruler in your own hand too).
 - [ ] Recess Commons: the sign blocks the path; the playground is awful.

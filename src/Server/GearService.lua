@@ -389,9 +389,13 @@ local function useGear(player, def, tool)
 end
 
 ---------------------------------------------------------------------------
--- the Hoverboard: equipped, you stand on a glowing board a little off the ground and ride 60% faster
+-- the Hoverboard: equipped, you stand on a glowing board a little off the ground and ride 75% faster
 -- (MoveService reads the Hover attribute); unequipped, you step off. Off inside the secured places.
+-- The board points the way you're going (its -Z is your front). HoverRide.client gives every rider a
+-- surf stance and makes the board bob and bank into turns (through the weld HoverWeld's C0, locally).
 ---------------------------------------------------------------------------
+local BOARD = rgb(120, 60, 200)
+local GLOW = rgb(120, 230, 255)
 local function buildBoard()
 	local m = Instance.new("Model")
 	m.Name = "HoverboardRide"
@@ -403,24 +407,39 @@ local function buildBoard()
 		b.Color = color
 		b.Material = material or Enum.Material.SmoothPlastic
 		b.CanCollide, b.CanQuery, b.CanTouch, b.Massless = false, false, false, true
+		b.CastShadow = name == "Deck"
 		if shape then b.Shape = shape end
 		b.Parent = m
 		return b
 	end
-	local deck = bp("Deck", Vector3.new(1.5, 0.28, 4.4), CFrame.new(), rgb(120, 60, 200))
+	-- the deck, and its rounded tips turned up a little at both ends (a flat disc each: a cylinder with
+	-- its axis stood upright; X is its thickness)
+	local deck = bp("Deck", Vector3.new(1.6, 0.24, 3.9), CFrame.new(), BOARD)
 	m.PrimaryPart = deck
-	for _, z in { -2.05, 2.05 } do
-		-- (rounded ends: a flat disc, the cylinder's axis turned upright; X is its thickness)
-		bp("Nose", Vector3.new(0.28, 1.5, 1.5), CFrame.new(0, 0, z) * CFrame.Angles(0, 0, math.rad(90)), rgb(120, 60, 200), nil, Enum.PartType.Cylinder)
+	for _, s in { -1, 1 } do
+		bp("Tip", Vector3.new(0.24, 1.6, 1.6), CFrame.new(0, 0.1, s * 2.05) * CFrame.Angles(math.rad(s * 13), 0, 0) * CFrame.Angles(0, 0, math.rad(90)), BOARD, nil, Enum.PartType.Cylinder)
 	end
-	bp("Grip", Vector3.new(1.3, 0.05, 3.8), CFrame.new(0, 0.16, 0), rgb(30, 30, 36))
-	bp("Stripe", Vector3.new(0.3, 0.06, 3.6), CFrame.new(0, 0.17, 0), rgb(255, 200, 60))
-	local glow = bp("Glow", Vector3.new(1.2, 0.08, 3.8), CFrame.new(0, -0.18, 0), rgb(120, 230, 255), Enum.Material.Neon)
+	-- grip tape with a yellow centre line, and chrome rails down both edges
+	bp("Grip", Vector3.new(1.36, 0.04, 3.7), CFrame.new(0, 0.14, 0), rgb(30, 30, 36))
+	bp("Stripe", Vector3.new(0.22, 0.045, 3.4), CFrame.new(0, 0.15, 0), rgb(255, 200, 60))
+	for _, s in { -1, 1 } do
+		bp("Rail", Vector3.new(0.1, 0.28, 3.9), CFrame.new(s * 0.82, 0, 0), rgb(205, 208, 220), Enum.Material.Metal)
+	end
+	-- underneath: a glow strip and two thruster pods, a ring of light at the bottom of each
+	local glow = bp("Glow", Vector3.new(1.1, 0.06, 2.4), CFrame.new(0, -0.15, 0), GLOW, Enum.Material.Neon)
 	local light = Instance.new("PointLight")
-	light.Color = rgb(120, 230, 255)
-	light.Range = 8
-	light.Brightness = 1.4
+	light.Color = GLOW
+	light.Range = 9
+	light.Brightness = 1.6
 	light.Parent = glow
+	for _, s in { -1, 1 } do
+		bp("Thruster", Vector3.new(0.4, 0.95, 0.95), CFrame.new(0, -0.32, s * 1.35) * CFrame.Angles(0, 0, math.rad(90)), rgb(60, 60, 72), Enum.Material.Metal, Enum.PartType.Cylinder)
+		bp("ThrusterRing", Vector3.new(0.08, 0.78, 0.78), CFrame.new(0, -0.53, s * 1.35) * CFrame.Angles(0, 0, math.rad(90)), GLOW, Enum.Material.Neon, Enum.PartType.Cylinder)
+		local a = Instance.new("Attachment")
+		a.Name = "Exhaust"
+		a.Position = Vector3.new(0, -0.6, s * 1.35) -- (just under the ring; the deck's -Y is down)
+		a.Parent = deck
+	end
 	for _, b in m:GetChildren() do
 		if b:IsA("BasePart") and b ~= deck then
 			local w = Instance.new("WeldConstraint")
@@ -429,6 +448,42 @@ local function buildBoard()
 		end
 	end
 	return m
+end
+
+-- ridden only: a ribbon of light off the tail and a shimmer under the thrusters
+local function rideEffects(board)
+	local deck = board.PrimaryPart
+	local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+	a0.Name, a1.Name = "TrailL", "TrailR"
+	a0.Position, a1.Position = Vector3.new(-0.7, -0.2, 2), Vector3.new(0.7, -0.2, 2)
+	a0.Parent, a1.Parent = deck, deck
+	local trail = Instance.new("Trail")
+	trail.Attachment0, trail.Attachment1 = a0, a1
+	trail.Lifetime = 0.5
+	trail.MinLength = 0.2
+	trail.LightEmission = 1
+	trail.LightInfluence = 0
+	trail.Color = ColorSequence.new(GLOW, BOARD)
+	trail.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(1, 1) })
+	trail.WidthScale = NumberSequence.new(1, 0.2)
+	trail.FaceCamera = true
+	trail.Parent = deck
+	for _, ex in deck:GetChildren() do
+		if ex.Name == "Exhaust" then
+			local e = Instance.new("ParticleEmitter")
+			e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+			e.Color = ColorSequence.new(GLOW)
+			e.LightEmission = 0.9
+			e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) })
+			e.Transparency = NumberSequence.new(0.3, 1)
+			e.Lifetime = NumberRange.new(0.25, 0.4)
+			e.Rate = 18
+			e.Speed = NumberRange.new(2, 3)
+			e.EmissionDirection = Enum.NormalId.Bottom
+			e.SpreadAngle = Vector2.new(20, 20)
+			e.Parent = ex
+		end
+	end
 end
 
 GearService.buildBoard = buildBoard
@@ -443,12 +498,17 @@ local function ride(player, on)
 	if on and not player:GetAttribute("Hover") then
 		hum.HipHeight += LIFT
 		local board = buildBoard()
-		-- (under the feet, which are now LIFT off the ground)
+		rideEffects(board)
+		-- (under the feet, which are now LIFT off the ground, pointing the way you face)
 		local feet = root.Size.Y / 2 + hum.HipHeight
-		board:PivotTo(root.CFrame * CFrame.new(0, -feet + 0.2, 0) * CFrame.Angles(0, math.rad(90), 0))
-		local w = Instance.new("WeldConstraint")
-		w.Part0, w.Part1 = root, board.PrimaryPart
-		w.Parent = board.PrimaryPart
+		local deck = board.PrimaryPart
+		board:PivotTo(root.CFrame * CFrame.new(0, -feet + 0.32, 0))
+		-- (a Weld, not a WeldConstraint: the clients move its C0 to bob and bank the board)
+		local w = Instance.new("Weld")
+		w.Name = "HoverWeld"
+		w.Part0, w.Part1 = root, deck
+		w.C0 = root.CFrame:ToObjectSpace(deck.CFrame)
+		w.Parent = deck
 		board.Parent = char
 		player:SetAttribute("Hover", true)
 	elseif not on and player:GetAttribute("Hover") then

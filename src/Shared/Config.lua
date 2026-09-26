@@ -931,7 +931,7 @@ Config.Gear = {
 		desc = "Grab kids out of pens and desks twice as fast" },
 	-- (won, never sold: Headmaster Grindle drops it in Chapter 1's finale)
 	{ id = "Hoverboard", name = "Hoverboard", icon = "\u{1F6F9}", kind = "ride", secs = 0, floor = 0, notSold = true,
-		desc = "Equip it to ride: 60% faster, and silent. (Not inside the Factory, the Lab or Vex Prep.)" },
+		desc = "Equip it to ride: 75% faster, and silent. (Not inside the Factory, the Lab or Vex Prep.)" },
 }
 Config.GearById = {}
 for i, g in Config.Gear do
