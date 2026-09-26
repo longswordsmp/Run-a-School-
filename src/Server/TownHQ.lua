@@ -12,13 +12,14 @@ local HQ = {}
 HQ.X, HQ.Z = 925, 0 -- the middle of every floor
 HQ.SIZE = 150
 HQ.HEIGHT = 30
+-- (all above y -500: Roblox deletes anything that falls below FallenPartsDestroyHeight, characters too)
 HQ.FLOORS = {
-	[2] = { name = "THE CUBICLE FARM", y = -300 },
-	[3] = { name = "THE LASER VAULT", y = -350 },
-	[4] = { name = "THE SERVER FARM", y = -400 },
-	[5] = { name = "MUTAGEN LABS", y = -450 },
-	[6] = { name = "THE BARRACKS", y = -500 },
-	[7] = { name = "THE EXECUTIVE SUITE", y = -550 },
+	[2] = { name = "THE CUBICLE FARM", y = -220 },
+	[3] = { name = "THE LASER VAULT", y = -265 },
+	[4] = { name = "THE SERVER FARM", y = -310 },
+	[5] = { name = "MUTAGEN LABS", y = -355 },
+	[6] = { name = "THE BARRACKS", y = -400 },
+	[7] = { name = "THE EXECUTIVE SUITE", y = -445 },
 }
 
 -- where you arrive on a floor (in front of its elevators), facing east
@@ -232,7 +233,7 @@ function HQ.build(town, Kit)
 						-- a name plate on the partition
 						if rng:NextNumber() < 0.5 then
 							local names = { "HOMEWORK DEPT.", "WORKSHEETS", "POP QUIZZES", "DETENTION PLANNING", "SPELLING TESTS", "FLASHCARDS", "LONG DIVISION", "BOOK REPORTS" }
-							local np = part(pod, "NamePlate", Vector3.new(3, 0.7, 0.1), at(px + sx * 5, 5.6, pz + sz * 0.3) * CFrame.Angles(0, sz > 0 and 0 or math.rad(180), 0), rgb(250, 250, 250))
+							local np = part(pod, "NamePlate", Vector3.new(3, 0.7, 0.1), at(px + sx * 5, 5.6, pz + sz * 0.3) * CFrame.Angles(0, sz > 0 and math.rad(180) or 0, 0), rgb(250, 250, 250))
 							Kit.sign(np, Enum.NormalId.Front, names[rng:NextInteger(1, #names)], rgb(60, 40, 90), rgb(250, 250, 250), Enum.Font.GothamBold)
 						end
 					end
@@ -260,8 +261,8 @@ function HQ.build(town, Kit)
 			part(m, "FilingCabinet", Vector3.new(2.4, 5, 2.2), at(fx, 2.5, -72.5), rgb(130, 130, 140), Enum.Material.Metal)
 		end
 		-- posters on the solid walls
-		poster(m, at(-10, 12, 74.3) * CFrame.Angles(0, math.rad(180), 0), "HOMEWORK\nIS THE\nFUTURE", PURPLE, TOXIC)
-		poster(m, at(-10, 12, -74.3), "SMILE!\nIT'S MONDAY\nFOREVER", rgb(250, 220, 90), rgb(60, 40, 20))
+		poster(m, at(-10, 12, 74.3), "HOMEWORK\nIS THE\nFUTURE", PURPLE, TOXIC)
+		poster(m, at(-10, 12, -74.3) * CFrame.Angles(0, math.rad(180), 0), "SMILE!\nIT'S MONDAY\nFOREVER", rgb(250, 220, 90), rgb(60, 40, 20))
 		-- the arrival area: plants, a bench, the floor map
 		for _, z in { -24, 24 } do
 			Kit.plant(m, "Bush", HQ.X - 70, HQ.Z + z, 0.9, f2y)
@@ -277,7 +278,7 @@ function HQ.build(town, Kit)
 		part(brk, "CoffeeMachine", Vector3.new(1.4, 2, 1.4), at(6, 4.2, -72.5), rgb(30, 30, 30))
 		Kit.cylY(brk, "BreakTable", 5, 0.3, (at(2, 3, -66)).Position, rgb(250, 250, 250))
 		Kit.cylY(brk, "TableLeg", 0.5, 2.8, (at(2, 1.4, -66)).Position, rgb(120, 120, 130), Enum.Material.Metal)
-		poster(brk, at(2, 5.5, -59.75), "BREAKS ARE\n5 SECONDS", rgb(240, 240, 245), rgb(200, 40, 40))
+		poster(brk, at(2, 5.5, -59.75) * CFrame.Angles(0, math.rad(180), 0), "BREAKS ARE\n5 SECONDS", rgb(240, 240, 245), rgb(200, 40, 40))
 
 		-- the three managers' offices: glass walls, a big desk, a nameplate; the keycard is in one
 		local offices = Kit.folder(m, "Offices")
@@ -328,12 +329,12 @@ function HQ.build(town, Kit)
 		reader:SetAttribute("HQReader", 2)
 		part(sec, "ReaderLight", Vector3.new(0.6, 0.3, 0.1), at(42, 5, 73.55), rgb(255, 60, 60), Enum.Material.Neon)
 		local ss = part(sec, "DoorSign", Vector3.new(12, 1.8, 0.2), at(36, 13, 73.8), DEEP)
-		Kit.sign(ss, Enum.NormalId.Back, "\u{1F512} SECURITY: KEYCARD ONLY", rgb(255, 80, 80), DEEP, Enum.Font.GothamBlack)
+		Kit.sign(ss, Enum.NormalId.Front, "\u{1F512} SECURITY: KEYCARD ONLY", rgb(255, 80, 80), DEEP, Enum.Font.GothamBlack)
 		-- behind the door: the service elevator up
 		local svc = part(sec, "ServiceElevator", Vector3.new(8, 9.6, 0.3), at(36, 4.8, 74.9), rgb(255, 240, 200), Enum.Material.Neon)
 		svc:SetAttribute("HQElevator", 2)
 		local up = part(sec, "UpSign", Vector3.new(4, 1.4, 0.1), at(36, 8.4, 74.7), rgb(30, 26, 40))
-		Kit.sign(up, Enum.NormalId.Back, "\u{25B2} UP", TOXIC, rgb(30, 26, 40), Enum.Font.GothamBlack)
+		Kit.sign(up, Enum.NormalId.Front, "\u{25B2} UP", TOXIC, rgb(30, 26, 40), Enum.Font.GothamBlack)
 		-- the guards' patrol routes (floor-local x, z; HQService turns them into guards)
 		HQ.GUARDS = HQ.GUARDS or {}
 		HQ.GUARDS[2] = {
@@ -725,7 +726,7 @@ function HQ.build(town, Kit)
 		end
 		local logo = part(m, "Logo", Vector3.new(0.3, 8, 30), at(-74.3, 22, 0), rgb(20, 30, 20))
 		Kit.sign(logo, Enum.NormalId.Right, "MUTAGEN X \u{2622} RESEARCH", ACID, rgb(20, 30, 20), Enum.Font.GothamBlack)
-		for _, p in { { -40, 74.3, 180 }, { 20, 74.3, 180 }, { -40, -74.3, 0 }, { 20, -74.3, 0 } } do
+		for _, p in { { -40, 74.3, 0 }, { 20, 74.3, 0 }, { -40, -74.3, 180 }, { 20, -74.3, 180 } } do
 			poster(m, at(p[1], 10, p[2]) * CFrame.Angles(0, math.rad(p[3]), 0), "\u{2622} DO NOT\nSWIM IN\nTHE ACID", rgb(250, 200, 40), rgb(40, 30, 10))
 		end
 		HQ.GUARDS = HQ.GUARDS or {}
@@ -792,7 +793,7 @@ function HQ.build(town, Kit)
 				part(gym, "Bleacher", Vector3.new(80, 1, 4), at(0, 0.5 + row * 1.6, s * (48 + row * 4)), rgb(90, 80, 110), Enum.Material.WoodPlanks)
 				part(gym, "BleacherRiser", Vector3.new(80, 0.5 + row * 1.6, 4), at(0, (0.5 + row * 1.6) / 2, s * (48 + row * 4)), rgb(60, 54, 76), Enum.Material.Metal)
 			end
-			local banner = part(gym, "Banner", Vector3.new(40, 6, 0.2), at(0, 20, s * 74.6) * CFrame.Angles(0, s > 0 and math.rad(180) or 0, 0), MAT, Enum.Material.Fabric)
+			local banner = part(gym, "Banner", Vector3.new(40, 6, 0.2), at(0, 20, s * 74.6) * CFrame.Angles(0, s < 0 and math.rad(180) or 0, 0), MAT, Enum.Material.Fabric)
 			Kit.sign(banner, Enum.NormalId.Front, s > 0 and "GOONS NEVER TAKE RECESS" or "HOMEWORK \u{2022} DISCIPLINE \u{2022} MORE HOMEWORK", rgb(255, 220, 120), MAT, Enum.Font.LuckiestGuy)
 		end
 		-- bunk beds on the west side, north and south of the elevators
@@ -833,7 +834,7 @@ function HQ.build(town, Kit)
 			end
 		end
 		-- GOON OF THE MONTH
-		local gotm = part(gym, "GoonOfTheMonth", Vector3.new(10, 8, 0.3), at(50, 12, 74.5) * CFrame.Angles(0, math.rad(180), 0), rgb(250, 240, 220))
+		local gotm = part(gym, "GoonOfTheMonth", Vector3.new(10, 8, 0.3), at(50, 12, 74.5), rgb(250, 240, 220))
 		Kit.sign(gotm, Enum.NormalId.Front, "GOON OF THE MONTH\n\u{1F3C6}\nGARY\n(for 'sitting very still')", rgb(90, 60, 20), rgb(250, 240, 220), Enum.Font.GothamBold)
 		-- the exit door on the east wall, the service elevator behind it
 		part(m, "DoorFrame", Vector3.new(1.2, 12, 12), at(74.4, 6, 0), rgb(40, 34, 56), Enum.Material.Metal)
@@ -843,6 +844,119 @@ function HQ.build(town, Kit)
 		Kit.sign(ds, Enum.NormalId.Left, "BEAT THE BARRACKS", rgb(255, 220, 120), rgb(20, 16, 26), Enum.Font.GothamBlack)
 		local svc = part(m, "ServiceElevator", Vector3.new(0.3, 9.6, 8), at(74.9, 4.8, 0), rgb(255, 240, 200), Enum.Material.Neon)
 		svc:SetAttribute("HQElevator", 6)
+	end
+
+	---------------------------------------------------------------------------
+	-- FLOOR 7: THE EXECUTIVE SUITE
+	--   Dr. Vex's office: purple carpet, wood panelling, gold; her giant desk and chair, the portrait
+	--   (north wall), the piranha tank, the trophy cabinet (south wall), a conference room, a putting
+	--   green, Crumpet's tea trolley. The vault (east wall) takes a three-digit code; each digit is
+	--   hidden in one of three clue spots (HQClue = 1, 2, 3); inside, the EXECUTIVE KEYCARD
+	---------------------------------------------------------------------------
+	do
+		local m, at = shell(7, {
+			floor = rgb(92, 40, 118), floorMat = Enum.Material.Carpet, wall = rgb(96, 62, 46), ceiling = rgb(44, 32, 40),
+			lightColor = rgb(255, 232, 200),
+		})
+		local off = Kit.folder(m, "Office")
+		local GOLD = rgb(214, 176, 92)
+		local WOOD = rgb(96, 58, 36)
+		-- wainscot panelling and a gold rail round the room
+		for _, s in { -1, 1 } do
+			part(off, "Wainscot", Vector3.new(HQ.SIZE, 6, 0.4), at(0, 3, s * 74.6), WOOD, Enum.Material.WoodPlanks)
+			part(off, "GoldRail", Vector3.new(HQ.SIZE, 0.4, 0.6), at(0, 6.2, s * 74.5), GOLD, Enum.Material.Metal)
+		end
+		-- the rug and the desk
+		part(off, "Rug", Vector3.new(34, 0.1, 26), at(28, 0.05, 0), rgb(150, 40, 60), Enum.Material.Fabric)
+		part(off, "RugBorder", Vector3.new(35, 0.08, 27), at(28, 0.04, 0), GOLD, Enum.Material.Fabric)
+		part(off, "Desk", Vector3.new(5, 3.6, 16), at(34, 1.8, 0), WOOD, Enum.Material.Wood)
+		part(off, "DeskTop", Vector3.new(5.6, 0.4, 16.6), at(34, 3.8, 0), rgb(30, 20, 26), Enum.Material.Marble)
+		part(off, "DeskTrim", Vector3.new(5.7, 0.2, 16.7), at(34, 3.55, 0), GOLD, Enum.Material.Metal)
+		local plate = part(off, "NamePlate", Vector3.new(0.2, 0.9, 5), at(31.4, 4.45, 0) * CFrame.Angles(0, 0, math.rad(-15)), GOLD, Enum.Material.Metal)
+		Kit.sign(plate, Enum.NormalId.Left, "DR. V. VEX, CEO", rgb(40, 20, 20), nil, Enum.Font.GothamBlack)
+		for _, dz in { -4, 4 } do
+			part(off, "DeskScreen", Vector3.new(0.3, 2.4, 3.6), at(35.6, 5.4, dz) * CFrame.Angles(0, math.rad(dz > 0 and 15 or -15), 0), rgb(20, 20, 26))
+			part(off, "DeskScreenGlow", Vector3.new(0.05, 2, 3.2), at(35.43, 5.4, dz) * CFrame.Angles(0, math.rad(dz > 0 and 15 or -15), 0), rgb(160, 100, 255), Enum.Material.Neon)
+		end
+		-- the chair: a purple throne of a desk chair
+		part(off, "ChairSeat", Vector3.new(4, 0.8, 4), at(38.5, 2.6, 0), rgb(110, 40, 150), Enum.Material.Fabric)
+		part(off, "ChairBack", Vector3.new(0.8, 9, 5), at(40.6, 6.5, 0), rgb(110, 40, 150), Enum.Material.Fabric)
+		part(off, "ChairCrest", Vector3.new(0.9, 1.2, 5.6), at(40.6, 11.4, 0), GOLD, Enum.Material.Metal)
+		part(off, "ChairBase", Vector3.new(1, 2.2, 1), at(38.5, 1.1, 0), rgb(40, 30, 40), Enum.Material.Metal)
+		-- the portrait (north wall): clue 1 is behind it
+		part(off, "PortraitFrame", Vector3.new(14, 18, 0.6), at(28, 16, 74.4), GOLD, Enum.Material.Metal)
+		local portrait = part(off, "Portrait", Vector3.new(12.4, 16.4, 0.3), at(28, 16, 74), rgb(60, 30, 80))
+		Kit.sign(portrait, Enum.NormalId.Front, "\u{1F451}\nDR. VERONICA VEX\n\n\"RECESS IS\nCANCELLED\"", rgb(230, 200, 120), rgb(60, 30, 80), Enum.Font.GothamBlack)
+		local c1 = part(off, "ClueSpot", Vector3.new(4, 4, 1), at(28, 6, 72.5), rgb(0, 0, 0), nil, { Transparency = 1, CanCollide = false })
+		c1:SetAttribute("HQClue", 1)
+		c1:SetAttribute("ClueName", "the portrait")
+		-- the piranha tank (clue 2)
+		part(off, "TankStand", Vector3.new(14, 3, 5), at(-18, 1.5, 70), WOOD, Enum.Material.Wood)
+		part(off, "TankGlass", Vector3.new(14, 8, 5), at(-18, 7, 70), rgb(160, 210, 255), Enum.Material.Glass, { Transparency = 0.6 })
+		part(off, "TankWater", Vector3.new(13.4, 6.8, 4.4), at(-18, 6.6, 70), rgb(60, 140, 200), Enum.Material.Neon, { Transparency = 0.6, CanCollide = false })
+		for k = 1, 5 do
+			local fish = part(off, "Piranha", Vector3.new(1.2, 0.8, 0.4), at(-24 + k * 2.2, 5 + (k % 3) * 1.4, 69 + (k % 2) * 1.6), rgb(200, 60, 60), nil, { CanCollide = false })
+			fish:SetAttribute("Fish", true)
+		end
+		local c2 = part(off, "ClueSpot", Vector3.new(4, 4, 2), at(-18, 4, 66.5), rgb(0, 0, 0), nil, { Transparency = 1, CanCollide = false })
+		c2:SetAttribute("HQClue", 2)
+		c2:SetAttribute("ClueName", "the piranha tank")
+		-- the trophy cabinet (south wall, clue 3)
+		part(off, "Cabinet", Vector3.new(18, 12, 3), at(-10, 6, -73), WOOD, Enum.Material.Wood)
+		part(off, "CabinetGlass", Vector3.new(16, 10, 0.2), at(-10, 6.5, -71.4), rgb(200, 230, 255), Enum.Material.Glass, { Transparency = 0.7 })
+		for k = 0, 5 do
+			local tx = -16 + (k % 3) * 6
+			local ty = 3 + math.floor(k / 3) * 5
+			part(off, "Shelf", Vector3.new(5, 0.3, 2.2), at(tx, ty - 0.3, -72.6), GOLD, Enum.Material.Metal)
+			Kit.cylY(off, "Trophy", 1.2, 2, (at(tx, ty + 1, -72.6)).Position, GOLD, Enum.Material.Metal)
+			Kit.ball(off, "TrophyCup", 1.6, (at(tx, ty + 2.4, -72.6)).Position, GOLD, Enum.Material.Metal)
+		end
+		local tsign = part(off, "TrophySign", Vector3.new(16, 1.4, 0.2), at(-10, 13, -71.4), rgb(40, 20, 20))
+		Kit.sign(tsign, Enum.NormalId.Back, "AWARDS (ALL SELF-AWARDED)", GOLD, rgb(40, 20, 20), Enum.Font.GothamBold)
+		local c3 = part(off, "ClueSpot", Vector3.new(4, 4, 2), at(-10, 4, -69.5), rgb(0, 0, 0), nil, { Transparency = 1, CanCollide = false })
+		c3:SetAttribute("HQClue", 3)
+		c3:SetAttribute("ClueName", "the trophy cabinet")
+		-- the conference room (south-west): a long table and chairs, a glass wall
+		part(off, "ConfTable", Vector3.new(30, 0.6, 7), at(-38, 3.2, -44), rgb(30, 20, 26), Enum.Material.Marble)
+		for _, dx in { -12, 0, 12 } do part(off, "ConfLeg", Vector3.new(1, 3, 3), at(-38 + dx, 1.5, -44), rgb(40, 30, 40), Enum.Material.Metal) end
+		for k = 0, 5 do
+			for _, s in { -1, 1 } do
+				local cx = -50 + k * 5
+				part(off, "ConfChair", Vector3.new(2.2, 0.5, 2.2), at(cx, 2.1, -44 + s * 5), rgb(20, 20, 26), Enum.Material.Fabric)
+				part(off, "ConfChairBack", Vector3.new(2.2, 2.6, 0.4), at(cx, 3.6, -44 + s * 6.1), rgb(20, 20, 26), Enum.Material.Fabric)
+			end
+		end
+		part(off, "ConfGlass", Vector3.new(0.3, 10, 34), at(-18, 5, -58), rgb(200, 220, 255), Enum.Material.Glass, { Transparency = 0.6 })
+		local board = part(off, "ConfBoard", Vector3.new(24, 8, 0.2), at(-38, 10, -74.3) * CFrame.Angles(0, math.rad(180), 0), rgb(250, 250, 250))
+		Kit.sign(board, Enum.NormalId.Front, "Q4 PLAN:\n1. Buy the town\n2. Homework Machine\n3. NO RECESS FOREVER\n4. Lunch", rgb(60, 60, 200), rgb(250, 250, 250), Enum.Font.PermanentMarker)
+		-- the putting green (north-west)
+		part(off, "PuttingGreen", Vector3.new(24, 0.15, 18), at(-42, 0.08, 50), rgb(80, 170, 80), Enum.Material.Grass)
+		Kit.cylY(off, "Hole", 1.2, 0.05, (at(-34, 0.17, 54)).Position, rgb(20, 20, 20))
+		part(off, "FlagPole", Vector3.new(0.2, 5, 0.2), at(-34, 2.6, 54), rgb(240, 240, 240))
+		part(off, "Flag", Vector3.new(0.1, 1.2, 2), at(-34, 4.4, 55), rgb(200, 40, 200), Enum.Material.Fabric)
+		Kit.ball(off, "GolfBall", 0.5, (at(-46, 0.4, 48)).Position, rgb(250, 250, 250))
+		-- Crumpet's tea trolley and a pair of armchairs by the arrival
+		part(off, "Trolley", Vector3.new(4, 0.4, 2.4), at(-60, 3, 30), rgb(200, 200, 210), Enum.Material.Metal)
+		Kit.cylY(off, "Teapot", 1.4, 1.4, (at(-60, 3.9, 30)).Position, rgb(250, 250, 250))
+		for _, z in { -30, 30 } do
+			part(off, "Armchair", Vector3.new(4, 2, 4), at(-62, 1, z + (z > 0 and 6 or -6)), rgb(110, 40, 150), Enum.Material.Fabric)
+			part(off, "ArmchairBack", Vector3.new(4, 3, 1), at(-62, 3, z + (z > 0 and 7.6 or -7.6)), rgb(110, 40, 150), Enum.Material.Fabric)
+		end
+		-- the vault on the east wall: a gold door, a keypad
+		part(m, "VaultRing", Vector3.new(1.2, 18, 18), at(73.6, 9, 0), rgb(120, 100, 60), Enum.Material.Metal, { Shape = Enum.PartType.Cylinder })
+		local vdoor = part(m, "VaultDoor", Vector3.new(1.2, 15, 15), at(73, 9, 0), GOLD, Enum.Material.Metal, { Shape = Enum.PartType.Cylinder })
+		vdoor:SetAttribute("HQDoor", 7)
+		Kit.cylX(m, "VaultWheel", 6, 0.8, (at(72.2, 9, 0)).Position, rgb(170, 140, 70), Enum.Material.Metal)
+		local keypad = part(m, "Keypad", Vector3.new(0.4, 2.6, 1.8), at(73.2, 4.6, 11), rgb(30, 26, 40), Enum.Material.Metal)
+		keypad:SetAttribute("HQKeypad", true)
+		part(m, "KeypadGlow", Vector3.new(0.1, 1.8, 1.2), at(72.95, 4.7, 11), rgb(120, 255, 60), Enum.Material.Neon)
+		-- inside the vault: the Executive Keycard on a pedestal, the Executive Elevator's panel
+		part(m, "Pedestal", Vector3.new(2.4, 3.6, 2.4), at(74.6, 1.8, 0), rgb(40, 30, 40), Enum.Material.Marble)
+		local card = part(m, "ExecKeycard", Vector3.new(0.2, 1.2, 2), at(74.6, 4.4, 0), GOLD, Enum.Material.Neon)
+		card:SetAttribute("HQExecCard", true)
+		Kit.light(card, 14, 2, GOLD)
+		local svc = part(m, "ServiceElevator", Vector3.new(0.3, 9.6, 8), at(74.9, 4.8, -14), rgb(255, 240, 200), Enum.Material.Neon)
+		svc:SetAttribute("HQElevator", 7)
 	end
 
 	return root

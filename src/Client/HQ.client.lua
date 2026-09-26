@@ -37,7 +37,7 @@ local OBJECTIVES = {
 	[4] = { "Hack the three terminals without the cameras seeing you." },
 	[5] = { "Free the kids from the pods and grab the mutation sample." },
 	[6] = { "Survive the goon waves. Then face Crumpet." },
-	[7] = { "Find the three code digits and open Dr. Vex's vault." },
+	[7] = { "Clues: the portrait, the fish tank, the trophies." },
 }
 
 ---------------------------------------------------------------------------
@@ -163,6 +163,11 @@ local function refreshCard()
 	end
 	card.Visible = true
 	cardTitle.Text = ("FLOOR %d"):format(n) .. (clearedFloors[n] and "  \u{2714} CLEARED" or "")
+	if n == 7 and not clearedFloors[n] then
+		cardTitle.Text = "FLOOR 7  \u{2022}  VAULT CODE: " .. (player:GetAttribute("HQCodeNotes") or "_ _ _")
+		cardText.Text = obj[1] .. " Then the keypad by the vault."
+		return
+	end
 	if clearedFloors[n] and not player:GetAttribute("HQKeycard") then
 		cardText.Text = n < 7 and "Floor cleared! Take an elevator UP to the next floor." or "The whole tower is yours. The Lair is next!"
 	else
@@ -170,6 +175,10 @@ local function refreshCard()
 	end
 end
 player:GetAttributeChangedSignal("HQFloor"):Connect(refreshCard)
+player:GetAttributeChangedSignal("HQCodeNotes"):Connect(function()
+	refreshCard()
+	UI.punch(card, 1.08)
+end)
 player:GetAttributeChangedSignal("HQKeycard"):Connect(function()
 	refreshCard()
 	if player:GetAttribute("HQKeycard") then UI.punch(card, 1.1) end
@@ -353,11 +362,73 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 end)
 
+---------------------------------------------------------------------------
+-- the vault keypad (floor 7)
+---------------------------------------------------------------------------
+local keypad = UI.new("Frame", {
+	Name = "Keypad", AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(320, 470),
+	BackgroundColor3 = STEEL, Visible = false, ZIndex = 20, Parent = root,
+})
+UI.corner(keypad, 18)
+UI.stroke(keypad, 5, BRASS)
+UI.gradient(keypad, Color3.fromRGB(96, 98, 112), Color3.fromRGB(44, 46, 56))
+local kDisplay = UI.new("Frame", { Size = UDim2.new(1, -28, 0, 70), Position = UDim2.fromOffset(14, 14), BackgroundColor3 = Color3.fromRGB(10, 20, 10), ZIndex = 21, Parent = keypad })
+UI.corner(kDisplay, 10)
+UI.stroke(kDisplay, 3, BRASS)
+local kText = UI.label(kDisplay, { Text = "_ _ _", Font = Enum.Font.Arcade, TextColor3 = TOXIC, Size = UDim2.new(1, -20, 0, 44), Position = UDim2.fromOffset(10, 4), ZIndex = 22, stroke = 0 })
+local kNotes = UI.label(kDisplay, { Text = "", Font = Enum.Font.Arcade, TextColor3 = Color3.fromRGB(150, 200, 150), Size = UDim2.new(1, -20, 0, 16), Position = UDim2.fromOffset(10, 50), ZIndex = 22, stroke = 0 })
+local grid = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -28, 0, 330), Position = UDim2.fromOffset(14, 96), ZIndex = 21, Parent = keypad })
+UI.new("UIGridLayout", { CellSize = UDim2.fromOffset(88, 72), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = grid })
+local entered = ""
+local function showEntered()
+	local shown = {}
+	for i = 1, 3 do shown[i] = entered:sub(i, i) ~= "" and entered:sub(i, i) or "_" end
+	kText.Text = table.concat(shown, " ")
+end
+local KEYS = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "CLR", "0", "OK" }
+for i, k in KEYS do
+	local color = k == "OK" and UI.C.green or k == "CLR" and RED or Color3.fromRGB(80, 82, 96)
+	local b = UI.button(grid, { text = k, color = color, font = UI.BIG, layoutOrder = i, onClick = function()
+		if k == "CLR" then
+			entered = ""
+		elseif k == "OK" then
+			if #entered == 3 then
+				local ok, res = pcall(Action.InvokeServer, Action, "hqCode", entered)
+				if ok and type(res) == "table" and res.ok then
+					kText.TextColor3 = TOXIC
+					kText.Text = "OPEN"
+					task.delay(0.8, function() keypad.Visible = false end)
+					return
+				end
+				kText.TextColor3 = RED
+				kText.Text = "ERR"
+				task.delay(0.8, function() kText.TextColor3 = TOXIC entered = "" showEntered() end)
+				return
+			end
+		elseif #entered < 3 then
+			entered ..= k
+		end
+		sfx("Ding")
+		showEntered()
+	end })
+	b.button.ZIndex = 22
+	for _, d in b.button:GetDescendants() do if d:IsA("GuiObject") then d.ZIndex = 23 end end
+end
+local kClose = UI.button(keypad, { text = "CLOSE", color = RED, size = UDim2.fromOffset(120, 36), position = UDim2.new(0.5, 0, 1, 12), anchor = Vector2.new(0.5, 1), font = UI.BIG, onClick = function() keypad.Visible = false end })
+kClose.button.ZIndex = 22
+for _, d in kClose.button:GetDescendants() do if d:IsA("GuiObject") then d.ZIndex = 23 end end
+
 -- a zap: a red flash
 local flash = UI.new("Frame", { BackgroundColor3 = RED, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 50, Parent = gui })
 
 Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
-	if kind == "hqWave" then
+	if kind == "hqKeypad" then
+		entered = ""
+		showEntered()
+		kNotes.Text = "YOUR NOTES: " .. (data.notes or "_ _ _")
+		keypad.Visible = true
+		UI.pop(keypad, 0.6)
+	elseif kind == "hqWave" then
 		if data.boss then
 			banner("FINAL ROUND", "CRUMPET THE BUTLER", Color3.fromRGB(255, 220, 120))
 		else

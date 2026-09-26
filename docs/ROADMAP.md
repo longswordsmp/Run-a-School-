@@ -43,7 +43,7 @@ the town, the quest engine and the cutscene engine; this file covers everything 
 | 3 | Quest engine: `Shared/Quests.lua`, `TownQuestService`, Quest Log, tracker, beam, "!" markers | |
 | 4 | Cutscene engine: `Shared/Cutscenes.lua`, data-driven player | |
 | 5 | Story content: 30 story quests (Dr. Vex arc), district unlocks move to story quests | |
-| 6 | VexCorp HQ, huge: floors with a puzzle/obstacle each (lobby security, keycard office floor, laser vault, server floor, boardroom, roof), feeding the Lair | |
+| 6 | VexCorp HQ, huge: 6 floors with a challenge each (cubicle stealth + keycard, laser vault, camera server farm, acid lab + pod rescue, goon arena + Crumpet boss, executive vault code), feeding the Lair | done 83f7279..(floor 7) |
 | 7 | School growth: the building gets bigger per tier (wings, more floors, campus for college), kids age with the tier (size, clothes, props), better stuff per tier | |
 | 8 | Prestige: GOLD, DIAMOND, then ALIEN (the abduction questline + cutscenes), permanent multipliers | |
 | 9 | Town quests: 70 (Downtown 20, Maple 20, Park 14, Industrial 10, Lab/Vex Prep 6) | |

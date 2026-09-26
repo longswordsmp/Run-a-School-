@@ -110,6 +110,20 @@ function HQService.arrive(player, n)
 		s.freed = s.freed or {}
 	elseif n == 6 then
 		s.fight = nil
+	elseif n == 7 then
+		-- a new code each visit (the notes you took last time are no good)
+		s.code = { math.random(1, 9), math.random(0, 9), math.random(0, 9) }
+		s.found, s.vaultOpen, s.card = {}, false, false
+		player:SetAttribute("HQCodeNotes", "_ _ _")
+		if not s.vexHello then
+			s.vexHello = true
+			task.delay(2.2, function()
+				Remotes.Push:FireClient(player, "missionTalk", { call = true, title = "QUEST: THE EXECUTIVE SUITE", lines = {
+					{ "DR. VERONICA VEX", "Vex", "Crumpet? CRUMPET! Who is that in my OFFICE?!" },
+					{ "DR. VERONICA VEX", "Vex", "Don't touch the trophies. Or the fish. Or my VAULT. Especially my vault." },
+				}, bye = "UH OH" })
+			end)
+		end
 	end
 	player:SetAttribute("HQFloor", n)
 	Remotes.Push:FireClient(player, "hqArrive", { floor = n, name = HQ.FLOORS[n].name, cleared = HQService.cleared(player, n) })
@@ -754,6 +768,110 @@ local function setupFloor6(folder)
 	end
 end
 
+---------------------------------------------------------------------------
+-- floor 7: the Executive Suite (three clues, the keypad, the vault, the Executive Keycard)
+---------------------------------------------------------------------------
+local door7, card7
+local CLUE_TEXT = {
+	"Behind the portrait, a sticky note: \"FIRST DIGIT: %d. Don't tell Crumpet.\"",
+	"Taped inside the piranha tank's lid: \"SECOND DIGIT: %d.\" The piranhas look proud of it.",
+	"Engraved on the biggest trophy (BEST CEO EVER, from Dr. Vex, to Dr. Vex): \"THIRD DIGIT: %d.\"",
+}
+
+local function codeNotes(s)
+	local out = {}
+	for i = 1, 3 do out[i] = s.found and s.found[i] and tostring(s.code[i]) or "_" end
+	return table.concat(out, " ")
+end
+
+local function inspectClue(player, i)
+	local s = state[player]
+	if not s or player:GetAttribute("HQFloor") ~= 7 or not s.code then return end
+	s.found = s.found or {}
+	s.found[i] = true
+	player:SetAttribute("HQCodeNotes", codeNotes(s))
+	Remotes.Sfx:FireClient(player, "Collect")
+	msg(player, CLUE_TEXT[i]:format(s.code[i]), "good")
+end
+
+local function enterCode(player, code)
+	local s = state[player]
+	if not s or player:GetAttribute("HQFloor") ~= 7 or not s.code then return false end
+	if code == ("%d%d%d"):format(s.code[1], s.code[2], s.code[3]) then
+		s.vaultOpen = true
+		Remotes.Sfx:FireClient(player, "Unlock")
+		msg(player, "\u{1F513} THE VAULT IS OPEN! Take the Executive Keycard.", "good")
+		if door7 and not door7:GetAttribute("Open") then
+			door7:SetAttribute("Open", true)
+			local home = door7.CFrame
+			door7.CanCollide = false
+			TweenService:Create(door7, TweenInfo.new(1.8, Enum.EasingStyle.Quad), { CFrame = home + Vector3.new(0, 0, -17) }):Play()
+			task.delay(20, function()
+				TweenService:Create(door7, TweenInfo.new(1.8, Enum.EasingStyle.Quad), { CFrame = home }):Play()
+				task.wait(1.8)
+				door7.CanCollide = true
+				door7:SetAttribute("Open", nil)
+			end)
+		end
+		return true
+	end
+	msg(player, "\u{1F6A8} WRONG CODE! Find all three digits (the portrait, the tank, the trophies).", "bad")
+	return false
+end
+
+local function takeCard(player)
+	local s = state[player]
+	if not s or player:GetAttribute("HQFloor") ~= 7 then return end
+	if not s.vaultOpen then
+		msg(player, "It's locked in the vault. Crack the code first!", "bad")
+		return
+	end
+	if s.card then return end
+	s.card = true
+	Remotes.Sfx:FireClient(player, "StingParty")
+	require(script.Parent.AreaService).open(player, "Lair")
+	msg(player, "\u{1F4B3} THE EXECUTIVE KEYCARD! The Executive Elevator in the lobby goes down to the Lair now.", "good")
+	HQService.clear(player, 7)
+	task.delay(2.5, function()
+		Remotes.Push:FireClient(player, "missionTalk", { call = true, title = "QUEST: THE EXECUTIVE SUITE", lines = {
+			{ "DR. VERONICA VEX", "Vex", "My KEYCARD?! You little... PRINCIPAL." },
+			{ "DR. VERONICA VEX", "Vex", "Fine. Come down to the Lair, if you dare. The Homework Machine is nearly ready." },
+			{ "DR. VERONICA VEX", "Vex", "And when it switches on... NO. MORE. RECESS. Anywhere. EVER. Mwa-ha-ha!" },
+		}, bye = "WE'LL SEE ABOUT THAT" })
+	end)
+end
+
+local function setupFloor7(folder)
+	for _, d in folder:GetDescendants() do
+		if d:IsA("BasePart") then
+			local i = d:GetAttribute("HQClue")
+			if i then
+				local p = floorPrompt(d, "Look closer", d:GetAttribute("ClueName") or "Clue", 0.8, Color3.fromRGB(255, 220, 120))
+				p.MaxActivationDistance = 9
+				p.Triggered:Connect(function(player) inspectClue(player, i) end)
+			end
+			if d:GetAttribute("HQKeypad") then
+				local p = floorPrompt(d, "Enter the code", "Vault Keypad", 0, Color3.fromRGB(120, 255, 60))
+				p.Triggered:Connect(function(player)
+					if player:GetAttribute("HQFloor") ~= 7 then return end
+					Remotes.Push:FireClient(player, "hqKeypad", { notes = player:GetAttribute("HQCodeNotes") })
+				end)
+			end
+			if d:GetAttribute("HQExecCard") then
+				card7 = d
+				local p = floorPrompt(d, "Take", "Executive Keycard", 0.6, Color3.fromRGB(255, 220, 120))
+				p.Triggered:Connect(takeCard)
+			end
+			if d:GetAttribute("HQDoor") == 7 then door7 = d end
+		end
+	end
+end
+
+Actions.register("hqCode", function(player, _, code)
+	if type(code) ~= "string" or #code ~= 3 then return { ok = false } end
+	return { ok = enterCode(player, code) }
+end)
+
 -- where the story quest's beam should point while you work on floor n
 function HQService.target(player, n)
 	local on = player:GetAttribute("HQFloor")
@@ -763,6 +881,14 @@ function HQService.target(player, n)
 		return LOBBY + Vector3.new(-3, 3, 0)
 	end
 	local s = state[player]
+	if n == 7 then
+		if s and s.vaultOpen and card7 then return card7.Position + Vector3.new(-2, 2, 0) end
+		local spots = { Vector3.new(HQ.X + 28, HQ.FLOORS[7].y + 6, HQ.Z + 72), Vector3.new(HQ.X - 18, HQ.FLOORS[7].y + 6, HQ.Z + 67), Vector3.new(HQ.X - 10, HQ.FLOORS[7].y + 6, HQ.Z - 70) }
+		for i, p in spots do
+			if not (s and s.found and s.found[i]) then return p end
+		end
+		return door7 and Vector3.new(HQ.X + 72, HQ.FLOORS[7].y + 5, HQ.Z + 11)
+	end
 	if n == 6 then
 		if s and s.fight then return nil end -- (they come to you)
 		if HQService.cleared(player, 6) and door6 then return door6.Position + Vector3.new(-2, 2, 0) end
@@ -850,6 +976,15 @@ function HQService.debugFree(player, i)
 	return { freed = s and s.freed, sample = s and s.sample }
 end
 
+function HQService.debugVault(player)
+	local s = state[player]
+	for i = 1, 3 do inspectClue(player, i) end
+	local ok = enterCode(player, ("%d%d%d"):format(s.code[1], s.code[2], s.code[3]))
+	task.wait(0.3)
+	takeCard(player)
+	return { ok = ok, code = s.code, card = s.card }
+end
+
 function HQService.debugState(player)
 	local s = state[player]
 	return { office = s and s.office, keycard = s and s.keycard, floor = player:GetAttribute("HQFloor"), cleared = hqOf(player).cleared }
@@ -895,6 +1030,8 @@ function HQService.start(townRoot)
 	if f5 then setupFloor5(f5) end
 	local f6 = hqRoot and hqRoot:FindFirstChild("Floor6")
 	if f6 then setupFloor6(f6) end
+	local f7 = hqRoot and hqRoot:FindFirstChild("Floor7")
+	if f7 then setupFloor7(f7) end
 	task.spawn(function()
 		while true do
 			task.wait(0.4)
