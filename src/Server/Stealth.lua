@@ -31,6 +31,11 @@ function Stealth.canSee(eye, char, base, ignore)
 	local flat = Vector3.new(d.X, 0, d.Z)
 	local hear = (boxed or mode == "sneak") and 0 or (mode == "sprint" and base.hear * 3.5 or base.hear)
 	local sight = base.sight * (boxed and 0.3 or mode == "sneak" and 0.45 or 1)
+	-- a co-op Recruiter: heard at 60%, seen at 85% of the distance
+	if who and who:GetAttribute("Role") == "Recruiter" and (who:GetAttribute("CrewSize") or 1) >= 2 then
+		hear *= 0.6
+		sight *= 0.85
+	end
 	local cone = base.angle * ((boxed or mode == "sneak") and 0.7 or 1)
 	if flat.Magnitude < hear then return true end
 	if flat.Magnitude > sight or flat.Magnitude < 1e-3 then return flat.Magnitude < 1e-3 end

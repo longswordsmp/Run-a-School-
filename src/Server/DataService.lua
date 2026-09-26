@@ -2,6 +2,9 @@
 -- Player profiles: session-locked DataStore saves, schema versioning, offline tuition.
 -- In Studio on an unpublished place (GameId 0) the DataStore is unavailable, so an in-memory
 -- stand-in with the same API is used; save/load round trips still run through the same code.
+-- Co-op (CrewService): a crew member plays for their host's school, so get(member) is the HOST's
+-- profile; their own stays loaded and saved (own(member)) and is paid for the time away, like
+-- offline tuition, when they go back to their own school. all() lists schools, not players.
 local DataStoreService = game:GetService("DataStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -10,7 +13,8 @@ local HttpService = game:GetService("HttpService")
 local Config = require(ReplicatedStorage.Shared.Config)
 
 local DataService = {}
-local profiles = {}
+local profiles = {} -- [player] = their own profile
+local hostOf = {} -- [crew member] = the host whose school they play for
 local SCHEMA = 2
 local LOCK_TIMEOUT = 30 * 60 -- a lock older than this belongs to a dead server
 local OFFLINE_CAP = 2 * 3600
@@ -195,14 +199,74 @@ function DataService.load(player)
 end
 
 function DataService.get(player)
+	return profiles[hostOf[player] or player]
+end
+
+-- the player's own save, even while they help run someone else's school
+function DataService.own(player)
 	return profiles[player]
+end
+
+-- co-op: whose school this player plays for (themselves when solo or hosting)
+function DataService.hostOf(player)
+	return hostOf[player] or player
+end
+
+-- a crew member (not the host): per-school work skips them, their host does it once
+function DataService.isMember(player)
+	return hostOf[player] ~= nil
+end
+
+-- everyone playing for the same school as this player: the host first, then the members
+function DataService.schoolPlayers(player)
+	local host = hostOf[player] or player
+	local out = { host }
+	for m, h in hostOf do
+		if h == host and m.Parent then table.insert(out, m) end
+	end
+	return out
+end
+
+-- a member starts playing for host's school: their own save keeps its income and "last online" from
+-- this moment (the time away is paid like offline tuition when they come back)
+function DataService.alias(member, host)
+	local own = profiles[member]
+	if not own or not profiles[host] then return false end
+	own.lastOnline = os.time()
+	own.lastIncome = member:GetAttribute("BaseIncome") or own.lastIncome or 0
+	own.crewSince = os.time()
+	hostOf[member] = host
+	DataService.sync(member)
+	return true
+end
+
+-- back to their own school: pay the time away (returns the amount)
+function DataService.unalias(member)
+	hostOf[member] = nil
+	local own = profiles[member]
+	if not own then return 0 end
+	local paid = 0
+	local away = own.crewSince and math.max(0, os.time() - own.crewSince) or 0
+	if away > 30 and (own.lastIncome or 0) > 0 then
+		local cap = OFFLINE_CAP * (own.offlineCapMult or 1)
+		local rate = OFFLINE_RATE * (own.offlineRateMult or 1)
+		paid = math.floor(own.lastIncome * math.min(away, cap) * rate)
+		own.cash += paid
+	end
+	own.crewSince = nil
+	DataService.sync(member)
+	return paid
 end
 
 function DataService.save(player, releasing, profile)
 	local p = profile or profiles[player]
 	if not p or p.unsaved then return end
-	p.lastOnline = os.time()
-	p.lastIncome = player:GetAttribute("BaseIncome") or player:GetAttribute("IncomePerSec") or 0
+	-- (a crew member's income attributes are their host's school: their own save keeps the values it
+	-- had when they joined, so the time away pays like offline tuition)
+	if not p.crewSince then
+		p.lastOnline = os.time()
+		p.lastIncome = player:GetAttribute("BaseIncome") or player:GetAttribute("IncomePerSec") or 0
+	end
 	local out = toSave(p)
 	out.sessionStart, out.offlineEarned, out.offlineAway = nil, nil, nil
 	local ok, err = pcall(function()
@@ -227,24 +291,27 @@ function DataService.release(player)
 	-- out of Data.all() first, so per-player loops stop seeing someone who has left while the save runs
 	local p = profiles[player]
 	profiles[player] = nil
+	hostOf[player] = nil
 	if p then DataService.save(player, true, p) end
 end
 
--- mirror what the HUD needs onto player attributes
+-- mirror what the HUD needs onto player attributes (everyone playing for that school)
 function DataService.sync(player)
-	local p = profiles[player]
+	local p = DataService.get(player)
 	if not p then return end
-	player:SetAttribute("Cash", p.cash)
-	player:SetAttribute("Tier", p.tier)
-	player:SetAttribute("Stars", p.stars)
-	local ls = player:FindFirstChild("leaderstats")
-	if ls and ls:FindFirstChild("Cash") then
-		ls.Cash.Value = Config.formatCash(p.cash)
+	for _, pl in DataService.schoolPlayers(player) do
+		pl:SetAttribute("Cash", p.cash)
+		pl:SetAttribute("Tier", p.tier)
+		pl:SetAttribute("Stars", p.stars)
+		local ls = pl:FindFirstChild("leaderstats")
+		if ls and ls:FindFirstChild("Cash") then
+			ls.Cash.Value = Config.formatCash(p.cash)
+		end
 	end
 end
 
 function DataService.addCash(player, amount)
-	local p = profiles[player]
+	local p = DataService.get(player)
 	if not p then return false end
 	if amount < 0 and p.cash < -amount then return false end
 	p.cash += amount
@@ -252,8 +319,13 @@ function DataService.addCash(player, amount)
 	return true
 end
 
+-- every running school (solo players and co-op hosts, never crew members), for per-school loops
 function DataService.all()
-	return profiles
+	local out = {}
+	for player, p in profiles do
+		if not hostOf[player] then out[player] = p end
+	end
+	return out
 end
 
 -- test hook: save, forget and reload a profile through the store (round-trip check)
@@ -274,6 +346,8 @@ task.spawn(function()
 end)
 local soon = {}
 function DataService.saveSoon(player)
+	-- (something changed a school: a crew member's action saves their host's save)
+	player = hostOf[player] or player
 	if soon[player] then return end
 	soon[player] = true
 	task.delay(4, function()

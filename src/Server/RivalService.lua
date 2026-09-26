@@ -534,7 +534,7 @@ local function tick(dt)
 		if not seen[player] then
 			local dx, dz = pos.X - CX, pos.Z - LOT.z1
 			if dx * dx + dz * dz < 75 * 75 and player:GetAttribute("Ready") and not player:GetAttribute("Mission") then
-				local p = Data.get(player)
+				local p = Data.own(player)
 				if p then
 					seen[player] = true
 					if not p.rivalSeen then

@@ -42,6 +42,7 @@ local LabService = require(Server.LabService)
 local FilesService = require(Server.FilesService)
 local SecretService = require(Server.SecretService)
 local RivalService = require(Server.RivalService)
+local CrewService = require(Server.CrewService)
 
 Factory.preload()
 PlotService.start()
@@ -75,6 +76,7 @@ LabService.start()
 FilesService.start()
 SecretService.start_service()
 RivalService.start()
+CrewService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -106,6 +108,11 @@ local function onPlayer(player)
 			while player.Parent and not player:GetAttribute("Ready") and os.clock() - t0 < 60 do task.wait(0.2) end
 			task.wait(0.8)
 			if not player.Parent then return end
+			-- (joined a friend's co-op school from the loading screen: that school is already running)
+			if Data.isMember(player) then
+				p.introSeen = nil
+				return
+			end
 			Remotes.Cutscene:FireClient(player, "Intro", { name = PlotService.schoolName(player) })
 			task.wait(7)
 			task.spawn(HallService.specialBus, "Welcome")
@@ -128,6 +135,8 @@ Players.PlayerAdded:Connect(onPlayer)
 for _, p in Players:GetPlayers() do task.spawn(onPlayer, p) end
 
 Players.PlayerRemoving:Connect(function(player)
+	-- a co-op crew first: members go home (or out), a host's crew goes back to their own schools
+	CrewService.onRemoving(player)
 	PlotService.release(player)
 	Data.release(player)
 end)
@@ -276,6 +285,12 @@ require(Server.DebugBridge).start({
 	end,
 	lab = function(player)
 		return LabService.debugState()
+	end,
+	crewJob = function(player)
+		return CrewService.debugJob(player)
+	end,
+	crewState = function(player)
+		return CrewService.state(player)
 	end,
 	rivalScene = function(player)
 		Remotes.Cutscene:FireClient(player, "Rival")

@@ -122,7 +122,7 @@ Actions.register("inviteAlumni", function(player, p, id)
 	local HallService = require(script.Parent.HallService)
 	local model = HallService.spawnOne(nil, id, nil, nil, true)
 	if model then
-		model:SetAttribute("ReservedFor", player.UserId)
+		model:SetAttribute("ReservedFor", Data.hostOf(player).UserId)
 		HallService.enroll(player, model)
 	end
 	if not model or model:GetAttribute("State") ~= "Enrolled" then

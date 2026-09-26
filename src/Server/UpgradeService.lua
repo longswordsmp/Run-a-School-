@@ -77,7 +77,9 @@ local function ensureOfficePad(player)
 	pad.Touched:Connect(function(hit)
 		if debounce then return end
 		local char = hit:FindFirstAncestorOfClass("Model")
-		if char ~= player.Character then return end
+		-- (the owner, or anyone in their co-op crew)
+		local who = char and game:GetService("Players"):GetPlayerFromCharacter(char)
+		if not who or Data.hostOf(who) ~= player then return end
 		local root = char and char:FindFirstChild("HumanoidRootPart")
 		if not root or (root.Position - pad.Position).Magnitude > 10 then return end
 		debounce = true

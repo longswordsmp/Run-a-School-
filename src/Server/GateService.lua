@@ -72,7 +72,8 @@ function GateService.start()
 		pp.Parent = btn
 		-- prompts check ownership through the plot model's OwnerId (see the client Prompts script)
 		pp.Triggered:Connect(function(player)
-			if plot:GetAttribute("OwnerId") == player.UserId then
+			-- (anyone in the school's co-op crew can lock it)
+			if plot:GetAttribute("OwnerId") == Data.hostOf(player).UserId then
 				GateService.lock(player)
 			end
 		end)
@@ -100,7 +101,7 @@ function GateService.start()
 				label.Text = ("LOCKED %ds"):format(math.ceil(lockedUntil - now))
 				label.TextColor3 = Color3.fromRGB(120, 255, 140)
 				for _, other in Players:GetPlayers() do
-					if other.UserId ~= owner then
+					if Data.hostOf(other).UserId ~= owner then
 						local char = other.Character
 						local root = char and char:FindFirstChild("HumanoidRootPart")
 						if root and PlotService.inside(plot, root.Position) then
@@ -115,7 +116,7 @@ function GateService.start()
 					setVisual(plot, false)
 					local ownerPlayer = Players:GetPlayerByUserId(owner)
 					if ownerPlayer then
-						Remotes.Notify:FireClient(ownerPlayer, "Your gate is open again!", "bad")
+						Remotes.notifySchool(ownerPlayer, "Your gate is open again!", "bad")
 						Remotes.Sfx:FireClient(ownerPlayer, "Unlock")
 					end
 				end

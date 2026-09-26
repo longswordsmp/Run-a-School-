@@ -37,7 +37,8 @@ function MonetizationService.has(player, key)
 end
 
 local function applyPass(player, key)
-	local p = Data.get(player)
+	-- (a pass is the buyer's, kept in their own save even while they play for a friend's school)
+	local p = Data.own(player)
 	player:SetAttribute("Pass_" .. key, true)
 	if p then
 		p.passes = p.passes or {}
@@ -55,7 +56,7 @@ end
 function MonetizationService.grantPass(player, key)
 	local pass = passByKey[key]
 	if not pass then return false end
-	local p = Data.get(player)
+	local p = Data.own(player)
 	if p then
 		p.passes = p.passes or {}
 		p.passes[key] = true
@@ -67,7 +68,7 @@ function MonetizationService.grantPass(player, key)
 end
 
 local function checkPasses(player)
-	local p = Data.get(player)
+	local p = Data.own(player)
 	for _, pass in Config.Passes do
 		local owned = p and p.passes and p.passes[pass.key]
 		if pass.id ~= 0 then
@@ -130,7 +131,7 @@ MarketplaceService.ProcessReceipt = function(info)
 	p.receipts = p.receipts or {}
 	if p.receipts[info.PurchaseId] then
 		-- granted before but maybe not saved yet: only report success once it is
-		return Data.save(player) and Enum.ProductPurchaseDecision.PurchaseGranted or Enum.ProductPurchaseDecision.NotProcessedYet
+		return Data.save(Data.hostOf(player)) and Enum.ProductPurchaseDecision.PurchaseGranted or Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	local product = productById[info.ProductId]
 	if not product then
@@ -144,8 +145,9 @@ MarketplaceService.ProcessReceipt = function(info)
 	end
 	p.receipts[info.PurchaseId] = os.time()
 	-- saved before we tell Roblox it's done; if the save fails, Roblox retries and the receipt above
-	-- keeps it from being granted twice
-	if Data.save(player) then return Enum.ProductPurchaseDecision.PurchaseGranted end
+	-- keeps it from being granted twice (co-op: products go to the school being played, so the receipt
+	-- lives in that school's save)
+	if Data.save(Data.hostOf(player)) then return Enum.ProductPurchaseDecision.PurchaseGranted end
 	return Enum.ProductPurchaseDecision.NotProcessedYet
 end
 
@@ -209,8 +211,12 @@ end)
 
 function MonetizationService.start()
 	-- VIP doubles tuition (a permanent multiplier, so offline pay includes it)
+	-- (co-op: one VIP in the crew doubles the whole school)
 	table.insert(PlotService.multHooks, function(player)
-		return player:GetAttribute("Pass_VIP") and 2 or 1
+		for _, pl in Data.schoolPlayers(player) do
+			if pl:GetAttribute("Pass_VIP") then return 2 end
+		end
+		return 1
 	end)
 	-- 2x Luck while standing near the buses
 	table.insert(HallService.playerLuckHooks, function(player)

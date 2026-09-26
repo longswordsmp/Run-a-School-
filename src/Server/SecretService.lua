@@ -243,6 +243,8 @@ end
 -- Mutagen Vials: a Mutate prompt on your own seated kids while you have one
 ---------------------------------------------------------------------------
 local function refreshVialPrompts(player)
+	-- (a co-op school's prompts are the host's to build; any of the crew can use them)
+	if Data.isMember(player) then return end
 	local p = Data.get(player)
 	if not p then return end
 	local PlotService = require(script.Parent.PlotService)
@@ -269,7 +271,7 @@ local function refreshVialPrompts(player)
 			prompt:SetAttribute("Color", rgb(120, 255, 60))
 			prompt.Parent = model.PrimaryPart
 			prompt.Triggered:Connect(function(who)
-				if who ~= player then return end
+				if Data.hostOf(who) ~= player then return end
 				local pp = Data.get(player)
 				local entry = pp and pp.students[slot]
 				if not entry or entry.grade == "Mutated" or (pp.vials or 0) <= 0 then return end
@@ -280,8 +282,10 @@ local function refreshVialPrompts(player)
 				PlotService.place(player, slot)
 				PlotService.updateIncome(player)
 				local def = Config.StudentById[entry.id]
-				Remotes.Announce:FireClient(player, ("%s MUTATED!"):format(def.name:upper()), rgb(120, 255, 60))
-				Remotes.Sfx:FireClient(player, "Upgrade")
+				for _, pl in Data.schoolPlayers(player) do
+					Remotes.Announce:FireClient(pl, ("%s MUTATED!"):format(def.name:upper()), rgb(120, 255, 60))
+				end
+				Remotes.Sfx:FireClient(who, "Upgrade")
 				Signals.fire("mutateKid", player, def)
 				Data.saveSoon(player)
 				task.defer(refreshVialPrompts, player)

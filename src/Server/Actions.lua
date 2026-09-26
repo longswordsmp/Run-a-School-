@@ -32,10 +32,19 @@ Remotes.Action.OnServerInvoke = function(player, action, ...)
 	local p = Data.get(player)
 	if not h or not p then return { ok = false, err = "Not ready" } end
 	if p.reviewing and SPENDING[action] then return { ok = false, err = "The School Board is meeting!" } end
+	local cashBefore = p.cash
 	local ok, res = pcall(h, player, p, ...)
 	if not ok then
 		warn("[Actions]", action, "failed:", res)
 		return { ok = false, err = "Something went wrong" }
+	end
+	-- co-op President: 10% of what they just spent comes back
+	if SPENDING[action] and type(res) == "table" and res.ok and p.cash < cashBefore and player:GetAttribute("Role") == "President" and (player:GetAttribute("CrewSize") or 1) >= 2 then
+		local back = math.floor((cashBefore - p.cash) * (1 - require(game:GetService("ReplicatedStorage").Shared.Config).RolePerks.discount))
+		if back > 0 then
+			Data.addCash(player, back)
+			Remotes.Notify:FireClient(player, "\u{1F451} President's discount: " .. require(game:GetService("ReplicatedStorage").Shared.Config).formatCash(back) .. " back!", "good")
+		end
 	end
 	return res
 end

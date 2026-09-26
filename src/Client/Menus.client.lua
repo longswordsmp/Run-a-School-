@@ -1347,6 +1347,11 @@ sideButton(5, "\u{270F}\u{FE0F}", "Name", UI.C.blue, panels.NameSchool)
 sideButton(6, "\u{2699}\u{FE0F}", "Settings", UI.C.navy, panels.Settings)
 sideButton(0, "\u{1F48E}", "Store", Color3.fromRGB(40, 190, 90), panels.Store)
 local dailyButton = sideButton(9, "\u{1F4C5}", "Daily", UI.C.orange, panels.Daily)
+-- the Co-op panel lives in Coop.client
+sideButton(8, "\u{1F465}", "Coop", Color3.fromRGB(140, 80, 240), { toggle = function()
+	local e = bus and bus:FindFirstChild("OpenCoop")
+	if e then e:Fire() end
+end })
 -- the VexCorp Files book lives in Files.client
 sideButton(10, "\u{1F5C2}\u{FE0F}", "Files", UI.C.purple, { toggle = function()
 	local e = bus and bus:FindFirstChild("OpenFiles")

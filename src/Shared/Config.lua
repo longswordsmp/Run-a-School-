@@ -922,6 +922,34 @@ for i, s in Config.SecretMissions do
 end
 Config.SecretCooldown = 150 -- seconds between Stan's jobs
 
+-- Co-op schools (CrewService): up to four principals run one school, each with a role (any number
+-- of them can pick the same one: a school of four Presidents is fine)
+Config.CrewMax = 4
+Config.Roles = {
+	{ id = "President", icon = "\u{1F451}", name = "President", color = rgb(255, 184, 48),
+		perk = "Runs the school. 10% off everything you buy for it" },
+	{ id = "Teacher", icon = "\u{1F4DA}", name = "Teacher", color = rgb(80, 160, 255),
+		perk = "+20% tuition for the whole school while you're inside it" },
+	{ id = "Monitor", icon = "\u{1F6E1}\u{FE0F}", name = "Hall Monitor", color = rgb(240, 80, 80),
+		perk = "Bonks stun twice as long and knock goons out in one hit" },
+	{ id = "Recruiter", icon = "\u{1F392}", name = "Recruiter", color = rgb(70, 200, 110),
+		perk = "Carry stolen kids 20% faster and sneak quieter" },
+}
+Config.RoleById = {}
+for _, r in Config.Roles do Config.RoleById[r.id] = r end
+Config.RolePerks = { discount = 0.9, teacher = 0.2, stun = 2, carry = 1.2 }
+
+-- crew jobs: one at a time while two or more run a school together (n grows with the crew)
+Config.CrewJobs = {
+	{ id = "assembly", icon = "\u{1F4E3}", title = "ASSEMBLY!", text = "Everyone inside the school at the same time", secs = 90 },
+	{ id = "busRush", icon = "\u{1F68C}", title = "BUS RUSH", text = "Enroll %d kids as a crew", per = 2, secs = 240, signal = "enroll" },
+	{ id = "vexRaid", icon = "\u{1F3EB}", title = "RAID VEX PREP", text = "Steal %d kids from Vex Prep as a crew", per = 1, secs = 300, signal = "rivalEscaped" },
+	{ id = "payday", icon = "\u{1F4B5}", title = "PAYDAY", text = "Collect %s from the desks as a crew", secs = 180, signal = "collect", incomeSecs = 60 },
+}
+-- a finished job: cash for the school (this many seconds of its tuition, at least min) and a tuition
+-- boost for everyone
+Config.CrewJobReward = { incomeSecs = 150, min = 600, boost = 0.3, boostSecs = 120, gap = 25 }
+
 -- Vex Prep Academy (RivalService): VexCorp's own school, full of kids to steal
 Config.Rival = {
 	restock = 75, -- seconds before a desk has a new kid

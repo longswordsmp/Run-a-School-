@@ -280,7 +280,7 @@ local function startCheating(player, forceSlot)
 	pp.ObjectText = def.name
 	table.insert(info.parts, pp)
 	pp.Triggered:Connect(function(who)
-		if who == player then PatrolService.sendToOffice(player, slot) end
+		if Data.hostOf(who) == player then PatrolService.sendToOffice(player, slot) end
 	end)
 	-- shifty eyes: the head turns left and right
 	local target, prop = Factory.poseTarget(model:FindFirstChild("Head") and model.Head:FindFirstChild("Neck"))
@@ -296,7 +296,7 @@ local function startCheating(player, forceSlot)
 			if target.Parent then target[prop] = base end
 		end)
 	end
-	Remotes.Notify:FireClient(player, "\u{1F440} " .. def.name .. " is cheating! Catch them before they get away with it.", "steal")
+	Remotes.notifySchool(player, "\u{1F440} " .. def.name .. " is cheating! Catch them before they get away with it.", "steal")
 	Remotes.Sfx:FireClient(player, "Scratch2")
 	Signals.fire("cheatStart", player, def)
 end
@@ -463,7 +463,7 @@ local function sendDealer(player, s, scripted)
 		pp.ObjectText = def.name
 		d.prompt = pp
 		pp.Triggered:Connect(function(who)
-			if who == player then dealerLeave(player, s, true) end
+			if Data.hostOf(who) == player then dealerLeave(player, s, true) end
 		end)
 	end, { flat = false })
 end
@@ -496,15 +496,17 @@ function PatrolService.start()
 
 	-- the Ruler busts dealers too
 	table.insert(StealService.swingHooks, function(player, root)
-		local s = state[player]
+		local host = Data.hostOf(player)
+		local s = state[host]
 		local d = s and s.dealer
 		if d and not d.leaving and d.model.PrimaryPart and (d.model.PrimaryPart.Position - root.Position).Magnitude < 9 then
-			dealerLeave(player, s, true)
+			dealerLeave(host, s, true)
 		end
 	end)
 
 	-- a rebuilt campus (School Board review) sends everyone home
 	table.insert(PlotService.rebuildHooks, function(player)
+		player = Data.hostOf(player)
 		local s = state[player]
 		if not s then return end
 		for slot in s.cheating do endCheating(player, slot, s) end
@@ -544,10 +546,14 @@ function PatrolService.start()
 				end
 				if not player:GetAttribute("SlimeUntil") and p.luckMult then p.luckMult = nil end
 				-- only while the owner is actually playing (moved in the last minute)
-				local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-				if root and (not s.lastPos or (root.Position - s.lastPos).Magnitude > 2) then
-					s.lastPos = root.Position
-					s.lastMove = t
+				-- (a co-op crew: anyone playing for the school counts)
+				s.lastPos = s.lastPos or {}
+				for _, pl in Data.schoolPlayers(player) do
+					local root = pl.Character and pl.Character:FindFirstChild("HumanoidRootPart")
+					if root and (not s.lastPos[pl] or (root.Position - s.lastPos[pl]).Magnitude > 2) then
+						s.lastPos[pl] = root.Position
+						s.lastMove = t
+					end
 				end
 				local active = t - (s.lastMove or t) < 60
 				if not active then

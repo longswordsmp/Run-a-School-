@@ -873,7 +873,7 @@ end
 local function takeKid(player, i)
 	local pen = pens[i]
 	if not pen or not pen.kind or pen.takenBy or heists[player] then return end
-	if pen.kind == "captured" and pen.owner ~= player then return end
+	if pen.kind == "captured" and pen.owner ~= Data.hostOf(player) then return end
 	if player:GetAttribute("Carrying") then return end
 	local char = player.Character
 	local proot = char and char:FindFirstChild("HumanoidRootPart")

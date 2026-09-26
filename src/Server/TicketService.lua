@@ -235,6 +235,8 @@ function TicketService.start()
 			if t.Parent then t:Destroy() end
 		end
 		live[player] = nil
+		-- (a co-op crew member leaving: the case is their host's)
+		if Data.isMember(player) or PlotService.isAlias(player) then return end
 		local plot = PlotService.getPlot(player)
 		local case = plot and plot:FindFirstChild("TrophyCase")
 		if case then case:Destroy() end

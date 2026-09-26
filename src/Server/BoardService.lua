@@ -68,11 +68,13 @@ Actions.register("boardInfo", function(player, p)
 end)
 
 Actions.register("review", function(player, p)
-	if busy[player] then return { ok = false, err = "The Board is already meeting" } end
+	-- (co-op: one review per school, whoever in the crew asks)
+	local key = Data.hostOf(player)
+	if busy[key] then return { ok = false, err = "The Board is already meeting" } end
 	local n = BoardService.next(p)
 	if p.cash < n.cash then return { ok = false, err = "The Board wants " .. Config.formatCash(n.cash) } end
 	if not hasNeeded(p, n.needs) then return { ok = false, err = "Bring the student the Board asked for" } end
-	busy[player] = true
+	busy[key] = true
 	-- nothing can be bought or sold while the Board meets (Actions refuses spending while this is set)
 	p.reviewing = true
 	-- the client plays the Board Room cutscene; the school changes while the screen is covered
@@ -80,12 +82,12 @@ Actions.register("review", function(player, p)
 	task.wait(4.2)
 	p.reviewing = nil
 	if not player.Parent then
-		busy[player] = nil
+		busy[key] = nil
 		return { ok = false }
 	end
 	-- still qualified? (a steal during the cutscene can take the required student)
 	if p.cash < n.cash or not hasNeeded(p, n.needs) then
-		busy[player] = nil
+		busy[key] = nil
 		Remotes.Notify:FireClient(player, "The Board changed its mind: you no longer meet the requirements.", "bad")
 		return { ok = false, err = "Requirements no longer met" }
 	end
@@ -104,7 +106,7 @@ Actions.register("review", function(player, p)
 	Remotes.Announce:FireAllClients(("%s IS NOW %s %s!"):format(PlotService.schoolName(player):upper(), an, n.name:upper()), Color3.fromRGB(255, 214, 51))
 	Signals.fire("review", player, p.tier, p.stars)
 	Data.saveSoon(player)
-	busy[player] = nil
+	busy[key] = nil
 	-- the top of the ladder: Graduation Day, once
 	if not n.star and p.tier == #Config.Tiers and not p.finaleSeen then
 		p.finalePending = true

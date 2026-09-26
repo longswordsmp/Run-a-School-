@@ -4,7 +4,9 @@
 -- you playing?" (computer or phone/tablet, the one this device looks like already picked; a
 -- returning player's last choice is remembered) and a big PLAY button. Pressing it tells the server
 -- the player is ready (the new-principal intro waits for that), sets the Device attribute (bigger UI
--- and touch buttons on phones) and fades into the game.
+-- and touch buttons on phones) and fades into the game. Under it, CO-OP opens the co-op screen: pick
+-- a role, then start a co-op school (friends join you) or join one running in this server
+-- (CrewService); a new host gets Roblox's invite-friends window once in the game.
 -- Built from plain Instances: it runs before ReplicatedStorage (and the shared UI module) arrives.
 local Players = game:GetService("Players")
 local ReplicatedFirst = game:GetService("ReplicatedFirst")
@@ -53,6 +55,14 @@ local gui = new("ScreenGui", {
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 }, playerGui)
 ReplicatedFirst:RemoveDefaultLoadingScreen()
+-- (the hotbar and the player list would sit on top of the buttons until we're in)
+local StarterGui = game:GetService("StarterGui")
+local function coreGui(on)
+	for _, t in { Enum.CoreGuiType.Backpack, Enum.CoreGuiType.PlayerList } do
+		pcall(StarterGui.SetCoreGuiEnabled, StarterGui, t, on)
+	end
+end
+coreGui(false)
 
 local sky = new("Frame", { Name = "Sky", Size = UDim2.fromScale(1, 1), BackgroundColor3 = WHITE, BorderSizePixel = 0 }, gui)
 local skyGrad = grad(sky, Color3.fromRGB(104, 196, 255), Color3.fromRGB(38, 112, 222))
@@ -339,10 +349,223 @@ player:GetAttributeChangedSignal("Device"):Connect(function()
 end)
 
 local pressed = Instance.new("BindableEvent")
+local coopOpen = false
+local coopHost = false -- started a co-op school here: offer the friend invite once in the game
 play.Activated:Connect(function() pressed:Fire() end)
 UserInputService.InputBegan:Connect(function(input, gpe)
-	if not gpe and (input.KeyCode == Enum.KeyCode.Return or input.KeyCode == Enum.KeyCode.ButtonA) then pressed:Fire() end
+	if not gpe and not coopOpen and (input.KeyCode == Enum.KeyCode.Return or input.KeyCode == Enum.KeyCode.ButtonA) then pressed:Fire() end
 end)
+
+---------------------------------------------------------------------------
+-- co-op: run ONE school with up to three friends in this server, each with a role
+---------------------------------------------------------------------------
+local PURPLE = Color3.fromRGB(128, 72, 232)
+local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+local remotes = ReplicatedStorage:WaitForChild("Remotes", 20)
+local actionRF = remotes and remotes:WaitForChild("Action", 20)
+local function ask(...)
+	if not actionRF then return { ok = false, err = "Not connected" } end
+	local ok, res = pcall(actionRF.InvokeServer, actionRF, ...)
+	if not ok or type(res) ~= "table" then return { ok = false, err = "Try again in a second" } end
+	if res.err == "Not ready" then res.err = "Still opening your locker... try again in a second" end
+	return res
+end
+
+local coopBtn = new("TextButton", {
+	Name = "Coop", Text = "", AutoButtonColor = false,
+	AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 186), Size = UDim2.fromOffset(830, 58),
+	BackgroundColor3 = WHITE, ZIndex = 4,
+}, bottom)
+corner(coopBtn, 18)
+stroke(coopBtn, 5)
+grad(coopBtn, Color3.fromRGB(176, 128, 255), PURPLE)
+local coopText = label(coopBtn, { Text = "\u{1F465}  CO-OP: RUN ONE SCHOOL WITH FRIENDS (UP TO 4)", Font = BIG, Size = UDim2.new(1, -40, 0, 34), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 5 })
+textStroke(coopText, 3)
+local coopScale = new("UIScale", {}, coopBtn)
+coopBtn.MouseEnter:Connect(function() TweenService:Create(coopScale, TweenInfo.new(0.12), { Scale = 1.03 }):Play() end)
+coopBtn.MouseLeave:Connect(function() TweenService:Create(coopScale, TweenInfo.new(0.12), { Scale = 1 }):Play() end)
+
+local panel = new("Frame", {
+	Name = "CoopPanel", AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 282), Size = UDim2.fromOffset(1120, 690),
+	BackgroundColor3 = Color3.fromRGB(250, 248, 255), Visible = false, ZIndex = 10,
+}, root)
+corner(panel, 28)
+stroke(panel, 6)
+local head = new("Frame", { Size = UDim2.new(1, 0, 0, 76), BackgroundColor3 = WHITE, ZIndex = 11 }, panel)
+corner(head, 28)
+grad(head, Color3.fromRGB(176, 128, 255), PURPLE)
+new("Frame", { Position = UDim2.new(0, 0, 1, -28), Size = UDim2.new(1, 0, 0, 28), BackgroundColor3 = PURPLE, BorderSizePixel = 0, ZIndex = 11 }, head)
+local headTitle = label(head, { Text = "\u{1F465} CO-OP SCHOOL", Font = BIG, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.fromOffset(520, 46), Position = UDim2.fromOffset(26, 16), ZIndex = 12 })
+textStroke(headTitle, 4)
+local headSub = label(head, { Text = "Up to 4 principals, ONE school. Everyone earns together.", TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.fromOffset(540, 28), Position = UDim2.new(1, -566, 0, 26), ZIndex = 12 })
+textStroke(headSub, 2)
+
+local function step(n, text, y)
+	local badge = new("Frame", { Position = UDim2.fromOffset(24, y), Size = UDim2.fromOffset(40, 40), BackgroundColor3 = PURPLE, ZIndex = 11 }, panel)
+	corner(badge, 20)
+	stroke(badge, 3)
+	local bn = label(badge, { Text = tostring(n), Font = BIG, Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.54), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 12 })
+	textStroke(bn, 2)
+	label(panel, { Text = text, Font = BIG, TextColor3 = INK, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.fromOffset(600, 34), Position = UDim2.fromOffset(74, y + 3), ZIndex = 11 })
+end
+step(1, "PICK YOUR ROLE", 90)
+label(panel, { Text = "Perks work with 2+ players. Any number can pick the same role!", TextColor3 = Color3.fromRGB(110, 100, 150), TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.fromOffset(520, 24), Position = UDim2.new(1, -546, 0, 100), ZIndex = 11 })
+
+local role = "President"
+local roleCards = {}
+local function pickRole(id)
+	role = id
+	for rid, c in roleCards do
+		local on = rid == id
+		c.stroke.Color = on and c.color or INK
+		c.stroke.Thickness = on and 7 or 4
+		c.button.BackgroundColor3 = on and c.color:Lerp(WHITE, 0.82) or WHITE
+		c.tick.Visible = on
+	end
+end
+for i, r in Config.Roles do
+	local b = new("TextButton", {
+		Name = r.id, Text = "", AutoButtonColor = false,
+		Position = UDim2.fromOffset(24 + (i - 1) * 272, 138), Size = UDim2.fromOffset(256, 178),
+		BackgroundColor3 = WHITE, ZIndex = 11,
+	}, panel)
+	corner(b, 20)
+	local st = stroke(b, 4)
+	local band = new("Frame", { Size = UDim2.new(1, 0, 0, 10), BackgroundColor3 = r.color, BorderSizePixel = 0, ZIndex = 12 }, b)
+	corner(band, 20)
+	label(b, { Text = r.icon, Size = UDim2.fromOffset(58, 58), Position = UDim2.new(0.5, 0, 0, 16), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 12 })
+	local nm = label(b, { Text = r.name:upper(), Font = BIG, TextColor3 = r.color:Lerp(INK, 0.35), Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0.5, 0, 0, 78), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 12 })
+	textStroke(nm, 1.5, INK)
+	local perk = label(b, { Text = r.perk, TextColor3 = Color3.fromRGB(70, 70, 100), TextScaled = false, TextSize = 19, TextWrapped = true, Size = UDim2.new(1, -24, 0, 62), Position = UDim2.new(0.5, 0, 0, 110), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 12 })
+	perk.TextYAlignment = Enum.TextYAlignment.Top
+	local tick = new("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(1, -10, 0, 10), Size = UDim2.fromOffset(36, 36), BackgroundColor3 = GREEN, ZIndex = 14, Visible = false }, b)
+	corner(tick, 18)
+	stroke(tick, 3)
+	label(tick, { Text = "\u{2714}", Font = BIG, Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.52), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 15 })
+	roleCards[r.id] = { button = b, stroke = st, tick = tick, color = r.color }
+	b.Activated:Connect(function() pickRole(r.id) end)
+end
+pickRole(role)
+
+step(2, "START ONE, OR JOIN ONE", 334)
+local startBtn = new("TextButton", {
+	Name = "Start", Text = "", AutoButtonColor = false,
+	Position = UDim2.fromOffset(24, 384), Size = UDim2.fromOffset(440, 214), BackgroundColor3 = WHITE, ZIndex = 11,
+}, panel)
+corner(startBtn, 22)
+stroke(startBtn, 5)
+grad(startBtn, Color3.fromRGB(130, 240, 140), Color3.fromRGB(34, 164, 72))
+label(startBtn, { Text = "\u{1F3EB}", Size = UDim2.fromOffset(64, 64), Position = UDim2.new(0.5, 0, 0, 16), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 12 })
+local startTitle = label(startBtn, { Text = "START A CO-OP SCHOOL", Font = BIG, Size = UDim2.new(1, -30, 0, 40), Position = UDim2.new(0.5, 0, 0, 86), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 12 })
+textStroke(startTitle, 4)
+local startSub = label(startBtn, { Text = "Your school. Friends in this server join YOU.", TextScaled = false, TextSize = 21, TextWrapped = true, Size = UDim2.new(1, -40, 0, 56), Position = UDim2.new(0.5, 0, 0, 134), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 12 })
+textStroke(startSub, 2)
+
+local listBox = new("Frame", { Position = UDim2.fromOffset(484, 384), Size = UDim2.fromOffset(612, 214), BackgroundColor3 = Color3.fromRGB(236, 232, 250), ZIndex = 11 }, panel)
+corner(listBox, 22)
+stroke(listBox, 4)
+label(listBox, { Text = "SCHOOLS IN THIS SERVER TAKING PLAYERS", Font = BIG, TextColor3 = PURPLE, Size = UDim2.new(1, -30, 0, 26), Position = UDim2.fromOffset(15, 10), ZIndex = 12 })
+local list = new("ScrollingFrame", {
+	Position = UDim2.fromOffset(12, 44), Size = UDim2.new(1, -24, 1, -54), BackgroundTransparency = 1, BorderSizePixel = 0,
+	ScrollBarThickness = 8, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y, ZIndex = 12,
+}, listBox)
+new("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, list)
+local empty = label(listBox, { Text = "No co-op schools here yet.\nStart one, then invite your friends!", TextColor3 = Color3.fromRGB(120, 110, 160), TextScaled = false, TextSize = 24, Size = UDim2.new(1, -40, 0, 70), Position = UDim2.new(0.5, 0, 0.5, 18), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 12 })
+
+local back = new("TextButton", { Name = "Back", Text = "", AutoButtonColor = false, Position = UDim2.fromOffset(24, 614), Size = UDim2.fromOffset(180, 56), BackgroundColor3 = WHITE, ZIndex = 11 }, panel)
+corner(back, 18)
+stroke(back, 4)
+label(back, { Text = "\u{25C0} BACK", Font = BIG, TextColor3 = INK, Size = UDim2.new(1, -30, 0, 30), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 12 })
+local coopStatus = label(panel, { Text = "", TextColor3 = RED, TextXAlignment = Enum.TextXAlignment.Left, TextScaled = false, TextSize = 24, Size = UDim2.fromOffset(870, 56), Position = UDim2.fromOffset(222, 614), ZIndex = 11 })
+
+local working = false
+local function joined(asHost)
+	coopHost = asHost
+	coopOpen = false
+	panel.Visible = false
+	pressed:Fire()
+end
+
+local function row(entry, order)
+	local r = new("Frame", { Size = UDim2.new(1, -10, 0, 66), BackgroundColor3 = WHITE, LayoutOrder = order, ZIndex = 13 }, list)
+	corner(r, 14)
+	stroke(r, 3)
+	label(r, { Text = entry.school, Font = BIG, TextColor3 = INK, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -160, 0, 28), Position = UDim2.fromOffset(14, 7), ZIndex = 14 })
+	local icons = ""
+	for _, rid in entry.roles or {} do
+		local rr = Config.RoleById[rid]
+		if rr then icons ..= rr.icon end
+	end
+	label(r, { Text = ("%s's school  \u{2022}  %d/%d  %s"):format(entry.hostName, entry.size, entry.max, icons), TextColor3 = Color3.fromRGB(100, 96, 140), TextXAlignment = Enum.TextXAlignment.Left, TextScaled = false, TextSize = 19, Size = UDim2.new(1, -160, 0, 22), Position = UDim2.fromOffset(14, 38), ZIndex = 14 })
+	local full = entry.size >= entry.max
+	local j = new("TextButton", { Text = "", AutoButtonColor = false, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(130, 48), BackgroundColor3 = WHITE, ZIndex = 14 }, r)
+	corner(j, 14)
+	stroke(j, 3)
+	grad(j, full and Color3.fromRGB(200, 200, 210) or Color3.fromRGB(130, 240, 140), full and Color3.fromRGB(150, 150, 165) or Color3.fromRGB(34, 164, 72))
+	local jl = label(j, { Text = full and "FULL" or "JOIN", Font = BIG, Size = UDim2.new(1, -20, 0, 30), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 15 })
+	textStroke(jl, 2)
+	j.Activated:Connect(function()
+		if full or working then return end
+		working = true
+		coopStatus.TextColor3 = INK
+		coopStatus.Text = "Walking over to " .. entry.school .. "..."
+		local res = ask("crewJoin", entry.host, role)
+		working = false
+		if res.ok then
+			joined(false)
+		else
+			coopStatus.TextColor3 = RED
+			coopStatus.Text = res.err or "Couldn't join"
+		end
+	end)
+end
+
+local function refreshList()
+	local res = ask("crewList")
+	if not coopOpen then return end
+	for _, c in list:GetChildren() do
+		if c:IsA("Frame") then c:Destroy() end
+	end
+	local entries = res.ok and res.list or {}
+	empty.Visible = #entries == 0
+	for i, e in entries do row(e, i) end
+end
+
+startBtn.Activated:Connect(function()
+	if working then return end
+	working = true
+	coopStatus.TextColor3 = INK
+	coopStatus.Text = "Unlocking the doors for your friends..."
+	local res = ask("crewCreate", role)
+	working = false
+	if res.ok then
+		joined(true)
+	else
+		coopStatus.TextColor3 = RED
+		coopStatus.Text = res.err or "Couldn't start it"
+	end
+end)
+
+local function showCoop(on)
+	coopOpen = on
+	panel.Visible = on
+	stage.Visible = not on
+	bottom.Visible = not on
+	coopStatus.Text = ""
+	if on then
+		panel.Position = UDim2.new(0.5, 0, 0, 320)
+		TweenService:Create(panel, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Position = UDim2.new(0.5, 0, 0, 282) }):Play()
+		task.spawn(function()
+			while coopOpen and gui.Parent do
+				refreshList()
+				task.wait(2)
+			end
+		end)
+	end
+end
+coopBtn.Activated:Connect(function() showCoop(true) end)
+back.Activated:Connect(function() showCoop(false) end)
+
 pressed.Event:Wait()
 gui:SetAttribute("Chosen", true)
 
@@ -370,3 +593,10 @@ TweenService:Create(sky, TweenInfo.new(0.5), { BackgroundTransparency = 1 }):Pla
 task.wait(0.55)
 conn:Disconnect()
 gui:Destroy()
+coreGui(true)
+
+-- a brand-new co-op school: bring friends in (Roblox's own invite window)
+if coopHost then
+	task.wait(2)
+	pcall(function() game:GetService("SocialService"):PromptGameInvite(player) end)
+end

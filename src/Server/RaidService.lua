@@ -12,6 +12,8 @@ local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Data = require(script.Parent.DataService)
+local Crew = require(game:GetService("ReplicatedStorage").Shared.Crew)
+
 local Remotes = require(script.Parent.Remotes)
 local Signals = require(script.Parent.Signals)
 local PlotService = require(script.Parent.PlotService)
@@ -452,7 +454,9 @@ local function hitGoon(player, raid, g, root)
 	if not groot or g.gone or now() < g.stunUntil then return end
 	local dir = groot.Position - root.Position
 	-- the tutorial's Crumpet can't be knocked out before he's grabbed a kid (the step is to save one)
-	if not (raid.tutorial and not g.kid) then g.hp -= 1 end
+	if not (raid.tutorial and not g.kid) then
+		g.hp -= Crew.perk(player, "Monitor") and g.hp or 1
+	end
 	Remotes.Sfx:FireClient(player, "Bonk")
 	Remotes.Push:FireClient(player, "hit", { pos = groot.Position + Vector3.new(0, 2, 0), ko = g.hp <= 0 })
 	burst(groot.Position + Vector3.new(0, 1.5, 0), Color3.fromRGB(255, 230, 120), 26)
@@ -603,6 +607,7 @@ end
 
 function RaidService.start_raid(player, opts)
 	opts = opts or {}
+	player = Data.hostOf(player)
 	if raids[player] then return false end
 	local plot = PlotService.getPlot(player)
 	local p = Data.get(player)
@@ -674,6 +679,7 @@ end
 -- the tutorial's thief: Crumpet, slow, and he never actually leaves with the kid
 -- someone just stole from Vex Prep: their goons come for this player's school soon
 function RaidService.soon(player, secs)
+	player = Data.hostOf(player)
 	local at = now() + secs
 	if not nextRaid[player] or nextRaid[player] > at then nextRaid[player] = at end
 end
@@ -710,6 +716,7 @@ function RaidService.start()
 	table.insert(StealService.swingHooks, onSwing)
 	-- a School Board review rebuilds the school: the goons leave (kids come back via the rebuild)
 	table.insert(PlotService.rebuildHooks, function(player)
+		player = Data.hostOf(player)
 		local raid = raids[player]
 		if raid then
 			cleanup(player)
@@ -724,10 +731,13 @@ function RaidService.start()
 		while true do
 			task.wait(1)
 			for player, p in Data.all() do
-				local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-				if root and (not lastPos[player] or (root.Position - lastPos[player]).Magnitude > 3) then
-					lastPos[player] = root.Position
-					lastMove[player] = now()
+				-- (a co-op crew: anyone playing for the school keeps the raids coming)
+				for _, pl in Data.schoolPlayers(player) do
+					local root = pl.Character and pl.Character:FindFirstChild("HumanoidRootPart")
+					if root and (not lastPos[pl] or (root.Position - lastPos[pl]).Magnitude > 3) then
+						lastPos[pl] = root.Position
+						lastMove[player] = now()
+					end
 				end
 				local tutorialDone = (p.tutorial or 1) > #Config.Tutorial
 				if not nextRaid[player] then nextRaid[player] = now() + R.first end

@@ -57,7 +57,7 @@ end
 -- the client asks once its quest card is ready; a rejoin mid-tutorial replays the step's moment
 local replayed = {}
 Actions.register("quest", function(player, p)
-	if not replayed[player] and p.tutorial and p.tutorial > 1 and Config.Tutorial[p.tutorial] then
+	if not replayed[player] and not Data.isMember(player) and p.tutorial and p.tutorial > 1 and Config.Tutorial[p.tutorial] then
 		replayed[player] = true
 		local id = Config.Tutorial[p.tutorial].id
 		task.delay(3, function()

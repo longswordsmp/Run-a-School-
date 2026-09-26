@@ -116,7 +116,7 @@ function HallService.enroll(player, model)
 	local def = Config.StudentById[model:GetAttribute("StudentId")]
 	local grade = model:GetAttribute("Grade")
 	local reserved = model:GetAttribute("ReservedFor")
-	if reserved and reserved ~= player.UserId then
+	if reserved and reserved ~= Data.hostOf(player).UserId then
 		Remotes.Notify:FireClient(player, "That kid is reserved for someone else!", "bad")
 		return
 	end
@@ -152,7 +152,7 @@ function HallService.enroll(player, model)
 	if model:GetAttribute("OnBench") then Signals.fire("benchEnroll", player, def) end
 	if model:GetAttribute("Bus") then Signals.fire("busEnroll", player, model:GetAttribute("Bus"), def) end
 
-	Factory.setMode(model, "walking", player.DisplayName)
+	Factory.setMode(model, "walking", Data.hostOf(player).DisplayName)
 	Walkers.stop(model)
 	Factory.play(model, "walk")
 	local points

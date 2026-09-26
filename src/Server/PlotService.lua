@@ -13,7 +13,8 @@ local Remotes = require(script.Parent.Remotes)
 local Signals = require(script.Parent.Signals)
 
 local PlotService = {}
-local plotOf = {} -- [player] = plot
+local plotOf = {} -- [player] = plot (a co-op crew member maps to their host's plot)
+local aliasOf = {} -- [crew member] = true: plotOf points at someone else's plot
 local seated = {} -- [plot] = { [slot] = model }
 local plotsFolder = workspace:WaitForChild("Plots")
 local CARPET_Y = 0.65
@@ -84,21 +85,37 @@ function PlotService.getPlot(player)
 	return plotOf[player]
 end
 
+-- every school's owner and plot (co-op crew members aren't listed: their host is)
 function PlotService.plots()
-	return plotOf
+	local out = {}
+	for player, plot in plotOf do
+		if not aliasOf[player] then out[player] = plot end
+	end
+	return out
 end
 
+-- the school's owner (a co-op host, never one of their crew)
 function PlotService.ownerOf(plot)
-	for player, pl in plotOf do
-		if pl == plot then return player end
-	end
+	local id = plot:GetAttribute("OwnerId")
+	if not id or id == 0 then return nil end
+	local owner = Players:GetPlayerByUserId(id)
+	if owner and plotOf[owner] == plot and not aliasOf[owner] then return owner end
 	return nil
 end
 
 function PlotService.schoolName(player)
-	local p = Data.get(player)
-	return (p and p.schoolName) or (player.DisplayName .. "'s School")
+	local host = Data.hostOf(player)
+	local p = Data.get(host)
+	return (p and p.schoolName) or (host.DisplayName .. "'s School")
 end
+
+-- set a school-level attribute on everyone who plays for that school
+local function schoolAttr(player, name, value)
+	for _, pl in Data.schoolPlayers(player) do
+		pl:SetAttribute(name, value)
+	end
+end
+PlotService.schoolAttr = schoolAttr
 
 local function setSurfaceText(part, text, bg)
 	for _, g in part:GetChildren() do
@@ -175,7 +192,7 @@ function PlotService.applyDesks(player)
 			end
 		end
 	end
-	player:SetAttribute("Desks", PlotService.deskCount(p))
+	schoolAttr(player, "Desks", PlotService.deskCount(p))
 end
 
 -- (re)build the whole campus for the owner's tier, floors and bought items, then re-seat students
@@ -275,7 +292,7 @@ function PlotService.place(player, slot)
 
 	local model = Factory.build(def, e.grade)
 	model.Name = "Slot" .. slot
-	model:SetAttribute("OwnerId", player.UserId)
+	model:SetAttribute("OwnerId", Data.hostOf(player).UserId)
 	model:SetAttribute("Slot", slot)
 	Factory.setMode(model, "owned")
 	model.PrimaryPart.CFrame = sitCFrame(desk, model)
@@ -447,8 +464,8 @@ function PlotService.updateIncome(player)
 			baseTotal += PlotService.incomeOf(player, e, slot, true)
 		end
 	end
-	player:SetAttribute("IncomePerSec", total)
-	player:SetAttribute("BaseIncome", baseTotal)
+	schoolAttr(player, "IncomePerSec", total)
+	schoolAttr(player, "BaseIncome", baseTotal)
 	return total
 end
 
@@ -515,7 +532,31 @@ function PlotService.assign(player)
 	return nil
 end
 
+-- co-op: a crew member plays on their host's plot (their own plot was released when they joined)
+function PlotService.alias(member, plot)
+	plotOf[member] = plot
+	aliasOf[member] = true
+	pcall(function() plot:AddPersistentPlayer(member) end)
+	member:SetAttribute("Plot", plot.Name)
+end
+
+function PlotService.unalias(member)
+	local plot = plotOf[member]
+	plotOf[member] = nil
+	aliasOf[member] = nil
+	if plot then pcall(function() plot:RemovePersistentPlayer(member) end) end
+	member:SetAttribute("Plot", nil)
+end
+
+function PlotService.isAlias(player)
+	return aliasOf[player] == true
+end
+
 function PlotService.release(player)
+	if aliasOf[player] then
+		PlotService.unalias(player)
+		return
+	end
 	local plot = plotOf[player]
 	if not plot then return end
 	plotOf[player] = nil

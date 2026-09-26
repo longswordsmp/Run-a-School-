@@ -10,6 +10,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Data = require(script.Parent.DataService)
+local Crew = require(game:GetService("ReplicatedStorage").Shared.Crew)
+
 local PlotService = require(script.Parent.PlotService)
 local Factory = require(script.Parent.StudentFactory)
 local UpgradeService = require(script.Parent.UpgradeService)
@@ -49,6 +51,10 @@ local function setSpeed(player)
 		speed = Config.Heist.carrySpeed -- carrying a kid out of the Factory
 	else
 		speed = BASE_SPEED
+	end
+	-- co-op Recruiter: carries kids faster (steals, the Factory, the Lab, Vex Prep)
+	if (c or player:GetAttribute("Heist")) and Crew.perk(player, "Recruiter") then
+		speed *= Config.RolePerks.carry
 	end
 	hum.WalkSpeed = speed * require(script.Parent.MoveService).mult(player)
 end
@@ -99,7 +105,7 @@ function StealService.drop(thief, why)
 		c.entry.carried = nil
 		PlotService.place(owner, c.slot)
 		PlotService.updateIncome(owner)
-		Remotes.Notify:FireClient(owner, c.def.name .. " made it back to your school!", "good")
+		Remotes.notifySchool(owner, c.def.name .. " made it back to your school!", "good")
 	end
 	if thief.Parent then
 		Remotes.Notify:FireClient(thief, why or ("You dropped " .. c.def.name .. "!"), "bad")
@@ -138,7 +144,7 @@ local function complete(thief)
 	if seatedModel then Factory.emote(seatedModel, "cheer") end
 	Remotes.Notify:FireClient(thief, "You stole " .. c.def.name .. "!", "good")
 	Remotes.Sfx:FireClient(thief, "Cheer")
-	Remotes.Notify:FireClient(owner, thief.DisplayName .. " stole your " .. c.def.name .. "!", "bad")
+	Remotes.notifySchool(owner, thief.DisplayName .. " stole your " .. c.def.name .. "!", "bad")
 	Remotes.Sfx:FireClient(owner, "Doom")
 	local rarity = Config.RarityById[c.def.rarity]
 	if rarity.order >= 5 then
@@ -155,7 +161,7 @@ StealService.debugAllowSelf = false
 
 function StealService.begin(thief, plot, slot)
 	local owner = PlotService.ownerOf(plot)
-	if not owner or (owner == thief and not StealService.debugAllowSelf) then return end
+	if not owner or (Data.hostOf(thief) == owner and not StealService.debugAllowSelf) then return end
 	if carrying[thief] then
 		Remotes.Notify:FireClient(thief, "You're already carrying someone!", "bad")
 		return
@@ -187,7 +193,7 @@ function StealService.begin(thief, plot, slot)
 	setSpeed(thief)
 	Remotes.Notify:FireClient(thief, "Run it back to your school!", "steal")
 	Remotes.Sfx:FireClient(thief, "Whoosh")
-	Remotes.Notify:FireClient(owner, "\u{26A0}\u{FE0F} " .. thief.DisplayName .. " is stealing your " .. def.name .. "! Bonk them with your Ruler!", "bad")
+	Remotes.notifySchool(owner, "\u{26A0}\u{FE0F} " .. thief.DisplayName .. " is stealing your " .. def.name .. "! Bonk them with your Ruler!", "bad")
 	Remotes.Sfx:FireClient(owner, "Alarm")
 	-- Alarm Bell upgrade: the whole server hears it and the thief glows
 	if UpgradeService.level(op, "Alarm") > 0 and thief.Character then
@@ -262,14 +268,15 @@ local function swing(player, tool)
 		task.spawn(hook, player, root)
 	end
 	-- whoever is in front and close gets bonked
+	local stunFor = 1.2 * (Crew.perk(player, "Monitor") and Config.RolePerks.stun or 1)
 	for _, other in Players:GetPlayers() do
-		if other ~= player then
+		if other ~= player and Data.hostOf(other) ~= Data.hostOf(player) then
 			local hum, oroot = humanoid(other)
 			if hum and oroot and hum.Health > 0 then
 				local d = oroot.Position - root.Position
 				local flat = Vector3.new(d.X, 0, d.Z)
 				if flat.Magnitude < 8 and math.abs(d.Y) < 6 and (flat.Magnitude < 2 or flat.Unit:Dot(Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z).Unit) > 0.35) then
-					stunned[other] = now + 1.2
+					stunned[other] = now + stunFor
 					setSpeed(other)
 					oroot.AssemblyLinearVelocity = flat.Unit * 40 + Vector3.new(0, 25, 0)
 					Remotes.Sfx:FireAllClients("Bonk", oroot.Position)
@@ -279,7 +286,7 @@ local function swing(player, tool)
 						Remotes.Notify:FireClient(player, "You saved " .. c.def.name .. "!", "good")
 						Signals.fire("bonkSave", player, other, c.def, c.owner)
 					end
-					task.delay(1.25, function()
+					task.delay(stunFor + 0.05, function()
 						if other.Parent then setSpeed(other) end
 					end)
 				end
@@ -343,7 +350,8 @@ function StealService.start()
 				if root and c.lastPos then
 					local tp = Data.get(thief)
 					local dt = math.max(0.05, os.clock() - (c.lastAt or os.clock()))
-					local maxStep = Config.CarrySpeed * (tp and UpgradeService.carrySpeedMult(tp) or 1) * dt * 1.3 + 1.5
+					local role = Crew.perk(thief, "Recruiter") and Config.RolePerks.carry or 1
+					local maxStep = Config.CarrySpeed * (tp and UpgradeService.carrySpeedMult(tp) or 1) * role * dt * 1.3 + 1.5
 					local flat = (root.Position - c.lastPos) * Vector3.new(1, 0, 1)
 					if flat.Magnitude > maxStep then
 						-- two in a row (one can be a replication hiccup); either way this tick is not accepted:

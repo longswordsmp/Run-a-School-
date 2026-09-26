@@ -10,6 +10,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local UI = require(Shared:WaitForChild("UI"))
 local Config = require(Shared:WaitForChild("Config"))
+local Crew = require(Shared:WaitForChild("Crew"))
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Action = Remotes:WaitForChild("Action")
 local bus = ReplicatedStorage:WaitForChild("ClientBus", 10)
@@ -203,7 +204,7 @@ local function worldTarget()
 		if player:GetAttribute("Heist") then return Vector3.new(0, 5, 30) end
 		local pens = fac and fac:FindFirstChild("Pens")
 		for _, pen in pens and pens:GetChildren() or {} do
-			if pen:GetAttribute("OwnerId") == player.UserId then
+			if Crew.owns(player, pen:GetAttribute("OwnerId")) then
 				local spot = pen:FindFirstChild("PromptSpot")
 				if spot then return spot.Position + Vector3.new(0, 2, 0) end
 			end
@@ -233,7 +234,7 @@ local function worldTarget()
 	elseif g == "bench" then
 		local hall = workspace:FindFirstChild("Hall")
 		for _, m in hall and hall:GetChildren() or {} do
-			if m:GetAttribute("ReservedFor") == player.UserId and m.PrimaryPart then
+			if Crew.owns(player, m:GetAttribute("ReservedFor")) and m.PrimaryPart then
 				return m.PrimaryPart.Position + Vector3.new(0, 3.5, 0)
 			end
 		end

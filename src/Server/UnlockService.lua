@@ -1,6 +1,6 @@
 -- ServerScriptService.Server.UnlockService
 -- The side buttons appear when the player first needs them, not all at once on the first minute:
---   Home, Settings   always
+--   Home, Settings, Coop   always
 --   Yearbook         once 5 kids have been enrolled
 --   Shop             at the tutorial's "buy pencils" step
 --   Board            at the tutorial's "impress the Board" step
@@ -28,6 +28,7 @@ end
 local RULES = {
 	{ name = "Home", ok = function() return true end },
 	{ name = "Settings", ok = function() return true end },
+	{ name = "Coop", ok = function() return true end }, -- (co-op is for the very first minute too)
 	{ name = "Yearbook", ok = function(p) return (p.stats.enrolled or 0) >= 5 end },
 	{ name = "Shop", ok = function(p) return (p.tutorial or 1) >= stepIndex("pencils") end },
 	{ name = "Board", ok = function(p) return (p.tutorial or 1) >= stepIndex("board") end },
@@ -48,7 +49,7 @@ function UnlockService.refresh(player)
 		if not was and r.ok(p) then
 			p.unlocked[r.name] = true
 			-- (a first join shows the always-on buttons quietly)
-			if r.name ~= "Home" and r.name ~= "Settings" then
+			if r.name ~= "Home" and r.name ~= "Settings" and r.name ~= "Coop" then
 				Remotes.Push:FireClient(player, "unlock", { name = r.name })
 			end
 		end

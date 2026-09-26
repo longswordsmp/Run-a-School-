@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 
 local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+local Crew = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Crew"))
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 
 local player = Players.LocalPlayer
@@ -272,7 +273,7 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- desk prompts: the owner sees Sell, everyone else sees Steal
+-- desk prompts: the owner (and their co-op crew) sees Sell, everyone else sees Steal
 local function fixPrompt(prompt)
 	if not prompt:IsA("ProximityPrompt") then return end
 	-- a mission's own prompt (Vex's desk): only while you're on that mission
@@ -286,7 +287,7 @@ local function fixPrompt(prompt)
 		owner = owner:FindFirstAncestorOfClass("Model")
 	end
 	if not owner then return end
-	local mine = owner:GetAttribute("OwnerId") == player.UserId
+	local mine = Crew.owns(player, owner:GetAttribute("OwnerId"))
 	if prompt:GetAttribute("OwnerOnly") then prompt.Enabled = mine end
 	if prompt:GetAttribute("OthersOnly") then prompt.Enabled = not mine end
 end
@@ -335,3 +336,9 @@ if hallFolder then
 		if d:IsA("ProximityPrompt") then task.defer(fixPrompt, d) end
 	end)
 end
+-- joining or leaving a co-op school changes what's "mine": every prompt looks again
+player:GetAttributeChangedSignal("SchoolId"):Connect(function()
+	for _, folder in { plots, hallFolder, workspace:FindFirstChild("VexFactory") } do
+		for _, d in folder and folder:GetDescendants() or {} do fixPrompt(d) end
+	end
+end)

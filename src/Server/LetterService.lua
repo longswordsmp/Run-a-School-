@@ -127,6 +127,8 @@ end
 -- deliver a reserved kid to the owner's Waiting Bench. note: the line under their name while they
 -- walk and wait (default "FREE! (Scholarship)" for a free kid)
 function LetterService.deliver(player, def, free, gradeOverride, note)
+	-- (co-op: the bench is the school's; any of its crew can enroll the kid)
+	player = Data.hostOf(player)
 	local plot = PlotService.getPlot(player)
 	if not plot then return nil end
 	local seat = freeSeat(player)
@@ -182,7 +184,7 @@ function LetterService.deliver(player, def, free, gradeOverride, note)
 	prompt:SetAttribute("Color", Config.rarityAccent(def.rarity))
 	prompt.Parent = model.PrimaryPart
 	prompt.Triggered:Connect(function(who)
-		if who == player then HallService.enroll(player, model) end
+		if Data.hostOf(who) == player then HallService.enroll(who, model) end
 	end)
 
 	Walkers.walk(model, pts, 12, function()
@@ -315,10 +317,13 @@ function LetterService.start()
 						for r, t in ls do ls[r] = math.max(0, t - away * OFFLINE_RATE) end
 					end
 				end
-				local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-				if root and (not lastPos[player] or (root.Position - lastPos[player]).Magnitude > 2) then
-					lastPos[player] = root.Position
-					lastMove[player] = os.clock()
+				-- (anyone playing for the school counts: a co-op crew keeps it going while the host rests)
+				for _, pl in Data.schoolPlayers(player) do
+					local root = pl.Character and pl.Character:FindFirstChild("HumanoidRootPart")
+					if root and (not lastPos[pl] or (root.Position - lastPos[pl]).Magnitude > 2) then
+						lastPos[pl] = root.Position
+						lastMove[player] = os.clock()
+					end
 				end
 				if lastMove[player] and os.clock() - lastMove[player] < 120 then
 					for r, t in ls do

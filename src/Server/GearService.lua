@@ -237,7 +237,7 @@ local function makeTool(player, def, n)
 end
 
 -- the player's gear tools, in step with what they own
-function GearService.refreshTools(player)
+local function refreshOne(player)
 	local p = Data.get(player)
 	local backpack = player:FindFirstChild("Backpack")
 	if not p or not backpack then return end
@@ -255,6 +255,11 @@ function GearService.refreshTools(player)
 			tool:Destroy()
 		end
 	end
+end
+
+-- (co-op: the school's gear cupboard is shared, so everyone in the crew gets the tools)
+function GearService.refreshTools(player)
+	for _, pl in Data.schoolPlayers(player) do refreshOne(pl) end
 end
 
 ---------------------------------------------------------------------------

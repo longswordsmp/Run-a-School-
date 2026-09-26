@@ -48,13 +48,21 @@ local function onSecret(player)
 	return type(id) == "string" and id:sub(1, 7) == "secret_"
 end
 
+-- co-op: one story mission per school at a time (the rest of the crew helps whoever is on it)
+local function mateOnMission(player)
+	for _, pl in Data.schoolPlayers(player) do
+		if pl ~= player and active[pl] then return pl end
+	end
+	return nil
+end
+
 local function refreshReady(player)
 	if not player.Parent then return end
 	if onSecret(player) then
 		player:SetAttribute("MissionReady", nil)
 		return
 	end
-	player:SetAttribute("MissionReady", (not active[player]) and MissionService.ready(player) or nil)
+	player:SetAttribute("MissionReady", (not active[player] and not mateOnMission(player)) and MissionService.ready(player) or nil)
 	player:SetAttribute("Mission", active[player] and active[player].id or nil)
 end
 MissionService.refreshReady = refreshReady
@@ -331,6 +339,11 @@ end
 ---------------------------------------------------------------------------
 function MissionService.start(player, id)
 	if active[player] or onSecret(player) then return false end
+	local mate = mateOnMission(player)
+	if mate then
+		Remotes.Notify:FireClient(player, mate.DisplayName .. " is already on this mission. Go help them!", "info")
+		return false
+	end
 	local def = Config.Missions[id]
 	if not def or MissionService.ready(player) ~= id then return false end
 	local m = { id = id, def = def }

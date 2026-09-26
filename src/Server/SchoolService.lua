@@ -30,7 +30,7 @@ function SchoolService.snapshot(player, p)
 		upgrades = p.upgrades,
 		index = index,
 		schoolName = PlotService.schoolName(player),
-		settings = p.settings,
+		settings = (Data.own(player) or p).settings, -- (your own music and sound, even in a friend's school)
 		stats = p.stats,
 		tutorial = p.tutorial,
 		supplies = p.supplies,
@@ -47,6 +47,9 @@ end)
 
 Actions.register("nameSchool", function(player, p, name)
 	if type(name) ~= "string" then return { ok = false, err = "Bad name" } end
+	if Data.isMember(player) then
+		return { ok = false, err = "Only " .. Data.hostOf(player).DisplayName .. " can rename their school" }
+	end
 	if #name > 64 then return { ok = false, err = "Use 3 to 28 characters" } end
 	name = name:gsub("^%s+", ""):gsub("%s+$", "")
 	if #name < 3 or #name > 28 then return { ok = false, err = "Use 3 to 28 characters" } end
@@ -64,6 +67,8 @@ Actions.register("nameSchool", function(player, p, name)
 end)
 
 Actions.register("setting", function(player, p, key, value)
+	-- (settings are yours, not the school's: a crew member's go in their own save)
+	p = Data.own(player) or p
 	if key == "device" then
 		-- computer or phone (the loading screen asks): bigger UI and touch buttons on phones
 		if value ~= "pc" and value ~= "mobile" then return { ok = false } end
