@@ -13,7 +13,7 @@ local Actions = require(script.Parent.Actions)
 
 local MoveService = {}
 
-local SPRINT, SNEAK = 1.5, 0.55
+local SPRINT, SNEAK = 1.6, 0.55 -- (sprint 35 studs/s from the 22 walk)
 local DRAIN, REGEN, REGEN_DELAY, WINDED_UNTIL = 20, 26, 0.7, 30
 MoveService.SPRINT, MoveService.SNEAK = SPRINT, SNEAK
 
@@ -39,7 +39,7 @@ local function energized(player)
 	return (player:GetAttribute("EnergyUntil") or 0) > workspace:GetServerTimeNow()
 end
 
-MoveService.HOVER = 1.6
+MoveService.HOVER = 1.75 -- (the hoverboard beats sprinting: 38.5, and it never runs out)
 function MoveService.mult(player)
 	-- (on the hoverboard: one steady speed, no sprinting or sneaking on top)
 	if player:GetAttribute("Hover") then return MoveService.HOVER end

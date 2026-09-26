@@ -22,7 +22,8 @@ local StealService = {}
 local carrying = {} -- [thief] = { owner, plot, slot, entry, def, model, started, highlight }
 local stunned = {} -- [player] = until (os.clock)
 local CARRY_LIMIT = 90
-local BASE_SPEED = 16
+-- (22: tomas wanted a faster run by default; Roblox's own is 16. Sprint is x1.6 on top: MoveService)
+local BASE_SPEED = 22
 
 function StealService.isCarrying(player)
 	return carrying[player] ~= nil
@@ -307,8 +308,13 @@ function StealService.start()
 			end
 			setSpeed(player)
 		end)
-		if player.Character then giveRuler(player) end
+		if player.Character then
+			giveRuler(player)
+			task.defer(setSpeed, player)
+		end
 	end
+	-- (and every new character starts at the game's walk speed, not Roblox's 16)
+	game:GetService("StarterPlayer").CharacterWalkSpeed = BASE_SPEED
 	Players.PlayerAdded:Connect(onPlayer)
 	for _, p in Players:GetPlayers() do task.spawn(onPlayer, p) end
 

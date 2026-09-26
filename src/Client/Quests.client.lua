@@ -549,6 +549,18 @@ RunService.RenderStepped:Connect(function(dt)
 	local cam = workspace.CurrentCamera
 	-- (an NPC who already has the bouncing "!" over his head doesn't get the arrow on top of it)
 	local markerNpc = state and state.npc and player:GetAttribute("MissionReady") and player:GetAttribute("MissionGiver") == state.npc
+	-- (the map, TownMap.client, marks the same spot: shared on the local player)
+	do
+		local at = nil
+		if typeof(target) == "Vector3" then at = target
+		elseif typeof(target) == "Instance" then at = target:IsA("Model") and target:GetPivot().Position or target.Position end
+		local was = player:GetAttribute("GuideTarget")
+		if at == nil then
+			if was ~= nil then player:SetAttribute("GuideTarget", nil) end
+		elseif typeof(was) ~= "Vector3" or (was - at).Magnitude > 2 then
+			player:SetAttribute("GuideTarget", at)
+		end
+	end
 	if target then
 		local tip = tipAbove(target)
 		local dist = (tip - cam.CFrame.Position).Magnitude
@@ -579,7 +591,10 @@ RunService.RenderStepped:Connect(function(dt)
 				goalPos = ground(at, typeof(target) == "Instance" and target or nil)
 			end
 			local feet = ground(root.Position)
-			if (Vector3.new(goalPos.X, 0, goalPos.Z) - Vector3.new(feet.X, 0, feet.Z)).Magnitude > 9 then
+			-- (the line on the ground is for learning the ropes: the First Morning only; after that the
+			-- arrow and the edge chevron are enough)
+			local teaching = state and state.kind == "tutorial" and state.part == "morning"
+			if teaching and (Vector3.new(goalPos.X, 0, goalPos.Z) - Vector3.new(feet.X, 0, feet.Z)).Magnitude > 9 then
 				drawTrail(feet, goalPos, t0)
 			else
 				hideTrail()
@@ -646,6 +661,7 @@ local function show(s)
 		title.Text = "\u{1F3AF} GOAL"
 		headerGrad.Color = ColorSequence.new(UI.lighten(UI.C.purple, 0.3), UI.C.purple)
 	end
+	player:SetAttribute("GuideLabel", s.short or s.text)
 	if s.short then
 		text.Text = ((s.icon and (s.icon .. " ")) or "") .. s.short
 		hintL.Text = s.text or ""
@@ -687,8 +703,9 @@ Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
 	end
 end)
 
+-- (asks until the save has loaded, however long that takes)
 task.spawn(function()
-	for _ = 1, 10 do
+	while not card.Visible do
 		local ok, s = pcall(Action.InvokeServer, Action, "quest")
 		if ok and type(s) == "table" and s.ok ~= false then
 			show(s)

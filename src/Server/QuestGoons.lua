@@ -183,7 +183,7 @@ function QuestGoons.chase(player, q, s, st)
 	for _, name in s.route do
 		if name ~= route[1] then table.insert(route, name) end
 	end
-	local r = { questId = q.id, step = st.step, route = route, look = s.runner or "goon", speed = s.speed or 15, waitNear = true }
+	local r = { questId = q.id, step = st.step, route = route, look = s.runner or "goon", speed = (s.speed or 15) * 1.4, waitNear = true } -- (x1.4: players walk 22 now, not 16)
 	runners[player] = r
 end
 

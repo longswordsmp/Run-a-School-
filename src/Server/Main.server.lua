@@ -94,6 +94,7 @@ HQService.start(TownService.root)
 TownNPCService.start()
 TownQuestService.start_service()
 require(Server.SewerHeist).start_service() -- (Chapter 1: the pothole, the sewer, the Vex Prep Job)
+require(Server.MapPlan).start() -- (the town map's top-down copy of the town)
 TownQuestService.targets.hqFloor = function(player, s) return HQService.target(player, s.arg) end
 require(Server.QuestGoons).start(TownQuestService)
 

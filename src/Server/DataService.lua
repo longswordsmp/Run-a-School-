@@ -170,7 +170,16 @@ function DataService.load(player)
 			break
 		end
 		if not ok then warn("[Data] load attempt", attempt, "failed:", res) end
-		task.wait(attempt * 2)
+		-- (Studio on a published place with API access off: every call fails with a 403. Switch to the
+		-- in-memory store at once instead of 20 seconds of retries with nothing loaded)
+		if not ok and RunService:IsStudio() and tostring(res):find("403") and not usingMock then
+			store = MockStore.new()
+			usingMock = true
+			DataService.usingMock = true
+			warn("[Data] Studio has no DataStore access: using an in-memory save for this test")
+		else
+			task.wait(attempt * 2)
+		end
 	end
 	if not player.Parent then return nil end
 	if not data then
