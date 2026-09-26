@@ -447,13 +447,78 @@ function Factory.preloadTeachers()
 	end
 end
 
+-- a VexCorp mutant: green skin, a toxic glow, slime dripping off them, and a bit bigger
+local MUTANT_SKIN = Color3.fromRGB(128, 214, 86)
+local function mutate(model)
+	local hum = model:FindFirstChildOfClass("Humanoid")
+	for _, name in { "Head", "LeftHand", "RightHand", "LeftLowerArm", "RightLowerArm", "LeftUpperArm", "RightUpperArm" } do
+		local p = model:FindFirstChild(name)
+		-- (only bare skin: sleeves are Shirt textures on the arms and stay as they were)
+		if p and p:IsA("BasePart") and (name == "Head" or name:find("Hand") or not model:FindFirstChildOfClass("Shirt")) then
+			p.Color = MUTANT_SKIN
+		end
+	end
+	local bc = model:FindFirstChildOfClass("BodyColors")
+	if bc then bc.HeadColor3 = MUTANT_SKIN end
+	local root = model.PrimaryPart
+	local head = model:FindFirstChild("Head")
+	if head then
+		local drip = Instance.new("ParticleEmitter")
+		drip.Name = "MutantDrip"
+		drip.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		drip.Color = ColorSequence.new(Color3.fromRGB(150, 255, 70))
+		drip.LightEmission = 0.8
+		drip.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0.1) })
+		drip.Lifetime = NumberRange.new(0.6, 1)
+		drip.Speed = NumberRange.new(0.2, 0.6)
+		drip.Acceleration = Vector3.new(0, -9, 0)
+		drip.SpreadAngle = Vector2.new(60, 60)
+		drip.Rate = 7
+		drip.Parent = head
+	end
+	if root then
+		local fume = Instance.new("ParticleEmitter")
+		fume.Name = "MutantFume"
+		fume.Texture = "rbxasset://textures/particles/smoke_main.dds"
+		fume.Color = ColorSequence.new(Color3.fromRGB(110, 255, 80), Color3.fromRGB(40, 120, 40))
+		fume.LightEmission = 0.4
+		fume.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 1) })
+		fume.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 2.5) })
+		fume.Lifetime = NumberRange.new(1.2, 2)
+		fume.Speed = NumberRange.new(0.5, 1.5)
+		fume.SpreadAngle = Vector2.new(180, 180)
+		fume.Rate = 3
+		fume.Parent = root
+		local l = Instance.new("PointLight")
+		l.Name = "MutantLight"
+		l.Color = Color3.fromRGB(120, 255, 60)
+		l.Range = 9
+		l.Brightness = 1.4
+		l.Parent = root
+	end
+	local glow = model:FindFirstChild("GradeGlow")
+	if glow then
+		glow.FillTransparency = 0.6
+		glow.OutlineTransparency = 0
+	end
+	-- a bit bigger than the kids around them
+	pcall(function() model:ScaleTo(model:GetScale() * 1.12) end)
+	model:SetAttribute("TagLift", (model:GetAttribute("TagLift") or 0) + 0.4)
+	_ = hum
+end
+
 function Factory.build(def, gradeId)
 	local model = getTemplate(def):Clone()
 	model:SetAttribute("StudentId", def.id)
 	model:SetAttribute("Grade", gradeId)
-	buildBillboard(model, def, gradeId)
 	local grade = Config.GradeById[gradeId]
+	if grade and grade.mutant then mutate(model) end
+	buildBillboard(model, def, gradeId)
 	if grade and grade.id ~= "Normal" then Props.gradeAura(model, grade) end
+	if grade and grade.mutant then
+		local glow = model:FindFirstChild("GradeGlow")
+		if glow then glow.FillTransparency = 0.6 glow.OutlineTransparency = 0 end
+	end
 	Props.rarityAura(model, def)
 	return model
 end

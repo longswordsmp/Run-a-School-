@@ -146,7 +146,7 @@ refreshDevice()
 ---------------------------------------------------------------------------
 -- every frame: the bars, the tags, the crouch
 ---------------------------------------------------------------------------
-local LOT = { x0 = -33, x1 = 33, z0 = 34, z1 = 134 } -- the VexCorp Factory grounds
+local ZONES = require(Shared:WaitForChild("Config")).SecureZones -- the Factory, the Lab, Vex Prep
 local staminaShown = 0
 local camOffset = 0
 local vig = 1
@@ -210,7 +210,12 @@ RunService.RenderStepped:Connect(function(dt)
 	-- in the Factory grounds: the eye, and the keys to press
 	local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local p = r and r.Position
-	local inLot = p and p.X > LOT.x0 and p.X < LOT.x1 and p.Z > LOT.z0 and p.Z < LOT.z1
+	local inLot = false
+	if p then
+		for _, z in ZONES do
+			if p.X > z.x0 and p.X < z.x1 and p.Z > z.z0 and p.Z < z.z1 then inLot = true break end
+		end
+	end
 	eye.Visible = inLot == true
 	keys.Visible = inLot == true and not sneaking
 	if inLot then

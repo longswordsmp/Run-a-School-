@@ -2113,6 +2113,98 @@ T.guard = function(model, head, hs, torso, ts)
 	end
 end
 
+-- the Mutation Lab's security: a yellow hazmat suit, a gas mask with a glowing green visor and
+-- twin filters, an air tank on the back, and a mutagen scanner that lights what it sees
+Props.TeacherLooks.hazmat = { skin = "light", shirt = Color3.fromRGB(240, 200, 40), pants = Color3.fromRGB(240, 200, 40), torso = Color3.fromRGB(240, 200, 40) }
+T.hazmat = function(model, head, hs, torso, ts)
+	local yellow, black = rgb(240, 200, 40), rgb(28, 28, 32)
+	-- the hood over the whole head, a visor, the mask's snout and two filters
+	blob(model, head, Vector3.new(hs.X * 1.22, hs.Y * 1.18, hs.Z * 1.24), CFrame.new(0, hs.Y * 0.04, hs.Z * 0.04), yellow)
+	local visor = block(model, head, Vector3.new(hs.X * 0.86, hs.Y * 0.36, 0.1), CFrame.new(0, hs.Y * 0.12, -hs.Z * 0.6), rgb(120, 255, 90), Enum.Material.Neon)
+	visor.Transparency = 0.15
+	block(model, head, Vector3.new(hs.X * 0.95, hs.Y * 0.08, 0.12), CFrame.new(0, hs.Y * 0.32, -hs.Z * 0.6), black)
+	block(model, head, Vector3.new(hs.X * 0.95, hs.Y * 0.08, 0.12), CFrame.new(0, -hs.Y * 0.08, -hs.Z * 0.6), black)
+	block(model, head, Vector3.new(hs.X * 0.4, hs.Y * 0.3, hs.Z * 0.3), CFrame.new(0, -hs.Y * 0.28, -hs.Z * 0.62), black)
+	for _, x in { -1, 1 } do
+		cylZ(model, head, hs.X * 0.28, hs.Z * 0.26, CFrame.new(x * hs.X * 0.3, -hs.Y * 0.34, -hs.Z * 0.72) * CFrame.Angles(0, math.rad(x * 25), 0), rgb(60, 60, 66), Enum.Material.Metal)
+	end
+	-- a black hazard stripe band and a biohazard patch on the chest
+	block(model, torso, Vector3.new(ts.X * 1.05, ts.Y * 0.1, ts.Z * 1.05), CFrame.new(0, -ts.Y * 0.1, 0), black)
+	local patch = block(model, torso, Vector3.new(ts.X * 0.36, ts.X * 0.36, 0.06), CFrame.new(ts.X * 0.2, ts.Y * 0.22, -ts.Z * 0.53), black)
+	local g = Instance.new("SurfaceGui")
+	g.Face = Enum.NormalId.Front
+	g.Parent = patch
+	local t = Instance.new("TextLabel")
+	t.Size = UDim2.fromScale(1, 1)
+	t.BackgroundTransparency = 1
+	t.TextScaled = true
+	t.Text = "\u{2623}"
+	t.TextColor3 = yellow
+	t.Parent = g
+	-- the air tank
+	cylY(model, torso, ts.X * 0.34, ts.Y * 0.85, CFrame.new(0, 0, ts.Z * 0.72), rgb(200, 205, 215), Enum.Material.Metal)
+	for _, n in { "LeftHand", "RightHand" } do
+		local hand = part(model, n)
+		if hand then block(model, hand, hand.Size * 1.2, CFrame.new(), black, Enum.Material.Rubber) end
+	end
+	-- the scanner (a green light where the flashlight would be)
+	local hand = part(model, "RightHand")
+	if hand then
+		cylZ(model, hand, 0.4, 1.1, CFrame.new(0, -0.1, -0.5), rgb(40, 40, 46), Enum.Material.Metal)
+		local lens = cylZ(model, hand, 0.46, 0.12, CFrame.new(0, -0.1, -1.1), rgb(140, 255, 110), Enum.Material.Neon)
+		lens.Name = "FlashlightLens"
+		local spot = Instance.new("SpotLight")
+		spot.Name = "Beam"
+		spot.Face = Enum.NormalId.Right
+		spot.Angle = 60
+		spot.Range = 24
+		spot.Brightness = 3
+		spot.Color = Color3.fromRGB(150, 255, 120)
+		spot.Parent = lens
+	end
+end
+
+-- Vex Prep's hall monitors: a navy blazer with a gold crest, a striped tie, an orange sash and a
+-- whistle, a prim side parting, and a clipboard for writing you up
+Props.TeacherLooks.prefect = { skin = "light", shirt = Color3.fromRGB(34, 40, 90), pants = Color3.fromRGB(70, 72, 84), torso = Color3.fromRGB(34, 40, 90) }
+T.prefect = function(model, head, hs, torso, ts)
+	local navy, gold = rgb(34, 40, 90), rgb(230, 190, 70)
+	-- a slick side-parted helmet of hair
+	blob(model, head, Vector3.new(hs.X * 1.1, hs.Y * 0.5, hs.Z * 1.12), CFrame.new(0, hs.Y * 0.32, hs.Z * 0.04), rgb(60, 40, 28))
+	block(model, head, Vector3.new(hs.X * 0.08, 0.04, hs.Z * 0.9), CFrame.new(-hs.X * 0.2, hs.Y * 0.56, 0), rgb(230, 190, 150))
+	-- shirt collar, striped tie, gold crest
+	block(model, torso, Vector3.new(ts.X * 0.5, ts.Y * 0.14, 0.06), CFrame.new(0, ts.Y * 0.42, -ts.Z * 0.52), rgb(245, 245, 250))
+	for i = 0, 3 do
+		block(model, torso, Vector3.new(ts.X * 0.14, ts.Y * 0.12, 0.07), CFrame.new(0, ts.Y * (0.28 - i * 0.14), -ts.Z * 0.53), i % 2 == 0 and rgb(170, 30, 40) or gold)
+	end
+	block(model, torso, Vector3.new(ts.X * 0.2, ts.X * 0.22, 0.06), CFrame.new(-ts.X * 0.27, ts.Y * 0.24, -ts.Z * 0.53), gold, Enum.Material.Metal)
+	-- the orange sash, corner to corner
+	block(model, torso, Vector3.new(ts.X * 0.24, ts.Y * 1.25, ts.Z * 1.08), CFrame.new(0, 0, 0) * CFrame.Angles(0, 0, math.rad(38)), rgb(255, 140, 30))
+	-- a whistle on a cord
+	block(model, torso, Vector3.new(0.05, ts.Y * 0.35, 0.05), CFrame.new(ts.X * 0.14, ts.Y * 0.22, -ts.Z * 0.55), rgb(30, 30, 30))
+	block(model, torso, Vector3.new(0.22, 0.14, 0.26), CFrame.new(ts.X * 0.14, ts.Y * 0.02, -ts.Z * 0.6), rgb(200, 205, 215), Enum.Material.Metal)
+	-- the clipboard in the left hand
+	local hand = part(model, "LeftHand")
+	if hand then
+		block(model, hand, Vector3.new(0.08, 1.2, 0.9), CFrame.new(0.05, -0.3, -0.2), rgb(150, 105, 60), Enum.Material.Wood)
+		block(model, hand, Vector3.new(0.09, 1, 0.75), CFrame.new(0.07, -0.33, -0.2), rgb(250, 250, 245))
+	end
+	-- a torch for spotting kids in the dark hallways
+	local rhand = part(model, "RightHand")
+	if rhand then
+		local lens = cylZ(model, rhand, 0.36, 0.12, CFrame.new(0, -0.1, -0.9), rgb(255, 250, 215), Enum.Material.Neon)
+		cylZ(model, rhand, 0.3, 0.9, CFrame.new(0, -0.1, -0.4), rgb(40, 40, 46), Enum.Material.Metal)
+		lens.Name = "FlashlightLens"
+		local spot = Instance.new("SpotLight")
+		spot.Name = "Beam"
+		spot.Face = Enum.NormalId.Right
+		spot.Angle = 60
+		spot.Range = 22
+		spot.Brightness = 2.5
+		spot.Parent = lens
+	end
+end
+
 -- Otis the bus driver: big grey beard, flat cap, mirrored aviators, hi-vis vest
 Props.TeacherLooks.otis = { skin = "tan", shirt = Color3.fromRGB(90, 110, 140), pants = Color3.fromRGB(50, 55, 70) }
 T.otis = function(model, head, hs, torso, ts)

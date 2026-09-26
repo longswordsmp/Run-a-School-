@@ -160,6 +160,8 @@ Config.Grades = {
 	{ id = "Sugar Rush", mult = 3, weight = 0, event = "CandyCarnival", color = rgb(255, 110, 190) },
 	{ id = "Old Money", mult = 5, weight = 0, event = "HostileTakeover", color = rgb(40, 120, 70) },
 	{ id = "Graduated", mult = 6, weight = 0, event = "Graduation", color = rgb(30, 30, 40) },
+	-- VexCorp's experiments (the Mutation Lab): green, glowing, bigger, and x6 tuition
+	{ id = "Mutated", mult = 6, weight = 0, color = rgb(120, 255, 60), mutant = true },
 }
 Config.GradeById = {}
 for _, g in Config.Grades do Config.GradeById[g.id] = g end
@@ -823,6 +825,34 @@ for i, g in Config.Gear do
 	Config.GearById[g.id] = g
 end
 Config.GearUse = { max = 9 } -- the most of one kind of "use" gear you can carry
+
+-- the VexCorp Mutation Lab (LabService): break a mutant out of its tube and get it off the grounds
+Config.Lab = {
+	holdTime = 2.5, -- seconds to break a tube open (the Lockpick Set halves it)
+	restock = 600, -- seconds a broken tube stays empty
+	cameraRange = 44,
+	cameraHalfAngle = 17,
+	-- the mutant you get, by your school's tier (then Mutated: x6 tuition)
+	mutantByTier = {
+		{ "Uncommon", "Rare", "Rare" },
+		{ "Rare", "Rare", "Epic" },
+		{ "Rare", "Epic" },
+		{ "Epic", "Epic", "Legendary" },
+		{ "Epic", "Legendary" },
+		{ "Legendary", "Legendary", "Mythic" },
+		{ "Legendary", "Mythic" },
+		{ "Mythic", "Mythic", "Prodigy" },
+		{ "Mythic", "Prodigy" },
+		{ "Prodigy", "Prodigy", "Secret" },
+		{ "Prodigy", "Secret" },
+		{ "Secret" },
+	},
+}
+-- places with guards: the client shows the HIDDEN / SPOTTED eye and the sneak keys inside them
+Config.SecureZones = {
+	{ name = "factory", x0 = -33, x1 = 33, z0 = 34, z1 = 134 },
+	{ name = "lab", x0 = -474, x1 = -366, z0 = 42, z1 = 150 },
+}
 
 ---------------------------------------------------------------------------
 -- Robux store (docs/DESIGN-v2.md section 13). Create each pass/product on the Creator Dashboard and

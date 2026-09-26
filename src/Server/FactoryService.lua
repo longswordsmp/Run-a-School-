@@ -1020,15 +1020,24 @@ end
 ---------------------------------------------------------------------------
 -- the loop: guards look, chase, catch; carriers escape
 ---------------------------------------------------------------------------
+local factorySpotted = {}
 local function tick(dt)
 	-- who's being chased (the client shows SPOTTED / HIDDEN)
 	local chased = {}
 	for _, g in guards do
 		if g.state == "chase" and g.target then chased[g.target] = true end
 	end
+	-- (only for players on the Factory grounds: the Lab and Vex Prep set it for theirs)
 	for _, player in Players:GetPlayers() do
-		local was = player:GetAttribute("Spotted") == true
-		if chased[player] ~= was then player:SetAttribute("Spotted", chased[player] or nil) end
+		local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local here = r and inLot(r.Position)
+		if here or factorySpotted[player] then
+			local want = here and chased[player] or nil
+			if want ~= factorySpotted[player] then
+				factorySpotted[player] = want
+				player:SetAttribute("Spotted", want)
+			end
+		end
 	end
 	for _, g in guards do
 		local root = g.model.PrimaryPart

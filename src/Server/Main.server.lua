@@ -38,6 +38,7 @@ local StreetService = require(Server.StreetService)
 local UnlockService = require(Server.UnlockService)
 local MoveService = require(Server.MoveService)
 local GearService = require(Server.GearService)
+local LabService = require(Server.LabService)
 
 Factory.preload()
 PlotService.start()
@@ -67,6 +68,7 @@ StreetService.start()
 UnlockService.start()
 MoveService.start()
 GearService.start()
+LabService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -253,6 +255,12 @@ require(Server.DebugBridge).start({
 	street = function(player, n)
 		player:SetAttribute("DebugChapter", n)
 		return true
+	end,
+	lab = function(player)
+		return LabService.debugState()
+	end,
+	labTake = function(player, i)
+		return LabService.debugTake(player, i)
 	end,
 	gear = function(player, id, n)
 		return GearService.give(player, id, n or 1)

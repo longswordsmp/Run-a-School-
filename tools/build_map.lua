@@ -407,7 +407,10 @@ for _, x in { -392, 392 } do
 	for z = 60, 200, 35 do
 		for _, side in { -1, 1 } do
 			n += 1
-			tree(x, side * z, 1.2, leaves[n % #leaves + 1])
+			-- (not where the VexCorp Mutation Lab (NW) and Vex Prep Academy (SE) stand)
+			local zz = side * z
+			local taken = (x < 0 and zz > 0 and zz < 160) or (x > 0 and zz < 0 and zz > -180)
+			if not taken then tree(x, zz, 1.2, leaves[n % #leaves + 1]) end
 		end
 	end
 end
