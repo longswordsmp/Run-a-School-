@@ -767,7 +767,9 @@ function LabService.start()
 	guards:add({ Vector3.new(-388, FLOOR, 122), Vector3.new(-410, FLOOR, 122), Vector3.new(-410, FLOOR, 104), Vector3.new(-388, FLOOR, 104) })
 
 	for _, tb in tubes do
-		fillTube(tb)
+		-- (in the background: a tube's kid can wait on its avatar loading, and the whole server's start
+		-- used to wait with it, 21 s at a cold boot)
+		task.spawn(fillTube, tb)
 		tb.prompt.Triggered:Connect(function(player) takeMutant(player, tb) end)
 	end
 	table.insert(StealService.swingHooks, function(player, proot)

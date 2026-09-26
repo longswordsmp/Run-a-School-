@@ -1,10 +1,30 @@
 -- ServerScriptService.Server.Main
+-- The boot log (Studio, with the ServerStorage attribute BootLog on): how long each service takes to
+-- start, when your school is assigned, when the kid templates are ready, and every frame over 150 ms.
+-- It found the join freeze: everything waited on the kid preload (22 s cold), then the town, the
+-- schools and the NPCs all landed at once just as the loading screen let you in.
+local BOOT_T0 = os.clock()
+local BOOT_LOG = game:GetService("RunService"):IsStudio() and game:GetService("ServerStorage"):GetAttribute("BootLog") == true
+if BOOT_LOG then
+	local last = os.clock()
+	game:GetService("RunService").Heartbeat:Connect(function()
+		local now = os.clock()
+		if now - last > 0.15 then print(("[Boot] frame %.0f ms ending at %.1f s"):format((now - last) * 1000, now - BOOT_T0)) end
+		last = now
+	end)
+end
+local function timed(name, f, ...)
+	local t = os.clock()
+	f(...)
+	local d = os.clock() - t
+	if BOOT_LOG and d > 0.05 then print(("[Boot] %s %.0f ms (from %.1f s)"):format(name, d * 1000, t - BOOT_T0)) end
+end
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Server = script.Parent
 -- the street first: HallService reads the bus stop and the kids' walk from it
-require(Server.StreetLayout).build()
+timed("StreetLayout", require(Server.StreetLayout).build)
 local Config = require(ReplicatedStorage.Shared.Config)
 local Remotes = require(Server.Remotes)
 local Data = require(Server.DataService)
@@ -50,53 +70,61 @@ local AreaService = require(Server.AreaService)
 local TownNPCService = require(Server.TownNPCService)
 local TownQuestService = require(Server.TownQuestService)
 
-Factory.preload()
-PlotService.start()
-UpgradeService.start()
-GateService.start()
-HallService.start()
-TeacherService.start()
-CampusService.start()
-StealService.start()
-QuestService.start()
-PatrolService.start()
-EventService.startLoop()
-require(Server.AdminService).start()
-LetterService.start()
-MonetizationService.start()
-RewardService.start()
-StoryService.start()
-LeaderboardService.start()
-QuizService.start()
-ChapterService.start()
-DailyService.start()
-TicketService.start()
-AlumniService.start()
-RaidService.start()
-FactoryService.start()
-MissionService.start_service()
-StreetService.start()
-UnlockService.start()
-MoveService.start()
-GearService.start()
-LabService.start()
-FilesService.start()
-SecretService.start_service()
-RivalService.start()
-CrewService.start()
-TownService.start()
-AreaService.start()
+-- (the kid templates build in the background: the loading screen waits for them, and the town, the
+-- schools and the services come up meanwhile, behind it; anything that needs a kid first builds it then)
+task.spawn(function()
+	local t = os.clock()
+	Factory.preload()
+	if BOOT_LOG then print(("[Boot] kid templates ready %.1f s .. %.1f s"):format(t - BOOT_T0, os.clock() - BOOT_T0)) end
+end)
+timed("PlotService.start", PlotService.start)
+timed("UpgradeService.start", UpgradeService.start)
+timed("GateService.start", GateService.start)
+timed("HallService.start", HallService.start)
+timed("TeacherService.start", TeacherService.start)
+timed("CampusService.start", CampusService.start)
+timed("StealService.start", StealService.start)
+timed("QuestService.start", QuestService.start)
+timed("PatrolService.start", PatrolService.start)
+timed("EventService.startLoop", EventService.startLoop)
+timed("Server.AdminService", require(Server.AdminService).start)
+timed("LetterService.start", LetterService.start)
+timed("MonetizationService.start", MonetizationService.start)
+timed("RewardService.start", RewardService.start)
+timed("StoryService.start", StoryService.start)
+timed("LeaderboardService.start", LeaderboardService.start)
+timed("QuizService.start", QuizService.start)
+timed("ChapterService.start", ChapterService.start)
+timed("DailyService.start", DailyService.start)
+timed("TicketService.start", TicketService.start)
+timed("AlumniService.start", AlumniService.start)
+timed("RaidService.start", RaidService.start)
+timed("FactoryService.start", FactoryService.start)
+timed("MissionService.start_service", MissionService.start_service)
+timed("StreetService.start", StreetService.start)
+timed("UnlockService.start", UnlockService.start)
+timed("MoveService.start", MoveService.start)
+timed("GearService.start", GearService.start)
+timed("LabService.start", LabService.start)
+timed("FilesService.start", FilesService.start)
+timed("SecretService.start_service", SecretService.start_service)
+timed("RivalService.start", RivalService.start)
+timed("CrewService.start", CrewService.start)
+timed("TownService.start", TownService.start)
+timed("AreaService.start", AreaService.start)
 local HQService = require(Server.HQService)
 local PrestigeService = require(Server.PrestigeService)
-PrestigeService.start()
-require(Server.HouseService).start()
-HQService.start(TownService.root)
-TownNPCService.start()
-TownQuestService.start_service()
-require(Server.SewerHeist).start_service() -- (Chapter 1: the pothole, the sewer, the Vex Prep Job)
-require(Server.MapPlan).start() -- (the town map's top-down copy of the town)
+timed("PrestigeService.start", PrestigeService.start)
+timed("Server.HouseService", require(Server.HouseService).start)
+timed("HQService.start", HQService.start, TownService.root)
+timed("TownNPCService.start", TownNPCService.start)
+timed("TownQuestService.start_service", TownQuestService.start_service)
+timed("Server.SewerHeist", require(Server.SewerHeist).start_service) -- (Chapter 1: the pothole, the sewer, the Vex Prep Job)
+timed("Server.MapPlan", require(Server.MapPlan).start) -- (the town map's top-down copy of the town)
 TownQuestService.targets.hqFloor = function(player, s) return HQService.target(player, s.arg) end
 require(Server.QuestGoons).start(TownQuestService)
+
+if BOOT_LOG then print(("[Boot] services up at %.1f s"):format(os.clock() - BOOT_T0)) end
 
 local introBusFor = {} -- [player] = "waiting" / "sent": the intro's Welcome Bus
 
@@ -110,7 +138,8 @@ local function onPlayer(player)
 
 	local p = Data.load(player)
 	if not p then return end
-	PlotService.assign(player)
+	timed("PlotService.assign", PlotService.assign, player)
+	if BOOT_LOG then print(("[Boot] %s's school assigned at %.1f s"):format(player.Name, os.clock() - BOOT_T0)) end
 	UpgradeService.applyAll(player)
 	if p.offlineEarned and p.offlineEarned > 0 then
 		Remotes.Push:FireClient(player, "offline", { amount = p.offlineEarned, away = p.offlineAway })
@@ -175,8 +204,9 @@ for _, p in Players:GetPlayers() do task.spawn(onPlayer, p) end
 do
 	local Unfight = require(Server.Unfight)
 	task.delay(8, function()
+		local t = os.clock()
 		local n = Unfight.run(workspace)
-		print(("[Unfight] %d parts nudged clear of a coplanar neighbour"):format(n))
+		print(("[Unfight] %d parts nudged clear of a coplanar neighbour (%.1f s .. %.1f s)"):format(n, t - BOOT_T0, os.clock() - BOOT_T0))
 	end)
 	Unfight.watch(workspace:WaitForChild("Plots"))
 end

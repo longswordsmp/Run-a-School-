@@ -758,7 +758,9 @@ function RivalService.start()
 	guards:add({ Vector3.new(CX, FLOOR, -100), Vector3.new(CX, FLOOR, -142) })
 
 	for _, d in desks do
-		seatKid(d)
+		-- (in the background: a kid can wait on its avatar loading, and the server's whole start used to
+		-- wait for all eight, 19 s at a cold boot)
+		task.spawn(seatKid, d)
 		d.prompt.Triggered:Connect(function(player) takeKid(player, d) end)
 	end
 	table.insert(StealService.swingHooks, function(player, proot)
