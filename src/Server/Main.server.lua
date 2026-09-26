@@ -286,6 +286,9 @@ require(Server.DebugBridge).start({
 	lab = function(player)
 		return LabService.debugState()
 	end,
+	friends = function(player, n)
+		return CrewService.debugFriends(player, n)
+	end,
 	crewJob = function(player)
 		return CrewService.debugJob(player)
 	end,

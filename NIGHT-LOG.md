@@ -173,6 +173,10 @@ Done and checked (how, in brackets):
 - **Detention Hall** (east end): brick, barred windows, porch, neon sign, a clock stuck at 3:00,
   water tank, searchlight, fenced yard. **Every school** gets a detail pass: base course, corner
   pilasters, floor bands, sills and lintels, door lamps, walk lamp posts. [screenshots, tier 1 and 6]
+- **Friends bonus**: +10% tuition for each Roblox friend in the server (up to +40%), shown next to
+  the tuition on the HUD, with a toast when a friend arrives. A reason to invite. [with a Studio
+  test hook standing in for friends: 60/s became 72 with 2 and 84 with 9 (capped); the HUD read
+  "+40%". The real friend lookup (IsFriendsWith) can't run in Studio.]
 
 ## Not verified / known gaps
 - Two players in different schools: stealing from another player, a Ruler hit on another player, the
@@ -196,6 +200,8 @@ Done and checked (how, in brackets):
 - **File > Save in Studio** (and Publish when you're ready). The new school bus and Detention Hall
   were rebuilt in the place itself (tools/rebuild_bus.lua, tools/rebuild_detention.lua), so they
   only stick once you save.
+- **Set Max Players to 8** (Game Settings > Places): there are 8 school plots, and a ninth player
+  would have no school (co-op members don't use a plot, but a solo newcomer does).
 - Create the game passes and developer products on the Creator Dashboard and paste their ids into
   `Config.Passes` / `Config.Products` (they show "SOON" until then).
 - The admin panel is open to anyone in Studio and to the place owner (or group rank 255) in live games,

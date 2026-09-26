@@ -83,11 +83,16 @@ local function refreshCash()
 	cashText.Text = Config.formatCash(target)
 end
 player:GetAttributeChangedSignal("Cash"):Connect(refreshCash)
-player:GetAttributeChangedSignal("IncomePerSec"):Connect(function()
+-- (with friends in the server, their bonus shows next to it)
+local function refreshIncome()
+	local friends = player:GetAttribute("FriendsBonus")
 	incomeText.Text = Config.formatCash(player:GetAttribute("IncomePerSec") or 0) .. "/s tuition"
-end)
+		.. (friends and ("  \u{1F465}+" .. friends .. "%") or "")
+end
+player:GetAttributeChangedSignal("IncomePerSec"):Connect(refreshIncome)
+player:GetAttributeChangedSignal("FriendsBonus"):Connect(refreshIncome)
 refreshCash()
-incomeText.Text = Config.formatCash(player:GetAttribute("IncomePerSec") or 0) .. "/s tuition"
+refreshIncome()
 
 -- School IQ and Reputation chips above the cash panel
 local chips = Instance.new("Frame")

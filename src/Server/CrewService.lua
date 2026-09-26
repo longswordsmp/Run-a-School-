@@ -157,6 +157,8 @@ local function setAttrs(crew)
 		pl:SetAttribute("CrewSize", n)
 	end
 	crew.host:SetAttribute("CrewOpen", crew.open)
+	-- (a crew counts everyone's friends: the Friends bonus changes with it)
+	if CrewService.refreshFriends then task.defer(CrewService.refreshFriends) end
 end
 
 local function soloAttrs(player)
@@ -164,6 +166,7 @@ local function soloAttrs(player)
 	player:SetAttribute("Role", nil)
 	player:SetAttribute("CrewSize", nil)
 	player:SetAttribute("CrewOpen", nil)
+	if CrewService.refreshFriends then task.defer(CrewService.refreshFriends) end
 end
 
 -- the school's screens (to-do card, chapter card, unlocked buttons, income) for someone who just
@@ -424,14 +427,84 @@ local function tick()
 end
 
 ---------------------------------------------------------------------------
+-- the Friends bonus: +10% tuition for each Roblox friend in the server with you (up to +40%); a
+-- co-op school counts the friends of everyone running it. FriendsBonus (a percent) on each player.
+---------------------------------------------------------------------------
+local friendsOf = {} -- [player] = { [other] = true }
+local fakeFriends = {} -- [player] = n (Studio test hook)
+
+local function friendCount(player)
+	local seen = {}
+	local n = 0
+	for _, pl in Data.schoolPlayers(player) do
+		for other in friendsOf[pl] or {} do
+			if other.Parent and not seen[other] then
+				seen[other] = true
+				n += 1
+			end
+		end
+		n += fakeFriends[pl] or 0
+	end
+	return math.min(n, Config.FriendsBonus.max)
+end
+
+function CrewService.friendMult(player)
+	return 1 + Config.FriendsBonus.each * friendCount(player)
+end
+
+local function refreshFriends()
+	for _, pl in Players:GetPlayers() do
+		local pct = math.floor(Config.FriendsBonus.each * friendCount(pl) * 100 + 0.5)
+		if pl:GetAttribute("FriendsBonus") ~= (pct > 0 and pct or nil) then
+			pl:SetAttribute("FriendsBonus", pct > 0 and pct or nil)
+			PlotService.updateIncome(pl)
+		end
+	end
+end
+
+local function meetFriends(player)
+	friendsOf[player] = friendsOf[player] or {}
+	for _, other in Players:GetPlayers() do
+		if other ~= player and other.Parent and player.Parent then
+			local ok, yes = pcall(player.IsFriendsWith, player, other.UserId)
+			if ok and yes then
+				friendsOf[player][other] = true
+				friendsOf[other] = friendsOf[other] or {}
+				friendsOf[other][player] = true
+				Remotes.Notify:FireClient(other, ("\u{1F44B} Your friend %s is here! +%d%% tuition while you play together."):format(player.DisplayName, math.floor(Config.FriendsBonus.each * 100)), "good")
+				Remotes.Notify:FireClient(player, ("\u{1F44B} Your friend %s is here! +%d%% tuition while you play together."):format(other.DisplayName, math.floor(Config.FriendsBonus.each * 100)), "good")
+			end
+		end
+	end
+	refreshFriends()
+end
+
+CrewService.refreshFriends = refreshFriends
+
+function CrewService.debugFriends(player, n)
+	fakeFriends[player] = n
+	refreshFriends()
+	return CrewService.friendMult(player)
+end
+
+---------------------------------------------------------------------------
 function CrewService.start()
 	-- the Teacher bonus and a finished job's boost: short-lived, so offline pay ignores them
 	table.insert(PlotService.tempHooks, function(player)
+		local m = CrewService.friendMult(player)
 		local crew = crews[player]
-		if not crew then return 1 end
-		local m = crew.teacherMult or 1
+		if not crew then return m end
+		m *= crew.teacherMult or 1
 		if crew.boostUntil and crew.boostUntil > now() then m *= 1 + Config.CrewJobReward.boost end
 		return m
+	end)
+	Players.PlayerAdded:Connect(function(player) task.spawn(meetFriends, player) end)
+	for _, pl in Players:GetPlayers() do task.spawn(meetFriends, pl) end
+	Players.PlayerRemoving:Connect(function(player)
+		friendsOf[player] = nil
+		fakeFriends[player] = nil
+		for _, set in friendsOf do set[player] = nil end
+		task.defer(refreshFriends)
 	end)
 	Signals.on("enroll", function(player)
 		local crew = crewOf(player)

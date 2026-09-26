@@ -939,6 +939,9 @@ Config.RoleById = {}
 for _, r in Config.Roles do Config.RoleById[r.id] = r end
 Config.RolePerks = { discount = 0.9, teacher = 0.2, stun = 2, carry = 1.2 }
 
+-- Roblox friends in the same server: +10% tuition each, up to 4 (CrewService)
+Config.FriendsBonus = { each = 0.1, max = 4 }
+
 -- crew jobs: one at a time while two or more run a school together (n grows with the crew)
 Config.CrewJobs = {
 	{ id = "assembly", icon = "\u{1F4E3}", title = "ASSEMBLY!", text = "Everyone inside the school at the same time", secs = 90 },
