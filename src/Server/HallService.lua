@@ -300,7 +300,9 @@ end
 -- where a kid steps off a bus parked at the stop: just outside its front door, on the step
 local function doorSpot(bus)
 	local door = bus:FindFirstChild("Door")
-	local p = door and door.Position or STOP.Position
+	-- (the doorway, not the panel: once the door slides open the panel sits 3 studs further back)
+	local rel = door and door:GetAttribute("ClosedRel")
+	local p = rel and (bus:GetPivot() * rel).Position or door and door.Position or STOP.Position
 	return Vector3.new(p.X, 0, p.Z - 1.4)
 end
 
