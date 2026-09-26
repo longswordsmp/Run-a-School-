@@ -22,6 +22,7 @@ local Signals = require(script.Parent.Signals)
 local Actions = require(script.Parent.Actions)
 local HQ = require(script.Parent.TownHQ)
 local Guards = require(script.Parent.Guards)
+local Factory = require(script.Parent.StudentFactory)
 local StealService = require(script.Parent.StealService)
 local Industrial = require(script.Parent.TownIndustrial)
 
@@ -104,6 +105,9 @@ function HQService.arrive(player, n)
 		s.zapUntil = os.clock() + 2
 	elseif n == 4 then
 		s.spotUntil = os.clock() + 2.5
+	elseif n == 5 then
+		s.zapUntil = os.clock() + 2
+		s.freed = s.freed or {}
 	end
 	player:SetAttribute("HQFloor", n)
 	Remotes.Push:FireClient(player, "hqArrive", { floor = n, name = HQ.FLOORS[n].name, cleared = HQService.cleared(player, n) })
@@ -264,13 +268,13 @@ local function toCheckpoint(player, n)
 	if s then s.zapUntil = os.clock() + 1.2 end
 end
 
-local function zap(player)
+local function zap(player, n)
 	local s = state[player]
 	if not s or (s.zapUntil or 0) > os.clock() then return end
 	s.zapUntil = os.clock() + 1.5
-	Remotes.Push:FireClient(player, "hqZap", {})
+	Remotes.Push:FireClient(player, "hqZap", { floor = n or 3 })
 	Remotes.Sfx:FireClient(player, "Error")
-	task.delay(0.25, function() toCheckpoint(player, 3) end)
+	task.delay(0.25, function() toCheckpoint(player, n or 3) end)
 end
 
 local function pullLever(player, handle)
@@ -485,6 +489,182 @@ local function camTick()
 	end
 end
 
+---------------------------------------------------------------------------
+-- floor 5: Mutagen Labs
+---------------------------------------------------------------------------
+local pods5 = {} -- i -> { glass, fluid, spot, home, kid }
+local sample5, vial5, door5
+
+local function podKid(pod)
+	-- a kid from the student templates, floating in the tube
+	if pod.kid then pod.kid:Destroy() pod.kid = nil end
+	local st = ReplicatedStorage:FindFirstChild("StudentTemplates")
+	local list = st and st:GetChildren() or {}
+	if #list == 0 then return end
+	local kid = list[math.random(#list)]:Clone()
+	for _, d in kid:GetDescendants() do
+		if d:IsA("BillboardGui") or d:IsA("ProximityPrompt") or d:IsA("Script") or d:IsA("LocalScript") then d:Destroy() end
+		if d:IsA("BasePart") then d.CanCollide = false d.CanQuery = false end
+	end
+	local root = kid:FindFirstChild("HumanoidRootPart") or kid.PrimaryPart
+	if not root then kid:Destroy() return end
+	kid.PrimaryPart = root
+	root.Anchored = true
+	local so = Factory.standOffset(kid)
+	kid:PivotTo(CFrame.lookAt(pod.spot.Position + Vector3.new(0, so + 0.4, 0), pod.spot.Position + Vector3.new(0, so + 0.4, 0) + Vector3.new(0, 0, pod.spot.Position.Z > HQ.Z and -1 or 1)))
+	kid.Parent = pod.spot.Parent
+	Factory.play(kid, "idle")
+	pod.kid = kid
+end
+
+local function checkExit5(player)
+	local s = state[player]
+	local n = 0
+	for _ in s.freed do n += 1 end
+	if n >= #pods5 and s.sample then
+		msg(player, "\u{2622} ALL FIVE KIDS FREE AND THE SAMPLE IS YOURS! The lab door is open (east).", "good")
+		if door5 then openDoor(door5) end
+		HQService.clear(player, 5)
+	end
+end
+
+local function freePod(player, i)
+	local s = state[player]
+	local pod = pods5[i]
+	if not s or not pod or player:GetAttribute("HQFloor") ~= 5 then return end
+	s.freed = s.freed or {}
+	if s.freed[i] then
+		msg(player, "You already freed this one. Find the others!", "info")
+		return
+	end
+	s.freed[i] = true
+	local n = 0
+	for _ in s.freed do n += 1 end
+	Signals.fire("rescued", player)
+	Remotes.Sfx:FireClient(player, "Cheer")
+	msg(player, ("\u{1F9D2} Kid freed! %d of %d."):format(n, #pods5), "good")
+	-- the tube lifts, the fluid drains, the kid cheers and runs home (sparkles out)
+	if not pod.open then
+		pod.open = true
+		TweenService:Create(pod.glass, TweenInfo.new(0.8, Enum.EasingStyle.Quad), { CFrame = pod.home + Vector3.new(0, 8.5, 0) }):Play()
+		TweenService:Create(pod.fluid, TweenInfo.new(0.8), { Transparency = 1 }):Play()
+		local kid = pod.kid
+		if kid then
+			Factory.emote(kid, "cheer")
+			task.delay(1.6, function()
+				if kid.Parent then
+					for _, d in kid:GetDescendants() do
+						if d:IsA("BasePart") or d:IsA("Decal") then TweenService:Create(d, TweenInfo.new(0.5), { Transparency = 1 }):Play() end
+					end
+				end
+			end)
+		end
+		task.delay(15, function()
+			TweenService:Create(pod.glass, TweenInfo.new(0.8, Enum.EasingStyle.Quad), { CFrame = pod.home }):Play()
+			TweenService:Create(pod.fluid, TweenInfo.new(0.8), { Transparency = 0.7 }):Play()
+			task.wait(0.9)
+			podKid(pod)
+			pod.open = false
+		end)
+	end
+	checkExit5(player)
+end
+
+local function grabSample(player)
+	local s = state[player]
+	if not s or player:GetAttribute("HQFloor") ~= 5 then return end
+	if s.sample then
+		msg(player, "You've got the sample already!", "info")
+		return
+	end
+	s.sample = true
+	player:SetAttribute("HQSample", true)
+	Remotes.Sfx:FireClient(player, "Collect")
+	msg(player, "\u{2622} MUTATION SAMPLE GRABBED!", "good")
+	if vial5 then
+		vial5.Transparency = 1
+		task.delay(15, function() vial5.Transparency = 0 end)
+	end
+	checkExit5(player)
+end
+
+local function setupFloor5(folder)
+	for _, d in folder:GetDescendants() do
+		if d:IsA("BasePart") then
+			local i = d:GetAttribute("HQPod")
+			if i then
+				pods5[i] = pods5[i] or {}
+				pods5[i].glass = d
+				pods5[i].home = d.CFrame
+				local p = floorPrompt(d, "Free the kid", "Pod", 1.5, Color3.fromRGB(140, 255, 120))
+				p.MaxActivationDistance = 8
+				p.Triggered:Connect(function(player) freePod(player, i) end)
+			end
+			local f = d:GetAttribute("HQPodFluid")
+			if f then pods5[f] = pods5[f] or {} pods5[f].fluid = d end
+			local sp = d:GetAttribute("HQPodSpot")
+			if sp then pods5[sp] = pods5[sp] or {} pods5[sp].spot = d end
+			if d:GetAttribute("HQSample") then
+				sample5 = d
+				local p = floorPrompt(d, "Grab the sample", "Mutagen X", 1, Color3.fromRGB(140, 255, 120))
+				p.Triggered:Connect(grabSample)
+			end
+			if d:GetAttribute("HQSampleVial") then vial5 = d end
+			if d:GetAttribute("HQDoor") == 5 then door5 = d end
+		end
+	end
+	task.defer(function()
+		for _, pod in pods5 do podKid(pod) end
+	end)
+	-- hazmat guards on the catwalk (they stay on it)
+	local gfolder = Instance.new("Folder")
+	gfolder.Name = "Guards"
+	gfolder.Parent = folder
+	local y = HQ.FLOORS[5].y
+	local function onCatwalk(pos)
+		return HQ.onFloor(pos, 5) and math.abs(pos.Z - HQ.Z) < 3.5 and pos.X > HQ.X - 52 and pos.X < HQ.X + 60
+	end
+	local squad = Guards.new({
+		id = "LabGuard", name = "Hazmat", title = "Lab Security", outfit = "hazmat", folder = gfolder,
+		area = onCatwalk,
+		grounds = function(pos) return HQ.onFloor(pos, 5) end,
+		sight = { sight = 26, angle = 100, hear = 5 },
+		patrolSpeed = 6.5, chaseSpeed = 14, loseAfter = 2,
+		onCatch = function(player)
+			msg(player, "\u{1F6A8} The hazmat team caught you! Back to the lobby.", "bad")
+			Remotes.Push:FireClient(player, "elevator", { dir = "caught" })
+			task.wait(0.8)
+			if player.Character then player.Character:PivotTo(HQ.arrival(5)) end
+		end,
+	})
+	for _, route in HQ.GUARDS[5] do
+		local pts = {}
+		for _, p in route do table.insert(pts, Vector3.new(HQ.X + p[1], y, HQ.Z + p[2])) end
+		squad:add(pts)
+	end
+	squads[5] = squad
+end
+
+local function acidTick()
+	local a = HQ.ACID
+	if not a then return end
+	local y = HQ.FLOORS[5].y
+	for _, player in Players:GetPlayers() do
+		if player:GetAttribute("HQFloor") == 5 then
+			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+			if root and hum then
+				local p = root.Position
+				local lx, lz = p.X - HQ.X, p.Z - HQ.Z
+				local feet = p.Y - (hum.HipHeight + root.Size.Y / 2)
+				if lx > a.x0 and lx < a.x1 and lz > a.z0 and lz < a.z1 and feet < y + a.top + 0.6 then
+					zap(player, 5)
+				end
+			end
+		end
+	end
+end
+
 -- where the story quest's beam should point while you work on floor n
 function HQService.target(player, n)
 	local on = player:GetAttribute("HQFloor")
@@ -494,6 +674,19 @@ function HQService.target(player, n)
 		return LOBBY + Vector3.new(-3, 3, 0)
 	end
 	local s = state[player]
+	if n == 5 then
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		local best, bestD
+		for i, pod in pods5 do
+			if not (s and s.freed and s.freed[i]) and pod.glass then
+				local d = root and (root.Position - pod.glass.Position).Magnitude or 0
+				if not best or d < bestD then best, bestD = pod.glass.Position + Vector3.new(0, 6, 0), d end
+			end
+		end
+		if best then return best end
+		if not (s and s.sample) and sample5 then return sample5.Position + Vector3.new(0, 3, 0) end
+		return door5 and door5.Position + Vector3.new(-2, 2, 0)
+	end
 	if n == 4 then
 		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 		local best, bestD
@@ -557,6 +750,12 @@ function HQService.debugHack(player, name)
 	return state[player] and state[player].hacked
 end
 
+function HQService.debugFree(player, i)
+	if i == 0 then grabSample(player) else freePod(player, i) end
+	local s = state[player]
+	return { freed = s and s.freed, sample = s and s.sample }
+end
+
 function HQService.debugState(player)
 	local s = state[player]
 	return { office = s and s.office, keycard = s and s.keycard, floor = player:GetAttribute("HQFloor"), cleared = hqOf(player).cleared }
@@ -598,6 +797,12 @@ function HQService.start(townRoot)
 	if f3 then setupFloor3(f3) end
 	local f4 = hqRoot and hqRoot:FindFirstChild("Floor4")
 	if f4 then setupFloor4(f4) end
+	local f5 = hqRoot and hqRoot:FindFirstChild("Floor5")
+	if f5 then setupFloor5(f5) end
+	RunService.Heartbeat:Connect(function()
+		local ok, err = pcall(acidTick)
+		if not ok then warn("[HQ acid]", err) end
+	end)
 	task.spawn(function()
 		while true do
 			task.wait(0.1)

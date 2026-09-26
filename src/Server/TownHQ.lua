@@ -595,6 +595,146 @@ function HQ.build(town, Kit)
 		Kit.sign(big, Enum.NormalId.Right, "DOWNLOAD: HOMEWORK MACHINE BLUEPRINTS\n[          ] 0%", rgb(90, 255, 160), rgb(10, 12, 18), Enum.Font.Arcade)
 	end
 
+	---------------------------------------------------------------------------
+	-- FLOOR 5: MUTAGEN LABS
+	--   a sunken pool of Mutagen X acid (x -55..62, z -62..62) with a main catwalk along z = 0
+	--   (hazmat guards patrol it, glass vats along it block their view), five pod islands at
+	--   z = +-35 with a kid trapped in a tube on each, reached over bridges that fade in and out
+	--   (the client toggles them from the server clock, Laser = "bridge"), the sample case on its
+	--   own island; the lab door (east wall) opens once five kids are free and the sample is yours
+	---------------------------------------------------------------------------
+	do
+		local m, at = shell(5, {
+			floor = rgb(232, 236, 240), floorMat = Enum.Material.SmoothPlastic, wall = rgb(236, 240, 244), ceiling = rgb(220, 226, 230),
+			lightColor = rgb(235, 255, 240), noWindows = true,
+		})
+		local y5 = HQ.FLOORS[5].y
+		local ACID = rgb(110, 255, 70)
+		local TILE = rgb(236, 240, 244)
+		local STEEL = rgb(150, 156, 168)
+		HQ.CHECKPOINTS = HQ.CHECKPOINTS or {}
+		HQ.CHECKPOINTS[5] = { { -64, 0 } }
+		HQ.ACID = { x0 = -55, x1 = 62, z0 = -75, z1 = 75, top = -2.2 } -- floor-local
+		local lab = Kit.folder(m, "Lab")
+		-- the pool: the shell's slab is cut away by a sunken basin (a lower slab, acid on top)
+		m.Slab:Destroy()
+		part(m, "Slab", Vector3.new(22, 2, HQ.SIZE + 2), at(-66, -1, 0), TILE, Enum.Material.SmoothPlastic) -- the lobby
+		part(m, "Slab", Vector3.new(14, 2, HQ.SIZE + 2), at(69, -1, 0), TILE, Enum.Material.SmoothPlastic) -- the far side
+		-- (the pool runs wall to wall north and south: the catwalk and the bridges are the only way)
+		part(m, "BasinFloor", Vector3.new(117, 2, HQ.SIZE + 2), at(3.5, -6, 0), rgb(40, 60, 40), Enum.Material.Slate)
+		local acid = part(m, "Acid", Vector3.new(117, 1, HQ.SIZE), at(3.5, -2.7, 0), rgb(70, 190, 45), Enum.Material.Neon, { Transparency = 0.45, CanCollide = false, CastShadow = false })
+		acid:SetAttribute("Acid", true)
+		for _, p in { { -30, -30 }, { -30, 30 }, { 20, -30 }, { 20, 30 }, { 0, 0 } } do
+			local b = part(m, "Bubbles", Vector3.new(1, 1, 1), at(p[1], -2.5, p[2]), ACID, nil, { Transparency = 1, CanCollide = false, CanQuery = false })
+			local e = Instance.new("ParticleEmitter")
+			e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+			e.Color = ColorSequence.new(rgb(170, 255, 120))
+			e.Size = NumberSequence.new(1.4, 0)
+			e.Lifetime = NumberRange.new(1, 2)
+			e.Rate = 14
+			e.Speed = NumberRange.new(2, 4)
+			e.SpreadAngle = Vector2.new(60, 60)
+			e.LightEmission = 0.8
+			e.Parent = b
+			Kit.light(b, 40, 1.2, ACID)
+		end
+		-- hazard edging round the pool
+		part(m, "PoolEdge", Vector3.new(0.6, 0.3, HQ.SIZE), at(-55, 0.15, 0), rgb(250, 200, 40))
+		part(m, "PoolEdge", Vector3.new(0.6, 0.3, HQ.SIZE), at(62, 0.15, 0), rgb(250, 200, 40))
+		-- the main catwalk along z = 0: steel grating on posts
+		part(lab, "Catwalk", Vector3.new(117, 0.6, 6), at(3.5, -0.3, 0), STEEL, Enum.Material.DiamondPlate)
+		for _, s in { -1, 1 } do
+			part(lab, "Rail", Vector3.new(117, 0.3, 0.3), at(3.5, 3, s * 2.9), rgb(250, 200, 40), Enum.Material.Metal)
+			for x = -52, 58, 10 do part(lab, "RailPost", Vector3.new(0.3, 3, 0.3), at(x, 1.5, s * 2.9), rgb(80, 84, 96), Enum.Material.Metal) end
+		end
+		for x = -50, 60, 12 do Kit.cylY(lab, "CatwalkPost", 1, 5, (at(x, -3.5, 0)).Position, rgb(80, 84, 96), Enum.Material.Metal) end
+		-- glass vats of Mutagen X beside the catwalk (the guards can't see through them)
+		for _, v in { { -38, 6.5 }, { -22, -6.5 }, { -6, 6.5 }, { 10, -6.5 }, { 26, 6.5 }, { 42, -6.5 } } do
+			local base = at(v[1], 0, v[2]).Position
+			Kit.cylY(lab, "VatBase", 6, 1.2, base + Vector3.new(0, -0.4, 0), rgb(80, 84, 96), Enum.Material.Metal)
+			Kit.cylY(lab, "VatGlass", 5.6, 11, base + Vector3.new(0, 5.6, 0), rgb(200, 255, 200), Enum.Material.Glass, { Transparency = 0.6 })
+			Kit.cylY(lab, "VatFluid", 5, 8, base + Vector3.new(0, 4.4, 0), ACID, Enum.Material.Neon, { Transparency = 0.2 })
+			Kit.cylY(lab, "VatCap", 6, 1, base + Vector3.new(0, 11.4, 0), rgb(80, 84, 96), Enum.Material.Metal)
+			part(lab, "VatPipe", Vector3.new(0.8, HQ.HEIGHT - 12, 0.8), CFrame.new(base + Vector3.new(0, 12 + (HQ.HEIGHT - 12) / 2, 0)), rgb(120, 124, 136), Enum.Material.Metal)
+		end
+		-- pod islands and their bridges
+		local pods = Kit.folder(m, "Pods")
+		local bridges = Kit.folder(m, "Bridges")
+		local ISLANDS = { { -35, 35 }, { -35, -35 }, { 5, 35 }, { 5, -35 }, { 40, 35 } }
+		local function island(x, z)
+			part(lab, "Island", Vector3.new(14, 6, 14), at(x, -3, z), rgb(200, 206, 214), Enum.Material.SmoothPlastic)
+			part(lab, "IslandEdge", Vector3.new(14.4, 0.3, 14.4), at(x, 0.1, z), rgb(250, 200, 40))
+		end
+		for i, isl in ISLANDS do
+			local x, z = isl[1], isl[2]
+			island(x, z)
+			-- the pod: a tube of green fluid with a kid inside (HQService puts the kid in)
+			local base = at(x, 0, z).Position
+			Kit.cylY(pods, "PodBase", 5, 1, base + Vector3.new(0, 0.5, 0), rgb(80, 84, 96), Enum.Material.Metal)
+			local glass = Kit.cylY(pods, "PodGlass", 4.4, 8, base + Vector3.new(0, 5, 0), rgb(200, 255, 220), Enum.Material.Glass, { Transparency = 0.55, CanCollide = true })
+			glass:SetAttribute("HQPod", i)
+			Kit.cylY(pods, "PodCap", 5, 1, base + Vector3.new(0, 9.5, 0), rgb(80, 84, 96), Enum.Material.Metal)
+			local fluid = Kit.cylY(pods, "PodFluid", 4, 7.6, base + Vector3.new(0, 4.9, 0), ACID, Enum.Material.Neon, { Transparency = 0.7, CanCollide = false, CanQuery = false })
+			fluid:SetAttribute("HQPodFluid", i)
+			local spot = part(pods, "PodSpot", Vector3.new(1, 1, 1), CFrame.new(base + Vector3.new(0, 1, 0)), ACID, nil, { Transparency = 1, CanCollide = false })
+			spot:SetAttribute("HQPodSpot", i)
+			local lbl = part(pods, "PodLabel", Vector3.new(4, 1, 0.2), CFrame.new(base + Vector3.new(0, 10.8, z > 0 and -2.6 or 2.6)) * CFrame.Angles(0, z > 0 and 0 or math.rad(180), 0), rgb(20, 30, 20))
+			Kit.sign(lbl, Enum.NormalId.Front, ("SUBJECT #%d"):format(100 + i * 7), ACID, rgb(20, 30, 20), Enum.Font.Arcade)
+			-- the bridge from the catwalk: three segments that fade in and out one after another
+			local s = z > 0 and 1 or -1
+			for k = 0, 2 do
+				local sz = s * (3 + 4.5 + k * 9) -- 3..30 in three 9-stud pieces
+				local b = part(bridges, "Bridge", Vector3.new(5, 0.6, 8.6), at(x, -0.3, sz), rgb(120, 230, 255), Enum.Material.Glass, { Transparency = 0.2 })
+				b:SetAttribute("Laser", "bridge")
+				b:SetAttribute("Period", 5)
+				b:SetAttribute("Phase", -(k * 0.55) - i * 0.9)
+				b:SetAttribute("On", 0.6)
+			end
+		end
+		-- the sample case on its own island (south-east), a fixed bridge with a gate of fire... er, acid
+		island(40, -35)
+		for k = 0, 2 do
+			local b = part(bridges, "Bridge", Vector3.new(5, 0.6, 8.6), at(40, -0.3, -(3 + 4.5 + k * 9)), rgb(120, 230, 255), Enum.Material.Glass, { Transparency = 0.2 })
+			b:SetAttribute("Laser", "bridge")
+			b:SetAttribute("Period", 3.6)
+			b:SetAttribute("Phase", -(k * 0.4))
+			b:SetAttribute("On", 0.55)
+		end
+		part(lab, "SamplePlinth", Vector3.new(3, 3.6, 3), at(40, 1.8, -35), rgb(60, 64, 76), Enum.Material.Metal)
+		local case = part(lab, "SampleCase", Vector3.new(2.4, 2.4, 2.4), at(40, 4.8, -35), rgb(200, 255, 220), Enum.Material.Glass, { Transparency = 0.4 })
+		case:SetAttribute("HQSample", true)
+		local vial = Kit.cylY(lab, "SampleVial", 0.8, 1.6, (at(40, 4.8, -35)).Position, ACID, Enum.Material.Neon)
+		vial:SetAttribute("HQSampleVial", true)
+		Kit.light(vial, 16, 2, ACID)
+		-- the lab door (east wall) and the service elevator
+		part(m, "DoorFrame", Vector3.new(1.2, 12, 12), at(74.4, 6, 0), rgb(40, 34, 56), Enum.Material.Metal)
+		local door = part(m, "LabDoor", Vector3.new(0.8, 10, 9), at(73.6, 5, 0), rgb(236, 240, 244), Enum.Material.SmoothPlastic)
+		door:SetAttribute("HQDoor", 5)
+		part(m, "DoorStripe", Vector3.new(0.85, 1, 9), at(73.6, 7, 0), ACID, Enum.Material.Neon)
+		local ds = part(m, "DoorSign", Vector3.new(0.2, 1.6, 14), at(73.9, 12.6, 0), rgb(20, 30, 20))
+		Kit.sign(ds, Enum.NormalId.Left, "5 SUBJECTS + 1 SAMPLE = EXIT", ACID, rgb(20, 30, 20), Enum.Font.Arcade)
+		local svc = part(m, "ServiceElevator", Vector3.new(0.3, 9.6, 8), at(74.9, 4.8, 0), rgb(255, 240, 200), Enum.Material.Neon)
+		svc:SetAttribute("HQElevator", 5)
+		-- the lobby: lab benches with flasks, hazard posters, the big logo
+		for _, z in { -30, 30 } do
+			part(lab, "Bench", Vector3.new(4, 3.4, 14), at(-68, 1.7, z), rgb(60, 64, 76), Enum.Material.Metal)
+			part(lab, "BenchTop", Vector3.new(4.4, 0.3, 14.4), at(-68, 3.5, z), rgb(30, 30, 34), Enum.Material.Slate)
+			for k = -2, 2 do
+				Kit.cylY(lab, "Flask", 0.9, 1.4, (at(-68, 4.4, z + k * 2.6)).Position, ({ ACID, rgb(120, 200, 255), rgb(255, 120, 200) })[(k + 3) % 3 + 1], Enum.Material.Neon, { Transparency = 0.3 })
+			end
+		end
+		local logo = part(m, "Logo", Vector3.new(0.3, 8, 30), at(-74.3, 22, 0), rgb(20, 30, 20))
+		Kit.sign(logo, Enum.NormalId.Right, "MUTAGEN X \u{2622} RESEARCH", ACID, rgb(20, 30, 20), Enum.Font.GothamBlack)
+		for _, p in { { -40, 74.3, 180 }, { 20, 74.3, 180 }, { -40, -74.3, 0 }, { 20, -74.3, 0 } } do
+			poster(m, at(p[1], 10, p[2]) * CFrame.Angles(0, math.rad(p[3]), 0), "\u{2622} DO NOT\nSWIM IN\nTHE ACID", rgb(250, 200, 40), rgb(40, 30, 10))
+		end
+		HQ.GUARDS = HQ.GUARDS or {}
+		HQ.GUARDS[5] = {
+			{ { -45, 0 }, { 55, 0 } },
+			{ { 55, 0 }, { -45, 0 } },
+		}
+	end
+
 	return root
 end
 

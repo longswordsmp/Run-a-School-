@@ -248,6 +248,45 @@ local function findLasers()
 	end
 	return #list > 0 and list or nil
 end
+---------------------------------------------------------------------------
+-- Mutagen Labs (floor 5): the bridges fade in and out (solid only while lit, for this player's
+-- own physics); they flash orange just before they go
+---------------------------------------------------------------------------
+local bridgeParts
+local function findBridges()
+	local town = workspace:FindFirstChild("Town")
+	local f = town and town:FindFirstChild("VexCorpHQ")
+	f = f and f:FindFirstChild("Floor5")
+	f = f and f:FindFirstChild("Bridges")
+	if not f then return nil end
+	local list = {}
+	for _, p in f:GetChildren() do
+		if p:IsA("BasePart") then table.insert(list, p) end
+	end
+	return #list > 0 and list or nil
+end
+local BRIDGE = Color3.fromRGB(120, 230, 255)
+local WARN = Color3.fromRGB(255, 160, 60)
+RunService.RenderStepped:Connect(function()
+	if player:GetAttribute("HQFloor") ~= 5 then return end
+	bridgeParts = bridgeParts or findBridges()
+	if not bridgeParts then return end
+	local t = workspace:GetServerTimeNow()
+	for _, p in bridgeParts do
+		if not p.Parent then bridgeParts = nil return end
+		local on = HQLasers.isOn(p, t)
+		p.CanCollide = on
+		if on then
+			local soon = not HQLasers.isOn(p, t + 0.7)
+			p.Transparency = 0.2
+			p.Color = soon and ((math.floor(t * 8) % 2 == 0) and WARN or BRIDGE) or BRIDGE
+		else
+			p.Transparency = 0.88
+			p.Color = BRIDGE
+		end
+	end
+end)
+
 RunService.RenderStepped:Connect(function()
 	if player:GetAttribute("HQFloor") ~= 3 then return end
 	laserParts = laserParts or findLasers()
@@ -324,7 +363,7 @@ Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
 	elseif kind == "hqZap" then
 		flash.BackgroundTransparency = 0.25
 		TweenService:Create(flash, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
-		message("\u{26A1} ZAPPED! Back to the start of this section.", "bad")
+		message(data.floor == 5 and "\u{2622} SPLASH! The acid sends you back to the lobby." or "\u{26A1} ZAPPED! Back to the start of this section.", "bad")
 	elseif kind == "hqElevator" then
 		openPanel(data)
 	elseif kind == "elevator" then

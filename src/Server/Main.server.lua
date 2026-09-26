@@ -335,6 +335,9 @@ require(Server.DebugBridge).start({
 	hqHack = function(player, name)
 		return HQService.debugHack(player, name)
 	end,
+	hqFree = function(player, i)
+		return HQService.debugFree(player, i)
+	end,
 	hqState = function(player)
 		return HQService.debugState(player)
 	end,
