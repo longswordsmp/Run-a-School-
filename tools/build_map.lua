@@ -451,9 +451,24 @@ for x = -300, 300, 50 do
 		local l = Instance.new("PointLight"); l.Range = 20; l.Brightness = 1.2; l.Color = rgb(255, 230, 180); l.Parent = bulb
 	end
 end
+local treeRng = Random.new(5)
 local function tree(x, z, s, leaf)
-	local t = Instance.new("Model"); t.Name = "Tree"; t.Parent = deco
 	leaf = leaf or C.leaf
+	-- the low-poly models in ServerStorage.TownAssets when the place has them (tools/swap_trees.lua)
+	local lib = game:GetService("ServerStorage"):FindFirstChild("TownAssets")
+	if lib then
+		local kind = treeRng:NextNumber() < 0.7 and "Oak" or "Umbrella"
+		local m = lib[kind]:Clone()
+		m:ScaleTo(s * (kind == "Oak" and 1.15 or 1))
+		m:PivotTo(CFrame.new(x, -0.2, z) * CFrame.Angles(0, treeRng:NextNumber(0, math.pi * 2), 0))
+		for _, d in m:GetDescendants() do
+			if d:IsA("BasePart") and d.Name == "Leaves" then d.Color = leaf end
+		end
+		m.Name = "Tree"
+		m.Parent = deco
+		return
+	end
+	local t = Instance.new("Model"); t.Name = "Tree"; t.Parent = deco
 	part(t, "Trunk", Vector3.new(2, 8, 2) * s, CFrame.new(x, 4 * s, z), C.trunk)
 	part(t, "Leaves", Vector3.new(10, 5, 10) * s, CFrame.new(x, 9 * s, z), leaf)
 	part(t, "Leaves", Vector3.new(7, 4, 7) * s, CFrame.new(x, 12.5 * s, z), leaf:Lerp(C.white, 0.08))

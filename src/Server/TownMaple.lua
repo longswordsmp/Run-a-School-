@@ -140,7 +140,7 @@ function Maple.build(town, Kit)
 		elseif h.extra == "treehouse" then
 			local tx, tz = h.x + 12, h.z - out * 18
 			part(hm, "BigTrunk", Vector3.new(2.6, 16, 2.6), CFrame.new(tx, 8, tz), C.trunk, Enum.Material.Wood)
-			part(hm, "Canopy", Vector3.new(16, 7, 16), CFrame.new(tx, 19, tz), C.leaf, Enum.Material.Grass)
+			Kit.canopy(hm, tx, 18, tz, 17)
 			part(hm, "TreehouseFloor", Vector3.new(9, 0.6, 9), CFrame.new(tx, 12, tz), rgb(170, 120, 70), Enum.Material.WoodPlanks)
 			part(hm, "TreehouseHut", Vector3.new(7, 5, 7), CFrame.new(tx, 14.8, tz), rgb(200, 150, 90), Enum.Material.WoodPlanks)
 			local keep = part(hm, "TreehouseSign", Vector3.new(4, 1.2, 0.2), CFrame.new(tx, 16, tz + out * 3.6) * CFrame.Angles(0, h.face == "+z" and 0 or math.rad(180), 0), rgb(245, 240, 225))

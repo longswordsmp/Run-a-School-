@@ -3,7 +3,7 @@
 --   the entrance plaza (-590, 0) with the trail map; dirt trails north and south along x = -600
 --   north    the Ranger Station (a log cabin, -650, 230), Camp Wannaplaya (tents, a campfire, logs
 --            to sit on, -700, 390), the lookout tower (-740, 170)
---   south    Lake Wannaswim (real water you can swim in, -680, -170) with a dock, a boathouse and
+--   south    Lake Wannaswim (a textured water disc with a sandy shore, -690, -170) with a dock, a boathouse and
 --            rowboats; the picnic grounds (-600, -80); the treehouse (-650, -370) with a rope bridge
 --            to its neighbour; Bea's bird hide (-760, -300)
 --   and pines everywhere else
@@ -81,7 +81,7 @@ function Park.build(town, Kit)
 	-- the campfire
 	for k = 0, 7 do
 		local a = math.rad(k * 45)
-		Kit.ball(camp, "FireStone", 1.2, Vector3.new(-706 + math.cos(a) * 2.6, 0.5, 390 + math.sin(a) * 2.6), rgb(120, 120, 126))
+		Kit.rock(camp, Vector3.new(-706 + math.cos(a) * 2.6, 0.1, 390 + math.sin(a) * 2.6), 1.5, rgb(120, 120, 126))
 	end
 	for k = 0, 2 do
 		part(camp, "FireLog", Vector3.new(0.7, 0.7, 4), CFrame.new(-706, 0.7, 390) * CFrame.Angles(0, math.rad(k * 60), math.rad(20)), LOG, Enum.Material.Wood)
@@ -132,21 +132,73 @@ function Park.build(town, Kit)
 	end
 	clear(tx - 12, tx + 14, tz - 12, tz + 14)
 
-	-- Lake Wannaswim: real water in a stone rim, a dock, a boathouse, rowboats
+	-- Lake Wannaswim: a flat water disc with a scrolling water texture (Water.client), a sandy shore
+	-- with a wavy edge, reeds and cattails, a few rock clusters, a dock, a boathouse, rowboats
 	local lake = Kit.folder(m, "Lake")
 	local lx, lz, lr = -690, -170, 42
-	workspace.Terrain:FillCylinder(CFrame.new(lx, 1.5, lz), 3, lr, Enum.Material.Water)
-	for k = 0, 47 do
-		local a = math.rad(k * 7.5)
-		local r = lr + 2 + rng:NextNumber(-0.5, 1.5)
-		Kit.ball(lake, "Rock", rng:NextNumber(3, 5), Vector3.new(lx + math.cos(a) * r, 1, lz + math.sin(a) * r), rgb(140, 138, 134), Enum.Material.Slate)
+	local WATER_Y = 0.5 -- the water's surface
+	local water = Kit.cylY(lake, "Water", lr * 2, 1, Vector3.new(lx, WATER_Y - 0.5, lz), rgb(30, 110, 190), Enum.Material.SmoothPlastic, { CanCollide = false, CastShadow = false })
+	local tex = Instance.new("Texture")
+	tex.Name = "WaterTex"
+	tex.Texture = "rbxassetid://80572692344324"
+	tex.Face = Enum.NormalId.Right -- the top, once cylY stands the cylinder up
+	tex.StudsPerTileU, tex.StudsPerTileV = 18, 18
+	tex.Transparency = 0.4
+	tex.Color3 = rgb(200, 235, 255)
+	tex.Parent = water
+	game:GetService("CollectionService"):AddTag(tex, "WaterTex")
+	-- the shore: a sand band under everything, then sand scallops overlapping the water's edge so
+	-- neither the water nor the sand is a perfect circle
+	local SAND = rgb(226, 204, 150)
+	Kit.cylY(lake, "Beach", (lr + 4) * 2, 0.6, Vector3.new(lx, 0.05, lz), SAND, Enum.Material.Sand)
+	local a, k = 0, 0
+	while a < math.pi * 2 do
+		local r = lr + rng:NextNumber(-1, 3)
+		local size = rng:NextNumber(9, 20)
+		-- each scallop a hair higher than the last so overlaps never flicker
+		Kit.cylY(lake, "Beach", size, 0.5, Vector3.new(lx + math.cos(a) * r, WATER_Y - 0.2 + (k % 4) * 0.025, lz + math.sin(a) * r), SAND:Lerp(rgb(200, 180, 130), rng:NextNumber(0, 0.4)), Enum.Material.Sand)
+		a += rng:NextNumber(0.18, 0.34)
+		k += 1
 	end
-	clear(lx - lr - 8, lx + lr + 8, lz - lr - 8, lz + lr + 8)
-	-- the dock from the east shore
-	part(lake, "Dock", Vector3.new(26, 0.8, 7), CFrame.new(lx + lr - 8, 3.2, lz), rgb(170, 120, 70), Enum.Material.WoodPlanks)
+	-- east is the dock, north is the boathouse: keep those open
+	local function openShore(ang)
+		local d = math.deg(ang) % 360
+		return d < 16 or d > 344 or (d > 72 and d < 108)
+	end
+	-- reeds and cattails in four patches at the water's edge
+	for _, centre in { 40, 150, 215, 300 } do
+		for k = 1, rng:NextInteger(6, 9) do
+			local ang = math.rad(centre + rng:NextNumber(-14, 14))
+			local r = lr + rng:NextNumber(-3, 1)
+			local x, z = lx + math.cos(ang) * r, lz + math.sin(ang) * r
+			if not Kit.plant(lake, rng:NextNumber() < 0.5 and "Cattails" or "Reeds", x, z, rng:NextNumber(1.2, 1.9), WATER_Y - 0.3) then break end
+		end
+	end
+	-- rock clusters on the shore between the reed patches
+	for _, ang in { 118, 188, 250, 330 } do
+		local r = lr + rng:NextNumber(3, 6)
+		Kit.rocks(lake, lx + math.cos(math.rad(ang)) * r, lz + math.sin(math.rad(ang)) * r, rng:NextNumber(3.5, 6), nil, 0.3)
+	end
+	-- bushes and flowers behind the beach
+	for k = 0, 17 do
+		local ang = k / 18 * math.pi * 2 + rng:NextNumber(-0.1, 0.1)
+		if not openShore(ang) then
+			local r = lr + rng:NextNumber(12, 16)
+			local x, z = lx + math.cos(ang) * r, lz + math.sin(ang) * r
+			if k % 3 == 0 then
+				for f = 1, 4 do Kit.plant(lake, ({ "Daisy", "Tulip", "Lavender" })[rng:NextInteger(1, 3)], x + rng:NextNumber(-3, 3), z + rng:NextNumber(-3, 3), rng:NextNumber(1.2, 1.6)) end
+			else
+				Kit.bush(lake, x, z, rng:NextNumber(0.9, 1.4))
+			end
+		end
+	end
+	clear(lx - lr - 18, lx + lr + 18, lz - lr - 18, lz + lr + 18)
+	-- the dock from the east shore, its deck a little above the water
+	part(lake, "Dock", Vector3.new(26, 0.6, 7), CFrame.new(lx + lr - 8, 1.1, lz), rgb(170, 120, 70), Enum.Material.WoodPlanks)
 	for k = 0, 4 do
-		for _, dz in { -3, 3 } do Kit.cylY(lake, "DockPost", 0.8, 5, Vector3.new(lx + lr - 20 + k * 6, 1.2, lz + dz), LOG, Enum.Material.Wood) end
+		for _, dz in { -3, 3 } do Kit.cylY(lake, "DockPost", 0.8, 2.6, Vector3.new(lx + lr - 20 + k * 6, 0.5, lz + dz), LOG, Enum.Material.Wood) end
 	end
+	Kit.cylZ(lake, "DockBumper", 0.8, 7, Vector3.new(lx + lr - 21, 0.9, lz), rgb(230, 90, 60), Enum.Material.SmoothPlastic)
 	-- the boathouse on the north shore
 	Kit.building(lake, {
 		name = "Boathouse", x = lx, z = lz + lr + 10, w = 22, d = 14, h = 9, face = "-z",
@@ -156,18 +208,23 @@ function Park.build(town, Kit)
 	})
 	-- rowboats: a hull, seats and oars, floating
 	for i, spot in { { lx - 12, lz + 10, 20 }, { lx + 8, lz - 16, -35 } } do
-		local cf = CFrame.new(spot[1], 3.9, spot[2]) * CFrame.Angles(0, math.rad(spot[3]), 0)
+		local cf = CFrame.new(spot[1], WATER_Y + 0.3, spot[2]) * CFrame.Angles(0, math.rad(spot[3]), 0)
 		local c = i == 1 and rgb(220, 70, 60) or rgb(240, 240, 235)
 		part(lake, "Hull", Vector3.new(9, 1.4, 3.6), cf, c, Enum.Material.WoodPlanks)
 		part(lake, "HullInside", Vector3.new(8.2, 0.4, 2.8), cf * CFrame.new(0, 0.5, 0), rgb(150, 110, 70), Enum.Material.WoodPlanks)
 		part(lake, "BoatSeat", Vector3.new(1, 0.3, 3.4), cf * CFrame.new(-1.5, 0.9, 0), rgb(150, 110, 70), Enum.Material.WoodPlanks)
 		part(lake, "Oar", Vector3.new(0.3, 0.3, 7), cf * CFrame.new(0.5, 1, 0) * CFrame.Angles(0, math.rad(12), 0), LOG, Enum.Material.Wood)
 	end
-	-- lily pads
-	for k = 0, 9 do
-		local a = rng:NextNumber(0, math.pi * 2)
-		local r = rng:NextNumber(8, lr - 8)
-		Kit.cylY(lake, "LilyPad", rng:NextNumber(2, 3.4), 0.2, Vector3.new(lx + math.cos(a) * r, 3.7, lz + math.sin(a) * r), rgb(70, 160, 70))
+	-- lily pads, in loose groups near the reeds
+	for _, centre in { 40, 150, 215, 300 } do
+		for k = 1, 4 do
+			local ang = math.rad(centre + rng:NextNumber(-20, 20))
+			local r = lr - rng:NextNumber(5, 12)
+			local x, z = lx + math.cos(ang) * r, lz + math.sin(ang) * r
+			if not Kit.plant(lake, "LilyPad", x, z, rng:NextNumber(1.3, 2), WATER_Y - 0.05) then
+				Kit.cylY(lake, "LilyPad", rng:NextNumber(2, 3.4), 0.2, Vector3.new(x, WATER_Y + 0.05, z), rgb(70, 160, 70))
+			end
+		end
 	end
 
 	-- the picnic grounds by the south trail
@@ -189,8 +246,7 @@ function Park.build(town, Kit)
 	local th = Kit.folder(m, "Treehouse")
 	local function bigTree(x, z)
 		part(th, "BigTrunk", Vector3.new(3.4, 22, 3.4), CFrame.new(x, 11, z), C.trunk, Enum.Material.Wood)
-		part(th, "Canopy", Vector3.new(20, 8, 20), CFrame.new(x, 25, z), C.leaf, Enum.Material.Grass)
-		part(th, "Canopy", Vector3.new(14, 5, 14), CFrame.new(x, 30.5, z), C.leaf:Lerp(C.white, 0.08), Enum.Material.Grass)
+		Kit.canopy(th, x, 21, z, 22)
 		part(th, "Platform", Vector3.new(12, 0.8, 12), CFrame.new(x, 14, z), rgb(170, 120, 70), Enum.Material.WoodPlanks)
 		part(th, "Hut", Vector3.new(8, 6, 8), CFrame.new(x, 17.4, z), rgb(200, 150, 90), Enum.Material.WoodPlanks)
 		part(th, "HutDoor", Vector3.new(2.4, 4, 0.2), CFrame.new(x, 16.4, z - 4.05), rgb(90, 60, 35))
@@ -235,11 +291,21 @@ function Park.build(town, Kit)
 		end
 		return true
 	end
+	local forest = Kit.folder(m, "Forest")
 	for x = -785, -555, 18 do
 		for z = -545, 545, 18 do
 			local px, pz = x + rng:NextNumber(-6, 6), z + rng:NextNumber(-6, 6)
-			if free(px, pz) and rng:NextNumber() < 0.55 then
-				if rng:NextNumber() < 0.8 then Kit.pine(m, px, pz, rng:NextNumber(0.9, 1.5)) else Kit.tree(m, px, pz, rng:NextNumber(0.9, 1.2), rgb(70, 160, 70)) end
+			if free(px, pz) then
+				local roll = rng:NextNumber()
+				if roll < 0.45 then Kit.pine(forest, px, pz, rng:NextNumber(0.9, 1.6))
+				elseif roll < 0.55 then Kit.tree(forest, px, pz, rng:NextNumber(0.9, 1.2), rgb(70, 160, 70))
+				elseif roll < 0.68 then Kit.bush(forest, px, pz, rng:NextNumber(0.8, 1.3))
+				elseif roll < 0.74 then Kit.rocks(forest, px, pz, rng:NextNumber(2.5, 5))
+				elseif roll < 0.78 then Kit.plant(forest, rng:NextNumber() < 0.5 and "Log" or "Stump", px, pz, rng:NextNumber(0.9, 1.3))
+				elseif roll < 0.82 then Kit.plant(forest, "Mushrooms", px, pz, rng:NextNumber(1, 1.6))
+				end
+				-- grass tufts under everything
+				if rng:NextNumber() < 0.5 then Kit.plant(forest, "Grass", px + rng:NextNumber(-7, 7), pz + rng:NextNumber(-7, 7), rng:NextNumber(0.6, 1)) end
 			end
 		end
 	end

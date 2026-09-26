@@ -233,8 +233,43 @@ end
 ---------------------------------------------------------------------------
 -- street furniture and nature
 ---------------------------------------------------------------------------
+-- Nature comes from ServerStorage.TownAssets: low-poly models saved in the place (Pine, PineLight,
+-- Oak, Umbrella, Cherry, DeadTree, Bush, Shrub, Log, Stump, Rock1-4, Pebbles, ShoreStones, Grass,
+-- Reeds, Cattails, LilyPad, Mushrooms, Daisy, Tulip, Sunflower, Lavender). Each template's pivot is
+-- its bottom centre. Tree parts are named Trunk / Leaves so they can be tinted. If the templates are
+-- missing (the place was not saved) the part-built fallbacks below are used instead.
+local natureRng = Random.new(11)
+local assets
+function Kit.asset(parent, name, pos, scale, yaw)
+	assets = assets or game:GetService("ServerStorage"):FindFirstChild("TownAssets")
+	local t = assets and assets:FindFirstChild(name)
+	if not t then return nil end
+	local m = t:Clone()
+	if scale and math.abs(scale - 1) > 0.01 then m:ScaleTo(scale) end
+	m:PivotTo(CFrame.new(pos) * CFrame.Angles(0, yaw or natureRng:NextNumber(0, math.pi * 2), 0))
+	m.Parent = parent
+	return m
+end
+local function tint(m, name, color)
+	for _, d in m:GetDescendants() do
+		if d:IsA("BasePart") and d.Name == name then d.Color = color end
+	end
+end
+-- a little colour wobble so a row of the same tree doesn't look stamped
+local function wobble(c, amount)
+	local h, s, v = c:ToHSV()
+	return Color3.fromHSV((h + natureRng:NextNumber(-0.02, 0.02)) % 1, math.clamp(s + natureRng:NextNumber(-amount, amount), 0, 1), math.clamp(v + natureRng:NextNumber(-amount, amount), 0, 1))
+end
+
 function Kit.tree(parent, x, z, s, leaf)
 	s = s or 1
+	local kind = natureRng:NextNumber() < 0.7 and "Oak" or "Umbrella"
+	local m = Kit.asset(parent, kind, Vector3.new(x, -0.2, z), s * (kind == "Oak" and 1.1 or 0.95))
+	if m then
+		m.Name = "Tree"
+		tint(m, "Leaves", wobble(leaf or (kind == "Oak" and rgb(75, 160, 75) or rgb(45, 140, 50)), 0.06))
+		return m
+	end
 	leaf = leaf or Kit.C.leaf
 	part(parent, "Trunk", Vector3.new(1.6, 7, 1.6) * s, CFrame.new(x, 3.5 * s, z), Kit.C.trunk, Enum.Material.Wood)
 	part(parent, "Leaves", Vector3.new(9, 4.5, 9) * s, CFrame.new(x, 8 * s, z), leaf, Enum.Material.Grass)
@@ -244,10 +279,78 @@ end
 
 function Kit.pine(parent, x, z, s)
 	s = s or 1
+	local light = natureRng:NextNumber() < 0.15
+	local m = Kit.asset(parent, light and "PineLight" or "Pine", Vector3.new(x, -0.2, z), s * (light and 1.35 or 1.2))
+	if m then
+		m.Name = "Pine"
+		if not light then tint(m, "Leaves", wobble(rgb(44, 105, 34), 0.07)) end
+		return m
+	end
 	part(parent, "Trunk", Vector3.new(1.4, 6, 1.4) * s, CFrame.new(x, 3 * s, z), Kit.C.trunk, Enum.Material.Wood)
 	for i, w in { 10, 8, 6, 4, 2.2 } do
 		part(parent, "Needles", Vector3.new(w, 2.6, w) * s, CFrame.new(x, (4.5 + i * 2.4) * s, z) * CFrame.Angles(0, math.rad(i * 20), 0), Kit.C.pine:Lerp(Color3.new(1, 1, 1), i * 0.02), Enum.Material.Grass)
 	end
+end
+
+-- a rock `size` studs across (one of four shapes), tinted; falls back to a squashed ball
+function Kit.rock(parent, pos, size, color)
+	local kind = "Rock" .. natureRng:NextInteger(1, 4)
+	local base = ({ Rock1 = 6, Rock2 = 4.4, Rock3 = 4.3, Rock4 = 2.7 })[kind]
+	local m = Kit.asset(parent, kind, pos - Vector3.new(0, size * 0.12, 0), size / base)
+	if m then
+		m.Name = "Rock"
+		for _, d in m:GetDescendants() do
+			if d:IsA("BasePart") then d.Color = wobble(color or rgb(138, 134, 128), 0.05) end
+		end
+		return m
+	end
+	local p = part(parent, "Rock", Vector3.new(size, size * 0.6, size * 0.9), CFrame.new(pos + Vector3.new(0, size * 0.2, 0)) * CFrame.Angles(0, natureRng:NextNumber(0, 6), 0), color or Kit.C.stone, Enum.Material.Slate)
+	return p
+end
+
+-- a cluster of 2-4 rocks of mixed sizes round a point
+function Kit.rocks(parent, x, z, size, color, y)
+	local n = natureRng:NextInteger(2, 4)
+	for i = 1, n do
+		local a = natureRng:NextNumber(0, math.pi * 2)
+		local r = i == 1 and 0 or natureRng:NextNumber(size * 0.5, size * 0.9)
+		Kit.rock(parent, Vector3.new(x + math.cos(a) * r, y or 0, z + math.sin(a) * r), size * (i == 1 and 1 or natureRng:NextNumber(0.35, 0.7)), color)
+	end
+end
+
+-- small things for flower beds, shores and forest floors (nil if the templates are missing)
+function Kit.plant(parent, name, x, z, scale, y)
+	return Kit.asset(parent, name, Vector3.new(x, y or 0, z), scale or 1)
+end
+
+-- a rounded leafy crown about `w` across whose underside sits at y (treehouses, big feature trees):
+-- one big low-poly bush with three smaller ones round it; a box if the templates are missing
+function Kit.canopy(parent, x, y, z, w, color)
+	color = color or Kit.C.leaf
+	local s = w / 7.6
+	local crown = Kit.asset(parent, "Bush", Vector3.new(x, y, z), s * 0.8)
+	if not crown then
+		part(parent, "Canopy", Vector3.new(w, w * 0.45, w), CFrame.new(x, y + w * 0.22, z), color, Enum.Material.Grass)
+		return
+	end
+	crown.Name = "Canopy"
+	tint(crown, "Leaves", wobble(color, 0.05))
+	for k = 0, 2 do
+		local a = k / 3 * math.pi * 2 + natureRng:NextNumber(-0.3, 0.3)
+		local b = Kit.asset(parent, "Bush", Vector3.new(x + math.cos(a) * w * 0.28, y - w * 0.06, z + math.sin(a) * w * 0.28), s * 0.55)
+		b.Name = "Canopy"
+		tint(b, "Leaves", wobble(color, 0.05))
+	end
+end
+
+function Kit.bush(parent, x, z, s, color)
+	local round = natureRng:NextNumber() < 0.6
+	local m = Kit.asset(parent, round and "Bush" or "Shrub", Vector3.new(x, -0.3, z), (s or 1) * (round and 0.6 or 1.5))
+	if m then
+		tint(m, round and "Leaves" or "Meshes/arbusto", wobble(color or rgb(70, 150, 70), 0.06))
+		return m
+	end
+	return Kit.ball(parent, "Bush", 4 * (s or 1), Vector3.new(x, 1.2 * (s or 1), z), color or Kit.C.leaf, Enum.Material.Grass)
 end
 
 function Kit.lamp(parent, x, z, h)
