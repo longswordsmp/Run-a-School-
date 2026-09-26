@@ -782,6 +782,7 @@ local function thrownOut(player)
 	local proot = char and char:FindFirstChild("HumanoidRootPart")
 	if not proot then return end
 	dropHeist(player, "Security caught you and threw you out!")
+	Signals.fire("factoryCaught", player)
 	char:PivotTo(CFrame.lookAt(Vector3.new(math.random(-5, 5), 3.5, LOT.z0 - 6), Vector3.new(0, 3.5, 0)))
 	stunUntil[player] = now() + H.caughtStun
 	player:SetAttribute("Stunned", true)

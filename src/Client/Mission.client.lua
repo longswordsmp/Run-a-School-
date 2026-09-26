@@ -57,21 +57,36 @@ UI.gradient(bang, Color3.fromRGB(255, 190, 110), MISSION)
 UI.label(bang, { Text = "!", Font = Enum.Font.FredokaOne, TextScaled = false, TextSize = 60, Size = UDim2.fromScale(1, 1), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), stroke = 3.5 })
 UI.label(marker, { Text = "MISSION", Font = UI.BIG, Size = UDim2.new(1, 0, 0, 26), Position = UDim2.new(0, 0, 0, 86), TextColor3 = Color3.fromRGB(255, 225, 200), stroke = 3 })
 
+-- the same "!" over Janitor Stan when he has a secret job (SecretReady), in spy blue
+local SECRET = Color3.fromRGB(70, 140, 255)
+local stanMarker = marker:Clone()
+stanMarker.Name = "SecretMarker"
+stanMarker.Parent = player.PlayerGui
+local stanBang = stanMarker:FindFirstChildWhichIsA("Frame")
+stanBang.BackgroundColor3 = SECRET
+stanBang:FindFirstChildOfClass("UIGradient").Color = ColorSequence.new(Color3.fromRGB(140, 190, 255), SECRET)
+stanMarker:FindFirstChildWhichIsA("TextLabel").Text = "SECRET JOB"
+
 local talking = false
 local function talkingNow() return talking end
 
-local function wobbleHead()
+local function npcHead(name)
 	local story = workspace:FindFirstChild("StoryNPCs")
-	local wob = story and story:FindFirstChild("Wobblesworth")
-	return wob and (wob:FindFirstChild("Head") or wob.PrimaryPart)
+	local npc = story and story:FindFirstChild(name)
+	return npc and (npc:FindFirstChild("Head") or npc.PrimaryPart)
 end
+local function wobbleHead() return npcHead("Wobblesworth") end
 
 local function refreshMarker()
 	local head = wobbleHead()
 	marker.Adornee = head
 	marker.Enabled = head ~= nil and player:GetAttribute("MissionReady") ~= nil and player:GetAttribute("Mission") == nil and not talkingNow()
+	local stan = npcHead("JanitorStan")
+	stanMarker.Adornee = stan
+	stanMarker.Enabled = stan ~= nil and player:GetAttribute("SecretReady") ~= nil and player:GetAttribute("Mission") == nil and not talkingNow()
 end
 player:GetAttributeChangedSignal("MissionReady"):Connect(refreshMarker)
+player:GetAttributeChangedSignal("SecretReady"):Connect(refreshMarker)
 player:GetAttributeChangedSignal("Mission"):Connect(refreshMarker)
 task.spawn(function()
 	local story = workspace:WaitForChild("StoryNPCs", 60)
@@ -82,10 +97,14 @@ task.spawn(function()
 	end
 end)
 RunService.RenderStepped:Connect(function()
+	local t = os.clock()
 	if marker.Enabled then
-		local t = os.clock()
 		bang.Position = UDim2.new(0.5, 0, 0, math.abs(math.sin(t * 3)) * -10 + 6)
 		bang.Rotation = math.sin(t * 6) * 6
+	end
+	if stanMarker.Enabled then
+		stanBang.Position = UDim2.new(0.5, 0, 0, math.abs(math.sin(t * 3 + 1)) * -10 + 6)
+		stanBang.Rotation = math.sin(t * 6 + 1) * 6
 	end
 end)
 
@@ -119,7 +138,7 @@ local function portraitOf(parent, templateId)
 end
 
 -- lines: { { speaker, portrait, text } ... }; buttons on the last line: { { text, color, fn } ... }
--- nearWob: the talk with Mr. Wobblesworth ends if you walk off
+-- nearWob: the talk ends if you walk away from that NPC (true = Mr. Wobblesworth, or an NPC's name)
 local function conversation(lines, buttons, title, nearWob)
 	if talking then return end
 	talking = true
@@ -150,7 +169,7 @@ local function conversation(lines, buttons, title, nearWob)
 		UI.corner(tag, 10)
 		UI.stroke(tag, 3)
 		UI.gradient(tag, Color3.fromRGB(255, 180, 110), MISSION)
-		UI.label(tag, { Text = "MISSION: " .. title:upper(), Font = UI.BIG, Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 8, stroke = 2 })
+		UI.label(tag, { Text = (title:find("^SECRET") and title or ("MISSION: " .. title)):upper(), Font = UI.BIG, Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 8, stroke = 2 })
 	end
 	local speaker = UI.label(box, { Text = "", Font = UI.BIG, TextColor3 = UI.C.purple, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -190, 0, 30), Position = UDim2.fromOffset(160, 14), ZIndex = 7, stroke = 2 })
 	local text = UI.label(box, { Text = "", TextColor3 = UI.C.ink, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, TextScaled = false, TextSize = 25, Size = UDim2.new(1, -190, 0, 80), Position = UDim2.fromOffset(160, 50), ZIndex = 7, stroke = 0 })
@@ -191,7 +210,7 @@ local function conversation(lines, buttons, title, nearWob)
 	end
 	-- walk away and he stops talking
 	task.spawn(function()
-		local head = wobbleHead()
+		local head = type(nearWob) == "string" and npcHead(nearWob) or wobbleHead()
 		while not closed and nearWob do
 			local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 			if r and head and head.Parent and (r.Position - head.Position).Magnitude > 26 then
@@ -251,18 +270,16 @@ end
 
 Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
 	if kind ~= "missionTalk" then return end
+	local near = data.npc or true
 	if data.id then
 		conversation(data.lines, {
-			{ "START MISSION", MISSION, function()
-				local ok, res = pcall(Action.InvokeServer, Action, "missionStart", data.id)
-				if not ok or type(res) ~= "table" or not res.ok then
-					-- (the server says why in a toast)
-				end
+			{ data.action == "secretStart" and "TAKE THE JOB" or "START MISSION", data.action == "secretStart" and SECRET or MISSION, function()
+				pcall(Action.InvokeServer, Action, data.action or "missionStart", data.id)
 			end },
 			{ "LATER", UI.C.grey },
-		}, data.title, true)
+		}, data.title, near)
 	else
-		conversation(data.lines, { { "BYE!", UI.C.blue } }, nil, true)
+		conversation(data.lines, { { "BYE!", UI.C.blue } }, nil, near)
 	end
 end)
 
@@ -376,9 +393,9 @@ Remotes.Push.OnClientEvent:Connect(function(kind, data)
 	if data.state == "started" then
 		local id = player:GetAttribute("Mission")
 		local def = id and Config.Missions[id]
-		cur = { def = def, count = data.count, progress = data.progress or 0 }
-		headGrad.Color = ColorSequence.new(Color3.fromRGB(255, 180, 110), MISSION)
-		headText.Text = "\u{1F3AF} MISSION"
+		cur = { def = def, count = data.count, progress = data.progress or 0, secret = data.secret }
+		headGrad.Color = data.secret and ColorSequence.new(Color3.fromRGB(140, 190, 255), SECRET) or ColorSequence.new(Color3.fromRGB(255, 180, 110), MISSION)
+		headText.Text = data.secret and "\u{1F575}\u{FE0F} SECRET JOB" or "\u{1F3AF} MISSION"
 		titleL.Text = data.title or (def and def.title) or ""
 		objL.Text = data.phase or data.objective or (def and def.objective) or ""
 		local chase = def and def.kind == "chase"
@@ -389,7 +406,7 @@ Remotes.Push.OnClientEvent:Connect(function(kind, data)
 		setPips(cur.progress, cur.count)
 		showTracker(true)
 		UI.punch(card, 1.08)
-		stamp("MISSION START!", MISSION)
+		stamp(data.secret and "SECRET JOB!" or "MISSION START!", data.secret and SECRET or MISSION)
 	elseif data.state == "phase" and cur then
 		objL.Text = data.text
 		UI.punch(card, 1.06)
@@ -399,7 +416,7 @@ Remotes.Push.OnClientEvent:Connect(function(kind, data)
 		UI.punch(card, 1.06)
 	elseif data.state == "won" then
 		cur = nil
-		stamp("MISSION COMPLETE!", UI.C.green)
+		stamp(data.secret and "JOB DONE!" or "MISSION COMPLETE!", UI.C.green)
 		showTracker(false)
 		if data.line then
 			task.delay(1.2, function()
@@ -412,7 +429,7 @@ Remotes.Push.OnClientEvent:Connect(function(kind, data)
 		cur = nil
 		headGrad.Color = ColorSequence.new(Color3.fromRGB(255, 130, 130), UI.C.red)
 		headText.Text = "\u{2716} MISSION FAILED"
-		objL.Text = "Talk to Mr. Wobblesworth to try again."
+		objL.Text = (data.why and (data.why .. " ") or "") .. (data.secret and "Talk to Janitor Stan for another job." or "Talk to Mr. Wobblesworth to try again.")
 		meter.Visible = false
 		meterL.Visible = false
 		stamp("MISSION FAILED", UI.C.red)

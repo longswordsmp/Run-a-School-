@@ -39,6 +39,8 @@ local UnlockService = require(Server.UnlockService)
 local MoveService = require(Server.MoveService)
 local GearService = require(Server.GearService)
 local LabService = require(Server.LabService)
+local FilesService = require(Server.FilesService)
+local SecretService = require(Server.SecretService)
 
 Factory.preload()
 PlotService.start()
@@ -69,6 +71,8 @@ UnlockService.start()
 MoveService.start()
 GearService.start()
 LabService.start()
+FilesService.start()
+SecretService.start_service()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -256,8 +260,23 @@ require(Server.DebugBridge).start({
 		player:SetAttribute("DebugChapter", n)
 		return true
 	end,
+	secret = function(player, id)
+		return SecretService.debugStart(player, id)
+	end,
+	secretState = function(player)
+		return SecretService.debugState(player)
+	end,
+	vials = function(player, n)
+		return SecretService.debugVials(player, n)
+	end,
+	file = function(player, id)
+		return FilesService.debugRead(player, id)
+	end,
 	lab = function(player)
 		return LabService.debugState()
+	end,
+	labCalm = function(player, secs)
+		return LabService.debugCalm(secs)
 	end,
 	labTake = function(player, i)
 		return LabService.debugTake(player, i)

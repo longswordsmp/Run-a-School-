@@ -609,8 +609,9 @@ local function takeMutant(player, t)
 	player:SetAttribute("Heist", "Mutant " .. def.name)
 	StealService.setSpeed(player)
 	Remotes.Push:FireClient(player, "heist", { state = "carrying", name = "Mutant " .. def.name })
-	alarm(player, "You broke a tube!")
+	-- (the grab first, then the alarm it sets off: Stan's Ghost Protocol counts alarms before the grab)
 	Signals.fire("labTake", player, def)
+	alarm(player, "You broke a tube!")
 end
 
 local function escaped(player)
@@ -844,6 +845,16 @@ function LabService.debugTake(player, i)
 	task.wait(0.2)
 	takeMutant(player, t)
 	return carrying[player] ~= nil
+end
+-- Studio: every Lab guard out cold for `secs` (to test a job without the guards)
+function LabService.debugCalm(secs)
+	for _, g in guards.list do
+		g.state = "stunned"
+		g.target = nil
+		g.stunUntil = now() + (secs or 30)
+		require(script.Parent.Walkers).stop(g.model)
+	end
+	return #guards.list
 end
 function LabService.debugState()
 	local out = { alarm = alarmUntil > now(), tubes = {}, guards = {} }

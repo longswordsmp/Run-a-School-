@@ -106,6 +106,9 @@ end
 
 -- where the current step wants you to go (nil = it happens in a menu)
 local function missionTarget()
+	-- a secret job points where the server says (the Lab gate, the Factory gate)
+	local t = player:GetAttribute("MissionTarget")
+	if typeof(t) == "Vector3" then return t end
 	local id = player:GetAttribute("Mission")
 	local def = id and Config.Missions[id]
 	if def then
@@ -131,6 +134,14 @@ local function missionTarget()
 			return spot and spot.Position + Vector3.new(0, 2, 0) or Vector3.new(0, 5, 34)
 		end
 		return nil, "factory"
+	end
+	if player:GetAttribute("SecretReady") and not player:GetAttribute("MissionReady") and not player:GetAttribute("Talking") then
+		local story = workspace:FindFirstChild("StoryNPCs")
+		local stan = story and story:FindFirstChild("JanitorStan")
+		-- (only once the goal card has nothing more urgent: the beam, no arrow)
+		if stan and stan.PrimaryPart and (not state or state.kind ~= "tutorial") then
+			return stan.PrimaryPart.Position + Vector3.new(0, 4.5, 0), nil, true
+		end
 	end
 	if player:GetAttribute("MissionReady") and not player:GetAttribute("Talking") then
 		-- (the "!" over his head marks him; the beam leads the way)

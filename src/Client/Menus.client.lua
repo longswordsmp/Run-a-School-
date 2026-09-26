@@ -1347,6 +1347,11 @@ sideButton(5, "\u{270F}\u{FE0F}", "Name", UI.C.blue, panels.NameSchool)
 sideButton(6, "\u{2699}\u{FE0F}", "Settings", UI.C.navy, panels.Settings)
 sideButton(0, "\u{1F48E}", "Store", Color3.fromRGB(40, 190, 90), panels.Store)
 local dailyButton = sideButton(9, "\u{1F4C5}", "Daily", UI.C.orange, panels.Daily)
+-- the VexCorp Files book lives in Files.client
+sideButton(10, "\u{1F5C2}\u{FE0F}", "Files", UI.C.purple, { toggle = function()
+	local e = bus and bus:FindFirstChild("OpenFiles")
+	if e then e:Fire() end
+end })
 -- a red "!" when today's streak reward or the Lunch Box is waiting (DailyService sets DailyReady)
 do
 	local badge = UI.new("Frame", { Name = "Badge", Size = UDim2.fromOffset(26, 26), Position = UDim2.new(1, 4, 0, -4), AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = UI.C.red, ZIndex = 6, Visible = false, Parent = dailyButton.button })

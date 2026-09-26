@@ -42,8 +42,18 @@ function MissionService.ready(player)
 	return nil
 end
 
+-- (Stan's secret jobs use the same Mission attribute, prefixed "secret_": never touch theirs)
+local function onSecret(player)
+	local id = player:GetAttribute("Mission")
+	return type(id) == "string" and id:sub(1, 7) == "secret_"
+end
+
 local function refreshReady(player)
 	if not player.Parent then return end
+	if onSecret(player) then
+		player:SetAttribute("MissionReady", nil)
+		return
+	end
 	player:SetAttribute("MissionReady", (not active[player]) and MissionService.ready(player) or nil)
 	player:SetAttribute("Mission", active[player] and active[player].id or nil)
 end
@@ -320,7 +330,7 @@ end
 -- starting a mission
 ---------------------------------------------------------------------------
 function MissionService.start(player, id)
-	if active[player] then return false end
+	if active[player] or onSecret(player) then return false end
 	local def = Config.Missions[id]
 	if not def or MissionService.ready(player) ~= id then return false end
 	local m = { id = id, def = def }

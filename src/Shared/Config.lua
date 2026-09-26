@@ -848,6 +848,80 @@ Config.Lab = {
 		{ "Secret" },
 	},
 }
+-- The VexCorp Files (FilesService): sixteen documents hidden around Recess Row that tell how
+-- Veronica Vex went from Mr. Wobblesworth's star pupil to the villain across the street. The easy
+-- ones lie about town; the best ones are inside the Factory, the Lab and Vex Prep.
+-- pos: world position of the folder; by: who wrote it (the paper's letterhead)
+Config.Files = {
+	{ id = "Diary1", title = "Wobblesworth's Diary, Day 1", by = "Mr. Wobblesworth", pos = Vector3.new(14, 1.6, -76),
+		text = "Opened Recess Row Elementary today! Forty desks, one slide, a fountain that mostly works.\n\nMy star pupil, a little girl named Veronica, asked if recess could be \"optimized\". Odd child. Brilliant, but odd." },
+	{ id = "ReportCard", title = "Report Card: V. Vex, Grade 5", by = "Recess Row Elementary", pos = Vector3.new(-205, 1.6, 72),
+		text = "HOMEWORK: A++ (did everyone's)\nMATH: A++\nRECESS: F (refused to go outside)\n\nTeacher's comment: \"Veronica replaced the playground with a study hall while I was at lunch. Please speak to her.\"" },
+	{ id = "Expelled", title = "A Letter to Veronica", by = "Principal Wobblesworth", pos = Vector3.new(-192, 1.8, -66),
+		text = "Veronica,\n\nYou may NOT dig a moat around the library.\nYou may NOT cancel recess for the whole school.\nYou may NOT keep alligators in the moat.\n\nI'm sorry, but you are expelled.\n\n- Mr. W.\nP.S. The alligators must go." },
+	{ id = "Founding", title = "VexCorp: Day One", by = "Dr. Veronica Vex", pos = Vector3.new(-312, 1.6, -24),
+		text = "Today I founded VexCorp.\n\nOur mission: a world where recess is cancelled and homework never, ever ends.\n\nOur motto: HOMEWORK IS THE FUTURE.\n\nEmployees: me. And a butler named Crumpet, who came with the house." },
+	{ id = "Crumpet", title = "Crumpet's Contract", by = "VexCorp Human Resources", pos = Vector3.new(196, 1.6, -72),
+		text = "BUTLER DUTIES: tea, polishing, driving the van, light kidnapping.\nPAY: one (1) crumpet per day.\nHOLIDAYS: none.\n\nSigned with a very small, very sad \"C\"." },
+	{ id = "Blueprint", title = "Factory Plans, Page 1", by = "Dr. Veronica Vex", pos = Vector3.new(-24, 1.6, 44),
+		text = "Build the Homework Factory RIGHT ACROSS THE STREET from that old school.\n\nI want Wobblesworth to watch every truckload of homework roll out his window.\n\nPaint it purple. He hates purple." },
+	{ id = "Goons", title = "The Goon Handbook, Rule 1", by = "VexCorp Security", pos = Vector3.new(24, 1.6, 64),
+		text = "RULE 1: If bonked with a ruler, drop the child and run.\nRULE 2: Do not cry in the van.\nRULE 3: The butler is in charge. Yes, really.\nRULE 4: Never, ever go near the Waiting Bench." },
+	{ id = "Baron", title = "An Invoice", by = "The Sugar Baron (NOT Kevin)", pos = Vector3.new(172, 1.6, 58),
+		text = "For: one month of candy smuggling into Recess Row schools.\n\nPayment due: one (1) waterslide, to be built when VexCorp takes over.\n\n- The Sugar Baron\n(this is NOT Kevin. Kevin is ten.)" },
+	{ id = "LabLog1", title = "Lab Log #1", by = "VexCorp Mutation Lab", pos = Vector3.new(-430, 1.6, 50),
+		text = "MUTAGEN X WORKS!\n\nSubject 001 (a hamster) can now do calculus.\n\nSubject 001 is very angry about it." },
+	{ id = "LabLog7", title = "Lab Log #7", by = "VexCorp Mutation Lab", pos = Vector3.new(-420, 1.8, 94),
+		text = "Tested Mutagen X on a Band Geek.\n\nThe tuba grew. The kid glows. The kid is worth SIX TIMES the tuition.\n\nNote to self: mutate MORE children. Order more tubes." },
+	{ id = "LabLog13", title = "Lab Log #13", by = "VexCorp Mutation Lab", pos = Vector3.new(-456, 1.8, 138),
+		text = "Mutants keep escaping. Someone keeps breaking the tubes and RUNNING.\n\nInstalled lasers. Installed cameras. Hired guards in yellow suits.\n\nAlso, a cardboard box went missing from the store room. Probably unrelated." },
+	{ id = "Hazmat", title = "Hazmat Safety Card", by = "VexCorp Mutation Lab", pos = Vector3.new(-384, 1.8, 132),
+		text = "1. Do NOT drink the Mutagen.\n2. Do NOT pet the mutants.\n3. If you smell smoke, it's a smoke bomb. Run the other way.\n4. Do NOT tell Dr. Vex about rule 3." },
+	{ id = "Machine", title = "The Homework Machine", by = "Dr. Veronica Vex", pos = Vector3.new(4, 1.6, 108),
+		text = "Power source: Mutagen X, and one (1) Tiny Professor's brain.\nOutput: INFINITE homework.\nSide effect: recess ends. Forever. For everyone.\n\nPerfect." },
+	{ id = "Otis", title = "A Letter from Otis", by = "Otis, bus driver", pos = Vector3.new(-340, 1.6, 16),
+		text = "Wobblesworth,\n\nI drove Veronica to school every day for six years. She never once looked out the window.\n\nKeep the kids looking out the window.\n\n- Otis" },
+	{ id = "Brochure", title = "Vex Prep Academy Brochure", by = "Vex Prep Academy", pos = Vector3.new(396, 1.6, -52),
+		text = "VEX PREP ACADEMY\n\nNo recess! No lunch! No windows!\n\nOur students do homework 25 hours a day.\n\nENROLL NOW and never see the sun again!" },
+	{ id = "Secret", title = "Veronica's Secret Diary", by = "Veronica, age 10", pos = Vector3.new(427, 1.8, -150),
+		text = "Nobody ever picked me for kickball. Not once. Not EVER.\n\nSo if I can't play at recess...\nNOBODY can.\n\n...Don't read this." },
+}
+Config.FileById = {}
+for i, f in Config.Files do
+	f.order = i
+	Config.FileById[f.id] = f
+end
+-- what collecting them earns: candy for each, and these at the milestones
+Config.FileRewards = { candy = 25, milestones = {
+	[4] = { gear = "SmokeBomb", n = 3, text = "3 Smoke Bombs" },
+	[8] = { gear = "CardboardBox", n = 1, text = "a Cardboard Box" },
+	[12] = { gear = "EnergyDrink", n = 3, text = "3 Energy Drinks" },
+	[16] = { mutant = "Mythic", text = "a MUTATED MYTHIC kid" },
+} }
+
+-- Janitor Stan's secret missions (SecretService): repeatable jobs against VexCorp, one at a time,
+-- a short breather between them. Reward: `secs` seconds of your tuition (at least `floor`), plus gear.
+Config.SecretMissions = {
+	{ id = "secret_ghost", title = "Ghost Protocol", secs = 360, floor = 2500, gear = "SmokeBomb", n = 2,
+		objective = "Break a mutant out of the Lab and get it out WITHOUT setting off the alarm first",
+		lines = { "Here's one for a real pro, kid.", "Get into that Lab and break a mutant out. But nobody sees you going in: no lasers, no cameras, no guards. Ghost." } },
+	{ id = "secret_hack", title = "Hack Job", secs = 300, floor = 2000, gear = "EnergyDrink", n = 2,
+		objective = "Hack both Lab terminals (hold E), then get out of the Lab",
+		lines = { "VexCorp's got two computers in that Lab. Big green screens.", "Hack both of 'em for me, then get out. I want to see what she's been hiding." } },
+	{ id = "secret_sample", title = "Sample Run", secs = 240, floor = 1500, vial = 1,
+		objective = "Fill a vial at the Mutagen X Vat in the Lab (hold E), then get out",
+		lines = { "Ever wondered what that green goop does to a kid?", "Sneak into the Lab, fill a vial at the big vat, and get out. Keep the vial. Use it on one of your own kids. Heh heh." } },
+	{ id = "secret_snoop", title = "Snoop", secs = 200, floor = 1200, gear = "WhoopeeCushion", n = 2,
+		objective = "Photograph Vex's desk in the VexCorp Factory (hold E), then get out",
+		lines = { "Vex keeps her plans on her desk in the Factory. Right in front of the pens.", "Get a photo of that desk and get out. Guards'll be everywhere. Don't get caught." } },
+}
+Config.SecretById = {}
+for i, s in Config.SecretMissions do
+	s.order = i
+	Config.SecretById[s.id] = s
+end
+Config.SecretCooldown = 150 -- seconds between Stan's jobs
+
 -- places with guards: the client shows the HIDDEN / SPOTTED eye and the sneak keys inside them
 Config.SecureZones = {
 	{ name = "factory", x0 = -33, x1 = 33, z0 = 34, z1 = 134 },
