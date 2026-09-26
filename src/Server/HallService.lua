@@ -191,7 +191,12 @@ function HallService.spawnOne(forceRarity, forceId, weights, from, quiet)
 	-- a little sideways jitter so the line does not look like a conveyor belt
 	local z = (math.random() - 0.5) * 6
 	local origin = from or Vector3.new(start.X, 0, z)
-	hrp.CFrame = CFrame.lookAt(Vector3.new(origin.X, y, origin.Z), Vector3.new(start.X + 1, y, z))
+	if from then
+		-- off a bus: out of the door, facing away from the bus
+		hrp.CFrame = CFrame.lookAt(Vector3.new(origin.X, y, origin.Z), Vector3.new(origin.X, y, origin.Z - 5))
+	else
+		hrp.CFrame = CFrame.lookAt(Vector3.new(origin.X, y, origin.Z), Vector3.new(start.X + 1, y, z))
+	end
 	model.Parent = hall
 	Factory.play(model, "walk")
 
@@ -221,7 +226,12 @@ function HallService.spawnOne(forceRarity, forceId, weights, from, quiet)
 
 	local finish = path.End.Position
 	local pts = {}
-	if from then table.insert(pts, Vector3.new(from.X, 0, z)) end -- step down onto the carpet
+	if from then
+		-- clear of the bus, round its front, then into the carpet lane (the bus stands on the lane)
+		table.insert(pts, Vector3.new(from.X, 0, from.Z - 3.2))
+		table.insert(pts, Vector3.new(start.X - 4, 0, from.Z - 3.2))
+		table.insert(pts, Vector3.new(start.X + 2, 0, z))
+	end
 	table.insert(pts, Vector3.new(finish.X, 0, z))
 	Walkers.walk(model, pts, Config.WalkSpeed, function()
 		model:Destroy()
@@ -287,11 +297,30 @@ local function drive(model, from, to, t)
 	end
 end
 
--- where a kid steps off a bus parked at the stop
+-- where a kid steps off a bus parked at the stop: just outside its front door, on the step
 local function doorSpot(bus)
 	local door = bus:FindFirstChild("Door")
 	local p = door and door.Position or STOP.Position
-	return Vector3.new(p.X, 0, p.Z - 3)
+	return Vector3.new(p.X, 0, p.Z - 1.4)
+end
+
+-- the front door slides open (towards the back of the bus) while it unloads, and shuts to leave
+local TweenService = game:GetService("TweenService")
+local DOOR_SLIDE = Vector3.new(-3.3, 0, -0.35)
+local function setDoor(bus, open)
+	local pivot = bus:GetPivot()
+	for _, p in bus:GetChildren() do
+		if p:IsA("BasePart") and (p.Name == "Door" or p.Name == "DoorGlass") then
+			local rel = p:GetAttribute("ClosedRel")
+			if not rel then
+				rel = pivot:ToObjectSpace(p.CFrame)
+				p:SetAttribute("ClosedRel", rel)
+			end
+			local shut = pivot * rel
+			TweenService:Create(p, TweenInfo.new(0.35, Enum.EasingStyle.Quad), { CFrame = open and (shut + DOOR_SLIDE) or shut }):Play()
+		end
+	end
+	task.wait(0.4)
 end
 
 -- the counter over the regular bus: how many kids are still on board
@@ -363,6 +392,7 @@ local function runEventBus(kind, byName)
 		Remotes.Notify:FireAllClients(byName .. " called a " .. label .. "!", "steal")
 	end
 	local from = doorSpot(bus)
+	setDoor(bus, true)
 	for i = 1, spec.count or 6 do
 		local w = (i == 1 and spec.first) or weights
 		local kid
@@ -376,6 +406,7 @@ local function runEventBus(kind, byName)
 		task.wait(0.6)
 	end
 	task.wait(1.5)
+	setDoor(bus, false)
 	-- back out the way it came
 	drive(bus, STOP, OFFSTAGE, 4)
 	bus:Destroy()
@@ -435,6 +466,7 @@ local function busLoop()
 		end
 		local left = CAPACITY
 		setCounter(left)
+		setDoor(regularBus, true)
 		while left > 0 and not stopWanted() do
 			if #hall:GetChildren() < Config.MaxHallStudents then
 				local ok, m = pcall(HallService.spawnOne, nil, nil, nil, doorSpot(regularBus))
@@ -449,6 +481,7 @@ local function busLoop()
 		-- empty (or making room): back out, and the next one comes after a short gap
 		setCounter(nil)
 		task.wait(0.8)
+		setDoor(regularBus, false)
 		Remotes.Sfx:FireAllClients("BusHorn")
 		drive(regularBus, STOP, OFFSTAGE, 4)
 		regularBus:PivotTo(HIDDEN)
