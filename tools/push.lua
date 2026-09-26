@@ -8,6 +8,7 @@ local MAP = {
 	Shared = "ReplicatedStorage.Shared",
 	Server = "ServerScriptService.Server",
 	Client = "StarterPlayer.StarterPlayerScripts",
+	First = "ReplicatedFirst",
 }
 local HttpService = game:GetService("HttpService")
 

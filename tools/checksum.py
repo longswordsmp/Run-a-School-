@@ -9,6 +9,7 @@ BASES = {
     "Shared": "ReplicatedStorage.Shared",
     "Server": "ServerScriptService.Server",
     "Client": "StarterPlayer.StarterPlayerScripts",
+    "First": "ReplicatedFirst",
 }
 
 root = pathlib.Path(__file__).resolve().parent.parent / "src"

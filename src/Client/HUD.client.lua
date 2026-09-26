@@ -176,7 +176,7 @@ local KIND = {
 	info = Color3.fromRGB(255, 255, 255),
 	steal = Color3.fromRGB(255, 170, 40),
 }
-Remotes.Notify.OnClientEvent:Connect(function(msg, kind)
+local function toast(msg, kind)
 	local t = text(toastHolder, { Size = UDim2.fromOffset(520, 38), Text = msg, TextColor3 = KIND[kind] or KIND.info })
 	local sc = Instance.new("UIScale")
 	sc.Scale = 0.4
@@ -188,7 +188,50 @@ Remotes.Notify.OnClientEvent:Connect(function(msg, kind)
 		task.wait(0.45)
 		t:Destroy()
 	end)
-end)
+end
+Remotes.Notify.OnClientEvent:Connect(toast)
+-- other client scripts toast through ClientBus.Toast (Menus: Home cooldown, a button unlocking)
+do
+	local bus = ReplicatedStorage:FindFirstChild("ClientBus") or ReplicatedStorage:WaitForChild("ClientBus", 10)
+	if bus and not bus:FindFirstChild("Toast") then
+		local e = Instance.new("BindableEvent")
+		e.Name = "Toast"
+		e.Parent = bus
+		e.Event:Connect(toast)
+	end
+end
+
+-- "Saved" in the bottom-left corner each time the school is saved
+do
+	local chip = Instance.new("Frame")
+	chip.Name = "Saved"
+	chip.AnchorPoint = Vector2.new(0, 1)
+	chip.Position = UDim2.new(0, 14, 1, -14)
+	chip.Size = UDim2.fromOffset(118, 34)
+	chip.BackgroundColor3 = Color3.fromRGB(30, 34, 64)
+	chip.BackgroundTransparency = 1
+	chip.Parent = gui
+	corner(chip, 17)
+	local st = stroke(chip, 2)
+	st.Transparency = 1
+	local t = text(chip, { Size = UDim2.new(1, -16, 1, -10), Position = UDim2.fromOffset(8, 5), Text = "\u{2714} Saved", TextColor3 = Color3.fromRGB(140, 255, 150), TextTransparency = 1 })
+	t.UIStroke.Transparency = 1
+	Remotes.Push.OnClientEvent:Connect(function(kind)
+		if kind ~= "saved" then return end
+		local show = TweenInfo.new(0.25)
+		TweenService:Create(chip, show, { BackgroundTransparency = 0.25 }):Play()
+		TweenService:Create(st, show, { Transparency = 0 }):Play()
+		TweenService:Create(t, show, { TextTransparency = 0 }):Play()
+		TweenService:Create(t.UIStroke, show, { Transparency = 0 }):Play()
+		task.delay(2.2, function()
+			local hide = TweenInfo.new(0.6)
+			TweenService:Create(chip, hide, { BackgroundTransparency = 1 }):Play()
+			TweenService:Create(st, hide, { Transparency = 1 }):Play()
+			TweenService:Create(t, hide, { TextTransparency = 1 }):Play()
+			TweenService:Create(t.UIStroke, hide, { Transparency = 1 }):Play()
+		end)
+	end)
+end
 
 -- "+$123" floating up from the collect pad
 Remotes.CashPop.OnClientEvent:Connect(function(amount, pos)

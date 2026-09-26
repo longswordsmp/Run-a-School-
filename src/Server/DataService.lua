@@ -189,6 +189,7 @@ function DataService.load(player)
 	end
 	p.sessionStart = os.time()
 	profiles[player] = p
+	if p.settings and p.settings.device then player:SetAttribute("Device", p.settings.device) end
 	DataService.sync(player)
 	return p
 end
@@ -214,6 +215,11 @@ function DataService.save(player, releasing, profile)
 		end)
 	end)
 	if not ok then warn("[Data] save failed for", player.Name, err) end
+	-- the little "Saved" tick on the player's screen
+	if ok and not releasing and player.Parent then
+		local Remotes = require(script.Parent.Remotes)
+		Remotes.Push:FireClient(player, "saved", { mock = usingMock })
+	end
 	return ok
 end
 
@@ -257,6 +263,7 @@ function DataService.roundTrip(player)
 	return DataService.load(player)
 end
 
+-- autosave: every minute, and soon after anything big (a Board review, a purchase)
 task.spawn(function()
 	while true do
 		task.wait(60)
@@ -265,6 +272,15 @@ task.spawn(function()
 		end
 	end
 end)
+local soon = {}
+function DataService.saveSoon(player)
+	if soon[player] then return end
+	soon[player] = true
+	task.delay(4, function()
+		soon[player] = nil
+		if profiles[player] then DataService.save(player) end
+	end)
+end
 
 game:BindToClose(function()
 	local threads = {}

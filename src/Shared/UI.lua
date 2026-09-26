@@ -392,7 +392,9 @@ function UI.autoScale(gui)
 	local function fit()
 		local cam = workspace.CurrentCamera
 		local y = (player and player:GetAttribute("DebugViewportY")) or (cam and cam.ViewportSize.Y) or 1000
-		local s = math.clamp(y / 1000, 0.5, 1)
+		-- a phone player gets a bigger UI (the loading screen's device choice)
+		local mobile = player and player:GetAttribute("Device") == "mobile"
+		local s = mobile and math.clamp(y / 780, 0.6, 1.1) or math.clamp(y / 1000, 0.5, 1)
 		sc.Scale = s
 		root.Size = UDim2.fromScale(1 / s, 1 / s)
 	end
@@ -400,7 +402,10 @@ function UI.autoScale(gui)
 	if workspace.CurrentCamera then
 		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fit)
 	end
-	if player then player:GetAttributeChangedSignal("DebugViewportY"):Connect(fit) end
+	if player then
+		player:GetAttributeChangedSignal("DebugViewportY"):Connect(fit)
+		player:GetAttributeChangedSignal("Device"):Connect(fit)
+	end
 	local function adopt(c)
 		if c ~= root and c:IsA("GuiObject") and c.Parent == gui then c.Parent = root end
 	end

@@ -35,6 +35,7 @@ local RaidService = require(Server.RaidService)
 local FactoryService = require(Server.FactoryService)
 local MissionService = require(Server.MissionService)
 local StreetService = require(Server.StreetService)
+local UnlockService = require(Server.UnlockService)
 
 Factory.preload()
 PlotService.start()
@@ -61,6 +62,7 @@ RaidService.start()
 FactoryService.start()
 MissionService.start_service()
 StreetService.start()
+UnlockService.start()
 
 local function onPlayer(player)
 	local ls = Instance.new("Folder")
@@ -86,7 +88,11 @@ local function onPlayer(player)
 	local skip = game:GetService("RunService"):IsStudio() and game.ServerStorage:GetAttribute("SkipIntro")
 	if p.tutorial == 1 and p.stats.enrolled == 0 and not p.introSeen and not skip then
 		p.introSeen = true
-		task.delay(2.5, function()
+		task.spawn(function()
+			-- after the loading screen's PLAY (or a minute, if the client never says)
+			local t0 = os.clock()
+			while player.Parent and not player:GetAttribute("Ready") and os.clock() - t0 < 60 do task.wait(0.2) end
+			task.wait(0.8)
 			if not player.Parent then return end
 			Remotes.Cutscene:FireClient(player, "Intro", { name = PlotService.schoolName(player) })
 			task.wait(7)

@@ -191,12 +191,20 @@ Actions.register("buy", function(player, p, kind, key)
 	return { ok = false }
 end)
 
+-- the Home button: free for everyone every HOME_COOLDOWN seconds; the pass makes it instant
+local HOME_COOLDOWN = 10
+local lastHome = {}
+Players.PlayerRemoving:Connect(function(player) lastHome[player] = nil end)
 Actions.register("teleportHome", function(player)
-	if not MonetizationService.has(player, "TeleportHome") then return { ok = false, err = "Needs the Teleport Home pass" } end
 	if (player:GetAttribute("Carrying") or player:GetAttribute("Heist")) then return { ok = false, err = "Not while carrying a kid!" } end
+	local wait = MonetizationService.has(player, "TeleportHome") and 0 or HOME_COOLDOWN
+	local left = (lastHome[player] or -math.huge) + wait - os.clock()
+	if left > 0 then return { ok = false, err = ("Home again in %ds"):format(math.ceil(left)), cooldown = left } end
 	local cf = PlotService.spawnCFrame(player)
-	if cf and player.Character then player.Character:PivotTo(cf) end
-	return { ok = true }
+	if not cf or not player.Character then return { ok = false } end
+	player.Character:PivotTo(cf)
+	lastHome[player] = os.clock()
+	return { ok = true, cooldown = wait }
 end)
 
 function MonetizationService.start()

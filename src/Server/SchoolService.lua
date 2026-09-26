@@ -64,8 +64,21 @@ Actions.register("nameSchool", function(player, p, name)
 end)
 
 Actions.register("setting", function(player, p, key, value)
+	if key == "device" then
+		-- computer or phone (the loading screen asks): bigger UI and touch buttons on phones
+		if value ~= "pc" and value ~= "mobile" then return { ok = false } end
+		p.settings.device = value
+		player:SetAttribute("Device", value)
+		return { ok = true }
+	end
 	if key ~= "music" and key ~= "sfx" then return { ok = false } end
 	p.settings[key] = value == true
+	return { ok = true }
+end)
+
+-- the loading screen's PLAY button: the new-principal intro waits for this
+Actions.register("clientReady", function(player)
+	player:SetAttribute("Ready", true)
 	return { ok = true }
 end)
 

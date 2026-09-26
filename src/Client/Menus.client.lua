@@ -1244,8 +1244,38 @@ UI.new("UIGridLayout", {
 	Parent = bar,
 })
 
+-- each side button shows once the server unlocks it (UnlockService: player attribute UI_<caption>);
+-- a fresh unlock pops in with a NEW! badge that stays until the button is used
+local sideButtons = {}
+local function newBadge(button)
+	local badge = UI.new("Frame", { Name = "New", Size = UDim2.fromOffset(46, 22), Position = UDim2.new(1, 8, 0, -8), AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = UI.C.red, ZIndex = 6, Parent = button })
+	UI.corner(badge, 8)
+	UI.stroke(badge, 2)
+	UI.label(badge, { Text = "NEW!", Font = UI.BIG, Size = UDim2.new(1, -6, 1, -4), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 7, stroke = 1.5 })
+	task.spawn(function()
+		while badge.Parent do
+			UI.punch(badge, 1.2)
+			task.wait(1.2)
+		end
+	end)
+	return badge
+end
+local function watchUnlock(caption, b)
+	local attr = "UI_" .. caption
+	b.button.Visible = player:GetAttribute(attr) == true
+	player:GetAttributeChangedSignal(attr):Connect(function()
+		local on = player:GetAttribute(attr) == true
+		if on and not b.button.Visible then
+			b.button.Visible = true
+			UI.pop(b.button, 0.3)
+		end
+		b.button.Visible = on
+	end)
+end
+
 local function sideButton(order, icon, caption, color, panel)
 	local b = UI.button(bar, { name = caption, text = "", color = color, size = UDim2.fromOffset(78, 78), radius = 18, layoutOrder = order })
+	sideButtons[caption] = b
 	UI.label(b.button, {
 		Name = "Icon",
 		Text = icon,
@@ -1265,9 +1295,12 @@ local function sideButton(order, icon, caption, color, panel)
 		stroke = 2,
 	})
 	b.button.Activated:Connect(function()
+		local badge = b.button:FindFirstChild("New")
+		if badge then badge:Destroy() end
 		sfx("Ding")
-		panel.toggle()
+		if panel then panel.toggle() end
 	end)
+	watchUnlock(caption, b)
 	return b
 end
 
@@ -1297,21 +1330,46 @@ do
 		end
 	end)
 end
--- Teleport Home pass: a home button once you own it
-local homeButton
-local function refreshHome()
-	if player:GetAttribute("Pass_TeleportHome") and not homeButton then
-		homeButton = UI.button(bar, { name = "Home", text = "", color = UI.C.orange, size = UDim2.fromOffset(78, 78), radius = 18, layoutOrder = 8 })
-		UI.label(homeButton.button, { Text = "\u{1F3E0}", Size = UDim2.new(1, -16, 0.56, 0), Position = UDim2.new(0.5, 0, 0, 6), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 4, stroke = 0 })
-		UI.label(homeButton.button, { Text = "Home", Size = UDim2.new(1, -6, 0.28, 0), Position = UDim2.new(0.5, 0, 1, -5), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 4, stroke = 2 })
-		homeButton.button.Activated:Connect(function()
-			local res = call("teleportHome")
-			sfx(res and res.ok and "Whoosh" or "Error")
-		end)
+-- Home: back to your school in one press (H on a keyboard); a short cooldown shows as a dark sweep
+do
+	local home = sideButton(-1, "\u{1F3E0}", "Home", Color3.fromRGB(255, 120, 60), nil)
+	local shade = UI.new("Frame", { Name = "Cooldown", BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.45, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromScale(1, 0), ZIndex = 5, Parent = home.button })
+	UI.corner(shade, 18)
+	local busy = false
+	local function goHome()
+		if busy then return end
+		busy = true
+		local res = call("teleportHome")
+		if res and res.ok then
+			sfx("Whoosh")
+			local cd = res.cooldown or 0
+			if cd > 0 then
+				shade.Size = UDim2.fromScale(1, 1)
+				TweenService:Create(shade, TweenInfo.new(cd, Enum.EasingStyle.Linear), { Size = UDim2.fromScale(1, 0) }):Play()
+			end
+		else
+			sfx("Error")
+			if res and res.err and bus and bus:FindFirstChild("Toast") then bus.Toast:Fire(res.err, "bad") end
+		end
+		busy = false
 	end
+	home.button.Activated:Connect(goHome)
+	game:GetService("UserInputService").InputBegan:Connect(function(input, gpe)
+		if not gpe and input.KeyCode == Enum.KeyCode.H and home.button.Visible then goHome() end
+	end)
 end
-player:GetAttributeChangedSignal("Pass_TeleportHome"):Connect(refreshHome)
-refreshHome()
+-- a button unlocking gets a NEW! badge and a toast
+Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
+	if kind ~= "unlock" or type(data) ~= "table" then return end
+	local b = sideButtons[data.name]
+	if not b then return end
+	task.defer(function()
+		if not b.button:FindFirstChild("New") then newBadge(b.button) end
+		sfx("Upgrade")
+		if bus and bus:FindFirstChild("Toast") then bus.Toast:Fire(("\u{2728} %s unlocked! (left side)"):format(data.name), "good") end
+	end)
+end)
+
 -- the admin button appears only for admins
 local adminButton
 local function refreshAdmin()

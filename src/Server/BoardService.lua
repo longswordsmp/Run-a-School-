@@ -103,6 +103,7 @@ Actions.register("review", function(player, p)
 	local an = n.name:match("^[AEIOUaeiou]") and "AN" or "A"
 	Remotes.Announce:FireAllClients(("%s IS NOW %s %s!"):format(PlotService.schoolName(player):upper(), an, n.name:upper()), Color3.fromRGB(255, 214, 51))
 	Signals.fire("review", player, p.tier, p.stars)
+	Data.saveSoon(player)
 	busy[player] = nil
 	-- the top of the ladder: Graduation Day, once
 	if not n.star and p.tier == #Config.Tiers and not p.finaleSeen then
