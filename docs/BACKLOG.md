@@ -11,7 +11,7 @@ done after it's been played in Studio and checked on screen. "Built, not verifie
 
 ## P1: first impressions
 
-- [ ] The street doesn't make sense: a red carpet laid over a road, and the kids off the bus walk into Detention. Replace it with a proper drop-off: the bus stops at a stop, kids wait on a sidewalk plaza, unpicked kids go home or back on the bus. Nobody walks into Detention.
+- [x] The street doesn't make sense (red carpet over a road, kids into Detention): real road, sidewalks, crosswalks, Home Bus (screenshots; a kid boarded, measured).
 - [x] An opening cutscene: how you get the school ("The Keys", screenshots of every shot).
 - [x] (opening + step calls; keep checking every new beat) The story has to make sense: introduce VexCorp, Dr. Vex and Crumpet BEFORE they do anything (not "some random dude named Crumpet stealing kids"); every event has a reason the player has been shown. Plan: you arrive on Otis's bus, Wobblesworth (retiring) hands you the keys to the empty old school; Vex's limo glides past with Crumpet driving and Wobblesworth explains who she is and what she wants; Crumpet's raid then opens with "Dr. Vex sends her compliments..."; Skater Kid is your first transfer student, snatched by Vex before he reached you.
 - [~] A tutorial that really teaches the game: "Swap up!" step (sell weakest, enroll better) and a call explaining each step. Not yet played by a fresh player end to end.
@@ -21,6 +21,11 @@ done after it's been played in Studio and checked on screen. "Built, not verifie
 - [ ] A Vex Prep showcase cutscene that really shows the rival school off.
 - [ ] More cutscenes, and better ones.
 
+- [x] Run faster by default, sprint even faster (walk 22, sprint 35, measured).
+- [x] A map on M / Tab showing where quests and buildings are: the real town from above (screenshots).
+- [x] After the tutorial, no line on the ground, just the arrow.
+- [ ] Music: November Waltz, Almost Closing Time (Work at a Pizza Place), Night Theme (Adopt Me). Not on the Creator Store and not ours to use; waiting on tomas: licensed stand-ins, or he uploads copies he has the rights to.
+
 ## P2: quality, one thing at a time
 
 - [ ] Hoverboard: the board model and a proper riding pose and motion.
@@ -28,7 +33,7 @@ done after it's been played in Studio and checked on screen. "Built, not verifie
 - [ ] NPCs hold items weirdly (props through hands, wrong grips; the Ruler in your own hand too).
 - [ ] Recess Commons: the sign blocks the path; the playground is awful.
 - [ ] The Confiscation Closet is poorly made and makes no sense.
-- [ ] Detention sits in the middle of the road (move it, make it make sense).
+- [x] Detention sits in the middle of the road: moved onto its own lot facing the east road (screenshot).
 - [ ] Other buildings' interiors and decor.
 - [ ] Schools built like real schools: hallways, classrooms, office, cafeteria, gym, library; less cluttered.
 - [ ] Bigger plots, or a way to expand your plot.
