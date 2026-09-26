@@ -94,6 +94,38 @@ Not modelled, all of which make a real player faster: steals, smuggler buffs, qu
 gifts, daily-streak tuition, Money Rain, offline pay. The sim plays like a strong, always-online
 player; a typical player is slower.
 
+## After your feedback (2026-09-25)
+Your notes: too many sound effects, only Relaxed Scene was good, events/gift timers shouldn't be on
+screen, models and UI need to be far better, the story should be a real story, the game isn't fun.
+You picked: generated meshes for kids and props plus detailed parts for buildings; a better tutorial,
+missions AND a street that changes; and "Action".
+
+Done and checked in play (how each was checked in brackets):
+- **Sound**: Relaxed Scene is the only music; SFX cut to 7 sounds with per-sound gaps and a
+  4-per-second cap. The events/gift/letter timers are gone from the HUD. [played, read the HUD]
+- **Action: VexCorp raids.** Goons in a purple van come for your seated kids; bonk them with the
+  Ruler (knock-back, stars, K.O.). One that escapes takes the kid to the Factory. [real Ruler swings]
+- **Action: the VexCorp Factory heist.** Your captured kids sit in pens behind guards with
+  flashlights; sneak in, grab, run for the gate, bonk guards who catch up. Vex's "mystery captive"
+  pens hold a random rarer kid. [on-foot runs through the real prompts]
+- **Tutorial** rebuilt around that: enroll, collect, Crumpet steals a kid (bonk him), lock the gate,
+  rescue a kid from the Factory (a slow, lenient guard the first time). [played start to end]
+- **Story missions**: each chapter now has one mission from Mr. Wobblesworth (the "!" over him at the
+  fountain; talk, read, START MISSION). Three kinds: defend your school from a story raid (the van
+  waits till you're home), chase a runner down Recess Row and bonk him before he gets away, and
+  Factory heists (the School Mascot, Vex's blueprints off her desk, the Tiny Professor). Missions pay
+  3x a normal chapter request. [defend: won with Ruler swings and lost; chase: won on foot and lost;
+  blueprints: full run through guards; kid heist: rescue hook-up]
+- **The street changes with your chapter** (each player sees their own): VexCorp posters (ch 1),
+  the billboard goes "NOW OPEN" (ch 3), Vex's limo + SOLD SOON sign + drained fountain (ch 5),
+  searchlights on the Factory (ch 7), the Sugar Shack becomes Kevin's Waterslide and the Baron's gone
+  (ch 9), the Homework Machine going up on the Factory roof (ch 9), then awake with a glowing core,
+  a pencil arm, lightning and a purple sky (ch 10-11), and RECESS IS SAVED with bunting (after the
+  finale). [screenshot of every stage]
+
+Still to do from your list: the model pass (meshes for kids and props, detailed buildings) and the
+UI rebuild.
+
 ## Not verified / known gaps
 - Anything with two players: stealing from another player, Ruler hits on another player, the alarm.
 - Mouse clicks from the test tool don't reach GUI buttons, so panels were opened through the
