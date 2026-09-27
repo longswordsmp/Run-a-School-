@@ -116,6 +116,18 @@ local function buildFrame(town)
 end
 
 function TownService.start()
+	-- the baked map's ground plate where tools/build_map puts it (2026-09-27 it had been dragged 438
+	-- studs south in the place, and the whole school area showed holes to the sky)
+	local map = workspace:FindFirstChild("Map")
+	local ground = map and map:FindFirstChild("Ground")
+	if ground and ground:IsA("BasePart") then
+		if (ground.Position - Vector3.new(0, -1, 0)).Magnitude > 0.5 then
+			warn("[Town] Map.Ground was at", ground.Position, "- put back at (0, -1, 0)")
+		end
+		ground.CFrame = CFrame.new(0, -1, 0)
+		ground.Size = Vector3.new(980, 2, 520)
+		ground.Anchored = true
+	end
 	local old = workspace:FindFirstChild("Town")
 	if old then old:Destroy() end
 	local town = Instance.new("Folder")
