@@ -844,6 +844,789 @@ function B.folder(m)
 	p(m, V(0.18, 1.0, 0.08), CF(-1.25, 1.35, -0.2), rgb(200, 205, 215))
 end
 
+---------------------------------------------------------------------------
+-- the School Shop (tomas, 2026-09-27: "the things in school shop all are 2d and not good like how the
+-- store is"): a model for everything it sells, in the same chunky outlined style
+---------------------------------------------------------------------------
+local WHITE, DARK = rgb(250, 250, 248), rgb(40, 44, 58)
+
+-- School Supplies
+function B.notebook(m)
+	-- a spiral notebook: a red cover with a white label, the pages' edge, coils down its side
+	local COVER, BACK, PAGE, COIL = rgb(235, 70, 80), rgb(170, 40, 55), rgb(250, 248, 238), rgb(170, 176, 192)
+	p(m, V(3.2, 4.2, 0.46), CF(-0.1, 0, 0.05), PAGE)
+	studs(p(m, V(3.4, 4.4, 0.2), CF(-0.1, 0, -0.3), COVER))
+	p(m, V(3.4, 4.4, 0.16), CF(-0.1, 0, 0.36), BACK)
+	p(m, V(2.1, 1.0, 0.06), CF(-0.3, 1.0, -0.42), WHITE)
+	for k, w in { 1.5, 1.0 } do p(m, V(w, 0.14, 0.07), CF(-0.3 + (1.5 - w) / 2, 1.18 - (k - 1) * 0.34, -0.46), rgb(110, 120, 150)) end
+	-- (the coils down the left of the screen, which is +X)
+	for k = 0, 7 do
+		cyl(m, 0.34, 1.0, V(1.72, -1.75 + k * 0.5, 0.03), COIL, "z")
+	end
+end
+function B.crayons(m)
+	-- a big yellow crayon box, its green band, five crayons standing up out of it with pointed tips
+	local BOX, BAND = rgb(255, 205, 50), rgb(60, 170, 95)
+	studs(p(m, V(4.2, 3.0, 1.6), CF(0, -0.9, 0), BOX))
+	p(m, V(4.24, 0.9, 1.64), CF(0, -1.0, 0), BAND)
+	p(m, V(2.2, 0.36, 1.66), CF(0, -1.0, 0), rgb(255, 245, 210))
+	for i, c in { rgb(235, 60, 60), rgb(255, 150, 40), rgb(60, 140, 255), rgb(160, 80, 220), rgb(60, 200, 90) } do
+		local x = -1.64 + (i - 1) * 0.82
+		local h = 1.3 + (i % 2) * 0.45
+		cylc(m, 0.66, h, CF(x, 0.6 + h / 2, -0.1), c)
+		cylc(m, 0.7, 0.16, CF(x, 0.65 + h * 0.75, -0.1), c:Lerp(rgb(0, 0, 0), 0.35))
+		cone(m, CF(x, 0.6 + h, -0.1), 0.66, 0.14, 0.75, 6, c)
+	end
+end
+function B.books(m)
+	-- a stack of three textbooks, spines to the front with gold bands, the pages white at the sides
+	local y = -1.4
+	for i, b in { { rgb(60, 120, 230), 4.4, 0.95, 3.1, 4 }, { rgb(235, 70, 80), 4.0, 0.85, 2.9, -7 }, { rgb(70, 190, 100), 3.6, 0.8, 2.7, 9 } } do
+		local cf = CF(0, y + b[3] / 2, 0) * CFrame.Angles(0, math.rad(b[5]), 0)
+		studs(p(m, V(b[2], b[3], b[4]), cf, b[1]))
+		p(m, V(b[2] + 0.04, b[3] - 0.26, b[4] - 0.34), cf * CF(0, 0, 0.18), rgb(252, 250, 240))
+		for _, dx in { -1, 1 } do p(m, V(0.16, b[3] + 0.02, 0.06), cf * CF(dx * (b[2] / 2 - 0.5), 0, -b[4] / 2 - 0.02), rgb(255, 210, 70)) end
+		y += b[3]
+	end
+end
+function B.ruler(m)
+	-- a yellow ruler with its marks, leaning across a blue protractor
+	local PRO = rgb(110, 190, 255)
+	local r = 1.9
+	for a = 0, 165, 15 do
+		local t = math.rad(a + 7.5)
+		p(m, V(0.52, 0.36, 0.22), CF(math.cos(t) * r, -0.6 + math.sin(t) * r, 0.35) * CFrame.Angles(0, 0, t + math.pi / 2), PRO)
+	end
+	p(m, V(2 * r + 0.36, 0.36, 0.22), CF(0, -0.6, 0.35), PRO)
+	disc(m, 0.4, 0.24, CF(0, -0.6, 0.3), rgb(40, 90, 200))
+	local tilt = CF(0, 0, -0.1) * CFrame.Angles(0, 0, math.rad(28))
+	studs(p(m, V(5.4, 1.0, 0.28), tilt, rgb(255, 205, 60)))
+	for k = 0, 11 do
+		local long = k % 2 == 0
+		p(m, V(0.09, long and 0.45 or 0.28, 0.06), tilt * CF(-2.45 + k * 0.445, 0.5 - (long and 0.225 or 0.14), -0.16), rgb(70, 55, 40))
+	end
+end
+function B.calculator(m)
+	-- a calculator: a navy body, a green screen with its digits, grey keys, an orange column
+	local BODY = rgb(55, 65, 100)
+	p(m, V(3.1, 4.4, 0.6), CF(), BODY)
+	p(m, V(2.6, 1.05, 0.1), CF(0, 1.45, -0.32), rgb(165, 225, 160))
+	for k = 0, 2 do p(m, V(0.36, 0.6, 0.06), CF(-0.95 + k * 0.5, 1.45, -0.39), rgb(40, 70, 45)) end
+	for r = 0, 3 do
+		for c = 0, 3 do
+			-- (the right-hand column on screen is -X)
+			local col = c == 3 and rgb(255, 150, 40) or rgb(230, 232, 240)
+			p(m, V(0.56, 0.5, 0.16), CF(0.9 - c * 0.6, 0.35 - r * 0.62, -0.34), col)
+		end
+	end
+end
+function B.globe(m)
+	-- a desk globe: the blue world with green land, a gold ring round it, on a stand
+	local SEA, LAND, GOLDL = rgb(60, 145, 240), rgb(80, 200, 90), rgb(255, 200, 60)
+	ball(m, 3.2, V(0, 0.7, 0), SEA)
+	for _, c in { { 0.7, 1.4, -1.0, 1.3 }, { -0.9, 0.2, -1.1, 1.1 }, { 0.2, -0.3, -1.25, 0.9 }, { -0.4, 1.9, -0.6, 0.9 }, { 1.3, 0.3, -0.5, 1.0 } } do
+		ball(m, c[4], V(c[1], 0.7 + c[2] - 0.7, c[3]), LAND)
+	end
+	local tilt = CFrame.Angles(0, 0, math.rad(-23))
+	for a = -114, 114, 12 do
+		local t = math.rad(a)
+		p(m, V(0.46, 0.24, 0.26), CF(0, 0.7, 0) * tilt * CF(math.sin(t) * 1.9, math.cos(t) * 1.9, 0) * CFrame.Angles(0, 0, -t), GOLDL)
+	end
+	cylc(m, 0.35, 1.2, CF(0, -1.2, 0), GOLDL)
+	cylc(m, 2.2, 0.4, CF(0, -1.9, 0), rgb(150, 95, 55))
+end
+function B.microscope(m)
+	-- a microscope side on: its base, the curved arm, the stage, the tube leaning up with its eyepiece
+	local BODY, DARKG = rgb(245, 245, 250), rgb(60, 64, 80)
+	studs(p(m, V(3.0, 0.5, 2.0), CF(0, -2.1, 0), BODY))
+	p(m, V(0.7, 2.6, 0.8), CF(-0.9, -0.7, 0.2) * CFrame.Angles(0, 0, math.rad(-8)), BODY)
+	p(m, V(2.0, 0.22, 1.6), CF(0.25, -0.9, 0), DARKG)
+	p(m, V(1.2, 0.12, 0.7), CF(0.25, -0.76, -0.2), rgb(150, 210, 255))
+	local tube = CF(0.2, 0.9, 0) * CFrame.Angles(0, 0, math.rad(22))
+	cylc(m, 0.8, 2.6, tube, BODY)
+	cylc(m, 0.6, 0.9, tube * CF(0, 1.6, 0), DARKG)
+	cylc(m, 0.55, 0.6, tube * CF(0, -1.45, 0), DARKG)
+	p(m, V(1.2, 0.8, 0.8), CF(-0.55, 0.55, 0.1) * CFrame.Angles(0, 0, math.rad(22)), BODY)
+	disc(m, 0.9, 0.3, CF(-1.0, -0.2, -0.45), DARKG)
+end
+function B.laptop(m)
+	-- an open laptop: the silver deck with its keys, the screen up at the back glowing blue
+	local SILVER, KEY = rgb(205, 210, 222), rgb(60, 64, 78)
+	studs(p(m, V(4.4, 0.28, 3.0), CF(0, -1.3, -0.5), SILVER))
+	for r = 0, 2 do
+		for c = 0, 6 do p(m, V(0.46, 0.08, 0.42), CF(-1.62 + c * 0.54, -1.12, -1.2 + r * 0.52), KEY) end
+	end
+	p(m, V(1.2, 0.06, 0.6), CF(0, -1.14, -1.75), rgb(175, 180, 195))
+	local scr = CF(0, 0.15, 1.0) * CFrame.Angles(math.rad(-14), 0, 0)
+	p(m, V(4.4, 3.0, 0.2), scr, SILVER)
+	p(m, V(3.9, 2.5, 0.06), scr * CF(0, 0, -0.12), rgb(70, 150, 255))
+	for k, w in { 2.6, 1.8, 2.2 } do p(m, V(w, 0.28, 0.06), scr * CF((2.6 - w) / 2, 0.6 - (k - 1) * 0.55, -0.16), rgb(220, 240, 255)) end
+end
+function B.tablet(m)
+	-- a tablet standing up: a dark frame, a screen full of bright app tiles
+	p(m, V(3.4, 4.4, 0.3), CF(), DARK)
+	p(m, V(3.0, 3.9, 0.06), CF(0, 0.05, -0.17), rgb(120, 200, 255))
+	local cols = { rgb(255, 90, 90), rgb(255, 200, 60), rgb(90, 210, 110), rgb(160, 110, 255), rgb(255, 140, 60), rgb(80, 170, 255) }
+	for r = 0, 3 do
+		for c = 0, 2 do p(m, V(0.66, 0.66, 0.08), CF(0.9 - c * 0.9, 1.3 - r * 0.88, -0.2), cols[(r * 3 + c) % #cols + 1]) end
+	end
+	disc(m, 0.2, 0.08, CF(0, 2.02, -0.17), rgb(90, 95, 110))
+end
+function B.smartboard(m)
+	-- a smartboard on its stand: a white frame, a screen with a bar chart, a pen tray, wheels
+	local FRAME = rgb(235, 238, 245)
+	p(m, V(5.2, 3.2, 0.3), CF(0, 0.8, 0), FRAME)
+	p(m, V(4.7, 2.7, 0.06), CF(0, 0.8, -0.17), rgb(40, 60, 110))
+	for k, h in { 0.8, 1.4, 1.1, 1.9 } do
+		p(m, V(0.6, h, 0.08), CF(1.5 - (k - 1) * 1.0, -0.4 + h / 2, -0.21), ({ rgb(255, 90, 90), rgb(255, 200, 60), rgb(90, 210, 110), rgb(80, 170, 255) })[k])
+	end
+	p(m, V(3.0, 0.2, 0.6), CF(0, -0.85, -0.3), FRAME)
+	for _, x in { -1.9, 1.9 } do
+		p(m, V(0.3, 2.0, 0.3), CF(x, -1.8, 0), rgb(150, 155, 170))
+		p(m, V(0.3, 0.3, 1.6), CF(x, -2.75, 0), rgb(150, 155, 170))
+		disc(m, 0.4, 0.3, CF(x, -2.95, -0.7), DARK)
+	end
+end
+function B.vr(m)
+	-- a VR headset: a wide white body, its glossy black visor with a blue light strip, the grey strap
+	-- looping round behind (seen from above, so the loop shows)
+	local BODY, STRAP = rgb(245, 245, 250), rgb(90, 95, 110)
+	studs(p(m, V(4.2, 1.8, 1.3), CF(), BODY))
+	p(m, V(3.9, 1.5, 0.2), CF(0, 0, -0.72), rgb(25, 28, 38))
+	p(m, V(3.0, 0.16, 0.06), CF(0, -0.35, -0.84), rgb(90, 200, 255), nil, Enum.Material.Neon)
+	p(m, V(3.6, 1.4, 0.3), CF(0, 0, 0.78), rgb(70, 74, 88))
+	for _, dx in { -1, 1 } do p(m, V(0.28, 0.6, 2.8), CF(dx * 2.0, 0.1, 2.1), STRAP) end
+	p(m, V(4.28, 0.6, 0.28), CF(0, 0.1, 3.4), STRAP)
+	p(m, V(0.6, 0.28, 2.8), CF(0, 0.95, 2.1), STRAP)
+end
+function B.robot(m)
+	-- a robot tutor: a round-cornered head with a screen face (eyes, a smile), an antenna, a body with
+	-- a heart light, little arms, glasses
+	local BODY, SCREEN = rgb(120, 190, 255), rgb(30, 40, 70)
+	p(m, V(3.0, 2.4, 2.2), CF(0, 0.9, 0), BODY)
+	p(m, V(2.5, 1.8, 0.1), CF(0, 0.9, -1.12), SCREEN)
+	for _, dx in { -0.6, 0.6 } do
+		disc(m, 0.5, 0.08, CF(dx, 1.2, -1.2), rgb(120, 255, 200), Enum.Material.Neon)
+		p(m, V(0.8, 0.1, 0.06), CF(dx, 1.62, -1.2), rgb(255, 210, 70))
+	end
+	p(m, V(0.9, 0.14, 0.06), CF(0, 0.6, -1.2), rgb(120, 255, 200), nil, Enum.Material.Neon)
+	cylc(m, 0.2, 0.9, CF(0, 2.5, 0), rgb(200, 205, 220))
+	ball(m, 0.55, V(0, 3.0, 0), rgb(255, 80, 90), Enum.Material.Neon)
+	studs(p(m, V(2.4, 1.8, 1.8), CF(0, -1.3, 0), BODY:Lerp(rgb(0, 0, 0), 0.12)))
+	ball(m, 0.6, V(0, -1.1, -0.9), rgb(255, 90, 120), Enum.Material.Neon)
+	for _, dx in { -1, 1 } do p(m, V(0.5, 1.3, 0.5), CF(dx * 1.5, -1.3, 0) * CFrame.Angles(0, 0, dx * math.rad(15)), rgb(200, 205, 220)) end
+end
+function B.holodesk(m)
+	-- a hologram desk: a white desk, a projector on it, a cone of light, a glowing cube floating in it
+	local HOLO = rgb(90, 230, 255)
+	studs(p(m, V(4.4, 0.3, 2.2), CF(0, -1.2, 0), WHITE))
+	for _, dx in { -1.9, 1.9 } do p(m, V(0.3, 1.5, 1.8), CF(dx, -2.1, 0), rgb(200, 205, 220)) end
+	cylc(m, 1.0, 0.25, CF(0, -0.95, 0), DARK)
+	local light = cone(m, CF(0, -0.85, 0), 0.9, 2.4, 1.6, 6, HOLO)
+	for _, d in m:GetChildren() do
+		if d.Position.Y > -0.9 and d.Position.Y < 0.8 and d.Color == HOLO then d.Material = Enum.Material.Neon d.Transparency = 0.55 end
+	end
+	local cube = CF(0, 1.5, 0) * CFrame.Angles(math.rad(35), math.rad(45), 0)
+	local e = 1.3
+	for _, a in { { V(e, 0.14, 0.14), { { 0, 1, 1 }, { 0, 1, -1 }, { 0, -1, 1 }, { 0, -1, -1 } } }, { V(0.14, e, 0.14), { { 1, 0, 1 }, { 1, 0, -1 }, { -1, 0, 1 }, { -1, 0, -1 } } }, { V(0.14, 0.14, e), { { 1, 1, 0 }, { 1, -1, 0 }, { -1, 1, 0 }, { -1, -1, 0 } } } } do
+		for _, o in a[2] do p(m, a[1], cube * CF(o[1] * e / 2, o[2] * e / 2, o[3] * e / 2), HOLO, nil, Enum.Material.Neon) end
+	end
+	ball(m, 0.5, (cube).Position, rgb(200, 250, 255), Enum.Material.Neon)
+end
+function B.quantum(m)
+	-- a quantum computer: three gold tiers hanging one under the next on rods, a glowing core below
+	local GOLDL, GOLDD = rgb(255, 205, 70), rgb(215, 150, 30)
+	local tiers = { { 3.8, 1.9 }, { 3.0, 0.6 }, { 2.2, -0.7 } }
+	for i, t in tiers do
+		cylc(m, t[1], 0.3, CF(0, t[2], 0), GOLDL, Enum.Material.Metal)
+		cylc(m, t[1] - 0.4, 0.34, CF(0, t[2], 0), GOLDD, Enum.Material.Metal)
+		if i < #tiers then
+			for k = 0, 5 do
+				local a = k / 6 * math.pi * 2
+				local r = tiers[i + 1][1] / 2 - 0.25
+				cylc(m, 0.16, t[2] - tiers[i + 1][2], CF(math.cos(a) * r, (t[2] + tiers[i + 1][2]) / 2, math.sin(a) * r), rgb(220, 150, 60), Enum.Material.Metal)
+			end
+		end
+	end
+	cylc(m, 0.4, 1.0, CF(0, 2.5, 0), GOLDD, Enum.Material.Metal)
+	cylc(m, 0.5, 0.9, CF(0, -1.25, 0), GOLDD, Enum.Material.Metal)
+	ball(m, 1.1, V(0, -1.9, 0), rgb(110, 230, 255), Enum.Material.Neon)
+end
+function B.thinkingcap(m)
+	-- a propeller beanie: a red dome, a yellow band, a blue peak, a propeller turning on top
+	ball(m, 3.4, V(0, 0, 0), rgb(235, 65, 75))
+	cylc(m, 3.5, 0.9, CF(0, -0.95, 0), rgb(255, 205, 60))
+	p(m, V(2.6, 0.22, 1.5), CF(0, -1.6, -1.9) * CFrame.Angles(math.rad(-8), 0, 0), rgb(60, 130, 240))
+	cylc(m, 0.2, 0.7, CF(0, 1.95, 0), rgb(200, 205, 220))
+	ball(m, 0.4, V(0, 2.3, 0), rgb(255, 205, 60))
+	local prop = CF(0, 2.35, 0) * CFrame.Angles(0, math.rad(20), 0)
+	for _, s in { -1, 1 } do p(m, V(1.9, 0.14, 0.7), prop * CF(s * 1.05, 0, 0) * CFrame.Angles(s * math.rad(28), 0, 0), s > 0 and rgb(60, 200, 110) or rgb(60, 130, 240)) end
+end
+
+-- School Builder
+function B.curtains(m)
+	-- a window with its curtains tied back, a pot with a red flower on the sill
+	local FRAME, GLASS, CURT = rgb(250, 250, 248), rgb(150, 210, 255), rgb(235, 70, 90)
+	studs(p(m, V(4.0, 4.2, 0.4), CF(0, 0.3, 0.2), FRAME))
+	p(m, V(3.3, 3.5, 0.1), CF(0, 0.3, -0.02), GLASS)
+	p(m, V(0.2, 3.5, 0.14), CF(0, 0.3, -0.05), FRAME)
+	p(m, V(3.3, 0.2, 0.14), CF(0, 0.3, -0.05), FRAME)
+	for _, s in { -1, 1 } do
+		p(m, V(1.0, 3.6, 0.2), CF(s * 1.4, 0.35, -0.25), CURT)
+		p(m, V(1.1, 0.3, 0.26), CF(s * 1.4, 0.0, -0.3), rgb(255, 205, 60))
+	end
+	p(m, V(4.0, 0.6, 0.3), CF(0, 2.2, -0.25), CURT:Lerp(WHITE, 0.2))
+	p(m, V(4.4, 0.3, 1.0), CF(0, -1.9, -0.4), FRAME)
+	cylc(m, 0.9, 0.8, CF(0.6, -1.35, -0.5), rgb(200, 100, 60))
+	cylc(m, 0.12, 0.7, CF(0.6, -0.7, -0.5), rgb(60, 150, 60))
+	ball(m, 0.8, V(0.6, -0.25, -0.5), rgb(230, 40, 60))
+end
+local function flower(m, at, color)
+	cylc(m, 0.16, 1.4, at * CF(0, 0.7, 0), rgb(60, 160, 70))
+	for k = 0, 4 do
+		local a = k / 5 * math.pi * 2
+		ball(m, 0.55, (at * CF(math.cos(a) * 0.36, 1.5, math.sin(a) * 0.36)).Position, color)
+	end
+	ball(m, 0.4, (at * CF(0, 1.55, 0)).Position, rgb(255, 210, 60))
+end
+function B.flowerbed(m)
+	-- a wooden planter full of soil with tulips and daisies in it
+	local WOOD = rgb(170, 110, 60)
+	studs(p(m, V(4.6, 1.2, 2.0), CF(0, -1.4, 0), WOOD))
+	p(m, V(4.3, 0.2, 1.7), CF(0, -0.75, 0), rgb(95, 60, 40))
+	for i, c in { rgb(235, 60, 90), rgb(255, 150, 200), rgb(250, 250, 250), rgb(255, 150, 40), rgb(170, 90, 230) } do
+		flower(m, CF(-1.7 + (i - 1) * 0.85, -0.8, (i % 2 == 0) and 0.35 or -0.3), c)
+	end
+end
+function B.awning(m)
+	-- a striped awning over a door, a welcome mat under it
+	local DOOR, WALL = rgb(60, 130, 230), rgb(240, 200, 150)
+	studs(p(m, V(4.6, 4.6, 0.4), CF(0, 0, 0.5), WALL))
+	p(m, V(2.0, 3.2, 0.2), CF(0, -0.7, 0.25), DOOR)
+	ball(m, 0.3, V(-0.65, -0.8, 0.1), rgb(255, 210, 60))
+	for i = -3, 3 do
+		local c = i % 2 == 0 and WHITE or rgb(235, 60, 80)
+		p(m, V(0.64, 0.2, 1.8), CF(i * 0.62, 1.45, -0.5) * CFrame.Angles(math.rad(-22), 0, 0), c)
+		p(m, V(0.64, 0.4, 0.14), CF(i * 0.62, 1.05, -1.35), c)
+	end
+	p(m, V(2.6, 0.12, 1.0), CF(0, -2.3, -0.6), rgb(235, 60, 80))
+end
+function B.fence(m)
+	-- a white picket fence: pointed pickets on two rails
+	for i = 0, 5 do
+		local x = -2.25 + i * 0.9
+		p(m, V(0.6, 3.0, 0.24), CF(x, -0.4, 0), WHITE)
+		tri(m, 0.6, 0.5, 0.24, CF(x, 1.35, 0), WHITE)
+	end
+	for _, y in { -1.2, 0.4 } do studs(p(m, V(5.4, 0.4, 0.26), CF(0, y, 0.24), rgb(230, 230, 226))) end
+end
+function B.marquee(m)
+	-- a letter board on two posts: black board, white letters, bulbs along the top
+	for _, x in { -1.8, 1.8 } do p(m, V(0.4, 4.6, 0.4), CF(x, -0.6, 0), rgb(60, 60, 70)) end
+	studs(p(m, V(4.6, 2.8, 0.5), CF(0, 0.6, 0), rgb(40, 90, 200)))
+	p(m, V(4.0, 2.2, 0.1), CF(0, 0.6, -0.28), rgb(20, 20, 26))
+	for r = 0, 1 do
+		for c = 0, 4 - r do p(m, V(0.5, 0.6, 0.06), CF(1.35 - c * 0.66 - r * 0.33, 1.05 - r * 0.85, -0.35), WHITE) end
+	end
+	for i = 0, 5 do ball(m, 0.34, V(-1.9 + i * 0.76, 2.1, -0.1), rgb(255, 235, 150), Enum.Material.Neon) end
+end
+function B.brickwall(m)
+	-- a low brick wall with a white cap: staggered bricks with mortar showing between
+	local BRICK, MORTAR = rgb(195, 85, 60), rgb(230, 220, 205)
+	p(m, V(5.0, 2.9, 0.9), CF(0, -0.55, 0.05), MORTAR)
+	for r = 0, 3 do
+		local off = (r % 2) * 0.6
+		for c = -1, 4 do
+			local x = -2.2 + c * 1.2 + off
+			local x0, x1 = math.max(x - 0.55, -2.5), math.min(x + 0.55, 2.5)
+			if x1 - x0 > 0.2 then p(m, V(x1 - x0, 0.6, 0.96), CF((x0 + x1) / 2, -1.65 + r * 0.72, 0), BRICK) end
+		end
+	end
+	studs(p(m, V(5.4, 0.45, 1.3), CF(0, 1.1, 0), WHITE))
+end
+function B.lockers(m)
+	-- three school lockers side by side: vents, handles, a big letter on the middle one
+	for i = -1, 1 do
+		local c = i == 0 and rgb(235, 70, 80) or rgb(60, 130, 230)
+		studs(p(m, V(1.4, 4.6, 1.2), CF(i * 1.45, 0, 0), c))
+		for k = 0, 2 do p(m, V(0.9, 0.1, 0.06), CF(i * 1.45, 1.8 - k * 0.22, -0.62), c:Lerp(rgb(0, 0, 0), 0.4)) end
+		p(m, V(0.16, 0.6, 0.16), CF(i * 1.45 - 0.45, 0, -0.66), rgb(210, 214, 225))
+	end
+	star5(m, CF(0, 0.6, -0.66), 0.32, rgb(255, 215, 70), 0.08)
+end
+function B.lunchtable(m)
+	-- a lunch table: an orange top on white legs, benches either side, a tray with an apple and milk
+	studs(p(m, V(4.8, 0.3, 2.4), CF(0, 0, 0), rgb(255, 150, 60)))
+	for _, x in { -1.9, 1.9 } do p(m, V(0.3, 1.8, 2.0), CF(x, -1.05, 0), rgb(220, 224, 232)) end
+	for _, z in { -1.9, 1.9 } do p(m, V(4.4, 0.3, 0.8), CF(0, -1.0, z), rgb(60, 130, 230)) end
+	p(m, V(2.0, 0.12, 1.3), CF(0.3, 0.2, -0.1), rgb(200, 205, 220))
+	ball(m, 0.7, V(0.8, 0.6, -0.1), rgb(230, 50, 60))
+	p(m, V(0.5, 0.8, 0.5), CF(-0.2, 0.66, 0.1), WHITE)
+	p(m, V(0.52, 0.3, 0.52), CF(-0.2, 0.55, 0.1), rgb(70, 150, 255))
+end
+function B.archwindow(m)
+	-- an arched window with blue shutters open either side
+	local FRAME, GLASS, SHUT = rgb(250, 250, 248), rgb(150, 210, 255), rgb(60, 110, 200)
+	studs(p(m, V(3.0, 3.6, 0.4), CF(0, -0.6, 0), FRAME))
+	p(m, V(2.4, 3.0, 0.1), CF(0, -0.6, -0.22), GLASS)
+	disc(m, 3.0, 0.4, CF(0, 1.2, 0), FRAME)
+	disc(m, 2.4, 0.1, CF(0, 1.2, -0.22), GLASS)
+	p(m, V(0.2, 4.2, 0.14), CF(0, -0.3, -0.27), FRAME)
+	for _, s in { -1, 1 } do
+		p(m, V(1.2, 3.6, 0.2), CF(s * 2.2, -0.6, -0.1), SHUT)
+		for k = 0, 5 do p(m, V(1.0, 0.1, 0.08), CF(s * 2.2, 0.8 - k * 0.55, -0.24), SHUT:Lerp(rgb(0, 0, 0), 0.3)) end
+	end
+end
+function B.stainedglass(m)
+	-- a pointed stained-glass window: bright panes in a dark frame
+	local cols = { rgb(235, 60, 70), rgb(255, 200, 50), rgb(60, 140, 255), rgb(70, 200, 100), rgb(170, 90, 230), rgb(255, 140, 50) }
+	p(m, V(3.2, 3.6, 0.3), CF(0, -0.8, 0.05), rgb(60, 60, 70))
+	tri(m, 3.2, 1.8, 0.3, CF(0, 1.9, 0.05), rgb(60, 60, 70))
+	for r = 0, 2 do
+		for c = 0, 2 do p(m, V(0.9, 1.0, 0.1), CF(-1.0 + c * 1.0, -2.0 + r * 1.1, -0.14), cols[(r * 3 + c) % #cols + 1], nil, Enum.Material.Neon) end
+	end
+	tri(m, 2.4, 1.3, 0.1, CF(0, 1.75, -0.14), cols[5], Enum.Material.Neon)
+	disc(m, 0.9, 0.12, CF(0, 1.3, -0.16), cols[2], Enum.Material.Neon)
+end
+function B.lamppost(m)
+	-- a black lamp post with a glowing round lamp on top
+	cylc(m, 1.2, 0.4, CF(0, -2.2, 0), rgb(40, 40, 48))
+	cylc(m, 0.36, 4.0, CF(0, -0.2, 0), rgb(40, 40, 48))
+	p(m, V(1.4, 0.3, 1.4), CF(0, 1.9, 0), rgb(40, 40, 48))
+	p(m, V(1.1, 1.3, 1.1), CF(0, 2.7, 0), rgb(255, 235, 150), nil, Enum.Material.Neon)
+	for _, dx in { -1, 1 } do for _, dz in { -1, 1 } do p(m, V(0.14, 1.3, 0.14), CF(dx * 0.6, 2.7, dz * 0.6), rgb(40, 40, 48)) end end
+	cone(m, CF(0, 3.35, 0), 1.7, 0.3, 0.7, 4, rgb(40, 40, 48))
+end
+function B.windowbox(m)
+	-- a window box under a window, full of flowers
+	studs(p(m, V(4.0, 3.0, 0.4), CF(0, 0.9, 0.3), rgb(240, 200, 150)))
+	p(m, V(2.8, 2.2, 0.1), CF(0, 1.0, 0.08), rgb(150, 210, 255))
+	p(m, V(4.4, 1.0, 1.2), CF(0, -0.9, -0.4), rgb(60, 150, 90))
+	for i, c in { rgb(255, 120, 180), rgb(255, 210, 60), rgb(250, 250, 250), rgb(235, 60, 90) } do
+		flower(m, CF(-1.5 + (i - 1) * 1.0, -1.4, -0.4) * CFrame.new(0, 0, 0), c)
+	end
+end
+function B.slide(m)
+	-- a playground slide: a red ladder tower, a yellow slide curving down, a little blue roof
+	local RED, YEL = rgb(235, 60, 60), rgb(255, 205, 50)
+	for _, x in { -1.9, -0.7 } do for _, z in { -0.6, 0.6 } do p(m, V(0.3, 3.8, 0.3), CF(x, -0.4, z), RED) end end
+	studs(p(m, V(1.6, 0.3, 1.5), CF(-1.3, 0.8, 0), RED))
+	tri(m, 2.0, 1.1, 1.8, CF(-1.3, 2.4, 0), rgb(60, 130, 240))
+	p(m, V(1.8, 0.2, 1.7), CF(-1.3, 1.85, 0), rgb(60, 130, 240))
+	for k = 0, 3 do p(m, V(0.1, 0.1, 1.2), CF(-2.0, -1.8 + k * 0.7, 0), RED) end
+	wedge(m, V(1.2, 3.0, 3.4), CF(0.8, -0.7, 0) * CFrame.Angles(0, math.rad(90), 0), YEL)
+end
+function B.vending(m)
+	-- a vending machine: a red body, a window full of cans, a coin slot, the tray
+	local BODY = rgb(230, 60, 70)
+	studs(p(m, V(3.2, 5.0, 2.0), CF(), BODY))
+	p(m, V(2.1, 3.6, 0.1), CF(0.35, 0.4, -1.02), rgb(170, 220, 255))
+	local cans = { rgb(255, 200, 50), rgb(60, 140, 255), rgb(90, 210, 110), rgb(255, 120, 60) }
+	for r = 0, 3 do for c = 0, 2 do
+		cylc(m, 0.46, 0.6, CF(1.0 - c * 0.65, 1.7 - r * 0.85, -0.85), cans[(r + c) % 4 + 1])
+	end end
+	p(m, V(0.6, 1.0, 0.1), CF(-1.2, 0.6, -1.02), rgb(40, 40, 50))
+	p(m, V(2.4, 0.5, 0.1), CF(0, -1.9, -1.02), rgb(30, 30, 38))
+end
+function B.basketball(m)
+	-- a hoop: a white backboard on a pole, the orange rim and its net, a ball
+	local ORANGE = rgb(255, 130, 40)
+	cylc(m, 0.4, 4.2, CF(0.8, -0.9, 0.9), rgb(60, 64, 78))
+	studs(p(m, V(3.4, 2.2, 0.2), CF(0, 1.5, 0.3), WHITE))
+	p(m, V(1.3, 0.9, 0.06), CF(0, 1.2, 0.18), ORANGE)
+	for k = 0, 11 do
+		local a = k / 12 * math.pi * 2
+		p(m, V(0.3, 0.1, 0.1), CF(math.cos(a) * 0.62, 0.5, -0.5 + math.sin(a) * 0.62) * CFrame.Angles(0, -a, 0), ORANGE)
+	end
+	for k = 0, 5 do
+		local a = k / 6 * math.pi * 2
+		p(m, V(0.06, 0.8, 0.06), CF(math.cos(a) * 0.45, 0.05, -0.5 + math.sin(a) * 0.45), WHITE)
+	end
+	ball(m, 1.3, V(-1.3, -1.6, -0.6), ORANGE)
+end
+function B.carrot(m)
+	-- a carrot with its green top, pulled from the school garden, and a mound of soil
+	p(m, V(3.4, 0.5, 2.0), CF(0, -2.0, 0), rgb(110, 70, 45))
+	local tilt = CF(0, 0, 0) * CFrame.Angles(0, 0, math.rad(-30))
+	cone(m, tilt * CF(0, 1.0, 0) * CFrame.Angles(math.pi, 0, 0), 1.4, 0.2, 3.2, 8, rgb(255, 140, 40))
+	for k = -1, 1 do p(m, V(0.3, 1.6, 0.3), tilt * CF(k * 0.3, 1.8, 0) * CFrame.Angles(0, 0, k * math.rad(22)), rgb(70, 190, 80)) end
+end
+function B.bleachers(m)
+	-- three rows of blue and white bleacher seats stepping up
+	for r = 0, 2 do
+		studs(p(m, V(4.6, 0.8, 1.0), CF(0, -1.6 + r * 0.9, -1.0 + r * 1.0), r % 2 == 0 and rgb(60, 130, 230) or WHITE))
+		p(m, V(4.4, 0.9 * (r + 1), 0.2), CF(0, -2.0 + r * 0.45, -0.5 + r * 1.0), rgb(170, 176, 192))
+	end
+end
+function B.fountain(m)
+	-- a round stone fountain: basin, a bowl up on a column, water spraying from the top
+	local STONE, WATER = rgb(215, 215, 225), rgb(90, 190, 255)
+	cylc(m, 4.6, 1.0, CF(0, -1.9, 0), STONE)
+	cylc(m, 4.0, 0.2, CF(0, -1.35, 0), WATER)
+	cylc(m, 0.6, 1.8, CF(0, -0.5, 0), STONE)
+	cylc(m, 2.2, 0.5, CF(0, 0.5, 0), STONE)
+	cylc(m, 1.8, 0.14, CF(0, 0.76, 0), WATER)
+	for k = 0, 5 do
+		local a = k / 6 * math.pi * 2
+		p(m, V(0.18, 1.3, 0.18), CF(math.cos(a) * 0.5, 1.4, math.sin(a) * 0.5) * CFrame.Angles(math.sin(a) * 0.5, 0, -math.cos(a) * 0.5), WATER, nil, Enum.Material.Neon)
+	end
+	ball(m, 0.5, V(0, 1.9, 0), WATER, Enum.Material.Neon)
+end
+function B.banner(m)
+	-- a flag pole with a school banner: a big star on it
+	cylc(m, 0.26, 5.4, CF(-1.6, 0, 0), rgb(200, 205, 220))
+	ball(m, 0.5, V(-1.6, 2.8, 0), rgb(255, 210, 60))
+	studs(p(m, V(3.0, 2.0, 0.16), CF(0, 1.4, 0), rgb(40, 90, 200)))
+	p(m, V(3.0, 0.3, 0.18), CF(0, 0.55, 0), rgb(255, 210, 60))
+	star5(m, CF(0.1, 1.5, -0.12), 0.34, rgb(255, 210, 60), 0.06)
+	p(m, V(1.6, 0.4, 0.4), CF(-1.6, -2.7, 0), rgb(120, 125, 140))
+end
+function B.statue(m)
+	-- the founder's statue: a stone figure on a plinth, holding up a book
+	local STONE = rgb(200, 200, 210)
+	studs(p(m, V(2.6, 1.6, 2.6), CF(0, -2.0, 0), rgb(170, 170, 182)))
+	p(m, V(2.2, 0.3, 2.2), CF(0, -1.05, 0), rgb(255, 210, 60))
+	p(m, V(1.4, 1.8, 0.9), CF(0, 0.0, 0), STONE)
+	p(m, V(1.4, 0.9, 0.9), CF(0, -0.9, 0), STONE:Lerp(rgb(0, 0, 0), 0.08))
+	ball(m, 1.2, V(0, 1.5, 0), STONE)
+	p(m, V(0.45, 1.4, 0.45), CF(0.95, 1.2, 0) * CFrame.Angles(0, 0, math.rad(-20)), STONE)
+	p(m, V(0.9, 1.1, 0.25), CF(1.25, 2.15, 0), rgb(160, 110, 60))
+	p(m, V(0.45, 1.2, 0.45), CF(-0.9, -0.1, 0), STONE)
+end
+function B.irongate(m)
+	-- iron gates: black bars, gold spear tips, stone pillars with lamps
+	for _, s in { -1, 1 } do
+		studs(p(m, V(1.1, 4.8, 1.1), CF(s * 2.4, -0.2, 0), rgb(200, 195, 185)))
+		ball(m, 0.7, V(s * 2.4, 2.6, 0), rgb(255, 235, 150), Enum.Material.Neon)
+	end
+	for i = 0, 6 do
+		local x = -1.5 + i * 0.5
+		p(m, V(0.18, 4.0, 0.18), CF(x, -0.4, 0), rgb(35, 35, 42), nil, Enum.Material.Metal)
+		cone(m, CF(x, 1.6, 0), 0.34, 0.04, 0.5, 3, rgb(255, 205, 60))
+	end
+	for _, y in { -1.9, 0.9 } do p(m, V(3.8, 0.2, 0.2), CF(0, y, 0), rgb(35, 35, 42), nil, Enum.Material.Metal) end
+end
+function B.solar(m)
+	-- a solar panel tilted to the sun on its stand, and the sun
+	local panel = CF(0, -0.4, 0) * CFrame.Angles(math.rad(-35), 0, 0)
+	p(m, V(4.4, 2.8, 0.2), panel, rgb(200, 205, 220))
+	for r = 0, 2 do for c = 0, 3 do
+		p(m, V(0.95, 0.78, 0.06), panel * CF(-1.5 + c * 1.0, -0.85 + r * 0.85, -0.12), rgb(40, 80, 170))
+	end end
+	p(m, V(0.4, 1.8, 0.4), CF(0, -1.9, 0.4), rgb(120, 125, 140))
+	ball(m, 1.4, V(1.7, 1.9, 0.6), rgb(255, 205, 50), Enum.Material.Neon)
+end
+function B.bell(m)
+	-- a brass school bell hanging in its little tower frame: a round dome, a flared lip, the clapper
+	local BRASS, BRASS_D = rgb(240, 185, 60), rgb(200, 140, 40)
+	for _, x in { -1.8, 1.8 } do p(m, V(0.5, 4.4, 0.5), CF(x, -0.4, 0), rgb(160, 110, 60)) end
+	p(m, V(4.2, 0.4, 0.8), CF(0, 1.4, 0), rgb(160, 110, 60))
+	studs(p(m, V(4.6, 0.4, 1.4), CF(0, 1.9, 0), rgb(200, 70, 60)))
+	tri(m, 4.8, 1.2, 1.5, CF(0, 2.7, 0), rgb(200, 70, 60))
+	cylc(m, 0.3, 0.5, CF(0, 1.0, 0), BRASS_D)
+	ball(m, 1.7, V(0, 0.35, 0), BRASS)
+	cylc(m, 1.7, 1.1, CF(0, -0.2, 0), BRASS)
+	cone(m, CF(0, -0.75, 0), 1.7, 2.7, 0.6, 3, BRASS)
+	cylc(m, 2.8, 0.2, CF(0, -1.4, 0), BRASS_D)
+	ball(m, 0.6, V(0, -1.6, 0), rgb(110, 80, 45))
+end
+
+-- Janitor Stan's candy
+function B.jawbreaker(m)
+	-- a big striped jawbreaker in a wrapper twisted at both ends
+	ball(m, 3.0, V(0, 0, 0), rgb(255, 90, 140))
+	for k = 0, 3 do
+		p(m, V(0.4, 3.02, 3.02), CF(0, 0, 0) * CFrame.Angles(0, k * math.pi / 4, 0), rgb(255, 255, 255), Enum.PartType.Cylinder)
+	end
+	for _, s in { -1, 1 } do cone(m, CF(s * 1.3, 0, 0) * CFrame.Angles(0, 0, s * -math.pi / 2), 0.4, 1.6, 1.0, 4, rgb(120, 200, 255)) end
+end
+function B.lollipop(m)
+	-- a giant swirly lollipop on a white stick
+	cylc(m, 0.3, 3.4, CF(0, -1.8, 0), WHITE)
+	disc(m, 3.2, 0.5, CF(0, 0.9, 0), rgb(255, 90, 150))
+	for k, c in { rgb(255, 220, 90), rgb(120, 200, 255), rgb(255, 255, 255), rgb(140, 230, 120) } do
+		disc(m, 3.2 - k * 0.62, 0.52 + k * 0.02, CF(0, 0.9, 0), c)
+	end
+	disc(m, 0.4, 0.66, CF(0, 0.9, 0), rgb(255, 90, 150))
+	p(m, V(0.3, 0.8, 0.1), CF(-0.7, 1.9, -0.3) * CFrame.Angles(0, 0, math.rad(35)), rgb(255, 255, 255))
+end
+function B.gumball(m)
+	-- a gumball machine: a glass bowl full of gumballs on a red stand with its coin knob
+	local RED = rgb(230, 50, 60)
+	for i = 0, 17 do
+		local a, h = i * 2.4, (i % 5) / 5
+		ball(m, 0.7, V(math.cos(a) * 0.8 * (1 - h * 0.4), 0.2 + h * 1.6, math.sin(a) * 0.8 * (1 - h * 0.4)), ({ rgb(255, 90, 90), rgb(255, 210, 60), rgb(90, 180, 255), rgb(120, 220, 120), rgb(255, 140, 220) })[i % 5 + 1])
+	end
+	local glass = ball(m, 3.0, V(0, 0.9, 0), rgb(220, 240, 255))
+	glass.Transparency = 0.6
+	cylc(m, 1.0, 0.4, CF(0, 2.5, 0), RED)
+	studs(p(m, V(2.2, 2.0, 2.2), CF(0, -1.5, 0), RED))
+	disc(m, 0.9, 0.3, CF(0, -1.2, -1.15), rgb(210, 214, 225))
+	p(m, V(0.9, 0.5, 0.3), CF(0, -2.1, -1.1), rgb(40, 40, 48))
+end
+function B.cottoncandy(m)
+	-- a fluffy pink cotton-candy tree on a striped trunk
+	for i = 0, 3 do cylc(m, 0.7, 0.5, CF(0, -2.3 + i * 0.5, 0), i % 2 == 0 and WHITE or rgb(255, 120, 180)) end
+	for _, b in { { 0, 0.8, 0, 2.6 }, { -1.1, 0.3, 0.2, 1.8 }, { 1.1, 0.4, -0.2, 1.9 }, { 0.3, 1.9, 0.1, 1.8 }, { -0.6, 1.4, -0.6, 1.5 } } do
+		ball(m, b[4], V(b[1], b[2], b[3]), rgb(255, 170, 215))
+	end
+	ball(m, 1.0, V(0.9, 1.4, -0.9), rgb(200, 170, 255))
+end
+function B.slime(m)
+	-- a fountain of glowing green slime: a purple stone basin full of it, a bowl up top overflowing, the
+	-- slime running down in drips, bubbles on the pool
+	local SLIME, STONE = rgb(120, 255, 90), rgb(140, 100, 190)
+	cylc(m, 4.6, 1.0, CF(0, -1.9, 0), STONE)
+	cylc(m, 4.0, 0.2, CF(0, -1.35, 0), SLIME, Enum.Material.Neon)
+	cylc(m, 0.8, 1.9, CF(0, -0.5, 0), STONE)
+	cylc(m, 2.6, 0.6, CF(0, 0.6, 0), STONE)
+	cylc(m, 2.2, 0.3, CF(0, 0.85, 0), SLIME, Enum.Material.Neon)
+	ball(m, 1.0, V(0, 1.2, 0), SLIME, Enum.Material.Neon)
+	for k = 0, 5 do
+		local a = k / 6 * math.pi * 2 + 0.3
+		local len = 0.6 + (k % 3) * 0.35
+		cylc(m, 0.34, len, CF(math.cos(a) * 1.3, 0.55 - len / 2, math.sin(a) * 1.3), SLIME, Enum.Material.Neon)
+		ball(m, 0.44, V(math.cos(a) * 1.3, 0.55 - len, math.sin(a) * 1.3), SLIME, Enum.Material.Neon)
+	end
+	for _, b in { { 1.2, -0.7, 0.45 }, { -1.0, -0.6, 0.35 }, { 0.3, 1.0, 0.4 } } do ball(m, b[3], V(b[1], -1.2, b[2]), SLIME:Lerp(WHITE, 0.4), Enum.Material.Neon) end
+end
+function B.candy(m)
+	-- a pile of wrapped sweets: three twisted candies in bright wrappers
+	for i, c in { { -0.9, -0.6, 0, rgb(255, 90, 140), 20 }, { 0.9, -0.5, 0.2, rgb(90, 180, 255), -15 }, { 0, 0.6, -0.1, rgb(255, 200, 50), 5 } } do
+		local cf = CF(c[1], c[2], c[3]) * CFrame.Angles(0, 0, math.rad(c[5]))
+		ball(m, 1.6, cf.Position, c[4])
+		ball(m, 0.5, (cf * CF(-0.3, 0.4, -0.55)).Position, WHITE)
+		for _, s in { -1, 1 } do cone(m, cf * CF(s * 0.7, 0, 0) * CFrame.Angles(0, 0, s * -math.pi / 2), 0.25, 1.1, 0.8, 3, c[4]:Lerp(WHITE, 0.25)) end
+	end
+end
+
+-- Heist Gear
+function B.box(m)
+	-- a cardboard box with its flaps open and a strip of tape
+	local CARD = rgb(205, 150, 90)
+	studs(p(m, V(4.0, 2.8, 3.0), CF(0, -0.6, 0), CARD))
+	p(m, V(3.8, 0.1, 2.8), CF(0, 0.82, 0), CARD:Lerp(rgb(0, 0, 0), 0.4))
+	for _, s in { -1, 1 } do
+		p(m, V(3.9, 0.12, 1.4), CF(0, 1.15, s * 1.95) * CFrame.Angles(s * math.rad(35), 0, 0), CARD:Lerp(WHITE, 0.1))
+	end
+	p(m, V(0.7, 2.82, 3.02), CF(0, -0.6, 0), rgb(235, 200, 140))
+	p(m, V(0.9, 0.5, 0.06), CF(-1.2, -0.2, -1.52), rgb(60, 60, 70))
+end
+function B.smokebomb(m)
+	-- a round black bomb with its fuse lit, grey smoke puffing up
+	ball(m, 2.8, V(-0.4, -0.8, 0), rgb(45, 45, 55))
+	p(m, V(0.4, 0.9, 0.2), CF(-1.0, -0.2, -1.2) * CFrame.Angles(0, 0, math.rad(20)), WHITE)
+	cylc(m, 0.9, 0.5, CF(0.4, 0.55, 0) * CFrame.Angles(0, 0, math.rad(-30)), rgb(90, 90, 100))
+	cylc(m, 0.18, 0.8, CF(0.8, 1.1, 0) * CFrame.Angles(0, 0, math.rad(-30)), rgb(180, 150, 100))
+	ball(m, 0.5, V(1.05, 1.5, 0), rgb(255, 170, 40), Enum.Material.Neon)
+	for _, b in { { 1.3, 2.2, 1.1 }, { 0.5, 2.6, 1.3 }, { 1.9, 2.8, 0.9 } } do ball(m, b[3], V(b[1], b[2], 0.3), rgb(210, 210, 220)) end
+end
+function B.whoopee(m)
+	-- a pink whoopee cushion, flat and round, its neck sticking out
+	local PINK = rgb(255, 110, 150)
+	p(m, V(1.0, 3.8, 3.8), CF(0, -0.8, 0) * CFrame.Angles(0, 0, math.rad(90)), PINK, Enum.PartType.Cylinder)
+	ball(m, 3.4, V(0, -0.5, 0), PINK).Size = V(3.4, 1.4, 3.4)
+	p(m, V(0.9, 0.5, 1.4), CF(0, -0.8, -2.2), PINK:Lerp(rgb(0, 0, 0), 0.15))
+	disc(m, 0.9, 0.2, CF(0, -0.8, -2.95), PINK:Lerp(rgb(0, 0, 0), 0.25))
+end
+function B.energydrink(m)
+	-- a can of energy drink: green, a lightning bolt on it, a ring pull on top
+	local CAN = rgb(60, 220, 110)
+	cylc(m, 2.0, 4.0, CF(), CAN)
+	cylc(m, 1.8, 0.3, CF(0, 2.1, 0), rgb(200, 205, 220))
+	cylc(m, 1.8, 0.3, CF(0, -2.1, 0), rgb(200, 205, 220))
+	p(m, V(0.5, 0.1, 0.8), CF(0.1, 2.3, 0.2), rgb(170, 176, 192))
+	local BOLT = rgb(255, 230, 60)
+	p(m, V(0.5, 1.5, 0.1), CF(0.2, 0.5, -1.02) * CFrame.Angles(0, 0, math.rad(-20)), BOLT, nil, Enum.Material.Neon)
+	p(m, V(0.5, 1.5, 0.1), CF(-0.1, -0.7, -1.02) * CFrame.Angles(0, 0, math.rad(-20)), BOLT, nil, Enum.Material.Neon)
+	p(m, V(0.9, 0.3, 0.1), CF(0.05, -0.1, -1.02), BOLT, nil, Enum.Material.Neon)
+end
+local function shoe(m, at, body, sole, stripe)
+	studs(p(m, V(3.8, 0.4, 1.7), at * CF(0, -0.8, 0), sole))
+	p(m, V(3.4, 0.9, 1.5), at * CF(0.1, -0.2, 0), body)
+	p(m, V(1.5, 1.4, 1.5), at * CF(1.05, 0.5, 0), body)
+	wedge(m, V(1.5, 0.9, 1.3), at * CF(-0.9, -0.2, 0) * CFrame.Angles(0, math.rad(-90), 0), body)
+	p(m, V(2.0, 0.2, 1.52), at * CF(0.2, -0.2, 0) * CFrame.Angles(0, 0, math.rad(15)), stripe)
+	for k = 0, 2 do p(m, V(0.12, 0.08, 1.2), at * CF(-0.3 + k * 0.45, 0.28, 0), WHITE) end
+end
+function B.sneakers(m)
+	-- quiet shoes: soft dark trainers on thick grey soles
+	shoe(m, CF(), rgb(60, 70, 110), rgb(160, 165, 180), rgb(130, 150, 220))
+end
+function B.runningshoes(m)
+	-- running shoes: bright orange with a white sole and a speed stripe
+	shoe(m, CF(), rgb(255, 120, 40), WHITE, rgb(255, 215, 60))
+	for k = 0, 2 do p(m, V(1.0, 0.12, 0.12), CF(2.9, -0.2 + k * 0.4, -0.2), rgb(255, 255, 255)) end
+end
+function B.lockpick(m)
+	-- a lockpick set: a leather roll open with three picks and a key
+	studs(p(m, V(4.6, 0.3, 2.6), CF(0, -1.2, 0), rgb(150, 95, 55)))
+	for i = 0, 2 do
+		local x = -1.2 + i * 0.9
+		p(m, V(0.2, 0.1, 2.0), CF(x, -0.95, 0.1), rgb(200, 205, 220))
+		p(m, V(0.5, 0.14, 0.6), CF(x, -0.95, 1.0), rgb(60, 60, 70))
+	end
+	local key = CF(1.4, -0.5, 0) * CFrame.Angles(math.rad(-50), 0, 0)
+	disc(m, 1.1, 0.2, key * CF(0, 0, 0.8) * CFrame.Angles(math.rad(90), 0, 0), rgb(255, 205, 60))
+	p(m, V(0.26, 0.2, 1.6), key, rgb(255, 205, 60))
+	p(m, V(0.26, 0.2, 0.3), key * CF(0.2, 0, -0.6), rgb(255, 205, 60))
+end
+function B.hoverboard(m)
+	-- the gear hoverboard (the Store's gold one's plainer cousin)
+	board(m, rgb(60, 130, 240), rgb(160, 220, 255), rgb(80, 200, 255))
+end
+
+-- the Upgrades
+function B.megaphone(m)
+	-- a megaphone: a red cone, a white grip underneath
+	local cf = CFrame.Angles(0, 0, math.rad(90))
+	cone(m, CF(-1.4, 0, 0) * CFrame.Angles(0, 0, math.rad(-90)), 1.0, 3.0, 3.2, 8, rgb(235, 60, 70))
+	cylc(m, 1.2, 0.5, CF(-1.6, 0, 0) * cf, rgb(250, 250, 248))
+	cylc(m, 3.1, 0.2, CF(1.8, 0, 0) * cf, rgb(250, 250, 248))
+	p(m, V(0.5, 1.4, 0.5), CF(-0.9, -1.0, 0), rgb(60, 60, 70))
+	for k = 1, 2 do
+		for a = -2, 2 do
+			local t = math.rad(a * 18)
+			p(m, V(0.2, 0.5, 0.2), CF(2.4 + k * 0.7 + math.cos(t) * 0, math.sin(t) * (1.4 + k * 0.5), 0) * CFrame.Angles(0, 0, t), rgb(255, 205, 60), nil, Enum.Material.Neon)
+		end
+	end
+end
+function B.janitorcart(m)
+	-- a janitor's cart: a yellow bucket with a wringer, a mop, a spray bottle, wheels
+	local YEL = rgb(255, 205, 50)
+	studs(p(m, V(3.6, 2.0, 2.2), CF(0, -1.0, 0), YEL))
+	p(m, V(1.6, 1.0, 2.0), CF(-0.8, 0.5, 0), rgb(120, 125, 140))
+	p(m, V(1.4, 0.2, 1.8), CF(-0.8, 0.02, 0), rgb(90, 180, 255))
+	for _, x in { -1.4, 1.4 } do for _, z in { -0.9, 0.9 } do disc(m, 0.6, 0.3, CF(x, -2.2, z) * CFrame.Angles(0, math.rad(90), 0), rgb(40, 40, 48)) end end
+	cylc(m, 0.2, 4.0, CF(0.9, 1.2, 0.3) * CFrame.Angles(0, 0, math.rad(-10)), rgb(160, 110, 60))
+	p(m, V(1.4, 0.4, 0.9), CF(1.2, 0.2, 0.3), rgb(240, 240, 235))
+	cylc(m, 0.6, 1.2, CF(0.8, 0.6, -0.7), rgb(90, 180, 255))
+	p(m, V(0.4, 0.3, 0.3), CF(0.8, 1.4, -0.7), WHITE)
+end
+function B.bank(m)
+	-- the tuition office: a little bank building with columns and a $ on its roof
+	local STONE = rgb(240, 236, 226)
+	studs(p(m, V(4.6, 0.5, 3.0), CF(0, -2.0, 0), rgb(200, 196, 186)))
+	for i = 0, 3 do cylc(m, 0.6, 2.6, CF(-1.5 + i * 1.0, -0.5, -1.0), STONE) end
+	p(m, V(4.2, 2.6, 1.6), CF(0, -0.5, 0.4), rgb(215, 210, 198))
+	p(m, V(4.8, 0.5, 3.2), CF(0, 1.0, 0), STONE)
+	tri(m, 4.8, 1.3, 3.2, CF(0, 1.9, 0), STONE)
+	disc(m, 1.0, 0.2, CF(0, 1.7, -1.62), rgb(70, 190, 80))
+	p(m, V(0.2, 0.7, 0.1), CF(0, 1.7, -1.74), WHITE)
+end
+function B.laser(m)
+	-- a laser gate: two posts, red beams between them
+	for _, x in { -1.8, 1.8 } do
+		studs(p(m, V(0.9, 4.8, 0.9), CF(x, -0.2, 0), rgb(70, 74, 90)))
+		ball(m, 0.6, V(x, 2.3, 0), rgb(255, 60, 60), Enum.Material.Neon)
+	end
+	for k = 0, 3 do p(m, V(2.8, 0.14, 0.14), CF(0, -1.8 + k * 1.1, 0), rgb(255, 50, 60), nil, Enum.Material.Neon) end
+end
+function B.stopwatch(m)
+	-- a stopwatch: silver, a white face with one hand, the button on top
+	disc(m, 3.6, 0.8, CF(), rgb(200, 205, 220), Enum.Material.Metal)
+	disc(m, 3.0, 0.84, CF(0, 0, -0.02), WHITE)
+	for k = 0, 11 do
+		local a = k / 12 * math.pi * 2
+		p(m, V(0.12, k % 3 == 0 and 0.4 or 0.2, 0.06), CF(math.sin(a) * 1.25, math.cos(a) * 1.25, -0.45) * CFrame.Angles(0, 0, -a), rgb(60, 60, 70))
+	end
+	p(m, V(0.14, 1.1, 0.08), CF(0.25, 0.45, -0.48) * CFrame.Angles(0, 0, math.rad(-30)), rgb(235, 60, 70))
+	cylc(m, 0.6, 0.6, CF(0, 2.1, 0), rgb(200, 205, 220), Enum.Material.Metal)
+	p(m, V(1.0, 0.3, 0.6), CF(0, 2.5, 0), rgb(235, 60, 70))
+end
+function B.hallpass(m)
+	-- a hall pass: a wooden paddle on a lanyard, HALL PASS on it
+	studs(p(m, V(3.0, 3.6, 0.3), CF(0, -0.4, 0), rgb(200, 140, 80)))
+	p(m, V(2.4, 0.5, 0.06), CF(0, 0.5, -0.18), rgb(235, 60, 70))
+	p(m, V(2.0, 0.4, 0.06), CF(0, -0.3, -0.18), rgb(40, 90, 200))
+	p(m, V(0.8, 1.6, 0.3), CF(0, -2.9, 0), rgb(160, 110, 60))
+	disc(m, 0.5, 0.32, CF(0, 1.0, 0), rgb(120, 80, 45))
+	for a = -150, 150, 30 do
+		local t = math.rad(a)
+		p(m, V(0.5, 0.18, 0.18), CF(math.sin(t) * 0.8, 1.9 + math.cos(t) * 0.9, 0) * CFrame.Angles(0, 0, -t + math.pi / 2), rgb(60, 130, 240))
+	end
+end
+function B.alarm(m)
+	-- an alarm bell: a red bell on a wall plate with its striker, flashing
+	studs(p(m, V(3.4, 3.4, 0.4), CF(0, 0, 0.6), rgb(200, 205, 220)))
+	disc(m, 3.0, 1.0, CF(0, 0.2, 0), rgb(235, 50, 60))
+	disc(m, 1.0, 1.1, CF(0, 0.2, -0.05), rgb(200, 205, 220))
+	ball(m, 0.7, V(0.9, -1.2, -0.4), rgb(60, 60, 70))
+	for _, s in { -1, 1 } do
+		for k = 0, 1 do p(m, V(0.2, 0.9, 0.2), CF(s * (2.1 + k * 0.5), 0.2, -0.3) * CFrame.Angles(0, 0, s * math.rad(-20 + k * 40)), rgb(255, 205, 60), nil, Enum.Material.Neon) end
+	end
+end
+function B.trophy(m)
+	-- a gold trophy cup on a black base
+	local GOLDL = rgb(255, 205, 60)
+	studs(p(m, V(2.4, 0.8, 1.6), CF(0, -2.2, 0), rgb(40, 40, 48)))
+	cylc(m, 1.0, 0.4, CF(0, -1.6, 0), GOLDL, Enum.Material.Metal)
+	cylc(m, 0.4, 1.0, CF(0, -1.0, 0), GOLDL, Enum.Material.Metal)
+	cone(m, CF(0, -0.5, 0), 1.0, 2.6, 2.2, 7, GOLDL)
+	for _, s in { -1, 1 } do
+		for a = 20, 160, 35 do
+			local t = math.rad(a)
+			p(m, V(0.3, 0.4, 0.3), CF(s * (1.3 + math.sin(t) * 0.55), 0.6 + math.cos(t) * 0.55, 0), GOLDL)
+		end
+	end
+	star5(m, CF(0, 0.6, -1.0), 0.26, rgb(255, 250, 230), 0.08)
+end
+
+-- the Store's newer things
+function B.letterLegendary(m)
+	-- a gold letter with a red seal and a crown on it, sparkling
+	letter(m, rgb(255, 222, 120), rgb(235, 180, 60), rgb(220, 50, 60), rgb(150, 20, 35), function(m2)
+		star(m2, CF(-1.9, 1.5, -0.3), 0.55, rgb(255, 255, 255))
+		star(m2, CF(1.9, -1.2, -0.3), 0.4, rgb(255, 255, 255))
+	end)
+end
+function B.fastletters(m)
+	-- three letters fanned out flying, speed lines behind them
+	for i, c in { { rgb(248, 243, 230), -0.9, -10 }, { rgb(255, 170, 200), 0, 0 }, { rgb(255, 222, 120), 0.9, 10 } } do
+		local cf = CF(i * 0.35 - 0.7, c[2] * 0.6, -i * 0.15) * CFrame.Angles(0, 0, math.rad(c[3]))
+		p(m, V(3.2, 2.1, 0.25), cf, c[1])
+		tri(m, 3.2, 1.1, 0.06, cf * CF(0, 0.45, -0.15) * CFrame.Angles(0, 0, math.pi), c[1]:Lerp(rgb(0, 0, 0), 0.12))
+	end
+	disc(m, 0.7, 0.14, CF(0.35, -0.1, -0.7), rgb(220, 50, 60))
+	for k = 0, 2 do p(m, V(1.3 - k * 0.3, 0.16, 0.1), CF(2.6 + k * 0.1, 0.9 - k * 0.8, 0), rgb(255, 255, 255)) end
+end
+function B.ticket(m)
+	-- two carnival tickets, red and gold, with notched ends and a star
+	for i, c in { { rgb(235, 60, 70), -12, V(-0.4, 0.4, 0.1) }, { rgb(255, 200, 50), 8, V(0.4, -0.4, -0.1) } } do
+		local cf = CF(c[3]) * CFrame.Angles(0, 0, math.rad(c[2]))
+		studs(p(m, V(4.2, 2.0, 0.2), cf, c[1]))
+		for _, sx in { -1, 1 } do disc(m, 0.6, 0.24, cf * CF(sx * 2.1, 0, 0), rgb(220, 240, 255)) end
+		p(m, V(0.1, 1.7, 0.22), cf * CF(1.2, 0, 0), c[1]:Lerp(rgb(0, 0, 0), 0.3))
+		star5(m, cf * CF(-0.4, 0, -0.14), 0.28, rgb(255, 255, 255), 0.06)
+	end
+	p(m, V(0.9, 0.5, 0.08), CF(-2.4, 1.6, -0.2), rgb(255, 255, 255))
+	p(m, V(0.5, 0.9, 0.08), CF(-2.4, 1.6, -0.2), rgb(255, 255, 255))
+end
+function B.candyjar(m)
+	-- a big glass jar of sweets with a red lid
+	for i = 0, 22 do
+		local a, h = i * 2.3, (i % 6) / 6
+		ball(m, 0.75, V(math.cos(a) * 0.9, -1.4 + h * 2.4, math.sin(a) * 0.9), ({ rgb(255, 90, 140), rgb(255, 210, 60), rgb(90, 180, 255), rgb(120, 220, 120), rgb(200, 120, 255) })[i % 5 + 1])
+	end
+	local glass = cylc(m, 3.0, 3.4, CF(0, -0.3, 0), rgb(220, 240, 255))
+	glass.Transparency = 0.65
+	cylc(m, 3.2, 0.6, CF(0, 1.7, 0), rgb(235, 60, 70))
+	cylc(m, 1.0, 0.4, CF(0, 2.1, 0), rgb(235, 60, 70))
+	p(m, V(1.6, 0.9, 0.08), CF(0, -0.4, -1.52), rgb(255, 245, 220))
+end
+function B.moneycloud(m)
+	-- a fluffy cloud raining money: bills and coins falling out of it
+	for _, b in { { 0, 1.4, 0, 2.4 }, { -1.3, 1.0, 0.1, 1.8 }, { 1.3, 1.0, -0.1, 1.9 }, { -0.5, 2.0, 0.2, 1.6 }, { 0.7, 1.9, -0.2, 1.7 } } do
+		ball(m, b[4], V(b[1], b[2], b[3]), rgb(245, 248, 255))
+	end
+	for _, bl in { { -1.2, -0.6, 20 }, { 0.3, -1.4, -15 }, { 1.3, -0.5, 30 }, { -0.4, -2.3, 5 } } do
+		local cf = CF(bl[1], bl[2], -0.3) * CFrame.Angles(math.rad(20), 0, math.rad(bl[3]))
+		p(m, V(1.3, 0.7, 0.08), cf, rgb(90, 200, 100))
+		p(m, V(1.0, 0.45, 0.09), cf, rgb(160, 235, 150))
+	end
+	for _, c in { { 0.9, -1.9 }, { -1.6, -1.7 }, { 1.8, -1.5 } } do disc(m, 0.6, 0.14, CF(c[1], c[2], -0.4), rgb(255, 205, 60)) end
+end
+
 -- the keys the store uses for its passes and products (Config keys -> icon)
 Icons.FOR = {
 	StarterPack = "gift", VIP = "crown", SuperSpeed = "sneaker", GoldenBoard = "goldboard", DiamondBoard = "gem",
@@ -851,6 +1634,8 @@ Icons.FOR = {
 	MoneyBoost = "cash", Cash10m = "cash", Cash1h = "moneybag", Cash4h = "vault", LuckyBus = "bus",
 	Cash8h = "briefcase", Cash16h = "chest", Cash24h = "truck", Cash1w = "moneyMountain",
 	ServerLuck = "sparkle", ExpressRare = "letter", ExpressEpic = "letterEpic", LockRefresh = "refresh",
+	FastLetters = "fastletters", DoubleTickets = "ticket", ExpressLegendary = "letterLegendary", SchoolShield = "shield",
+	MoneyRain = "moneycloud", CandyBag = "candy", CandyJar = "candyjar",
 }
 
 -- how each icon stands (tomas, 2026-09-27: "all the models ... are facing the same way but just tilted
@@ -878,6 +1663,46 @@ Icons.LOOK = {
 	goldboard = { turn = -50, tilt = 40, roll = 20 },
 	sneaker = { turn = -40, tilt = 35, roll = -20 },
 }
+
+-- the School Shop's items (Config.Supplies / Builds / CandyShop / EventShop / Gear, the event trophies,
+-- Config.Upgrades) -> icon
+Icons.SHOP = {
+	Pencils = "pencil", Notebooks = "notebook", Crayons = "crayons", Textbooks = "books", Rulers = "ruler",
+	Calculators = "calculator", Globes = "globe", Microscopes = "microscope", Laptops = "laptop", Tablets = "tablet",
+	Smartboards = "smartboard", VRHeadsets = "vr", RobotTutors = "robot", HoloDesks = "holodesk",
+	QuantumPCs = "quantum", ThinkingCaps = "thinkingcap",
+	-- the School Builder
+	Curtains = "curtains", FlowerBeds = "flowerbed", Awning = "awning", PicketFence = "fence", Marquee = "marquee",
+	LowBrickWall = "brickwall", MascotLockers = "lockers", Cafeteria = "lunchtable", ArchedWindows = "archwindow",
+	StainedGlass = "stainedglass", PathLights = "lamppost", WindowBoxes = "windowbox", Playground = "slide",
+	VendingMachines = "vending", Court = "basketball", Garden = "carrot", Bleachers = "bleachers", BrickWall = "brickwall",
+	Fountain = "fountain", Banners = "banner", Statue = "statue", IronFence = "irongate", SolarPanels = "solar",
+	BellTower = "bell",
+	-- Janitor Stan's candy, the Ticket shop
+	JawbreakerTrap = "jawbreaker", LollipopLamps = "lollipop", GumballMachine = "gumball", CottonCandyTree = "cottoncandy",
+	SlimeFountain = "slime", LetterRare = "letter", LetterEpic = "letterEpic", LetterLegendary = "letterLegendary", Candy50 = "candy",
+	-- Heist Gear
+	CardboardBox = "box", SmokeBomb = "smokebomb", WhoopeeCushion = "whoopee", EnergyDrink = "energydrink",
+	SilentSneakers = "sneakers", RunningShoes = "runningshoes", LockpickSet = "lockpick", Hoverboard = "hoverboard",
+	-- the Upgrades
+	Recruitment = "megaphone", Janitor = "janitorcart", TuitionOffice = "bank", LaserGate = "laser", LockTime = "padlock",
+	LockCooldown = "stopwatch", HallPass = "hallpass", Alarm = "alarm",
+}
+-- (an event's trophy)
+Icons.SHOP_TROPHY = "trophy"
+for k, v in {
+	notebook = R, crayons = A, books = HIGH, ruler = L, calculator = R, globe = L, microscope = A, laptop = { turn = -30, tilt = 28 },
+	tablet = L, smartboard = A, vr = { turn = -24, tilt = 38, roll = 8 }, robot = R, holodesk = { turn = -30, tilt = 24 }, quantum = A,
+	thinkingcap = { turn = -30, tilt = 20, roll = -10 },
+	curtains = A, flowerbed = HIGH, awning = A, fence = L, marquee = A, brickwall = A, lockers = A, lunchtable = HIGH,
+	archwindow = A, stainedglass = A, lamppost = R, windowbox = A, slide = A, vending = A, basketball = A, carrot = A,
+	bleachers = HIGH, fountain = HIGH, banner = R, statue = A, irongate = A, solar = A, bell = A,
+	jawbreaker = R, lollipop = L, gumball = A, cottoncandy = A, slime = A, candy = HIGH,
+	box = HIGH, smokebomb = R, whoopee = HIGH, energydrink = L, sneakers = { turn = -40, tilt = 30, roll = -12 },
+	runningshoes = { turn = -40, tilt = 30, roll = -12 }, lockpick = HIGH, hoverboard = { turn = -50, tilt = 40, roll = 20 },
+	megaphone = L, janitorcart = A, bank = A, laser = A, stopwatch = R, hallpass = R, alarm = A, trophy = A,
+	letterLegendary = R, fastletters = R, ticket = L, candyjar = A, moneycloud = A,
+} do Icons.LOOK[k] = v end
 
 -- the panels (by their names) -> icon
 Icons.PANEL = {

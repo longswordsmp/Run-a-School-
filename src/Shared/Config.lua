@@ -1147,6 +1147,8 @@ Config.Passes = {
 	-- leave (Menus): a real second pass, so "199 -> 49" is true. same: the pass it counts as; hidden:
 	-- not in the Store
 	{ key = "OfflinePlusDeal", id = 0, name = "Offline Tuition+", robux = 49, icon = "\u{1F319}", desc = "Earn 50% for up to 12h while offline (was 25% for 2h)", same = "OfflinePlus", hidden = true },
+	{ key = "FastLetters", id = 0, name = "Fast Admissions", robux = 149, icon = "\u{1F4E8}", desc = "Admissions letters fill twice as fast, forever" },
+	{ key = "DoubleTickets", id = 0, name = "2x Event Tickets", robux = 79, icon = "\u{1F39F}\u{FE0F}", desc = "Every event ticket you earn counts double" },
 }
 Config.Products = {
 	-- the MONEY BOOST: one button; every purchase DOUBLES all your tuition, forever (x2, x4, x8 ...
@@ -1173,6 +1175,11 @@ Config.Products = {
 	{ key = "ExpressRare", id = 0, name = "Express Rare Letter", robux = 9, icon = "\u{2709}\u{FE0F}", desc = "Your Rare letter, ready now (you still pay the kid's price)" },
 	{ key = "ExpressEpic", id = 0, name = "Express Epic Letter", robux = 19, icon = "\u{1F48C}", desc = "Your Epic letter, ready now (you still pay the kid's price)" },
 	{ key = "LockRefresh", id = 0, name = "Instant Lock Refresh", robux = 9, icon = "\u{1F504}", desc = "Your gate can lock again right now" },
+	{ key = "ExpressLegendary", id = 0, name = "Express Legendary Letter", robux = 29, icon = "\u{1F4E8}", desc = "Your Legendary letter, ready now (you still pay the kid's price)" },
+	{ key = "SchoolShield", id = 0, name = "School Shield", robux = 39, icon = "\u{1F6E1}\u{FE0F}", desc = "Your gate locks for 15 minutes: nobody gets in", shield = 900 },
+	{ key = "MoneyRain", id = 0, name = "Make It Rain!", robux = 49, icon = "\u{1F327}\u{FE0F}", desc = "Money rains on the WHOLE server: everyone gets 5 minutes of tuition, with your name on it" },
+	{ key = "CandyBag", id = 0, name = "Bag of Candy", robux = 19, icon = "\u{1F36C}", desc = "100 candy for Janitor Stan's Closet", candy = 100 },
+	{ key = "CandyJar", id = 0, name = "Jar of Candy", robux = 79, icon = "\u{1F36D}", desc = "600 candy for Janitor Stan's Closet", candy = 600 },
 }
 
 -- the MONEY BOOST ladder: every purchase doubles your tuition multiplier (x2, x4 ... x1024 after the

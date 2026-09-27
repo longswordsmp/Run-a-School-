@@ -156,6 +156,7 @@ end
 -- plastic). An overlay the frame's shape carries a UIGradient; its Offset is what moves. Sweeps are
 -- dealt out by one scheduler to whichever shiny things are on screen, a few a second.
 local shiners = setmetatable({}, { __mode = "k" }) -- overlay -> gradient
+local SWEEP_FROM = 0.72 -- (the streak is off the frame at offset ±0.72)
 local function onScreen(g)
 	local a = g
 	while a and a:IsA("GuiObject") do
@@ -176,26 +177,31 @@ function UI.shine(obj, opts)
 	local c = obj:FindFirstChildOfClass("UICorner")
 	if c then c:Clone().Parent = o end
 	local g = Instance.new("UIGradient")
-	g.Rotation = 20
-	-- (a crisp line of light: a bright core, soft wings either side of it)
+	-- (tomas, 2026-09-27: the old one "just doesn't look right": it was a thin near-upright line that
+	-- raced across in a fifth of a second. Now the classic glint: tilted 35 degrees, a soft wide streak
+	-- with a thin one trailing it, crossing at an even pace)
+	g.Rotation = 35
 	local peak = math.min(0.6, (opts.strength or 0.55) * 1.4)
 	g.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.36, 1),
-		NumberSequenceKeypoint.new(0.45, 1 - peak * 0.3), NumberSequenceKeypoint.new(0.5, 1 - peak),
-		NumberSequenceKeypoint.new(0.55, 1 - peak * 0.3), NumberSequenceKeypoint.new(0.64, 1),
-		NumberSequenceKeypoint.new(1, 1),
+		NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.34, 1),
+		NumberSequenceKeypoint.new(0.4, 1 - peak * 0.45), NumberSequenceKeypoint.new(0.45, 1 - peak),
+		NumberSequenceKeypoint.new(0.5, 1 - peak * 0.45), NumberSequenceKeypoint.new(0.54, 1),
+		NumberSequenceKeypoint.new(0.565, 1), NumberSequenceKeypoint.new(0.58, 1 - peak * 0.7),
+		NumberSequenceKeypoint.new(0.595, 1), NumberSequenceKeypoint.new(1, 1),
 	})
-	g.Offset = Vector2.new(-1.2, 0)
+	g.Offset = Vector2.new(-SWEEP_FROM, 0)
 	g.Parent = o
 	o.Parent = obj
 	shiners[o] = g
 	return o
 end
+-- (it runs from just off one side to just off the other, evenly: all of the time it takes is spent
+-- crossing the thing, not off it; t is how long the crossing takes)
 function UI.sweep(overlay, t)
 	local g = shiners[overlay]
 	if not g then return end
-	g.Offset = Vector2.new(-1.2, 0)
-	TweenService:Create(g, TweenInfo.new(t or 0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), { Offset = Vector2.new(1.2, 0) }):Play()
+	g.Offset = Vector2.new(-SWEEP_FROM, 0)
+	TweenService:Create(g, TweenInfo.new(math.max(t or 0.9, 0.75), Enum.EasingStyle.Sine, Enum.EasingDirection.Out), { Offset = Vector2.new(SWEEP_FROM, 0) }):Play()
 end
 if game:GetService("RunService"):IsClient() then
 	task.spawn(function()
@@ -206,7 +212,7 @@ if game:GetService("RunService"):IsClient() then
 			for o in shiners do
 				if o.Parent and onScreen(o) then table.insert(live, o) end
 			end
-			if #live > 0 then UI.sweep(live[math.random(#live)], 0.65) end
+			if #live > 0 then UI.sweep(live[math.random(#live)], 0.95) end
 		end
 	end)
 end
@@ -219,7 +225,7 @@ function UI.shineEvery(overlay, period)
 	task.spawn(function()
 		task.wait(math.random() * period)
 		while overlay.Parent do
-			if onScreen(overlay) then UI.sweep(overlay, 0.6) end
+			if onScreen(overlay) then UI.sweep(overlay, 0.95) end
 			task.wait(period * (0.85 + math.random() * 0.3))
 		end
 	end)
@@ -712,19 +718,11 @@ function UI.button(parent, opts)
 	b:GetPropertyChangedSignal("ZIndex"):Connect(keepUnder)
 	b.MouseEnter:Connect(function()
 		TweenService:Create(s, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Scale = 1.06 }):Play()
-		if b.Active and globalZ(b) then
-			if not glow then
-				glow = UI.glow(b, lighten(color, 0.25), { alpha = 0, spread = 4 })
-				glow:GetPropertyChangedSignal("ZIndex"):Connect(keepUnder)
-				keepUnder()
-			end
-			UI.glowTo(glow, 1, 0.15)
-			UI.sweep(shineOverlay, 0.4)
-		end
+		-- (it grows and glints; no coloured glow round it: tomas, 2026-09-27)
+		if b.Active then UI.sweep(shineOverlay, 0.8) end
 	end)
 	b.MouseLeave:Connect(function()
 		TweenService:Create(s, TweenInfo.new(0.15), { Scale = 1 }):Play()
-		if glow then UI.glowTo(glow, 0, 0.2) end
 	end)
 	b.MouseButton1Down:Connect(function()
 		TweenService:Create(s, TweenInfo.new(0.08), { Scale = 0.92 }):Play()
@@ -903,7 +901,7 @@ function UI.panel(gui, opts)
 		UI.current = api
 		frame.Visible = true
 		UI.pop(frame, 0.55)
-		task.delay(0.25, function() if frame.Visible then UI.sweep(headerShine, 0.6) end end)
+		task.delay(0.25, function() if frame.Visible then UI.sweep(headerShine, 1.0) end end)
 		if api.onOpen then api.onOpen() end
 	end
 	function api.close()

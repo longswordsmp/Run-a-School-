@@ -42,6 +42,8 @@ end
 local function give(player, n)
 	local p = Data.get(player)
 	if not p or n <= 0 then return end
+	-- (the 2x Event Tickets pass)
+	if player:GetAttribute("Pass_DoubleTickets") then n *= 2 end
 	p.tickets = (p.tickets or 0) + n
 	syncTickets(player, p)
 	local ev = workspace:GetAttribute("Event")

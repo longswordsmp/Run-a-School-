@@ -58,6 +58,19 @@ function GateService.lock(player)
 	return true
 end
 
+-- a School Shield (MonetizationService): the gate locks for seconds, whatever its cooldown; it can
+-- lock again as soon as the shield's done
+function GateService.shield(plot, seconds)
+	local now = workspace:GetServerTimeNow()
+	local untilT = math.max(plot:GetAttribute("LockedUntil") or 0, now) + seconds
+	plot:SetAttribute("LockedUntil", untilT)
+	plot:SetAttribute("CooldownUntil", untilT)
+	setVisual(plot, true)
+	task.delay(untilT - now + 0.5, function()
+		if (plot:GetAttribute("LockedUntil") or 0) <= workspace:GetServerTimeNow() then setVisual(plot, false) end
+	end)
+end
+
 -- the old lasers' last zap (the First Morning): they spit sparks and go dark, lock or no lock
 function GateService.fizzle(plot)
 	local now = workspace:GetServerTimeNow()

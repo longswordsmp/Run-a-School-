@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local UI = require(Shared:WaitForChild("UI"))
 local Config = require(Shared:WaitForChild("Config"))
+local Icons = require(Shared:WaitForChild("Icons"))
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local Action = Remotes:WaitForChild("Action")
 local templates = ReplicatedStorage:WaitForChild("StudentTemplates")
@@ -153,8 +154,13 @@ local function shopRow(parent, order, opts)
 	UI.stroke(iconBox, 2.5)
 	UI.studs(iconBox, { zindex = iconBox.ZIndex, transparency = UI.STUD.chip })
 	UI.studs(r, { zindex = r.ZIndex, transparency = UI.STUD.row })
+	-- (a 3D model, like the Store's: tomas, 2026-09-27: "the things in school shop all are 2d and not
+	-- good like how the store is"; the emoji only for anything without one)
+	local iconKey = opts.iconKey or Icons.SHOP[opts.name or ""]
 	if opts.model then
 		UI.viewport(iconBox, opts.model, { zindex = 14, zoom = 0.95 })
+	elseif iconKey then
+		Icons.view(iconBox, iconKey, { size = UDim2.new(1, 6, 1, 6), position = UDim2.fromOffset(-3, -3), zindex = 14, sway = 9, bob = 0.06 })
 	else
 		UI.label(iconBox, { Name = "Icon", Text = opts.icon or "", Size = UDim2.new(1, -10, 1, -10), Position = UDim2.fromOffset(5, 5), ZIndex = 14, stroke = 0 })
 	end
@@ -327,7 +333,7 @@ do
 	for i, id in { "SnowDay", "FieldDay", "ScienceFair", "PromNight", "PictureDay", "Throwback", "Halloween", "WizardWeek", "CandyCarnival", "SpaceCamp", "HostileTakeover", "Graduation" } do
 		local info = Config.EventInfo[id]
 		ticketRows["Trophy_" .. id] = shopRow(ticketList, 100 + i, {
-			name = "Trophy_" .. id, icon = info.icon, title = info.name .. " Trophy",
+			name = "Trophy_" .. id, icon = info.icon, iconKey = Icons.SHOP_TROPHY, title = info.name .. " Trophy",
 			desc = "For the trophy case on your lawn",
 			sub = "Only while " .. info.name .. " is on",
 			iconBg = Color3.fromRGB(255, 245, 210),
@@ -1228,6 +1234,13 @@ do
 		ExpressRare = { "Rare Letter", "Ready right now", rgb(70, 150, 255) },
 		ExpressEpic = { "Epic Letter", "Ready right now", rgb(255, 100, 180) },
 		LockRefresh = { "Lock Refresh", "Lock again now", rgb(40, 190, 180) },
+		FastLetters = { "Fast Admissions", "Letters 2x faster", rgb(70, 150, 255) },
+		DoubleTickets = { "2x Tickets", "Double event tickets", rgb(255, 110, 90) },
+		ExpressLegendary = { "Legendary Letter", "Ready right now", rgb(255, 170, 40) },
+		SchoolShield = { "School Shield", "15 min lockdown", rgb(90, 120, 230) },
+		MoneyRain = { "Make It Rain!", "Cash for the server", rgb(60, 190, 110) },
+		CandyBag = { "Bag of Candy", "100 candy", rgb(255, 120, 180) },
+		CandyJar = { "Jar of Candy", "600 candy", rgb(200, 100, 230) },
 	}
 
 	-- the hover tip: the full description
@@ -1280,17 +1293,14 @@ do
 			UI.twinkle(c, { zindex = 18, every = 0.8 })
 		end
 		local owned = false
-		local glow = UI.glow(c, UI.lighten(color, 0.35), { alpha = 0, spread = 5 })
 		local sc = Instance.new("UIScale")
 		sc.Parent = c
 		c.MouseEnter:Connect(function()
 			TweenService:Create(sc, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Scale = 1.04 }):Play()
-			UI.glowTo(glow, 1, 0.15)
 			showTip(c, def.desc or "")
 		end)
 		c.MouseLeave:Connect(function()
 			TweenService:Create(sc, TweenInfo.new(0.15), { Scale = 1 }):Play()
-			UI.glowTo(glow, 0, 0.2)
 			tip.Visible = false
 		end)
 		local function tryBuy()
@@ -1819,7 +1829,6 @@ end
 -- a side button in the style of tomas's reference (a gamepass shop, 2026-09-27): a bright tile with the
 -- Roblox studs and a soft gloss, a darker border inside a thick outline, sitting on a darker lip it dips onto when
 -- pressed, a 3D icon (Shared/Icons) and the caption with a drop shadow
-local Icons = require(Shared:WaitForChild("Icons"))
 local SIDE_ICON = {
 	Home = "house", Shop = "basket", Store = "gem", Upgrades = "upArrow", Board = "pillar", Yearbook = "book",
 	Name = "pencil", Settings = "gear", Daily = "calendar", Coop = "people", Files = "folder", Quests = "scroll",
@@ -1858,25 +1867,21 @@ local function tileButton(caption, color, order)
 	local glint = UI.shine(face, { zindex = 9, strength = 0.2 })
 	-- (every tile glints on its own clock, staggered: the same life on all of them, none singled out)
 	UI.shineEvery(glint, 5.5 + (order % 7) * 0.8)
-	local glow = UI.glow(lip, UI.lighten(color, 0.3), { alpha = 0, spread = 6 })
-	glow.ZIndex = 0
-	for _, r in glow:GetChildren() do r.ZIndex = 0 end
 	local sc = Instance.new("UIScale")
 	sc.Parent = b
+	-- (hover grows it and glints it; no coloured glow: tomas, 2026-09-27)
 	b.MouseEnter:Connect(function()
 		TweenService:Create(sc, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Scale = 1.07 }):Play()
-		UI.glowTo(glow, 1, 0.15)
-		UI.sweep(glint, 0.45)
+		UI.sweep(glint, 0.8)
 	end)
 	b.MouseLeave:Connect(function()
 		TweenService:Create(sc, TweenInfo.new(0.15), { Scale = 1 }):Play()
-		UI.glowTo(glow, 0, 0.2)
 		body.Position = UDim2.new()
 	end)
 	b.MouseButton1Down:Connect(function() body.Position = UDim2.fromOffset(0, LIP - 1) end)
 	b.MouseButton1Up:Connect(function() body.Position = UDim2.new() end)
 	b.Parent = bar
-	return { button = b, body = body, face = face, faceGrad = faceGrad, lip = lip, glow = glow, glint = glint }
+	return { button = b, body = body, face = face, faceGrad = faceGrad, lip = lip, glint = glint }
 end
 
 local function sideButton(order, icon, caption, color, panel)
@@ -2074,17 +2079,23 @@ do
 		panel.close()
 	end })
 	lift(no.button, 13)
+	-- (Roblox draws its own menu over everything, and no game can put anything over the Leave screen: so
+	-- the offer opens underneath it the moment the menu opens, and it's the first thing there when they
+	-- close the menu instead of leaving. The same when the window loses focus, alt-tabbing away.
+	-- After a minute's play; again at most every five minutes.)
 	local joinedAt = os.clock()
-	local shown = false
-	game:GetService("GuiService").MenuOpened:Connect(function()
-		if shown or not deal or not full then return end
-		if os.clock() - joinedAt < 120 then return end
+	local lastShown = -math.huge
+	local function offer()
+		if not deal or not full or panel.frame.Visible then return end
+		if os.clock() - joinedAt < 60 or os.clock() - lastShown < 300 then return end
 		if player:GetAttribute("Pass_OfflinePlus") then return end
 		-- (until the deal pass exists, only in Studio)
 		if deal.id == 0 and not game:GetService("RunService"):IsStudio() then return end
-		shown = true
+		lastShown = os.clock()
 		panel.open()
-	end)
+	end
+	game:GetService("GuiService").MenuOpened:Connect(offer)
+	game:GetService("UserInputService").WindowFocusReleased:Connect(offer)
 end
 
 ---------------------------------------------------------------------------

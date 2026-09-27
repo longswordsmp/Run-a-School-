@@ -152,6 +152,33 @@ GRANTS.LockRefresh = function(player)
 	local plot = PlotService.getPlot(player)
 	if plot then plot:SetAttribute("CooldownUntil", 0) end
 end
+GRANTS.ExpressLegendary = function(player)
+	require(script.Parent.LetterService).debugReady(player, "Legendary")
+end
+-- the School Shield: the gate locked for a quarter of an hour
+GRANTS.SchoolShield = function(player)
+	local plot = PlotService.getPlot(player)
+	if plot then require(script.Parent.GateService).shield(plot, productByKey.SchoolShield.shield) end
+end
+-- Make It Rain: everyone here gets five minutes of their own tuition, and money falls on all of them
+GRANTS.MoneyRain = function(player)
+	for _, pl in Players:GetPlayers() do
+		Data.addCash(pl, cashFor(pl, 300))
+		Remotes.Push:FireClient(pl, "celebrate", { kind = "money", big = true })
+	end
+	Remotes.Announce:FireAllClients(("\u{1F4B8} %s MADE IT RAIN! +5 min of tuition for everyone!"):format(player.DisplayName:upper()), Color3.fromRGB(120, 255, 140))
+end
+-- candy for Janitor Stan's Closet
+local function candyGrant(n)
+	return function(player)
+		local p = Data.get(player)
+		if not p then return end
+		p.candy = (p.candy or 0) + n
+		player:SetAttribute("Candy", p.candy)
+	end
+end
+GRANTS.CandyBag = candyGrant(productByKey.CandyBag.candy)
+GRANTS.CandyJar = candyGrant(productByKey.CandyJar.candy)
 -- the MONEY BOOST: double it, up to the max, in the buyer's own save
 local function boostUp(player)
 	local own = Data.own(player)

@@ -329,9 +329,11 @@ function LetterService.start()
 					end
 				end
 				if lastMove[player] and os.clock() - lastMove[player] < 120 then
+					-- (the Fast Admissions pass: twice as fast)
+					local rate = player:GetAttribute("Pass_FastLetters") and 2 or 1
 					for r, t in ls do
 						if t > 0 then
-							ls[r] = t - 1
+							ls[r] = t - rate
 							if ls[r] <= 0 then
 								ls[r] = 0
 							end
