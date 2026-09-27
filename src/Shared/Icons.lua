@@ -98,37 +98,63 @@ local function star(m, at, s, color)
 	p(m, V(0.75, 0.75, 0.32) * s, at * CFrame.Angles(0, 0, math.rad(45)), color, nil, Enum.Material.Neon)
 end
 
+-- classic Roblox studs on a part's top (the reference icons are stud plastic, like the world is)
+local function studs(x)
+	x.Material = Enum.Material.Plastic
+	x.TopSurface = Enum.SurfaceType.Studs
+	return x
+end
+
 local B = {}
 
--- a red shopping basket with the groceries in it (the Shop)
+-- the Store's basket, after tomas's reference (2026-09-27): a chunky red stud-plastic basket seen from
+-- above, empty, its sides a weave of bars with the dark inside showing through the holes, a pale rim
+-- with studs on it and a grey handle with a red grip over the top
 function B.basket(m)
-	local RED, RED_D, RED_L = rgb(235, 60, 70), rgb(150, 25, 40), rgb(255, 120, 125)
-	p(m, V(4.4, 2.5, 3), CF(0, 0, 0), RED)
-	p(m, V(4.0, 0.3, 2.7), CF(0, -1.38, 0), RED_D)
-	p(m, V(4.8, 0.42, 3.35), CF(0, 1.35, 0), RED_L)
-	-- the holes in its sides
-	for c = 0, 3 do
-		for r = 0, 1 do p(m, V(0.62, 0.56, 0.1), CF(-1.35 + c * 0.9, 0.42 - r * 0.8, -1.52), RED_D) end
+	local RED, RED_L, INNER, FLOOR = rgb(235, 55, 70), rgb(255, 120, 128), rgb(125, 18, 38), rgb(170, 30, 50)
+	local W, D = 4.6, 3.4 -- across (x), front to back (z)
+	local T = 0.3 -- the inside wall's thickness
+	local P = 0.22 -- how far the weave stands out from it
+	-- (bottom to top: a bar, a row of holes, a bar, a row of holes, a bar, then the rim)
+	local BARS = { { -1.1, 0.4 }, { -0.05, 0.3 }, { 0.85, 0.3 } } -- { middle y, height }
+	local HOLE_Y0, HOLE_Y1 = -1.3, 1.0
+	studs(p(m, V(W, 0.36, D), CF(0, -1.12, 0), FLOOR))
+	for _, side in { -1, 1 } do
+		-- the dark inside walls: front and back, left and right
+		p(m, V(W, 2.3, T), CF(0, -0.15, side * (D / 2 - T / 2)), INNER)
+		p(m, V(T, 2.3, D - 2 * T), CF(side * (W / 2 - T / 2), -0.15, 0), INNER)
+		-- the weave on them: bars across, posts up
+		for _, b in BARS do
+			p(m, V(W + 2 * P, b[2], P), CF(0, b[1], side * (D / 2 + P / 2)), RED)
+			p(m, V(P, b[2], D), CF(side * (W / 2 + P / 2), b[1], 0), RED)
+		end
+		for k = 0, 4 do
+			p(m, V(0.3, HOLE_Y1 - HOLE_Y0, P), CF(-W / 2 + 0.15 + k * (W - 0.3) / 4, (HOLE_Y0 + HOLE_Y1) / 2, side * (D / 2 + P / 2)), RED)
+		end
+		for k = 0, 3 do
+			p(m, V(P, HOLE_Y1 - HOLE_Y0, 0.3), CF(side * (W / 2 + P / 2), (HOLE_Y0 + HOLE_Y1) / 2, -D / 2 + 0.15 + k * (D - 0.3) / 3), RED)
+		end
+		-- (the corners, where the weave on two sides meets)
+		for _, s2 in { -1, 1 } do
+			p(m, V(P, HOLE_Y1 - HOLE_Y0, P), CF(side * (W / 2 + P / 2), (HOLE_Y0 + HOLE_Y1) / 2, s2 * (D / 2 + P / 2)), RED)
+		end
 	end
-	for c = 0, 2 do
-		for r = 0, 1 do p(m, V(0.1, 0.56, 0.62), CF(-2.22, 0.42 - r * 0.8, -0.9 + c * 0.9), RED_D) end
+	-- the rim: a pale band all round the top, wider than the walls, studs on it
+	local RIM_W, RIM_H, RIM_Y = 0.62, 0.42, 1.2
+	for _, side in { -1, 1 } do
+		studs(p(m, V(W + 2 * P + 0.1, RIM_H, RIM_W), CF(0, RIM_Y, side * (D / 2 + P - RIM_W / 2 + 0.05)), RED_L))
+		studs(p(m, V(RIM_W, RIM_H, D + 2 * P - 2 * RIM_W + 0.1), CF(side * (W / 2 + P - RIM_W / 2 + 0.05), RIM_Y, 0), RED_L))
 	end
-	-- a green apple, a carton of milk, a bottle of juice
-	ball(m, 1.35, V(1.2, 1.85, -0.35), rgb(130, 215, 70))
-	p(m, V(0.14, 0.42, 0.14), CF(1.25, 2.62, -0.35), rgb(110, 70, 35))
-	p(m, V(0.5, 0.12, 0.28), CF(1.52, 2.66, -0.35) * CFrame.Angles(0, 0, -0.5), rgb(60, 170, 60))
-	local carton = CF(-0.05, 1.95, 0.35) * CFrame.Angles(0, 0.3, 0)
-	p(m, V(1.05, 1.6, 1.05), carton, rgb(250, 250, 250))
-	p(m, V(1.07, 0.5, 1.07), carton * CF(0, 0.05, 0), rgb(70, 150, 255))
-	p(m, V(1.05, 0.28, 0.2), carton * CF(0, 0.92, 0), rgb(235, 235, 240))
-	cyl(m, 0.8, 1.5, V(-1.3, 1.85, 0.1), rgb(255, 165, 40), "y")
-	cyl(m, 0.36, 0.45, V(-1.3, 2.8, 0.1), rgb(255, 165, 40), "y")
-	cyl(m, 0.44, 0.2, V(-1.3, 3.1, 0.1), rgb(235, 60, 70), "y")
-	-- the handle: an arc over the top
-	for k = 0, 10 do
-		local a = math.rad(8 + k * 16.4)
-		p(m, V(0.64, 0.26, 0.26), CF(math.cos(a) * 2.15, 1.45 + math.sin(a) * 2.0, 0) * CFrame.Angles(0, 0, a + math.pi / 2), rgb(205, 210, 222))
+	-- the handle: grey posts up out of the rim at either end, a bar over, a red grip in its middle
+	local STEEL, STEEL_D = rgb(210, 214, 226), rgb(150, 156, 175)
+	local lean = CFrame.Angles(math.rad(-14), 0, 0)
+	for _, side in { -1, 1 } do
+		p(m, V(0.34, 2.2, 0.34), CF(side * (W / 2 - 0.05), RIM_Y + 1.1, 0.15) * lean, STEEL)
+		p(m, V(0.5, 0.3, 0.5), CF(side * (W / 2 - 0.05), RIM_Y + 0.3, 0.15), STEEL_D)
 	end
+	local top = CF(0, RIM_Y + 2.1, 0.15) * lean * CF(0, 0.05, -0.25)
+	p(m, V(W + 0.24, 0.34, 0.34), top, STEEL)
+	studs(p(m, V(2.0, 0.58, 0.58), top, RED))
 end
 
 -- a crown (VIP), front on like the emoji: a band with a gold rim, five points with a pearl on each
@@ -323,6 +349,28 @@ function B.moon(m)
 	end
 end
 
+-- a brick of cash, after tomas's reference (2026-09-27, the Sell icon): green bills stacked square, a
+-- pale edge between each so the sides read as paper, a lighter panel and studs on the top bill, and a
+-- gold paper band round the middle
+local function cashBrick(m, at, n)
+	local G, G2, EDGE, PANEL = rgb(70, 190, 80), rgb(85, 205, 95), rgb(185, 240, 170), rgb(140, 225, 130)
+	local W, D, T = 4.0, 2.4, 0.36 -- a bill's size (x, z) and a bundle's thickness
+	for k = 0, n - 1 do
+		-- (each bundle a hair off square, alternating shades)
+		local cf = at * CF(((k * 3) % 5 - 2) * 0.03, (k + 0.5) * T, ((k * 2) % 5 - 2) * 0.03)
+		p(m, V(W, T - 0.07, D), cf * CF(0, -0.035, 0), k % 2 == 0 and G or G2)
+		p(m, V(W - 0.04, 0.07, D - 0.04), cf * CF(0, T / 2 - 0.035, 0), EDGE)
+	end
+	local top = at * CF(0, n * T, 0)
+	studs(p(m, V(W, 0.08, D), top * CF(0, 0.04, 0), G))
+	studs(p(m, V(W - 0.8, 0.08, D - 0.7), top * CF(0, 0.1, 0), PANEL))
+	-- the band
+	local h = n * T + 0.4
+	studs(p(m, V(0.95, h, D + 0.12), at * CF(0.35, h / 2 - 0.08, 0), rgb(255, 205, 60)))
+	for _, s in { -1, 1 } do p(m, V(0.1, h + 0.02, D + 0.14), at * CF(0.35 + s * 0.45, h / 2 - 0.08, 0), rgb(215, 150, 25)) end
+end
+function B.cash(m) cashBrick(m, CF(0, -1.2, 0), 5) end
+-- (the older, flatter stack: the money mountain is piled from these)
 local function cashStack(m, at, layers)
 	local G, GL = rgb(70, 190, 80), rgb(150, 230, 140)
 	for k = 0, layers - 1 do
@@ -333,7 +381,6 @@ local function cashStack(m, at, layers)
 	end
 	p(m, V(0.7, layers * 0.55 + 0.1, 2.1), at * CF(0, (layers - 1) * 0.275, 0), rgb(255, 200, 50))
 end
-function B.cash(m) cashStack(m, CF(0, -0.8, 0), 4) end
 
 -- a sack of money (the Tuition Bag): round and full, cinched at the neck with a rope, its top flaring
 -- out, a big green dollar sign on the front and coins spilt at its feet
@@ -645,18 +692,31 @@ function B.pillar(m)
 	tri(m, 3.6, 0.72, 0.06, CF(0, 2.17, -1.27), T)
 	star5(m, CF(0, 2.08, -1.33), 0.3, GOLDL, 0.1)
 end
+-- the yearbook, after tomas's reference (2026-09-27, the Collection book): a fat blue book lying flat,
+-- the pages showing white round three sides, a dark spine, a pale label on the studded cover and a
+-- red ribbon hanging out of the bottom with a notch in its end
 function B.book(m)
-	-- a hardback yearbook: blue covers, the pages between them, a spine with gold bands, a gold star
-	-- and title on the front and a ribbon hanging out of the bottom
-	local BL, BD, GOLDL, PAGE = rgb(65, 125, 235), rgb(40, 85, 180), rgb(255, 205, 70), rgb(255, 250, 235)
-	p(m, V(3.1, 3.9, 0.8), CF(0.05, 0, 0), PAGE)
-	for _, z in { -0.5, 0.5 } do p(m, V(3.3, 4.1, 0.2), CF(0, 0, z), BL) end
-	p(m, V(0.34, 4.1, 1.2), CF(-1.6, 0, 0), BD)
-	for _, y in { -1.5, 1.5 } do p(m, V(0.38, 0.16, 1.24), CF(-1.6, y, 0), GOLDL) end
-	star5(m, CF(0.05, 0.55, -0.63), 0.62, GOLDL, 0.08)
-	p(m, V(2.0, 0.32, 0.06), CF(0.05, -0.85, -0.62), GOLDL)
-	p(m, V(1.3, 0.2, 0.06), CF(0.05, -1.3, -0.62), GOLDL)
-	p(m, V(0.35, 0.9, 0.06), CF(0.7, -2.3, -0.1), rgb(235, 60, 70))
+	local BL, BLD, BLL, PAGE, LINE = rgb(60, 130, 240), rgb(35, 85, 185), rgb(150, 200, 255), rgb(252, 250, 242), rgb(200, 202, 214)
+	local W, L = 3.6, 4.6 -- across (x), top to bottom (z)
+	-- (the spine on the +X side, which is the left of the screen)
+	p(m, V(W, 0.32, L), CF(0, -0.62, 0), BL)
+	studs(p(m, V(W, 0.32, L), CF(0, 0.62, 0), BL))
+	p(m, V(W - 0.3, 0.92, L - 0.3), CF(-0.05, 0, 0), PAGE)
+	p(m, V(0.5, 1.56, L + 0.02), CF(W / 2 - 0.15, 0, 0), BLD)
+	for _, z in { -1, 1 } do p(m, V(0.54, 1.6, 0.26), CF(W / 2 - 0.15, 0, z * (L / 2 - 0.55)), BL) end
+	-- the page edges: lines along the side and the bottom
+	for _, y in { -0.25, 0, 0.25 } do
+		p(m, V(0.03, 0.05, L - 0.5), CF(-W / 2 + 0.09, y, 0), LINE)
+		p(m, V(W - 0.7, 0.05, 0.03), CF(-0.1, y, -L / 2 + 0.14), LINE)
+	end
+	-- the label: pale, studs on it, two lines of title
+	studs(p(m, V(2.0, 0.08, 1.5), CF(-0.2, 0.82, 0.6), BLL))
+	for k, w in { 1.3, 0.9 } do p(m, V(w, 0.1, 0.16), CF(-0.2, 0.84, 0.85 - k * 0.35), BLD) end
+	-- the ribbon, out of the pages at the bottom and down over the edge
+	local RIB = rgb(235, 55, 70)
+	p(m, V(0.5, 0.08, 0.5), CF(-0.9, 0.1, -L / 2 - 0.1), RIB)
+	p(m, V(0.5, 0.95, 0.08), CF(-0.9, -0.3, -L / 2 - 0.34), RIB)
+	for _, x in { -0.16, 0.16 } do p(m, V(0.18, 0.28, 0.08), CF(-0.9 + x, -0.9, -L / 2 - 0.34), RIB) end
 end
 function B.pencil(m)
 	-- a yellow pencil: a metal band with ridges, a pink eraser, a sharpened wooden end and its lead
@@ -682,27 +742,44 @@ function B.gear(m)
 	gearAt(m, CF(-1.3, -1.35, 0.45) * CFrame.Angles(0, 0, math.rad(22)), 0.85, 6, 0.6, rgb(255, 160, 40), rgb(255, 200, 110), rgb(150, 80, 20))
 	gearAt(m, CF(0.35, 0.35, 0), 1.55, 8, 0.8, rgb(175, 184, 205), rgb(215, 222, 238), rgb(55, 60, 80))
 end
+-- the Daily calendar, after tomas's reference (2026-09-27, Daily Gifts): a thick red studded top with
+-- two rings through it, a white page with a big blocky 31 in navy, the pale blue pages under it
+local DIGITS = {
+	["3"] = { "###", "..#", "###", "..#", "###" },
+	["1"] = { ".#.", "##.", ".#.", ".#.", "###" },
+}
 function B.calendar(m)
-	-- a desk calendar: a red top on two rings, the days, today in gold and a big green tick
-	local RED, REDD, PAPER, GRID = rgb(235, 65, 75), rgb(170, 35, 50), rgb(252, 250, 244), rgb(212, 218, 232)
-	p(m, V(3.8, 3.4, 0.4), CF(0, -0.45, 0), PAPER)
-	p(m, V(3.7, 0.12, 0.36), CF(0, -2.21, 0.04), rgb(225, 220, 210))
-	p(m, V(3.9, 1.1, 0.5), CF(0, 1.55, 0), RED)
-	p(m, V(3.9, 0.2, 0.52), CF(0, 1.05, 0), REDD)
-	for _, x in { -1.05, 1.05 } do
-		ball(m, 0.34, V(x, 1.75, -0.27), REDD)
-		p(m, V(0.24, 0.8, 0.24), CF(x, 2.1, -0.18), rgb(200, 205, 220))
-		ball(m, 0.26, V(x, 2.5, -0.18), rgb(200, 205, 220))
+	local RED, REDD, PAPER, NAVY, SKY, RING = rgb(235, 60, 70), rgb(165, 30, 45), rgb(252, 252, 250), rgb(40, 62, 150), rgb(165, 205, 245), rgb(228, 232, 242)
+	p(m, V(4.0, 3.0, 0.5), CF(0, -0.4, 0), PAPER)
+	p(m, V(4.0, 0.42, 0.62), CF(0, -2.1, 0.02), SKY)
+	studs(p(m, V(4.3, 1.2, 0.9), CF(0, 1.7, 0.05), RED))
+	p(m, V(4.32, 0.18, 0.92), CF(0, 1.16, 0.05), REDD)
+	-- the rings: loops standing up out of the top, front to back
+	for _, x in { -1.1, 1.1 } do
+		for _, z in { -0.28, 0.38 } do p(m, V(0.3, 0.8, 0.26), CF(x, 2.62, z), RING) end
+		p(m, V(0.3, 0.26, 0.92), CF(x, 3.0, 0.05), RING)
 	end
-	for r = 0, 2 do
-		for c = 0, 2 do
-			p(m, V(0.85, 0.62, 0.08), CF(-1.1 + c * 1.1, 0.55 - r * 0.85, -0.22), (r == 0 and c == 2) and rgb(255, 200, 50) or GRID)
+	-- 31, a pixel at a time (runs of pixels in a row as one part); screen-left is +X
+	local PX, text = 0.44, "31"
+	local cols = #text * 4 - 1
+	for i = 1, #text do
+		local glyph = DIGITS[text:sub(i, i)]
+		for r, row in glyph do
+			local c = 1
+			while c <= #row do
+				if row:sub(c, c) == "#" then
+					local e = c
+					while e < #row and row:sub(e + 1, e + 1) == "#" do e += 1 end
+					local col0 = (i - 1) * 4 + (c - 1)
+					local mid = col0 + (e - c + 1) / 2
+					p(m, V((e - c + 1) * PX, PX, 0.14), CF(cols * PX / 2 - mid * PX, -0.4 + 2.5 * PX - (r - 0.5) * PX, -0.3), NAVY)
+					c = e + 1
+				else
+					c += 1
+				end
+			end
 		end
 	end
-	-- (a tick on screen: the short arm on the left, which is +X here)
-	local TICK = rgb(70, 215, 100)
-	p(m, V(0.5, 1.25, 0.25), CF(0.325, -1.35, -0.42) * CFrame.Angles(0, 0, math.rad(-36.9)), TICK)
-	p(m, V(0.5, 2.45, 0.25), CF(-0.436, -0.83, -0.42) * CFrame.Angles(0, 0, math.rad(33.4)), TICK)
 end
 function B.wrench(m)
 	-- a spanner: an open end, a ring end with its hole, a blue grip with ridges
@@ -785,11 +862,19 @@ Icons.FOR = {
 	ServerLuck = "sparkle", ExpressRare = "letter", ExpressEpic = "letterEpic", LockRefresh = "refresh",
 }
 
+-- how an icon is looked at, if not the usual (turn = its yaw, tilt = how far the camera looks down)
+Icons.LOOK = {
+	basket = { turn = -30, tilt = 30 },
+	cash = { turn = -38, tilt = 30 },
+	book = { turn = -28, tilt = 42 },
+	calendar = { turn = -24, tilt = 14 },
+}
+
 -- the panels (by their names) -> icon
 Icons.PANEL = {
-	Shop = "apple", Upgrades = "upArrow", Board = "pillar", Prestige = "crown", Yearbook = "book",
+	Shop = "basket", Upgrades = "upArrow", Board = "pillar", Prestige = "crown", Yearbook = "book",
 	NameSchool = "pencil", Settings = "gear", Daily = "calendar", Admin = "wrench", Welcome = "cash",
-	Coop = "people", QuestLogPanel = "scroll", Store = "basket", LeaveDeal = "moon",
+	Coop = "people", QuestLogPanel = "scroll", Store = "gem", LeaveDeal = "moon",
 }
 
 function Icons.build(key)
@@ -838,6 +923,28 @@ end)
 -- default 18), bob (studs, default 0.12), turn (a fixed yaw in degrees, default -22), tilt (how far
 -- the camera looks down on it, degrees, default 12), outline (default true), still (no motion)
 local OUTLINE = rgb(22, 18, 32)
+-- the framing: every part's corners as the camera sees them (turned, and looked down on), so one seen
+-- from high up (the basket, the book) fits as snugly as one seen side on. -> its middle, the distance
+local function fit(model, pitch)
+	local rot = CFrame.Angles(pitch, 0, 0) * CFrame.Angles(0, math.pi, 0)
+	local lo, hi = Vector3.one * math.huge, -Vector3.one * math.huge
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			local h = d.Size / 2
+			for _, sx in { -1, 1 } do
+				for _, sy in { -1, 1 } do
+					for _, sz in { -1, 1 } do
+						local q = rot:PointToObjectSpace(d.CFrame:PointToWorldSpace(Vector3.new(sx * h.X, sy * h.Y, sz * h.Z)))
+						lo, hi = lo:Min(q), hi:Max(q)
+					end
+				end
+			end
+		end
+	end
+	local mid = (lo + hi) / 2
+	local r = math.max(hi.X - lo.X, hi.Y - lo.Y) * 0.5 + 0.45
+	return rot:PointToWorldSpace(mid), r / math.tan(math.rad(15)) + (hi.Z - mid.Z)
+end
 local DIRS = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }, { 0.71, 0.71 }, { -0.71, 0.71 }, { 0.71, -0.71 }, { -0.71, -0.71 } }
 function Icons.view(parent, key, opts)
 	opts = opts or {}
@@ -850,13 +957,15 @@ function Icons.view(parent, key, opts)
 	holder.AnchorPoint = opts.anchor or Vector2.zero
 	holder.ZIndex = z
 	local model = Icons.build(key)
-	local base = CFrame.Angles(0, math.rad(opts.turn or -22), 0)
+	local look = Icons.LOOK[key] or {}
+	local base = CFrame.Angles(0, math.rad(opts.turn or look.turn or -22), 0)
 	model:PivotTo(base)
-	local cf, size = model:GetBoundingBox()
+	local pitch = math.rad(opts.tilt or look.tilt or 12)
+	local center, dist = fit(model, pitch)
 	local st = {
-		center = cf.Position,
-		dist = (math.max(size.X, size.Y) * 0.5 + 0.45) / math.tan(math.rad(15)) + size.Z * 0.5,
-		pitch = math.rad(opts.tilt or 12),
+		center = center,
+		dist = dist,
+		pitch = pitch,
 		phase = math.random() * 6,
 		sway = opts.sway or 18,
 		bob = opts.bob or 0.12,
@@ -890,6 +999,7 @@ function Icons.view(parent, key, opts)
 				if d:IsA("BasePart") then
 					d.Color = Color3.new(1, 1, 1)
 					d.Material = Enum.Material.SmoothPlastic
+					d.TopSurface = Enum.SurfaceType.Smooth
 				end
 			end
 			copy.Parent = vp
