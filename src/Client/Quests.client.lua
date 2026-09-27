@@ -43,16 +43,15 @@ local headerGrad = UI.gradient(header, UI.lighten(UI.C.blue, 0.3), UI.C.blue)
 local title = UI.label(header, { Text = "", Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -20, 1, -6), Position = UDim2.fromOffset(10, 3), stroke = 2 })
 -- the step in four words or fewer, big, with its icon; the how-to underneath, small
 -- (fixed sizes: an emoji in the line made TextScaled shrink the whole line to a speck)
-local text = UI.label(card, { Text = "", Font = UI.BIG, TextScaled = false, TextSize = 17, TextColor3 = UI.C.ink, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Size = UDim2.new(1, -110, 0, 30), Position = UDim2.fromOffset(12, 34), stroke = 0 })
+local text = UI.label(card, { Text = "", Font = UI.BIG, TextScaled = false, TextSize = 25, TextColor3 = UI.C.ink, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Size = UDim2.new(1, -110, 0, 30), Position = UDim2.fromOffset(12, 34), stroke = 0 })
 local hintL = UI.label(card, { Text = "", TextScaled = false, TextSize = 15, TextColor3 = Color3.fromRGB(95, 95, 110), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, Size = UDim2.new(1, -24, 0, 30), Position = UDim2.fromOffset(12, 65), stroke = 0 })
 local barBg = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(70, 70, 80), Size = UDim2.new(1, -110, 0, 18), Position = UDim2.fromOffset(12, 98), Parent = card })
 UI.corner(barBg, 9)
 local fill = UI.new("Frame", { BackgroundColor3 = UI.C.green, Size = UDim2.fromScale(0, 1), Parent = barBg })
 UI.corner(fill, 9)
 local count = UI.label(barBg, { Text = "", Size = UDim2.fromScale(1, 1), stroke = 2 })
-local reward = UI.label(card, { Text = "", TextColor3 = Color3.fromRGB(120, 255, 130), Size = UDim2.new(0, 90, 0, 24), Position = UDim2.new(1, -96, 0, 36), stroke = 2 })
+local reward = UI.label(card, { Text = "", TextColor3 = Color3.fromRGB(40, 150, 70), Size = UDim2.new(0, 90, 0, 24), Position = UDim2.new(1, -96, 0, 36), stroke = 0 })
 local go = UI.button(card, { text = "GO!", color = UI.C.orange, size = UDim2.fromOffset(84, 36), position = UDim2.new(1, -8, 1, -8), anchor = Vector2.new(1, 1), font = UI.BIG })
-UI.pixelCard(card, header)
 
 local state
 

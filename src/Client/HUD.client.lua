@@ -19,8 +19,7 @@ gui.IgnoreGuiInset = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
 -- scales down on phones (UI.autoScale)
-local UI = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("UI"))
-UI.autoScale(gui)
+require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("UI")).autoScale(gui)
 
 local FONT = Enum.Font.FredokaOne
 
@@ -67,29 +66,8 @@ local g = Instance.new("UIGradient")
 g.Color = ColorSequence.new(Color3.fromRGB(120, 255, 140), Color3.fromRGB(30, 170, 70))
 g.Rotation = 90
 g.Parent = cashPanel
--- (the pixel style: a square outline, a darker lip under the panel, a shine along the top, the amount
--- in the pixel type with its shadow)
-cashPanel:FindFirstChildOfClass("UIStroke").LineJoinMode = Enum.LineJoinMode.Miter
-local cashLip = Instance.new("Frame")
-cashLip.Name = "CashLip"
-cashLip.AnchorPoint = cashPanel.AnchorPoint
-cashLip.Position = cashPanel.Position + UDim2.fromOffset(0, 7)
-cashLip.Size = cashPanel.Size
-cashLip.BackgroundColor3 = Color3.fromRGB(20, 110, 45)
-cashLip.ZIndex = 0
-cashLip.Parent = gui
-corner(cashLip, 18)
-stroke(cashLip, 4).LineJoinMode = Enum.LineJoinMode.Miter
-local cashShine = Instance.new("Frame")
-cashShine.BorderSizePixel = 0
-cashShine.BackgroundColor3 = Color3.new(1, 1, 1)
-cashShine.BackgroundTransparency = 0.6
-cashShine.Size = UDim2.new(1, -24, 0, 6)
-cashShine.Position = UDim2.fromOffset(12, 6)
-cashShine.Parent = cashPanel
-corner(cashShine, 3)
-local cashText = UI.ptext(cashPanel, { Name = "Amount", Size = UDim2.new(1, -24, 0, 38), Position = UDim2.new(0, 12, 0, 14), Text = "$0", ZIndex = 2, depth = 4, stroke = 3.5, max = 30 })
-local incomeText = UI.ptext(cashPanel, { Name = "Income", Size = UDim2.new(1, -24, 0, 14), Position = UDim2.new(0, 12, 1, -24), Text = "$0/s", TextColor3 = Color3.fromRGB(230, 255, 230), ZIndex = 2, depth = 2, stroke = 2, max = 11 })
+local cashText = text(cashPanel, { Name = "Amount", Size = UDim2.new(1, -20, 0.62, 0), Position = UDim2.new(0, 10, 0, 4), Text = "$0" })
+local incomeText = text(cashPanel, { Name = "Income", Size = UDim2.new(1, -20, 0.3, 0), Position = UDim2.new(0, 10, 0.64, 0), Text = "$0/s", TextColor3 = Color3.fromRGB(230, 255, 230), strokeThickness = 2 })
 
 local shownCash = 0
 local function refreshCash()
@@ -168,14 +146,9 @@ local function chip(name, color)
 	f.Size = UDim2.fromOffset(140, 34)
 	f.BackgroundColor3 = color
 	f.Parent = chips
-	corner(f, 10)
-	stroke(f, 3).LineJoinMode = Enum.LineJoinMode.Miter
-	local g2 = Instance.new("UIGradient")
-	g2.Color = ColorSequence.new(UI.lighten(color, 0.25), color)
-	g2.Rotation = 90
-	g2.Parent = f
-	f.BackgroundColor3 = Color3.new(1, 1, 1)
-	local t = UI.ptext(f, { Name = "Text", Size = UDim2.new(1, -14, 1, -14), Position = UDim2.fromOffset(7, 7), Text = "", depth = 2, stroke = 2, max = 13 })
+	corner(f, 12)
+	stroke(f, 3)
+	local t = text(f, { Name = "Text", Size = UDim2.new(1, -12, 1, -8), Position = UDim2.fromOffset(6, 4), Text = "", strokeThickness = 2 })
 	return t
 end
 local iqText = chip("IQ", Color3.fromRGB(70, 150, 255))
@@ -188,10 +161,10 @@ local function refreshTickets()
 	local n = player:GetAttribute("Tickets") or 0
 	ticketText.Text = "\u{1F39F}\u{FE0F} " .. tostring(n)
 	local show = (n > 0 or workspace:GetAttribute("Event") ~= nil) and not player:GetAttribute("InTutorial")
-	chips.Tickets.Visible = show
+	ticketText.Parent.Visible = show
 	chips.Size = UDim2.fromOffset(show and 590 or 440, 34)
 	if n > lastTickets then
-		local sc = chips.Tickets:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", chips.Tickets)
+		local sc = ticketText.Parent:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", ticketText.Parent)
 		sc.Scale = 1.2
 		TweenService:Create(sc, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 	end

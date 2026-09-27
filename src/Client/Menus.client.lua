@@ -39,11 +39,9 @@ end
 
 -- raise a gui object and everything in it to at least z
 local function lift(obj, z)
-	local shift = obj:IsA("GuiObject") and math.max(0, z - obj.ZIndex) or 0
-	if shift == 0 then return end
-	obj.ZIndex += shift
+	if obj:IsA("GuiObject") then obj.ZIndex = math.max(obj.ZIndex, z) end
 	for _, d in obj:GetDescendants() do
-		if d:IsA("GuiObject") then d.ZIndex += shift end
+		if d:IsA("GuiObject") then d.ZIndex = math.max(d.ZIndex, z + 1) end
 	end
 end
 
@@ -125,40 +123,39 @@ local function scrollList(parent, padding)
 	return sf
 end
 
--- a shop row: icon (emoji or model), title, description, and a buy button on the right. In the pixel
--- style (tomas's reference): a lattice card in a bright colour, the title in the pixel type, the icon in
--- a dark inset square. The colour comes from the row's old pastel icon background, made vivid (so each
--- tab keeps its own colour: supplies blue, builder green, candy pink, gear purple...).
-local function vivid(c)
-	local h = c:ToHSV()
-	return Color3.fromHSV(h, 0.62, 0.9)
-end
+-- a shop row: icon (emoji or model), title, description, and a buy button on the right
 local function shopRow(parent, order, opts)
-	local color = opts.color or vivid(opts.iconBg or Color3.fromRGB(220, 240, 255))
-	local height = opts.height or 92
-	local r, inner = UI.pcard(parent, { name = opts.name or "Row", color = color, size = UDim2.new(1, -6, 0, height), layoutOrder = order, zindex = 12, seed = order * 7 + 3, patternW = 900, patternH = 140 })
+	local r = UI.new("Frame", {
+		Name = opts.name or "Row",
+		BackgroundColor3 = opts.bg or Color3.fromRGB(255, 236, 206),
+		Size = UDim2.new(1, 0, 0, opts.height or 86),
+		LayoutOrder = order,
+		ZIndex = 12,
+		Parent = parent,
+	})
+	UI.corner(r, 14)
+	UI.stroke(r, 3)
 	local iconBox = UI.new("Frame", {
 		Name = "IconBox",
-		BackgroundColor3 = Color3.new(0, 0, 0),
-		BackgroundTransparency = 0.72,
-		Size = UDim2.fromOffset(height - 22, height - 22),
-		Position = UDim2.new(0, 6, 0.5, 0),
+		BackgroundColor3 = opts.iconBg or Color3.fromRGB(255, 255, 255),
+		Size = UDim2.fromOffset(68, 68),
+		Position = UDim2.new(0, 9, 0.5, 0),
 		AnchorPoint = Vector2.new(0, 0.5),
-		ZIndex = 14,
-		Parent = inner,
+		ZIndex = 13,
+		Parent = r,
 	})
-	UI.corner(iconBox, 10)
+	UI.corner(iconBox, 12)
+	UI.stroke(iconBox, 2.5)
 	if opts.model then
-		UI.viewport(iconBox, opts.model, { zindex = 15, zoom = 0.95 })
+		UI.viewport(iconBox, opts.model, { zindex = 14, zoom = 0.95 })
 	else
-		UI.label(iconBox, { Name = "Icon", Text = opts.icon or "", Size = UDim2.new(1, -12, 1, -12), Position = UDim2.fromOffset(6, 6), ZIndex = 15, stroke = 0 })
+		UI.label(iconBox, { Name = "Icon", Text = opts.icon or "", Size = UDim2.new(1, -10, 1, -10), Position = UDim2.fromOffset(5, 5), ZIndex = 14, stroke = 0 })
 	end
-	local x = height - 6
-	local title = UI.ptext(inner, { Name = "Title", Text = opts.title or "", TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -x - 200, 0, 26), Position = UDim2.new(0, x, 0, 8), ZIndex = 15, depth = 3, stroke = 3, max = 22 })
-	local desc = UI.label(inner, { Name = "Desc", Text = opts.desc or "", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = UI.C.white, Size = UDim2.new(1, -x - 200, 0, 22), Position = UDim2.new(0, x, 0, 38), ZIndex = 15, stroke = 2 })
-	local sub = UI.label(inner, { Name = "Sub", Text = opts.sub or "", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(255, 248, 200), Size = UDim2.new(1, -x - 200, 0, 17), Position = UDim2.new(0, x, 0, 61), ZIndex = 15, stroke = 2 })
-	local buy = UI.button(inner, { text = "", color = UI.P.green, size = UDim2.fromOffset(176, 60), position = UDim2.new(1, -10, 0.5, 0), anchor = Vector2.new(1, 0.5), textSize = 22 })
-	lift(buy.button, 15)
+	local title = UI.label(r, { Name = "Title", Text = opts.title or "", Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -280, 0, 30), Position = UDim2.new(0, 88, 0, 10), ZIndex = 13 })
+	local desc = UI.label(r, { Name = "Desc", Text = opts.desc or "", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = UI.C.navy, Size = UDim2.new(1, -280, 0, 20), Position = UDim2.new(0, 88, 0, 44), ZIndex = 13, stroke = 0 })
+	local sub = UI.label(r, { Name = "Sub", Text = opts.sub or "", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(40, 150, 70), Size = UDim2.new(1, -280, 0, 16), Position = UDim2.new(0, 88, 0, 64), ZIndex = 13, stroke = 0 })
+	local buy = UI.button(r, { text = "", color = UI.C.green, size = UDim2.fromOffset(170, 58), position = UDim2.new(1, -12, 0.5, 0), anchor = Vector2.new(1, 0.5) })
+	lift(buy.button, 13)
 	return { frame = r, title = title, desc = desc, sub = sub, buy = buy }
 end
 
@@ -569,7 +566,7 @@ do
 	local nextName = UI.label(b, { Text = "", Font = UI.BIG, TextColor3 = UI.C.yellow, Size = UDim2.new(1, 0, 0, 46), Position = UDim2.fromOffset(0, 28), ZIndex = 12, stroke = 3 })
 	-- requirements
 	local function req(y)
-		local f = UI.new("Frame", { BackgroundColor3 = UI.P.inset, Size = UDim2.new(1, 0, 0, 64), Position = UDim2.fromOffset(0, y), ZIndex = 12, Parent = b })
+		local f = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(255, 236, 206), Size = UDim2.new(1, 0, 0, 64), Position = UDim2.fromOffset(0, y), ZIndex = 12, Parent = b })
 		UI.corner(f, 12)
 		UI.stroke(f, 3)
 		local check = UI.label(f, { Text = "", Size = UDim2.fromOffset(44, 44), Position = UDim2.new(0, 10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 13, stroke = 0 })
@@ -936,12 +933,12 @@ end
 -- Settings
 ---------------------------------------------------------------------------
 do
-	local panel = UI.panel(gui, { name = "Settings", title = "SETTINGS", color = UI.C.navy, size = UDim2.fromOffset(480, 400) })
+	local panel = UI.panel(gui, { name = "Settings", title = "SETTINGS", color = UI.C.navy, size = UDim2.fromOffset(480, 580) })
 	panels.Settings = panel
 	local list = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 11, Parent = panel.body })
 	UI.new("UIListLayout", { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder, Parent = list })
 	local function toggle(order, label, attr, key)
-		local r = UI.new("Frame", { BackgroundColor3 = UI.P.inset, Size = UDim2.new(1, 0, 0, 70), LayoutOrder = order, ZIndex = 12, Parent = list })
+		local r = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(255, 236, 206), Size = UDim2.new(1, 0, 0, 70), LayoutOrder = order, ZIndex = 12, Parent = list })
 		UI.corner(r, 14)
 		UI.stroke(r, 3)
 		UI.label(r, { Text = label, Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -170, 0, 34), Position = UDim2.new(0, 16, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 13 })
@@ -966,7 +963,7 @@ do
 	toggle(3, "\u{1F9ED} Guide arrow & trail", "GuideOn", "guide")
 	UI.label(list, { Text = "Press H (or the eye, bottom right) to hide everything", TextColor3 = UI.C.navy, Size = UDim2.new(1, 0, 0, 24), LayoutOrder = 4, ZIndex = 12, stroke = 0 })
 	-- codes (EasterEggService): a secret one is hidden round town on scraps of paper
-	local codeRow = UI.new("Frame", { Name = "Codes", BackgroundColor3 = UI.P.inset, Size = UDim2.new(1, 0, 0, 70), LayoutOrder = 5, ZIndex = 12, Parent = list })
+	local codeRow = UI.new("Frame", { Name = "Codes", BackgroundColor3 = Color3.fromRGB(255, 236, 206), Size = UDim2.new(1, 0, 0, 70), LayoutOrder = 5, ZIndex = 12, Parent = list })
 	UI.corner(codeRow, 14)
 	UI.stroke(codeRow, 3)
 	local codeBox = UI.new("TextBox", {
@@ -1157,131 +1154,60 @@ do
 end
 
 ---------------------------------------------------------------------------
--- Robux store: passes and products (only opens when you press it). The pixel style (tomas's
--- reference, 2026-09-27): the rainbow bar and a basket, the MONEY BOOST as the big card across the
--- top, then GAMEPASSES, EXTRAS and OPEN AREAS as cards, three to a row, each with its 3D icon, its
--- price tilted into the corners and what it does along the bottom. Press a card to buy it.
+-- Robux store: passes and products (only opens when you press it)
 ---------------------------------------------------------------------------
 do
-	local Icons = require(Shared:WaitForChild("Icons"))
-	local P = UI.P
-	local rgb = Color3.fromRGB
-	local panel = UI.ppanel(gui, {
-		name = "Store", title = "STORE", size = UDim2.fromOffset(1040, 780),
-		icon = function(holder) Icons.view(holder, "basket", { zindex = 16, sway = 10 }) end,
-	})
+	local panel = UI.panel(gui, { name = "Store", title = "STORE", color = Color3.fromRGB(40, 190, 90), size = UDim2.fromOffset(820, 560) })
 	panels.Store = panel
-	local scroll = UI.pscroll(panel.body)
-	local order = 0
-	local function nextOrder() order += 1 return order end
-
-	-- what each card says: { title, what it does, colour }
-	local AREA = rgb(90, 110, 200)
-	local CARD = {
-		StarterPack = { "STARTER PACK", "$25K + RARE KID", P.pink },
-		VIP = { "VIP", "x2 TUITION", P.gold },
-		SuperSpeed = { "SNEAKERS", "+25% SPEED", P.red },
-		GoldenBoard = { "GOLD BOARD", "+30% SPEED", P.orange },
-		DiamondBoard = { "DIAMOND BOARD", "3x SPEED", P.blue },
-		Luck = { "2x LUCK", "x2 BUS LUCK", P.green },
-		AutoCollect = { "AUTO COLLECT", "MAX JANITOR CART", P.purple },
-		LongLock = { "LONG LOCK", "+30s GATE LOCK", P.teal },
-		TeleportHome = { "HOME BUTTON", "TELEPORT HOME", rgb(255, 120, 90) },
-		OfflinePlus = { "OFFLINE+", "50% FOR 12H", rgb(110, 90, 220) },
-		Cash10m = { "TUITION PACK", "10 MIN OF TUITION", P.green },
-		Cash1h = { "TUITION BAG", "1 HOUR OF TUITION", rgb(60, 170, 90) },
-		Cash4h = { "TUITION VAULT", "4 HOURS OF TUITION", P.teal },
-		LuckyBus = { "LUCKY BUS", "LEGENDARY OR BETTER", P.yellow },
-		ServerLuck = { "SERVER LUCK", "x2 FOR 15 MIN", P.purple },
-		ExpressRare = { "RARE LETTER", "READY RIGHT NOW", P.blue },
-		ExpressEpic = { "EPIC LETTER", "READY RIGHT NOW", P.pink },
-		LockRefresh = { "LOCK REFRESH", "LOCK AGAIN NOW", P.teal },
-		UnlockDowntown = { "DOWNTOWN", "OPEN IT NOW", rgb(230, 96, 64) },
-		UnlockLab = { "MUTATION LAB", "OPEN IT NOW", rgb(110, 200, 60) },
-		UnlockMapleHeights = { "MAPLE HEIGHTS", "OPEN IT NOW", rgb(80, 170, 90) },
-		UnlockPinePark = { "PINE PARK", "OPEN IT NOW", rgb(46, 140, 80) },
-		UnlockVexPrep = { "VEX PREP", "OPEN IT NOW", rgb(130, 60, 200) },
-		UnlockIndustrial = { "INDUSTRIAL", "OPEN IT NOW", rgb(110, 50, 160) },
-		UnlockLair = { "THE LAIR", "OPEN IT NOW", rgb(200, 30, 60) },
-	}
-	_ = AREA
-
-	-- the hover tip: what it does, in plain words
-	local tip = UI.new("Frame", { Name = "Tip", BackgroundColor3 = rgb(255, 250, 235), Size = UDim2.fromOffset(300, 64), Visible = false, ZIndex = 40, Parent = panel.frame })
-	UI.corner(tip, 10)
-	UI.pstroke(tip, 3)
-	local tipText = UI.label(tip, { Text = "", TextColor3 = UI.C.ink, TextWrapped = true, Size = UDim2.new(1, -16, 1, -10), Position = UDim2.fromOffset(8, 5), ZIndex = 41, stroke = 0 })
-	local function showTip(card, text)
-		tipText.Text = text
-		local rel = card.AbsolutePosition - panel.frame.AbsolutePosition
-		local sc = panel.frame.AbsoluteSize.X / math.max(panel.frame.Size.X.Offset, 1)
-		tip.Position = UDim2.fromOffset(rel.X / sc + card.AbsoluteSize.X / sc / 2 - 150, rel.Y / sc + card.AbsoluteSize.Y / sc + 4)
-		tip.Visible = true
+	local pages = {}
+	for i = 1, 3 do
+		pages[i] = UI.new("Frame", { Name = "Page" .. i, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -56), Position = UDim2.fromOffset(0, 54), Visible = false, ZIndex = 11, Parent = panel.body })
 	end
+	local rows = { pass = {}, product = {} }
 
-	-- a grid of cards, three to a row
-	local function grid()
-		local g = UI.new("Frame", { Name = "Grid", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = nextOrder(), ZIndex = 11, Parent = scroll })
-		UI.new("UIGridLayout", { CellSize = UDim2.new(1 / 3, -14, 0, 262), CellPadding = UDim2.fromOffset(18, 18), SortOrder = Enum.SortOrder.LayoutOrder, Parent = g })
-		return g
-	end
-
-	-- one card: returns { card, setState(price, owned, ready) }
-	local cards = {}
-	local function card(parent, key, def, onBuy, i)
-		local look = CARD[key] or { def.name:upper(), "", P.blue }
-		local outer, inner = UI.pcard(parent, { name = key, color = look[3], button = true, layoutOrder = i, seed = i * 13, zindex = 12 })
-		UI.ptext(inner, { Name = "Title", Text = look[1], Size = UDim2.new(1, -20, 0, 34), Position = UDim2.fromOffset(10, 10), ZIndex = 15, depth = 4, stroke = 3, max = 24 })
-		Icons.view(inner, Icons.FOR[key] or "gift", { size = UDim2.new(0, 160, 0, 136), position = UDim2.new(0.5, 0, 0, 52), anchor = Vector2.new(0.5, 0), zindex = 14 })
-		local tagL = UI.ptag(inner, "", "left", 16)
-		local tagR = UI.ptag(inner, "", "right", 16)
-		UI.ptext(inner, { Name = "Caption", Text = look[2], Size = UDim2.new(1, -20, 0, 22), Position = UDim2.new(0, 10, 1, -34), ZIndex = 15, depth = 3, stroke = 3, max = 15 })
-		-- owned: a green ribbon across and no price
-		local owned = UI.ptext(inner, { Name = "Owned", Text = "OWNED", Size = UDim2.new(0.9, 0, 0, 34), Position = UDim2.new(0.5, 0, 0.5, 6), AnchorPoint = Vector2.new(0.5, 0.5), Rotation = -12, TextColor3 = rgb(120, 255, 130), ZIndex = 18, depth = 3, stroke = 3, max = 30 })
-		owned.Visible = false
-		outer.MouseEnter:Connect(function() showTip(outer, def.desc or "") end)
-		outer.MouseLeave:Connect(function() tip.Visible = false end)
-		local isOwned = false
-		outer.Activated:Connect(function()
-			if isOwned then return end
-			sfx("Click")
-			onBuy()
-		end)
-		local api = { card = outer }
-		function api.set(price, ownedNow, ready)
-			isOwned = ownedNow
-			outer.Visible = ready or ownedNow
-			tagL.Text = ownedNow and "" or (price .. "R")
-			tagR.Text = ownedNow and "" or (price .. "R")
-			owned.Visible = ownedNow
+	-- page 1: the MONEY BOOST card. One button: every purchase adds +1x to all your tuition, forever,
+	-- x2 up to x100 (MonetizationService; the price climbs as you go).
+	local GOLD = Color3.fromRGB(255, 200, 50)
+	local card = UI.new("Frame", { Name = "BoostCard", BackgroundColor3 = Color3.fromRGB(255, 244, 205), Size = UDim2.new(1, -8, 1, -10), Position = UDim2.fromOffset(4, 4), ZIndex = 12, Parent = pages[1] })
+	UI.corner(card, 20)
+	UI.stroke(card, 4)
+	UI.gradient(card, Color3.fromRGB(255, 250, 225), Color3.fromRGB(255, 225, 150))
+	UI.label(card, { Text = "\u{1F4B0} MONEY BOOST", Font = UI.BIG, TextColor3 = Color3.fromRGB(255, 190, 40), Size = UDim2.new(1, 0, 0, 48), Position = UDim2.fromOffset(0, 8), ZIndex = 13, stroke = 4 })
+	UI.label(card, { Text = "Every purchase adds +1x to ALL your tuition. Forever. Up to x100!", TextColor3 = UI.C.navy, Size = UDim2.new(1, -40, 0, 24), Position = UDim2.fromOffset(20, 56), ZIndex = 13, stroke = 0 })
+	-- now -> next, big
+	local nowL = UI.label(card, { Text = "x1", Font = UI.BIG, TextColor3 = UI.C.white, Size = UDim2.fromOffset(200, 96), Position = UDim2.new(0.5, -250, 0, 84), ZIndex = 13, stroke = 5 })
+	UI.label(card, { Text = "\u{27A1}", Font = UI.BIG, TextColor3 = UI.C.navy, Size = UDim2.fromOffset(100, 70), Position = UDim2.new(0.5, -50, 0, 97), ZIndex = 13, stroke = 0 })
+	local nextL = UI.label(card, { Text = "x2", Font = UI.BIG, TextColor3 = GOLD, Size = UDim2.fromOffset(200, 96), Position = UDim2.new(0.5, 50, 0, 84), ZIndex = 13, stroke = 5 })
+	UI.label(card, { Text = "NOW", Font = UI.BIG, TextColor3 = UI.C.navy, Size = UDim2.fromOffset(200, 22), Position = UDim2.new(0.5, -250, 0, 180), ZIndex = 13, stroke = 0 })
+	UI.label(card, { Text = "NEXT", Font = UI.BIG, TextColor3 = UI.C.navy, Size = UDim2.fromOffset(200, 22), Position = UDim2.new(0.5, 50, 0, 180), ZIndex = 13, stroke = 0 })
+	-- the ladder to x100
+	local barBack = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(230, 215, 180), Size = UDim2.new(1, -120, 0, 24), Position = UDim2.new(0, 60, 0, 212), ZIndex = 13, Parent = card })
+	UI.corner(barBack, 13)
+	UI.stroke(barBack, 3)
+	local barFill = UI.new("Frame", { BackgroundColor3 = GOLD, Size = UDim2.fromScale(0, 1), ZIndex = 14, Parent = barBack })
+	UI.corner(barFill, 13)
+	UI.gradient(barFill, Color3.fromRGB(255, 235, 120), Color3.fromRGB(255, 170, 30))
+	local barText = UI.label(barBack, { Text = "x1 / x100", Font = UI.BIG, Size = UDim2.fromScale(1, 1), ZIndex = 15, stroke = 2 })
+	local boostBtn = UI.button(card, { text = "", color = Color3.fromRGB(40, 190, 90), size = UDim2.fromOffset(300, 66), position = UDim2.new(0.5, 0, 0, 250), anchor = Vector2.new(0.5, 0) })
+	lift(boostBtn.button, 14)
+	local boostNote = UI.label(card, { Text = "", TextColor3 = Color3.fromRGB(110, 90, 70), Size = UDim2.new(1, -40, 0, 22), Position = UDim2.fromOffset(20, 322), ZIndex = 13, stroke = 0 })
+	-- the whole price ladder, up front: one chip per band, the band you're in lit up
+	local bandChips = {}
+	do
+		local price = {}
+		for _, x in Config.Products do price[x.key] = x.robux end
+		local strip = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -60, 0, 40), Position = UDim2.fromOffset(30, 356), ZIndex = 13, Parent = card })
+		UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 8), Parent = strip })
+		local from = 2
+		for i, band in Config.MoneyBoost.bands do
+			local chip = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(255, 255, 255), BackgroundTransparency = 0.35, Size = UDim2.new(0.2, -7, 1, 0), LayoutOrder = i, ZIndex = 13, Parent = strip })
+			UI.corner(chip, 10)
+			local st = UI.stroke(chip, 2)
+			UI.label(chip, { Text = ("x%d-%d  R$%d"):format(from, band.to, price[band.key] or 0), TextColor3 = UI.C.navy, Size = UDim2.new(1, -8, 1, 0), Position = UDim2.fromOffset(4, 0), ZIndex = 14, stroke = 0 })
+			bandChips[i] = { chip = chip, from = from, to = band.to, stroke = st }
+			from = band.to + 1
 		end
-		cards[key] = api
-		return api
 	end
-
-	---------------------------------------------------------------------------
-	-- the MONEY BOOST: the big card across the top. One button: every purchase adds +1x to all your
-	-- tuition, forever, x2 up to x100 (MonetizationService; the price climbs as you go).
-	---------------------------------------------------------------------------
-	local boostOuter, boost = UI.pcard(scroll, { name = "BoostCard", color = P.orange, size = UDim2.new(1, -4, 0, 250), layoutOrder = nextOrder(), seed = 3, patternW = 900, zindex = 12 })
-	Icons.view(boost, "cash", { size = UDim2.fromOffset(190, 170), position = UDim2.fromOffset(6, 30), zindex = 14, sway = 14 })
-	UI.ptext(boost, { Text = "MONEY BOOST", Size = UDim2.new(1, -250, 0, 42), Position = UDim2.fromOffset(210, 14), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 15, depth = 4, stroke = 3, max = 30, gradient = ColorSequence.new(rgb(255, 250, 200), rgb(255, 215, 80)) })
-	UI.ptext(boost, { Text = "+1x ALL TUITION, FOREVER. UP TO x100!", Size = UDim2.new(1, -500, 0, 16), Position = UDim2.fromOffset(212, 62), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 15, depth = 2, stroke = 2, max = 11 })
-	local nowL = UI.ptext(boost, { Text = "x1", Size = UDim2.fromOffset(150, 52), Position = UDim2.fromOffset(212, 94), ZIndex = 15, depth = 4, stroke = 4, max = 40 })
-	UI.ptext(boost, { Text = ">", Size = UDim2.fromOffset(50, 50), Position = UDim2.fromOffset(362, 94), ZIndex = 15, depth = 3, stroke = 3, max = 40 })
-	local nextL = UI.ptext(boost, { Text = "x2", Size = UDim2.fromOffset(150, 52), Position = UDim2.fromOffset(412, 94), ZIndex = 15, depth = 4, stroke = 4, max = 40, gradient = ColorSequence.new(rgb(255, 255, 210), rgb(120, 255, 130)) })
-	-- the ladder to x100: a pixel bar
-	local barBack = UI.new("Frame", { Name = "Bar", BackgroundColor3 = rgb(120, 60, 20), Size = UDim2.new(1, -470, 0, 26), Position = UDim2.fromOffset(212, 160), ZIndex = 15, Parent = boost })
-	UI.corner(barBack, 6)
-	UI.pstroke(barBack, 3)
-	local barFill = UI.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(0, 1), ZIndex = 16, Parent = barBack })
-	UI.corner(barFill, 6)
-	UI.gradient(barFill, rgb(150, 255, 150), rgb(60, 200, 80))
-	local barText = UI.ptext(barBack, { Text = "x1 / x100", Size = UDim2.new(1, -10, 1, -8), Position = UDim2.fromOffset(5, 4), ZIndex = 17, depth = 2, stroke = 2, max = 14 })
-	local boostNote = UI.label(boost, { Text = "", Font = UI.FONT, TextColor3 = rgb(255, 250, 235), Size = UDim2.new(1, -470, 0, 22), Position = UDim2.fromOffset(212, 196), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 15, stroke = 2 })
-	-- the BUY button, with its price tilted over its corner
-	local boostBtn = UI.pbutton(boost, { name = "BoostBuy", text = "BUY", color = P.green, size = UDim2.fromOffset(220, 78), position = UDim2.new(1, -22, 0.5, 18), anchor = Vector2.new(1, 0.5), textSize = 36, zindex = 16 })
-	local boostPrice = UI.ptext(boost, { Name = "Price", Text = "9R", Size = UDim2.fromOffset(120, 34), Position = UDim2.new(1, -262, 0.5, -64), Rotation = -14, ZIndex = 19, depth = 3, stroke = 3, max = 24 })
 	boostBtn.button.Activated:Connect(function()
 		if not boostBtn.button.Active then return end
 		call("buy", "boost")
@@ -1292,86 +1218,106 @@ do
 		nowL.Text = "x" .. b.level
 		barFill.Size = UDim2.fromScale(math.clamp((b.level - 1) / (b.max - 1), 0, 1), 1)
 		barText.Text = ("x%d / x%d"):format(b.level, b.max)
+		local nxt = b.nextLevel or b.max
+		for _, c in bandChips do
+			local here = nxt >= c.from and nxt <= c.to
+			c.chip.BackgroundColor3 = here and GOLD or Color3.fromRGB(255, 255, 255)
+			c.chip.BackgroundTransparency = here and 0 or (nxt > c.to and 0.7 or 0.35)
+		end
 		if not b.nextLevel then
 			nextL.Text = "MAX"
-			boostBtn.setText("MAXED")
+			boostBtn.setText("\u{2714} MAXED OUT")
 			boostBtn.setEnabled(false)
-			boostPrice.Text = ""
 			boostNote.Text = "You've got the biggest boost there is. Legend."
+		elseif not b.ready then
+			nextL.Text = "x" .. b.nextLevel
+			boostBtn.setText("R$ " .. b.robux)
+			boostBtn.setEnabled(false)
+			boostNote.Text = ""
 		else
 			nextL.Text = "x" .. b.nextLevel
-			boostPrice.Text = b.robux .. "R"
-			boostBtn.setText("BUY")
-			boostBtn.setEnabled(b.ready == true)
-			boostNote.Text = b.ready and ("Your school earns x%d instead of x%d. Stacks with VIP."):format(b.nextLevel, b.level) or ""
+			boostBtn.setText(("BOOST!  R$ %d"):format(b.robux))
+			boostBtn.setEnabled(true)
+			boostBtn.setColor(Color3.fromRGB(40, 190, 90))
+			boostNote.Text = ("Your school earns x%d instead of x%d. Stacks with VIP."):format(b.nextLevel, b.level)
 		end
 	end
 	player:GetAttributeChangedSignal("MoneyBoost"):Connect(function()
 		if panel.frame.Visible then panel.refresh() end
 	end)
-	_ = boostOuter
 
-	---------------------------------------------------------------------------
-	-- the cards
-	---------------------------------------------------------------------------
-	local sections = {}
-	sections[1] = boostOuter
-	sections[2] = UI.pheading(scroll, "GAMEPASSES", nextOrder())
-	local passGrid = grid()
+	local passList = scrollList(pages[2])
 	for i, x in Config.Passes do
-		card(passGrid, x.key, x, function() call("buy", "pass", x.key) end, i)
+		local row = shopRow(passList, i, { name = x.key, icon = x.icon, title = x.name, desc = x.desc, sub = "Game pass \u{2022} yours forever", iconBg = Color3.fromRGB(230, 255, 230) })
+		rows.pass[x.key] = row
+		row.buy.button.Activated:Connect(function()
+			if not row.buy.button.Active then return end
+			call("buy", "pass", x.key)
+		end)
 	end
-	sections[3] = UI.pheading(scroll, "EXTRAS", nextOrder())
-	local extraGrid = grid()
-	local areaHeading = UI.pheading(scroll, "OPEN AREAS NOW", nextOrder())
-	local areaGrid = grid()
+	local productList = scrollList(pages[3])
 	for i, x in Config.Products do
-		-- (the Money Boost bands are the big card at the top)
+		-- (the Money Boost bands are the card on page 1, not rows here)
 		if x.boost then continue end
-		card(x.area and areaGrid or extraGrid, x.key, x, function() call("buy", "product", x.key) end, i)
+		local row = shopRow(productList, i, { name = x.key, icon = x.icon, title = x.name, desc = x.desc, sub = "One-time purchase", iconBg = Color3.fromRGB(230, 245, 255), height = 96 })
+		row.desc.TextWrapped = true
+		row.desc.Size = UDim2.new(1, -280, 0, 34)
+		row.sub.Position = UDim2.new(0, 88, 0, 76)
+		rows.product[x.key] = row
+		row.buy.button.Activated:Connect(function()
+			if not row.buy.button.Active then return end
+			call("buy", "product", x.key)
+		end)
 	end
-
+	local function robuxText(n)
+		return "R$ " .. n
+	end
 	local current = 1
 	function panel.refresh()
 		local res = call("store")
 		if not res or res.ok == false then return end
 		showBoost(res.boost)
-		-- (anything not on sale yet stays out of the store: no "SOON" cards)
-		local robux = {}
-		for _, x in Config.Passes do robux[x.key] = x.robux end
-		for _, x in Config.Products do robux[x.key] = x.robux end
+		-- (anything not on sale yet stays out of the store: no "SOON" buttons)
 		for _, s in res.passes do
-			local c = cards[s.key]
-			if c then c.set(robux[s.key] or 0, s.owned == true, s.ready == true) end
+			local row = rows.pass[s.key]
+			local def
+			for _, x in Config.Passes do if x.key == s.key then def = x end end
+			row.frame.Visible = s.ready or s.owned
+			if s.owned then
+				row.buy.setText("\u{2714} OWNED")
+				row.buy.setEnabled(false)
+			else
+				row.buy.setText(robuxText(def.robux))
+				row.buy.setEnabled(true)
+				row.buy.setColor(Color3.fromRGB(40, 190, 90))
+			end
 		end
-		local anyArea = false
 		for _, s in res.products do
-			local c = cards[s.key]
-			if c then
-				c.set(robux[s.key] or 0, false, s.ready == true)
-				if s.ready and c.card.Parent == areaGrid then anyArea = true end
+			local row = rows.product[s.key]
+			local def
+			for _, x in Config.Products do if x.key == s.key then def = x end end
+			if not row then continue end
+			row.frame.Visible = s.ready
+			if not s.ready then
+				row.buy.setEnabled(false)
+			else
+				row.buy.setText(robuxText(def.robux))
+				row.buy.setEnabled(true)
+				row.buy.setColor(Color3.fromRGB(40, 190, 90))
 			end
 		end
-		areaHeading.Visible = anyArea
-		areaGrid.Visible = anyArea
 	end
-	-- (other scripts can ask for a section: 1 the boost, 2 the passes, 3 the extras)
-	function panel.select(i)
+	local selectTab = tabs(panel.body, {
+		{ "\u{1F4B0} Money Boost", Color3.fromRGB(255, 180, 40), 240 },
+		{ "\u{1F451} Passes", Color3.fromRGB(40, 190, 90), 220 },
+		{ "\u{26A1} Extras", UI.C.blue, 220 },
+	}, function(i)
 		current = i
-		task.defer(function()
-			local h = sections[i]
-			if h and h.Parent then
-				scroll.CanvasPosition = Vector2.new(0, math.max(0, h.AbsolutePosition.Y - scroll.AbsolutePosition.Y + scroll.CanvasPosition.Y - 6))
-			end
-		end)
-	end
-	panel.onOpen = function()
-		tip.Visible = false
+		for j, pg in pages do pg.Visible = j == i end
 		panel.refresh()
-		scroll.CanvasPosition = Vector2.zero
-	end
-	panel.onClose = function() tip.Visible = false end
-	_ = current
+	end)
+	panel.onOpen = function() selectTab(current) end
+	panel.select = function(i) selectTab(i) end
 	-- owning a pass changes what the store shows
 	player.AttributeChanged:Connect(function(attr)
 		if attr:sub(1, 5) == "Pass_" and panel.frame.Visible then panel.refresh() end
@@ -1516,7 +1462,7 @@ do
 		local res = call("adminPlayers")
 		if not (res and res.ok) then return end
 		for i, pl in res.players do
-			local r = UI.new("Frame", { BackgroundColor3 = UI.P.inset, Size = UDim2.new(1, 0, 0, 64), LayoutOrder = i, ZIndex = 12, Parent = playerHolder })
+			local r = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(255, 236, 206), Size = UDim2.new(1, 0, 0, 64), LayoutOrder = i, ZIndex = 12, Parent = playerHolder })
 			UI.corner(r, 12)
 			UI.stroke(r, 3)
 			UI.label(r, { Text = ("%s  @%s"):format(pl.name, pl.user), Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = UI.C.navy, Size = UDim2.new(0, 260, 0, 28), Position = UDim2.fromOffset(12, 6), ZIndex = 13, stroke = 0 })
