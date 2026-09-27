@@ -87,6 +87,28 @@ The same way, the checks from tomas's earlier asks:
 8. **Schedule the next wake-up.** 60 s while there's work. 30 min when blocked (Studio closed, tomas
    playing, waiting on him for something that stops ALL other work, which should almost never happen).
 
+## Testing in Play (how the loop plays the game)
+
+- **Start a session.**
+  1. Start Play.
+  2. Wait for `PlayerGui.Loading.Root.Bottom.Play`, then click it with `user_mouse_input` using its
+     instance path.
+  3. Click `PlayerGui.Cutscene.Root.Button` (SKIP).
+- **Setup.** tools/testsetup.lua (Server) installs `_G.dbg` and the TestBot module, sets the To-Do
+  step and starts its mission:
+  - `loadstring` is off, so run it as a ModuleScript made from the served file and `require` it.
+  - Edit STEP/MISSION at the top of the file.
+- **The bot.** tools/factorybot.lua (Client: `require(ReplicatedStorage.TestBot)`) plays the Factory
+  with real movement: `_G.mapRun("in" | "grab" | "out")`.
+  - Sprint and sneak go through `Remotes.Action:InvokeServer("move", "sprint" | "sneak")`, the same
+    call the keys make.
+  - Before a run, wait until every guard is back on his beat, not just untagged.
+- **Studio-only diagnostics** in FactoryService:
+  - player attribute DbgCamera (which camera saw you, and from where);
+  - guard attributes PathOK/PathFail.
+- **Moving the player.** A client-side teleport reaches the server late, so do test teleports on the
+  Server.
+
 ## Rules
 
 - One thing at a time. Nothing is done until it's been seen working: a screenshot that was read, or a
