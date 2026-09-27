@@ -466,29 +466,97 @@ local function buildBoard(golden)
 	return m
 end
 
--- the Diamond Hoverboard pass: a clear crystal deck and tips, white diamond-plate grip, an ice-blue
--- centre line, bright silver rails, and a white-blue glow
+-- the Diamond Hoverboard pass's glow (rideEffects: its trail and the thruster shimmer)
 local DIAMOND_GLOW = rgb(200, 245, 255)
-local function diamondize(m)
+-- the Diamond Hoverboard: its own build, not the regular board recoloured. A crystal deck lit from
+-- inside, diamond-cut bevelled edges with a bright ridge, pointed crystal tips, a row of glowing
+-- diamond inlays down the middle, a cut gem on the nose, faceted crystal thrusters. Board space: the
+-- deck's -Y is down, -Z is the nose (the trail streams off +Z).
+local GEM_MESH = "rbxassetid://9438591297" -- (a brilliant-cut diamond, 44 x 38 x 50 in its own units)
+local function buildDiamondBoard()
+	local CRYSTAL = rgb(85, 185, 255)
+	local ICE = rgb(215, 245, 255)
+	local CORE = rgb(120, 225, 255)
+	local PLATINUM = rgb(240, 246, 255)
+	local m = Instance.new("Model")
+	m.Name = "HoverboardRide"
 	m:SetAttribute("Diamond", true)
+	local function bp(name, size, cf, color, material, props, class)
+		local b = Instance.new(class or "Part")
+		b.Name = name
+		b.Size = size
+		b.CFrame = cf
+		b.Color = color
+		b.Material = material or Enum.Material.SmoothPlastic
+		b.TopSurface, b.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+		b.CanCollide, b.CanQuery, b.CanTouch, b.Massless = false, false, false, true
+		b.CastShadow = false
+		if props then for k, v in props do b[k] = v end end
+		b.Parent = m
+		return b
+	end
+	local glass = { Transparency = 0.06, Reflectance = 0.25 } -- (solid enough to read against white pavement)
+	-- the deck: clear crystal, with a glowing core running through it (the light inside is what makes
+	-- glass read as a gem rather than as blue plastic)
+	local deck = bp("Deck", Vector3.new(1.3, 0.22, 3.6), CFrame.new(), CRYSTAL, Enum.Material.Glass, glass)
+	m.PrimaryPart = deck
+	local glow = bp("Glow", Vector3.new(0.9, 0.08, 3.1), CFrame.new(0, -0.02, 0), CORE, Enum.Material.Neon, { Transparency = 0.15 })
+	local light = Instance.new("PointLight")
+	light.Color = ICE
+	light.Range = 7
+	light.Brightness = 1
+	light.Parent = glow
+	-- diamond-cut edges: each long side is two bevels meeting in a sharp bright ridge
+	for _, s in { -1, 1 } do
+		local turn = CFrame.Angles(0, s * math.rad(-90), 0) -- (a wedge's tall side turned in to the deck)
+		local x = s * (0.65 + 0.14)
+		bp("Bevel", Vector3.new(3.6, 0.11, 0.28), CFrame.new(x, 0.055, 0) * turn, CRYSTAL, Enum.Material.Glass, glass, "WedgePart")
+		bp("Bevel", Vector3.new(3.6, 0.11, 0.28), CFrame.new(x, -0.055, 0) * turn * CFrame.Angles(0, 0, math.pi), CRYSTAL, Enum.Material.Glass, glass, "WedgePart")
+		bp("Ridge", Vector3.new(0.07, 0.07, 3.6), CFrame.new(s * 0.93, 0, 0), PLATINUM, Enum.Material.Metal, { Reflectance = 0.55 })
+	end
+	-- pointed crystal tips, turned up a little: a square on its corner, so the point leads
+	for _, s in { -1, 1 } do
+		local at = CFrame.new(0, 0.06, s * 1.8) * CFrame.Angles(math.rad(s * 12), 0, 0)
+		bp("Tip", Vector3.new(1.3, 0.2, 1.3), at * CFrame.Angles(0, math.rad(45), 0), CRYSTAL, Enum.Material.Glass, glass)
+	end
+	-- cut diamonds (a brilliant-cut mesh, the table up): a big one on a platinum mount on the nose, and
+	-- three set into the deck down the middle, each in a platinum ring
+	local function diamond(name, width, cf, core)
+		local g = bp(name, Vector3.new(width, width, width), cf, ICE, Enum.Material.Glass, { Transparency = 0.08, Reflectance = 0.45 })
+		local mesh = Instance.new("SpecialMesh")
+		mesh.MeshType = Enum.MeshType.FileMesh
+		mesh.MeshId = GEM_MESH
+		mesh.Scale = Vector3.one * (width / 50)
+		mesh.Parent = g
+		if core then
+			bp(name .. "Core", Vector3.new(width * 0.36, width * 0.36, width * 0.36), cf * CFrame.new(0, -width * 0.05, 0), CORE, Enum.Material.Neon, { Shape = Enum.PartType.Ball })
+		end
+		return g
+	end
+	diamond("Gem", 0.8, CFrame.new(0, 0.55, -2.15), true)
+	bp("GemSeat", Vector3.new(0.12, 0.5, 0.5), CFrame.new(0, 0.2, -2.15) * CFrame.Angles(0, 0, math.rad(90)), PLATINUM, Enum.Material.Metal, { Reflectance = 0.55, Shape = Enum.PartType.Cylinder })
+	for _, z in { -0.95, 0, 0.95 } do
+		diamond("Inlay", 0.46, CFrame.new(0, 0.1, z), false) -- (the tops just under the rider's soles)
+		bp("Setting", Vector3.new(0.05, 0.6, 0.6), CFrame.new(0, 0.115, z) * CFrame.Angles(0, 0, math.rad(90)), PLATINUM, Enum.Material.Metal, { Reflectance = 0.55, Shape = Enum.PartType.Cylinder })
+	end
+	-- underneath: two faceted crystal pods, a ring of light under each
+	for _, s in { -1, 1 } do
+		local podAt = CFrame.new(0, -0.36, s * 1.3)
+		bp("Thruster", Vector3.new(0.62, 0.62, 0.62), podAt * CFrame.Angles(0, math.rad(45), 0) * CFrame.Angles(math.rad(45), 0, 0), CRYSTAL, Enum.Material.Glass, glass)
+		bp("ThrusterRing", Vector3.new(0.08, 0.8, 0.8), CFrame.new(0, -0.6, s * 1.3) * CFrame.Angles(0, 0, math.rad(90)), ICE, Enum.Material.Neon, { Shape = Enum.PartType.Cylinder })
+		local a = Instance.new("Attachment")
+		a.Name = "Exhaust"
+		a.Position = Vector3.new(0, -0.66, s * 1.3)
+		a.Parent = deck
+	end
 	for _, b in m:GetChildren() do
-		if not b:IsA("BasePart") then continue end
-		if b.Name == "Deck" or b.Name == "Tip" then
-			b.Color, b.Material, b.Transparency, b.Reflectance = rgb(185, 238, 255), Enum.Material.Glass, 0.2, 0.35
-		elseif b.Name == "Grip" then
-			b.Color, b.Material, b.Reflectance = rgb(235, 248, 255), Enum.Material.DiamondPlate, 0.25
-		elseif b.Name == "Stripe" then
-			b.Color, b.Material = rgb(120, 225, 255), Enum.Material.Neon
-		elseif b.Name == "Rail" then
-			b.Color, b.Reflectance = rgb(240, 248, 255), 0.5
-		elseif b.Name == "Thruster" then
-			b.Color = rgb(200, 215, 230)
-		elseif b.Name == "Glow" or b.Name == "ThrusterRing" then
-			b.Color = DIAMOND_GLOW
-			local l = b:FindFirstChildOfClass("PointLight")
-			if l then l.Color = DIAMOND_GLOW end
+		if b:IsA("BasePart") and b ~= deck then
+			local w = Instance.new("WeldConstraint")
+			w.Part0, w.Part1 = deck, b
+			w.Parent = b
 		end
 	end
+	return m
 end
 
 -- ridden only: a ribbon of light off the tail and a shimmer under the thrusters (and on a golden
@@ -505,10 +573,10 @@ local function rideEffects(board)
 		sp.Name = "DiamondSparkles"
 		sp.Texture = "rbxasset://textures/particles/sparkles_main.dds"
 		sp.Color = ColorSequence.new(rgb(255, 255, 255), rgb(140, 225, 255))
-		sp.LightEmission = 1
-		sp.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
-		sp.Lifetime = NumberRange.new(0.5, 1)
-		sp.Rate = 45
+		sp.LightEmission = 0.8
+		sp.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) })
+		sp.Lifetime = NumberRange.new(0.4, 0.8)
+		sp.Rate = 18
 		sp.Speed = NumberRange.new(0.5, 2)
 		sp.SpreadAngle = Vector2.new(180, 180)
 		sp.Parent = deck
@@ -581,8 +649,7 @@ local function ride(player, on)
 		-- (the fastest board you own: Diamond, then the Secret Gold one, then Golden)
 		local diamond = player:GetAttribute("Pass_DiamondBoard") == true
 		local secret = not diamond and player:GetAttribute("CodeGoldBoard") == true
-		local board = buildBoard(not diamond and (player:GetAttribute("Pass_GoldenBoard") == true or secret))
-		if diamond then diamondize(board) end
+		local board = diamond and buildDiamondBoard() or buildBoard(player:GetAttribute("Pass_GoldenBoard") == true or secret)
 		-- (the Secret Gold Hoverboard: gold, with a rainbow trail behind it)
 		if secret then board:SetAttribute("Secret", true) end
 		rideEffects(board)
