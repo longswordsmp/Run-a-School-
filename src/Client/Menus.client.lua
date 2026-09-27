@@ -911,7 +911,7 @@ end
 -- Settings
 ---------------------------------------------------------------------------
 do
-	local panel = UI.panel(gui, { name = "Settings", title = "SETTINGS", color = UI.C.navy, size = UDim2.fromOffset(460, 520) })
+	local panel = UI.panel(gui, { name = "Settings", title = "SETTINGS", color = UI.C.navy, size = UDim2.fromOffset(480, 580) })
 	panels.Settings = panel
 	local list = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 11, Parent = panel.body })
 	UI.new("UIListLayout", { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder, Parent = list })
@@ -952,7 +952,7 @@ do
 	UI.corner(codeBox, 10)
 	UI.stroke(codeBox, 2).ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	UI.padding(codeBox, 8)
-	local codeErr = UI.label(list, { Text = "", TextColor3 = UI.C.red, Size = UDim2.new(1, 0, 0, 22), LayoutOrder = 6, ZIndex = 12, stroke = 0 })
+	local codeErr = UI.label(list, { Text = "", TextColor3 = UI.C.red, TextWrapped = true, Size = UDim2.new(1, 0, 0, 40), LayoutOrder = 6, ZIndex = 12, stroke = 0 })
 	local redeem = UI.button(codeRow, { text = "REDEEM", color = UI.C.purple, size = UDim2.fromOffset(130, 50), position = UDim2.new(1, -12, 0.5, 0), anchor = Vector2.new(1, 0.5) })
 	lift(redeem.button, 13)
 	local busy = false

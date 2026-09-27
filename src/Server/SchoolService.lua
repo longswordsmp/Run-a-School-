@@ -53,11 +53,17 @@ Actions.register("nameSchool", function(player, p, name)
 	if #name > 64 then return { ok = false, err = "Use 3 to 28 characters" } end
 	name = name:gsub("^%s+", ""):gsub("%s+$", "")
 	if #name < 3 or #name > 28 then return { ok = false, err = "Use 3 to 28 characters" } end
+	-- (our own check first: Roblox's filter barely runs in Studio, and this is a kids' game)
+	if require(script.Parent.NameFilter).bad(name) then return { ok = false, err = "Keep it friendly! Try another name." } end
 	local ok, filtered = pcall(function()
 		local result = TextService:FilterStringAsync(name, player.UserId)
 		return result:GetNonChatStringForBroadcastAsync()
 	end)
 	if not ok then return { ok = false, err = "Could not check the name, try again" } end
+	-- (the Roblox filter hid part of it: that name isn't allowed, don't put ### over the gate)
+	if filtered ~= name or filtered:find("#") or require(script.Parent.NameFilter).bad(filtered) then
+		return { ok = false, err = "That name isn't allowed. Try another!" }
+	end
 	p.schoolName = filtered
 	PlotService.refreshSign(player)
 	Remotes.Notify:FireClient(player, "Your school is now " .. filtered .. "!", "good")
