@@ -25,6 +25,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Server = script.Parent
 -- the street first: HallService reads the bus stop and the kids' walk from it
 timed("StreetLayout", require(Server.StreetLayout).build)
+-- Janitor Stan's Confiscation Closet (replaces the shed baked into the place; before StoryService,
+-- which stands Stan at its NPCSpot)
+timed("TownCloset", require(Server.TownCloset).build)
 -- Recess Commons, the town playground (it replaces the one baked into the place)
 task.spawn(function() timed("TownPlayground", require(Server.TownPlayground).build) end)
 local Config = require(ReplicatedStorage.Shared.Config)
