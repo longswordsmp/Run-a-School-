@@ -5,7 +5,7 @@ straight from src/Shared/Config.lua, then plays a strong, always-present player 
 stands at the carpet, buys the best student they can afford, sells the worst when the school is
 full, buys desk rows and luck, and goes to the School Board as soon as the requirements are met.
 
-Usage:  python tools/econ_sim.py [hours=150] [seeds=5]
+Usage:  python tools/econ_sim.py [hours=150] [seeds=5]   (--no-tutorial: skip the Chapter 1 To-Do)
 Prints the median time of every milestone across seeds.
 """
 import math
@@ -116,6 +116,33 @@ CHAPTER_PCT = num(r"Config\.ChapterPct = ([\d.]+)", 0.0125)
 CHAPTER_OWN_AFTER = 900.0
 USE_CHAPTERS = "--no-chapters" not in sys.argv
 
+# Chapter 1, the To-Do (Config.Tutorial): the First Morning and Chapter 1, done in order. A step pays its
+# flat reward, or max(min, income x secs), when it's done. Each step takes the time a first-time player
+# needs for it: STEP_TIME is an ESTIMATE until the loop's playthrough measures them (replace them then).
+# A step that buys something also waits until it's affordable. Winning Hector's chase and the tiara
+# chase seat a free Hall Monitor and Drama Queen, and the Board won't make you Elementary until the
+# To-Do is done (it checks the Vex Prep Job).
+TUTORIAL = []
+_tb = re.search(r"Config\.Tutorial = \{(.*?)\n\}\n", CFG, re.S)
+if _tb:
+    for m in re.finditer(r'\{ id = "(\w+)", part = "\w+",[^\n]*', _tb.group(1)):
+        line = m.group(0)
+        rw = re.search(r"reward = ([\d.e]+)", line)
+        sc = re.search(r"secs = ([\d.e]+)", line)
+        mn = re.search(r"min = ([\d.e]+)", line)
+        TUTORIAL.append({"id": m.group(1), "reward": float(rw.group(1)) if rw else None,
+                         "secs": float(sc.group(1)) if sc else 0.0, "min": float(mn.group(1)) if mn else 0.0})
+STEP_TIME = {  # seconds of play per step (estimates: walking there, the chase or heist, a retry or two)
+    "welcome": 60, "scholar": 20, "collect": 20, "bonk": 40, "lock": 30, "rescue": 150, "desks": 30,
+    "k01_pencils": 20, "k02_teacher": 20, "k03_name": 20, "k04_hector": 120, "k05_janitor": 20,
+    "k06_thief": 120, "k07_row4": 20, "k07_swap": 60, "k08_crew": 150, "k09_map": 300, "k10_peek": 90,
+    "k11_pothole": 180, "k12_heist": 600, "board": 0,
+}
+STEP_NEEDS = {"desks": ("row", 3), "k07_row4": ("row", 4), "k01_pencils": ("supply", "Pencils"),
+              "k02_teacher": ("teacher", "SubSteve"), "k05_janitor": ("cash", 25e3)}
+STEP_GIFT = {"k04_hector": "HallMonitor", "k06_thief": "DramaQueen"}
+USE_TUTORIAL = "--no-tutorial" not in sys.argv
+
 # guaranteed kids (src/Server/LetterService.lua): each letter fills every `every` s of play and hands you
 # a kid of that rarity you can afford (the Board's required kid weighted x3); it restarts when called.
 # Extra letters: a finished chapter, Loretta's Lunch Box (one per LUNCH_EVERY of play, i.e. a day's
@@ -207,6 +234,9 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
     next_beam = 0.0
     tier_start = 0.0
     paid = set()
+    tut_i = 0
+    tut_at = STEP_TIME.get(TUTORIAL[0]["id"], 30) if TUTORIAL else 0.0
+    last_reward = 0.0
 
     def desks():
         floors = TIERS[tier]["floors"]
@@ -324,13 +354,58 @@ def simulate(hours, seed, cash_override=None, stop_tier=None):
                             letter_next[rr] = t + every
         hall = [h for h in hall if h[0] > t]
 
+        # the To-Do (tier 0 only)
+        if USE_TUTORIAL and tier == 0 and tut_i < len(TUTORIAL) and t >= tut_at:
+            st = TUTORIAL[tut_i]
+            need = STEP_NEEDS.get(st["id"])
+            ok = True
+            if need:
+                kind, what = need
+                if kind == "row":
+                    ok = rows_owned[0] >= what
+                elif kind == "supply":
+                    it = next((x for x in SUPPLIES if x["id"] == what), None)
+                    if it and what not in owned_items:
+                        ok = cash >= it["price"]
+                        if ok:
+                            cash -= it["price"]; iq += it["gain"]; owned_items.add(what)
+                elif kind == "teacher":
+                    it = next((x for x in TEACHERS if x["id"] == what), None)
+                    if it and what not in hired:
+                        ok = cash >= it["price"]
+                        if ok:
+                            cash -= it["price"]; teacher[0] = max(teacher[0], it["mult"]); hired.add(what)
+                elif kind == "cash":
+                    ok = cash >= what
+                    if ok:
+                        cash -= what
+            if ok:
+                pay = st["reward"] if st["reward"] is not None else max(st["min"], inc * st["secs"])
+                cash += pay
+                if pay > 0:
+                    # (printed like a time: the wait since the last To-Do reward)
+                    events[f"wait before todo {tut_i + 1:2d}"] = t - last_reward
+                    last_reward = t
+                gift = BY_ID.get(STEP_GIFT.get(st["id"], ""))
+                if gift:
+                    if len(seated) >= desks() and seated:
+                        seated.sort(key=lambda x: x[0])
+                        seated[0] = (gift["income"], gift, 1.0)
+                    else:
+                        seated.append((gift["income"], gift, 1.0))
+                mark(f"todo {tut_i + 1:2d} {st['id']}")
+                tut_i += 1
+                if tut_i < len(TUTORIAL):
+                    tut_at = t + STEP_TIME.get(TUTORIAL[tut_i]["id"], 30)
+
         # School Board review
         if tier + 1 < len(TIERS):
             nxt = TIERS[tier + 1]
             needs = nxt["needs"]
             has = needs is None or any(
                 (s["rarity"] == "Secret") if needs == "Secret" else (s["id"] == needs) for _, s, _ in seated)
-            if cash >= tier_cash[tier + 1] and has:
+            todo_done = not (USE_TUTORIAL and tier == 0 and TUTORIAL) or tut_i >= len(TUTORIAL) - 1
+            if cash >= tier_cash[tier + 1] and has and todo_done:
                 if USE_LETTERS and USE_CHAPTERS and 1 <= tier <= len(CHAPTERS) and len(paid) == len(CHAPTERS[tier - 1]):
                     r = CHAPTER_LETTERS[tier - 1]
                     credits[r] = credits.get(r, 0) + 1
