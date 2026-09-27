@@ -7,12 +7,18 @@
 --   tracked   any Model with a Humanoid whose PrimaryPart is anchored and isn't a player's character
 --   stills    an NPC whose position hasn't changed for a moment is left alone (no work for seated kids)
 --   jumps     a teleport (more than JUMP studs between updates) snaps straight there
+--   near      only NPCs within NEAR studs of the camera and in front of it: redrawing a rig is not
+--             cheap (every part welded to the root moves with it), and doing it for every walker in
+--             town cost 4-8 fps (measured: 58 walkers, 1,507 parts). Farther off, or behind you, the
+--             server's own updates are drawn as they come; nobody can tell at that distance.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local INTERP_DELAY = 0.05 -- seconds behind the newest update (a bit more than one update apart)
 local JUMP = 12
 local IDLE = 0.4 -- no update for this long: stop drawing, the server's position stands
+local NEAR = 110
+local IN_VIEW = 0.2 -- (cosine: roughly the camera's field of view plus a margin)
 
 local tracked = {} -- [root] = { snaps = { {t, cf} ... }, wrote = CFrame?, active = bool }
 
@@ -22,7 +28,8 @@ end
 
 local function track(model)
 	local root = model.PrimaryPart
-	if not root or tracked[root] or isPlayerChar(model) then return end
+	-- (Ambient: kids who ride on what they sit on, moved by Decor with it; never moved by the server)
+	if not root or tracked[root] or isPlayerChar(model) or model:GetAttribute("Ambient") then return end
 	tracked[root] = { snaps = {}, wrote = nil }
 	root.AncestryChanged:Connect(function()
 		if not root:IsDescendantOf(workspace) then tracked[root] = nil end
@@ -65,9 +72,23 @@ end)
 
 RunService.RenderStepped:Connect(function()
 	local now = os.clock()
+	local cam = workspace.CurrentCamera
+	local camPos, camLook = cam.CFrame.Position, cam.CFrame.LookVector
 	for root, s in tracked do
 		if not root.Anchored then continue end -- (carried or physics-driven: not ours to draw)
 		local cf = root.CFrame
+		-- far away or behind the camera: leave it to the server's updates
+		local off = cf.Position - camPos
+		local dist = off.Magnitude
+		if dist > NEAR or (dist > 12 and off:Dot(camLook) < IN_VIEW * dist) then
+			if s.wrote ~= nil then
+				local newest = s.snaps[#s.snaps]
+				if newest and cf == s.wrote then root.CFrame = newest.cf end
+				s.wrote = nil
+			end
+			table.clear(s.snaps)
+			continue
+		end
 		-- a value we didn't write is a fresh update from the server
 		if s.wrote == nil or cf ~= s.wrote then
 			local last = s.snaps[#s.snaps]

@@ -25,6 +25,23 @@ for _, m in CollectionService:GetTagged("Rat") do addRat(m) end
 CollectionService:GetInstanceAddedSignal("Rat"):Connect(addRat)
 CollectionService:GetInstanceRemovedSignal("Rat"):Connect(function(m) rats[m] = nil end)
 
+-- "Rock": a model sways about its pivot's X or Z axis (attribute Axis), Amp degrees either way, Rate
+-- radians a second, Phase to put neighbours out of step (Recess Commons: swings, see-saws, spring
+-- riders). "Turn": a model turns steadily about its pivot's Y at SpinSpeed (the merry-go-round).
+local rockers, turners = {}, {}
+local function addRock(m)
+	if m:IsA("Model") then rockers[m] = m:GetPivot() end
+end
+local function addTurn(m)
+	if m:IsA("Model") then turners[m] = m:GetPivot() end
+end
+for _, m in CollectionService:GetTagged("Rock") do addRock(m) end
+CollectionService:GetInstanceAddedSignal("Rock"):Connect(addRock)
+CollectionService:GetInstanceRemovedSignal("Rock"):Connect(function(m) rockers[m] = nil end)
+for _, m in CollectionService:GetTagged("Turn") do addTurn(m) end
+CollectionService:GetInstanceAddedSignal("Turn"):Connect(addTurn)
+CollectionService:GetInstanceRemovedSignal("Turn"):Connect(function(m) turners[m] = nil end)
+
 -- "Flicker": a light that stutters now and then (the sewer lamps)
 local flickers = {}
 local function addFlicker(l)
@@ -62,6 +79,26 @@ RunService.RenderStepped:Connect(function()
 		if t > f.next then
 			l.Brightness = (l.Brightness > 0.2) and 0.05 or f.b
 			f.next = t + (l.Brightness < 0.2 and 0.06 + math.random() * 0.1 or 0.8 + math.random() * 5)
+		end
+	end
+	-- (the playground's swings and roundabout only move when you're near enough to see them)
+	local camPos = workspace.CurrentCamera.CFrame.Position
+	for m, base in rockers do
+		if m.Parent then
+			local amp = m:GetAttribute("Amp") or 0
+			if amp ~= 0 and (base.Position - camPos).Magnitude < 220 then
+				local a = math.rad(amp) * math.sin(t * (m:GetAttribute("Rate") or 2) + (m:GetAttribute("Phase") or 0))
+				m:PivotTo(base * (m:GetAttribute("Axis") == "Z" and CFrame.Angles(0, 0, a) or CFrame.Angles(a, 0, 0)))
+			end
+		else
+			rockers[m] = nil
+		end
+	end
+	for m, base in turners do
+		if m.Parent then
+			if (base.Position - camPos).Magnitude < 220 then m:PivotTo(base * CFrame.Angles(0, t * (m:GetAttribute("SpinSpeed") or 0.5), 0)) end
+		else
+			turners[m] = nil
 		end
 	end
 	for m, base in spinners do
