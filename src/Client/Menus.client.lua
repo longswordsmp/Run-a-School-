@@ -1789,8 +1789,8 @@ local function watchUnlock(caption, b)
 	end)
 end
 
--- a side button in the style of tomas's reference (a gamepass shop, 2026-09-27): a bright tile with a
--- diagonal lattice, a darker border inside a thick outline, sitting on a darker lip it dips onto when
+-- a side button in the style of tomas's reference (a gamepass shop, 2026-09-27): a bright tile with the
+-- Roblox studs and a soft gloss, a darker border inside a thick outline, sitting on a darker lip it dips onto when
 -- pressed, a 3D icon (Shared/Icons) and the caption with a drop shadow
 local Icons = require(Shared:WaitForChild("Icons"))
 local SIDE_ICON = {
@@ -1798,7 +1798,6 @@ local SIDE_ICON = {
 	Name = "pencil", Settings = "gear", Daily = "calendar", Coop = "people", Files = "folder", Quests = "scroll",
 	Admin = "wrench",
 }
-local LATTICE = "rbxthumb://type=Asset&id=100611400436149&w=420&h=420" -- (a white diagonal net)
 local function tileButton(caption, color, order)
 	local LIP = 5
 	local b = Instance.new("TextButton")
@@ -1814,21 +1813,22 @@ local function tileButton(caption, color, order)
 	local body = UI.new("Frame", { Name = "Body", BackgroundColor3 = UI.darken(color, 0.22), Size = UDim2.new(1, 0, 1, -LIP), ZIndex = 2, Parent = b })
 	UI.corner(body, 16)
 	UI.stroke(body, 3.5)
-	-- the face: the colour, lit from the top, with the lattice over it
+	-- the face: the colour, lit from the top, the studs over it and a gloss fading down its top half
 	local face = UI.new("Frame", { Name = "Face", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.new(1, -8, 1, -8), Position = UDim2.fromOffset(4, 4), ZIndex = 2, Parent = body })
 	UI.corner(face, 12)
 	UI.gradient(face, UI.lighten(color, 0.3), color)
-	local net = UI.new("ImageLabel", { Name = "Lattice", BackgroundTransparency = 1, Image = LATTICE, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(46, 46), ImageTransparency = 0.55, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = face })
-	UI.corner(net, 12)
-	local shine = UI.new("Frame", { Name = "Shine", BorderSizePixel = 0, BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.55, Size = UDim2.new(1, -16, 0, 4), Position = UDim2.fromOffset(8, 5), ZIndex = 3, Parent = face })
-	UI.corner(shine, 2)
-	Icons.view(face, SIDE_ICON[caption] or "gift", { size = UDim2.new(1, 4, 0.72, 0), position = UDim2.new(0.5, 0, 0, -3), anchor = Vector2.new(0.5, 0), zindex = 4, sway = 12, bob = 0.08 })
+	UI.studs(face, { zindex = 3, transparency = 0.55, tile = 40 })
+	local gloss = UI.new("Frame", { Name = "Gloss", BorderSizePixel = 0, BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 0.55), ZIndex = 3, Parent = face })
+	UI.corner(gloss, 12)
+	UI.new("UIGradient", { Rotation = 90, Transparency = NumberSequence.new(0.7, 1), Parent = gloss })
+	-- (the icon's outline draws at 4, the icon at 5)
+	Icons.view(face, SIDE_ICON[caption] or "gift", { size = UDim2.new(1, 16, 0.8, 0), position = UDim2.new(0.5, 0, 0, -10), anchor = Vector2.new(0.5, 0), zindex = 4, sway = 12, bob = 0.08 })
 	-- the caption and its shadow
-	UI.label(face, { Name = "CaptionShadow", Text = caption, Font = UI.BIG, TextColor3 = UI.C.ink, Size = UDim2.new(1, -4, 0.3, 0), Position = UDim2.new(0.5, 2, 1, -1), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 5, stroke = 2 })
-	UI.label(face, { Name = "Caption", Text = caption, Font = UI.BIG, Size = UDim2.new(1, -4, 0.3, 0), Position = UDim2.new(0.5, 0, 1, -3), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 6, stroke = 2.5 })
+	UI.label(face, { Name = "CaptionShadow", Text = caption, Font = UI.BIG, TextColor3 = UI.C.ink, Size = UDim2.new(1, -4, 0.3, 0), Position = UDim2.new(0.5, 2, 1, -1), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 6, stroke = 2 })
+	UI.label(face, { Name = "Caption", Text = caption, Font = UI.BIG, Size = UDim2.new(1, -4, 0.3, 0), Position = UDim2.new(0.5, 0, 1, -3), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 7, stroke = 2.5 })
 	-- a glint that sweeps across now and then; hover grows it, lights a glow round it and glints it;
 	-- pressing dips it onto the lip
-	local glint = UI.shine(face, { zindex = 7, strength = 0.2 })
+	local glint = UI.shine(face, { zindex = 9, strength = 0.2 })
 	local glow = UI.glow(lip, UI.lighten(color, 0.3), { alpha = 0, spread = 4 })
 	glow.ZIndex = 0
 	for _, r in glow:GetChildren() do r.ZIndex = 0 end
@@ -1909,7 +1909,7 @@ end
 -- Home: back to your school in one press (H on a keyboard); a short cooldown shows as a dark sweep
 do
 	local home = sideButton(-1, "\u{1F3E0}", "Home", Color3.fromRGB(255, 120, 60), nil)
-	local shade = UI.new("Frame", { Name = "Cooldown", BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.45, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromScale(1, 0), ZIndex = 7, Parent = home.body })
+	local shade = UI.new("Frame", { Name = "Cooldown", BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.45, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromScale(1, 0), ZIndex = 8, Parent = home.body })
 	UI.corner(shade, 16)
 	local busy = false
 	local function goHome()
