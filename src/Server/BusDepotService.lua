@@ -1,14 +1,12 @@
 -- ServerScriptService.Server.BusDepotService
--- The BUS DEPOT (tomas, 2026-09-27, like Pet Simulator X's eggs): three buses, each with seven kids of
--- its own (Config.Buses / Config.BusStudents). Open 1, 10 or 100 of a bus for cash; each one rolls a
--- kid on the bus's odds (Config.BusOdds), and the client plays the bus pulling in and the kid getting
--- off (Menus: the Buses panel and the reveal).
--- Where a kid goes: an empty desk; with none left, it takes the seat of your weakest kid if it earns
--- more (that one is sold for half its price, as the Sell button would); otherwise it's sold for half
--- its price itself. So opening buses never loses a better kid.
--- The Robux extras (Config.Passes): Bus Luck (x2 on the three rarest), Triple Bus (OPEN 1 opens three),
--- Auto Bus (the client keeps opening one at a time).
--- A prompt at the bus shelter on Recess Row opens the panel too.
+-- The MAGIC BUS (tomas, 2026-09-27: "like Pet Simulator X's eggs ... bought with Robux, below the boost
+-- in the Store ... the Magic Bus just for now, which has really good students: the worst does 1M a
+-- second and the ??? 1B, and super rare"). Its seven kids (Config.Buses / Config.BusStudents) come
+-- only from it. Buying 1, 3, 10 or 50 (Config.Products MagicBus1 .. MagicBus50) rolls a kid per bus on
+-- the bus's odds and the client plays the reveal (BusReveal.client, Push "busOpen").
+-- Where a kid goes: an empty desk; with none left, the seat of your weakest kid if it earns more
+-- (that one sold for half its price, as the Sell button would); otherwise it's sold for half its own.
+-- A Bus Luck pass doubles the three rarest. A prompt at the bus shelter opens the Store on the bus.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -21,20 +19,13 @@ local Signals = require(script.Parent.Signals)
 
 local BusDepotService = {}
 
--- what n buses cost: a real bulk price (ten for the price of nine, a hundred for eighty-five), the
--- full price shown crossed out beside it
-Config.BusBulk = Config.BusBulk or { [1] = 1, [3] = 3, [10] = 9, [100] = 85 }
-function BusDepotService.cost(bus, n)
-	return bus.price * (Config.BusBulk[n] or n)
-end
-
 local function has(player, pass)
 	return player:GetAttribute("Pass_" .. pass) == true
 end
 
 -- the kid a bus drops off (lucky: the three rarest twice as likely)
 local function roll(bus, lucky)
-	local w = table.clone(Config.BusOdds)
+	local w = table.clone(bus.odds or Config.BusOdds)
 	if lucky then
 		for i = #w - 2, #w do w[i] *= 2 end
 	end
@@ -84,28 +75,13 @@ local function seat(host, p, def, grade)
 	return "sold", nil, nil, gain
 end
 
-local lastOpen = {}
-Players.PlayerRemoving:Connect(function(player) lastOpen[player] = nil end)
-
-Actions.register("openBus", function(player, p, busId, count)
+-- open `count` of a bus for `player` (paid for already: MonetizationService) -> the results
+function BusDepotService.open(player, busId, count)
 	local bus = Config.BusById[busId]
-	if not bus then return { ok = false, err = "No such bus" } end
-	count = tonumber(count)
-	if count ~= 1 and count ~= 10 and count ~= 100 then return { ok = false, err = "1, 10 or 100" } end
-	-- (the Triple Bus pass: OPEN 1 opens three)
-	if count == 1 and has(player, "TripleBus") then count = 3 end
-	-- (a moment between opens: the reveal takes that long anyway)
-	local now = os.clock()
-	if lastOpen[player] and now - lastOpen[player] < 0.8 then return { ok = false, err = "Easy! One bus at a time" } end
+	if not bus then return nil end
 	local host = Data.hostOf(player)
 	local hp = Data.get(host)
-	if not hp or not PlotService.getPlot(host) then return { ok = false, err = "You need a school first" } end
-	local price = BusDepotService.cost(bus, count)
-	if not Data.addCash(player, -price) then
-		Remotes.Sfx:FireClient(player, "Error")
-		return { ok = false, err = "Not enough cash", need = price }
-	end
-	lastOpen[player] = now
+	if not hp or not PlotService.getPlot(host) then return nil end
 	local lucky = has(player, "BusLuck")
 	local HallService = require(script.Parent.HallService)
 	local results = {}
@@ -122,24 +98,25 @@ Actions.register("openBus", function(player, p, busId, count)
 	end
 	PlotService.updateIncome(host)
 	hp.stats.buses = (hp.stats.buses or 0) + count
-	Remotes.Sfx:FireClient(player, "Buy")
-	-- (the rarest ones are news for the whole server)
-	for _, r in results do
-		if r.tier >= 6 then
-			local def = Config.StudentById[r.id]
-			Remotes.Notify:FireAllClients(("%s got %s from the %s!"):format(player.DisplayName, def.name, bus.name), "good")
+	-- (the rarest are news for the whole server, once the reveal has had time to play)
+	task.delay(4, function()
+		for _, r in results do
+			if r.tier >= #bus.kids - 1 then
+				local def = Config.StudentById[r.id]
+				Remotes.Notify:FireAllClients(("\u{1F68C} %s got %s from the %s!"):format(player.DisplayName, def.name, bus.name), "good")
+			end
 		end
-	end
-	return { ok = true, bus = bus.id, count = count, price = price, results = results }
-end)
+	end)
+	return { bus = bus.id, count = count, results = results }
+end
 
--- the Buses panel's odds (with Bus Luck if they have it)
+-- the odds the Store shows (with Bus Luck if they have it)
 Actions.register("busOdds", function(player)
-	return { ok = true, lucky = has(player, "BusLuck"), triple = has(player, "TripleBus"), auto = has(player, "AutoBus") }
+	return { ok = true, lucky = has(player, "BusLuck") }
 end)
 
 ---------------------------------------------------------------------------
--- a BUS DEPOT sign and a prompt at the bus shelter on Recess Row
+-- a MAGIC BUS sign and a prompt at the bus shelter on Recess Row: opens the Store on the bus
 ---------------------------------------------------------------------------
 local function depotSign()
 	local map = workspace:FindFirstChild("Map")
@@ -151,7 +128,7 @@ local function depotSign()
 	board.Anchored = true
 	board.Size = Vector3.new(10, 3, 0.6)
 	board.CFrame = CFrame.new(cf.Position + Vector3.new(0, size.Y / 2 + 2.2, 0))
-	board.Color = Color3.fromRGB(255, 200, 40)
+	board.Color = Color3.fromRGB(150, 80, 235)
 	board.Material = Enum.Material.SmoothPlastic
 	board.Parent = shelter
 	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
@@ -164,24 +141,22 @@ local function depotSign()
 		t.BackgroundTransparency = 1
 		t.Font = Enum.Font.LuckiestGuy
 		t.TextScaled = true
-		t.Text = "\u{1F68C} BUS DEPOT"
-		t.TextColor3 = Color3.fromRGB(40, 40, 50)
+		t.Text = "\u{2728} MAGIC BUS"
+		t.TextColor3 = Color3.fromRGB(255, 230, 90)
 		t.Parent = g
+		local s = Instance.new("UIStroke")
+		s.Thickness = 3
+		s.Parent = t
 	end
 	local pp = Instance.new("ProximityPrompt")
-	pp.ActionText = "Open buses"
-	pp.ObjectText = "Bus Depot"
+	pp.ActionText = "See the Magic Bus"
+	pp.ObjectText = "Magic Bus"
 	pp.HoldDuration = 0
 	pp.MaxActivationDistance = 14
 	pp.RequiresLineOfSight = false
 	pp.Parent = board
 	pp.Triggered:Connect(function(player)
-		local p = Data.get(player)
-		if not (p and p.unlocked and p.unlocked.Buses) then
-			Remotes.Notify:FireClient(player, "The Bus Depot opens after your First Morning", "info")
-			return
-		end
-		Remotes.Push:FireClient(player, "openPanel", { name = "Buses" })
+		Remotes.Push:FireClient(player, "openPanel", { name = "Store", tab = 4 })
 	end)
 end
 

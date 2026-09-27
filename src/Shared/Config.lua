@@ -139,25 +139,17 @@ for i, s in Config.Students do
 end
 
 ---------------------------------------------------------------------------
--- the BUS DEPOT (tomas, 2026-09-27: "student rng where you purchase a bus type ... 1 bus, 10 bus,
--- 100 bus ... a bus animation will show up and grant you a student ... 7 things you can get from a
--- bus and the rarer the better and the super secret ??? is a special student ... twins ... they sit
--- together ... three different bus types: bus, magic bus and galaxy bus", like Pet Simulator X's eggs;
--- paid in cash, Robux only for the extras). Each bus has seven kids of its own, only from that bus
--- (never at the bus stop, in letters or rewards: they're in Config.BusStudents, not Config.Students).
--- A bus pays back about 1.4x its price on average: most opens a small win, the rare ones huge.
--- The ??? is a pair of twins: two kids at one desk, earning as one.
+-- the MAGIC BUS (tomas, 2026-09-27: "like Pet Simulator X's eggs ... bought with Robux, below the boost
+-- in the Store ... just the Magic Bus for now, with really good students: the worst does 1M a second,
+-- the ??? 1B, super rare"). Seven kids only it brings (Config.BusStudents, not Config.Students: never at
+-- the bus stop, in letters or rewards); buy 1, 3, 10 or 50 (Config.Products MagicBus1 .. 50). The ??? is
+-- a pair of twins at one desk, earning as one. The Bus and the Galaxy Bus (their kids below) are for
+-- later.
 ---------------------------------------------------------------------------
--- (chances in %, the same for every bus: 1 in 10,000 for the ???)
-Config.BusOdds = { 50, 28, 13, 6, 2.49, 0.5, 0.01 }
-Config.BusRarities = { "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Prodigy", "Secret" }
+Config.BusOdds = { 45, 28, 15, 8, 3.4, 0.5, 0.1 } -- (in %: the ??? one in a thousand)
 Config.Buses = {
-	{ id = "Bus", name = "Bus", price = 5000, color = rgb(255, 200, 40), icon = "schoolbus",
-		kids = { "BusBuddyBenny", "WindowSeatWendy", "BackRowBobby", "BusMonitorMona", "DriversKidDex", "GoldenTicketGwen", "TweedleTwins" } },
-	{ id = "MagicBus", name = "Magic Bus", price = 5e6, color = rgb(170, 90, 255), icon = "magicbus",
-		kids = { "WandWaverWill", "PotionPolly", "BroomstickBea", "CrystalBallCass", "DragonRiderDrake", "ArchmageAria", "MirrorTwins" } },
-	{ id = "GalaxyBus", name = "Galaxy Bus", price = 5e9, color = rgb(70, 120, 255), icon = "galaxybus",
-		kids = { "AstroAndy", "MoonwalkerMia", "CometKai", "StarPilotSol", "AlienZib", "CosmicNova", "GeminiTwins" } },
+	{ id = "MagicBus", name = "Magic Bus", color = rgb(170, 90, 255), icon = "magicbus", odds = Config.BusOdds,
+		kids = { "WandWaverWill", "PotionPolly", "BroomstickBea", "ElfArcherFern", "DragonRiderDrake", "ArchmageAria", "TwinSorcerers" } },
 }
 Config.BusById = {}
 for _, b in Config.Buses do Config.BusById[b.id] = b end
@@ -172,13 +164,13 @@ Config.BusStudents = {
 	S("GoldenTicketGwen", "Golden Ticket Gwen", "Prodigy", 300000, 1000, "Art", "GoldenTicket", "light", rgb(255, 215, 80), rgb(200, 150, 40)),
 	S("TweedleTwins", "The Tweedle Twins", "Secret", 5000000, 8300, "Drama", "TwinBeanies", "light", rgb(230, 60, 70), rgb(40, 60, 140), { twins = true }),
 	-- the Magic Bus
-	S("WandWaverWill", "Wand Waver Will", "Uncommon", 1.25e6, 12500, "Science", "Wand", "light", rgb(90, 60, 170), rgb(40, 30, 70)),
-	S("PotionPolly", "Potion Polly", "Rare", 3e6, 23000, "Science", "Potion", "tan", rgb(110, 200, 120), rgb(60, 40, 90)),
-	S("BroomstickBea", "Broomstick Bea", "Epic", 7.5e6, 47000, "Gym", "Broomstick", "light", rgb(40, 40, 50), rgb(90, 40, 120)),
-	S("CrystalBallCass", "Crystal Ball Cass", "Legendary", 2e7, 91000, "History", "CrystalBall", "brown", rgb(200, 90, 220), rgb(60, 30, 90)),
-	S("DragonRiderDrake", "Dragon Rider Drake", "Mythic", 6e7, 200000, "Gym", "DragonWings", "light", rgb(60, 150, 80), rgb(60, 50, 40)),
-	S("ArchmageAria", "Archmage Aria", "Prodigy", 3e8, 667000, "English", "Archmage", "tan", rgb(60, 80, 200), rgb(40, 40, 110)),
-	S("MirrorTwins", "The Mirror Twins", "Secret", 5e9, 5.6e6, "Art", "MirrorTwins", "light", rgb(220, 220, 240), rgb(140, 120, 200), { twins = true }),
+	S("WandWaverWill", "Apprentice Will", "Rare", 2e7, 2e5, "Science", "Wand", "light", rgb(90, 60, 170), rgb(40, 30, 70)),
+	S("PotionPolly", "Alchemist Polly", "Epic", 4e7, 4e5, "Science", "Potion", "tan", rgb(110, 200, 120), rgb(60, 40, 90)),
+	S("BroomstickBea", "Witch Bea", "Epic", 8e7, 8e5, "Gym", "Broomstick", "light", rgb(40, 40, 50), rgb(90, 40, 120)),
+	S("ElfArcherFern", "Elf Archer Fern", "Legendary", 2e8, 2e6, "Gym", "ElfArcher", "light", rgb(120, 200, 90), rgb(60, 110, 60)),
+	S("DragonRiderDrake", "Dragon Knight Drake", "Mythic", 6e8, 6e6, "Gym", "DragonWings", "light", rgb(60, 150, 80), rgb(60, 50, 40)),
+	S("ArchmageAria", "Archmage Aria", "Prodigy", 2e9, 2e7, "English", "Archmage", "tan", rgb(60, 80, 200), rgb(40, 40, 110)),
+	S("TwinSorcerers", "The Twin Sorcerers", "Secret", 1e11, 1e9, "Art", "TwinSorcerers", "light", rgb(90, 30, 150), rgb(90, 30, 150), { twins = true }),
 	-- the Galaxy Bus
 	S("AstroAndy", "Astro Andy", "Uncommon", 1.25e9, 8.3e6, "Science", "SpaceHelmet", "light", rgb(240, 240, 245), rgb(200, 200, 210)),
 	S("MoonwalkerMia", "Moonwalker Mia", "Rare", 3e9, 1.5e7, "Science", "Moonwalker", "tan", rgb(220, 220, 235), rgb(90, 100, 140)),
@@ -1205,9 +1197,7 @@ Config.Passes = {
 	-- leave (Menus): a real second pass, so "199 -> 49" is true. same: the pass it counts as; hidden:
 	-- not in the Store
 	{ key = "OfflinePlusDeal", id = 0, name = "Offline Tuition+", robux = 49, icon = "\u{1F319}", desc = "Earn 50% for up to 12h while offline (was 25% for 2h)", same = "OfflinePlus", hidden = true },
-	{ key = "BusLuck", id = 0, name = "Bus Luck", robux = 99, icon = "\u{1F68C}", desc = "x2 chance of the three rarest kids from every bus" },
-	{ key = "TripleBus", id = 0, name = "Triple Bus", robux = 199, icon = "\u{1F68C}", desc = "OPEN 1 opens three buses at once (you pay for three)" },
-	{ key = "AutoBus", id = 0, name = "Auto Bus", robux = 149, icon = "\u{1F68C}", desc = "Keep opening a bus by itself while you have the cash" },
+	{ key = "BusLuck", id = 0, name = "Bus Luck", robux = 199, icon = "\u{1F68C}", desc = "x2 chance of the three rarest Magic Bus kids, forever" },
 	{ key = "FastLetters", id = 0, name = "Fast Admissions", robux = 149, icon = "\u{1F4E8}", desc = "Admissions letters fill twice as fast, forever" },
 	{ key = "DoubleTickets", id = 0, name = "2x Event Tickets", robux = 79, icon = "\u{1F39F}\u{FE0F}", desc = "Every event ticket you earn counts double" },
 }
@@ -1235,6 +1225,10 @@ Config.Products = {
 	{ key = "ServerLuck", id = 0, name = "Server Luck x2", robux = 29, icon = "\u{2728}", desc = "x2 luck for everyone for 15 minutes" },
 	{ key = "ExpressRare", id = 0, name = "Express Rare Letter", robux = 9, icon = "\u{2709}\u{FE0F}", desc = "Your Rare letter, ready now (you still pay the kid's price)" },
 	{ key = "ExpressEpic", id = 0, name = "Express Epic Letter", robux = 19, icon = "\u{1F48C}", desc = "Your Epic letter, ready now (you still pay the kid's price)" },
+	{ key = "MagicBus1", id = 0, name = "Magic Bus", robux = 99, icon = "\u{1F68C}", desc = "One Magic Bus: one of its kids", bus = "MagicBus", count = 1 },
+	{ key = "MagicBus3", id = 0, name = "3 Magic Buses", robux = 249, icon = "\u{1F68C}", desc = "Three Magic Buses", bus = "MagicBus", count = 3 },
+	{ key = "MagicBus10", id = 0, name = "10 Magic Buses", robux = 799, icon = "\u{1F68C}", desc = "Ten Magic Buses", bus = "MagicBus", count = 10 },
+	{ key = "MagicBus50", id = 0, name = "50 Magic Buses", robux = 3499, icon = "\u{1F68C}", desc = "Fifty Magic Buses", bus = "MagicBus", count = 50 },
 	{ key = "LockRefresh", id = 0, name = "Instant Lock Refresh", robux = 9, icon = "\u{1F504}", desc = "Your gate can lock again right now" },
 	{ key = "ExpressLegendary", id = 0, name = "Express Legendary Letter", robux = 29, icon = "\u{1F4E8}", desc = "Your Legendary letter, ready now (you still pay the kid's price)" },
 	{ key = "SchoolShield", id = 0, name = "School Shield", robux = 39, icon = "\u{1F6E1}\u{FE0F}", desc = "Your gate locks for 15 minutes: nobody gets in", shield = 900 },

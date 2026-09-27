@@ -1657,15 +1657,61 @@ function B.schoolbus(m)
 	busBody(m, { body = rgb(255, 200, 40), glass = rgb(150, 210, 255), door = rgb(120, 180, 240), trim = INK, roof = rgb(250, 250, 245) })
 	speedTrail(m, { rgb(90, 200, 255), rgb(255, 120, 60), rgb(255, 255, 255) })
 end
+-- the MAGIC BUS (tomas, 2026-09-27: "not just a different colour: a completely different bus, a magic
+-- bus that rides on clouds"): a rounded enchanted coach in midnight purple, glowing arched windows, a
+-- gold crescent moon and stars down its side, a lantern for a headlamp, a big wizard's hat for a roof
+-- with a star on its tip, and no wheels: it floats on a bank of clouds, a trail of little clouds and
+-- sparkles streaming out behind (the front at -X, the right of the screen)
 function B.magicbus(m)
-	local PURPLE, GOLDL = rgb(150, 80, 235), rgb(255, 205, 70)
-	busBody(m, { body = PURPLE, glass = rgb(200, 170, 255), door = rgb(110, 60, 190), trim = GOLDL, roof = rgb(70, 40, 140), hub = GOLDL })
-	-- a wizard's hat on the roof, gold stars down the side
-	cylc(m, 2.2, 0.16, CF(0.6, 1.66, 0), rgb(60, 30, 120))
-	cone(m, CF(0.6, 1.7, 0), 1.3, 0.1, 1.9, 6, rgb(60, 30, 120))
-	for _, x in { 1.4, -0.3 } do star5(m, CF(x, -0.0, -1.08), 0.16, GOLDL, 0.06) end
-	speedTrail(m, { rgb(255, 150, 255), rgb(200, 150, 255), rgb(255, 230, 140) })
+	local BODY, BODY_D, ROOF, HAT = rgb(115, 60, 210), rgb(70, 35, 150), rgb(175, 135, 255), rgb(60, 30, 130)
+	local GOLDL, GLOW = rgb(255, 205, 70), rgb(255, 222, 120)
+	local CLOUD, CLOUD_S = rgb(252, 252, 255), rgb(214, 220, 248)
+	-- the coach: a box with round ends (a cylinder across each end)
+	p(m, V(4.4, 2.3, 2.0), CF(0.5, 0.35, 0), BODY)
+	cyl(m, 2.3, 2.0, V(2.7, 0.35, 0), BODY, "z")
+	p(m, V(1.3, 1.4, 2.0), CF(-2.25, -0.1, 0), BODY)
+	cyl(m, 1.4, 2.0, V(-2.9, -0.1, 0), BODY, "z")
+	p(m, V(6.0, 0.34, 2.04), CF(-0.05, -0.62, 0), BODY_D)
+	p(m, V(6.1, 0.16, 2.06), CF(-0.05, -0.25, 0), GOLDL)
+	-- the roof, lighter, with a gold edge
+	p(m, V(4.7, 0.3, 2.14), CF(0.45, 1.58, 0), ROOF)
+	p(m, V(4.72, 0.1, 2.16), CF(0.45, 1.4, 0), GOLDL)
+	-- four arched windows, glowing warm
+	for k = 0, 3 do
+		local x = 2.15 - k * 1.02
+		p(m, V(0.74, 0.66, 0.1), CF(x, 0.72, -1.01), GLOW, nil, Enum.Material.Neon)
+		disc(m, 0.74, 0.1, CF(x, 1.05, -1.01), GLOW, Enum.Material.Neon)
+		p(m, V(0.06, 1.0, 0.12), CF(x, 0.85, -1.03), BODY_D)
+	end
+	-- the windscreen and the driver's glow
+	p(m, V(0.1, 1.0, 1.6), CF(-1.72, 0.8, 0) * CFrame.Angles(0, 0, math.rad(-14)), rgb(180, 205, 255), nil, Enum.Material.Glass)
+	-- a lantern for a headlamp, a gold crescent moon and stars on the side
+	ball(m, 0.5, V(-3.55, -0.05, -0.6), GLOW, Enum.Material.Neon)
+	p(m, V(0.14, 0.62, 0.14), CF(-3.55, 0.35, -0.6), GOLDL)
+	disc(m, 0.95, 0.08, CF(-1.15, 0.05, -1.03), GOLDL)
+	disc(m, 0.78, 0.1, CF(-0.98, 0.14, -1.04), BODY)
+	star5(m, CF(1.55, -0.02, -1.06), 0.13, GOLDL, 0.05)
+	star5(m, CF(0.35, 0.02, -1.06), 0.1, GOLDL, 0.05)
+	star5(m, CF(2.65, 0.12, -1.06), 0.08, GOLDL, 0.05)
+	-- the wizard's hat roof, tipped back, a gold band and a star on its tip
+	cylc(m, 2.6, 0.16, CF(0.7, 1.78, 0), HAT)
+	cone(m, CF(0.7, 1.84, 0) * CFrame.Angles(0, 0, math.rad(-14)), 1.45, 0.12, 2.2, 8, HAT)
+	cylc(m, 1.5, 0.22, CF(0.7, 1.97, 0), GOLDL)
+	star(m, CF(1.25, 4.15, 0), 0.32, GOLDL)
+	-- the cloud bank it rides on
+	for _, c in { { -2.7, -1.0, 0, 1.3 }, { -1.6, -1.2, 0.15, 1.6 }, { -0.3, -1.15, -0.1, 1.7 }, { 1.0, -1.2, 0.15, 1.6 }, { 2.2, -1.05, 0, 1.5 }, { 3.2, -0.9, 0.05, 1.1 } } do
+		ball(m, c[4], V(c[1], c[2], c[3] - 0.45), CLOUD)
+		ball(m, c[4] * 0.85, V(c[1] + 0.35, c[2] - 0.2, c[3] + 0.5), CLOUD_S)
+	end
+	-- the trail behind (+X): little clouds getting smaller, and sparkles
+	for _, c in { { 4.1, -0.75, 0.95 }, { 4.95, -0.55, 0.72 }, { 5.65, -0.35, 0.52 }, { 6.2, -0.2, 0.36 } } do
+		ball(m, c[3], V(c[1], c[2], -0.1), CLOUD)
+	end
+	star(m, CF(4.4, 0.55, -0.4), 0.3, rgb(255, 170, 255))
+	star(m, CF(5.3, 1.1, -0.2), 0.22, GOLDL)
+	star(m, CF(5.9, 0.35, -0.3), 0.16, rgb(170, 225, 255))
 end
+
 function B.galaxybus(m)
 	local NAVY, CYAN = rgb(35, 45, 120), rgb(90, 230, 255)
 	busBody(m, { body = NAVY, glass = rgb(120, 210, 255), door = rgb(60, 80, 170), trim = CYAN, roof = rgb(20, 25, 70), hub = CYAN })
@@ -1756,7 +1802,7 @@ for k, v in {
 	runningshoes = { turn = -40, tilt = 30, roll = -12 }, lockpick = HIGH, hoverboard = { turn = -50, tilt = 40, roll = 20 },
 	megaphone = L, janitorcart = A, bank = A, laser = A, stopwatch = R, hallpass = R, alarm = A, trophy = A,
 	letterLegendary = R, fastletters = R, ticket = L, candyjar = A, moneycloud = A,
-	schoolbus = { turn = -24, tilt = 14 }, magicbus = { turn = -24, tilt = 14 }, galaxybus = { turn = -24, tilt = 14 },
+	schoolbus = { turn = -24, tilt = 14 }, magicbus = { turn = -26, tilt = 16 }, galaxybus = { turn = -24, tilt = 14 },
 } do Icons.LOOK[k] = v end
 
 -- the panels (by their names) -> icon

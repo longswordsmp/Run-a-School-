@@ -34,8 +34,6 @@ local RULES = {
 	-- (one new button per beat: nothing in the First Morning but what its step needs)
 	{ name = "Shop", ok = function(p) return (p.tutorial or 1) >= stepIndex("k01_pencils") end },
 	{ name = "Board", ok = function(p) return (p.tutorial or 1) >= stepIndex("k01_pencils") end },
-	-- (the Bus Depot, with the Shop)
-	{ name = "Buses", ok = function(p) return (p.tutorial or 1) >= stepIndex("k01_pencils") end },
 	-- (desk rows from the First Morning's last step: before, a Kindergarten was stuck on 8 desks until
 	-- the first Board review, and to the owner "the upgrades gui is gone")
 	{ name = "Upgrades", ok = function(p) return (p.tutorial or 1) >= stepIndex("desks") end },

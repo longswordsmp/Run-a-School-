@@ -23,6 +23,14 @@ Sounds.Sfx = {
 	Lock = { id = id(9119717529), volume = 0.35, max = 0.8, gap = 0.5 },
 	Bonk = { id = id(3765689841), volume = 0.4, max = 0.8, gap = 0.2 },
 	Error = { id = id(16903690359), volume = 0.2, max = 0.5, gap = 0.5 },
+	-- the Magic Bus reveal (BusReveal.client; loaded in Studio 2026-09-27: whoosh 1.02 s, short roll
+	-- 4.55 s, rising whoosh 1.31 s, brass sting 4.60 s, "Full of Wonder" 6.45 s; ProSoundEffects and APM,
+	-- licensed for every experience)
+	BusWhoosh = { id = id(9126229255), volume = 0.45, max = 1.1, gap = 0.1 },
+	BusRoll = { id = id(1836342006), volume = 0.35, max = 2.6, gap = 0.5 },
+	BusRise = { id = id(9125807267), volume = 0.4, max = 1.3, gap = 0.3 },
+	BusWin = { id = id(9045808549), volume = 0.4, max = 3.2, gap = 0.5 },
+	BusWow = { id = id(9039637427), volume = 0.45, max = 5.5, gap = 1 },
 }
 
 -- a voice: one short blip per couple of letters while someone talks, pitched per speaker, so lines

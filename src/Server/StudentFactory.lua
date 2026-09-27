@@ -59,6 +59,16 @@ local function avatarDescription(def, av)
 	for key, field in ACCESSORY_FIELDS do
 		if av[key] then desc[field] = av[key] end
 	end
+	-- layered clothing from the catalog (robes, dresses, armour: tomas, 2026-09-27, "real clothes, not
+	-- tiles on top of them"): av.layered = { { assetId, "Jacket" | "DressSkirt" | "Shirt" | ... }, ... },
+	-- innermost first
+	if av.layered then
+		local list = desc:GetAccessories(true)
+		for i, l in av.layered do
+			table.insert(list, { AssetId = l[1], AccessoryType = Enum.AccessoryType[l[2]], IsLayered = true, Order = i + 1, Puffiness = 1 })
+		end
+		desc:SetAccessories(list, true)
+	end
 	-- kid-sized: a bit shorter and slimmer than a player, head a touch big
 	local s = look.scale or 1
 	desc.HeightScale = 0.85 * s

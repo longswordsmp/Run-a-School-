@@ -221,225 +221,6 @@ local function tabs(parent, names, onSelect)
 end
 
 ---------------------------------------------------------------------------
--- the BUS DEPOT (tomas, 2026-09-27: "like Pet Simulator X's egg thing"; the card after his reference:
--- the bus with its speed trail on the left, its seven kids in a row with their chances, and OPEN 100 /
--- OPEN 10 / OPEN 1 along the bottom, the bulk ones with the full price crossed out: a real saving,
--- ten for the price of nine and a hundred for eighty-five). BusDepotService rolls the kids; the reveal
--- (below) shows the bus pulling in and each kid getting off.
----------------------------------------------------------------------------
-local BusReveal -- (set further down: plays what a bus brought)
-do
-	local panel = UI.panel(gui, { name = "Buses", title = "BUS DEPOT", color = Color3.fromRGB(255, 170, 30), size = UDim2.fromOffset(860, 600) })
-	panels.Buses = panel
-	local list = scrollList(panel.body, 12)
-	local BULK = { [1] = 1, [10] = 9, [100] = 85 }
-	local TEMPLATES = ReplicatedStorage:WaitForChild("StudentTemplates", 10)
-
-	-- a kid's portrait: its model in a little viewport (a WorldModel, so its hair and hat sit right)
-	local function portrait(parent, id, z, silhouette)
-		local vp = UI.new("ViewportFrame", { Name = "Kid", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = z, Parent = parent })
-		vp.Ambient = Color3.fromRGB(170, 170, 176)
-		vp.LightDirection = Vector3.new(-0.4, -1, 0.6)
-		if silhouette then vp.ImageColor3 = Color3.new(0, 0, 0) end
-		task.spawn(function()
-			-- (the bus kids build a little after the rest at the start: wait for them)
-			local t
-			for _ = 1, 240 do
-				t = TEMPLATES and TEMPLATES:FindFirstChild(id)
-				if t or not vp.Parent then break end
-				task.wait(0.5)
-			end
-			if not t or not vp.Parent then return end
-			local wm = Instance.new("WorldModel")
-			wm.Parent = vp
-			local m = t:Clone()
-			for _, d in m:GetDescendants() do
-				if d:IsA("BaseScript") or d:IsA("BillboardGui") or d:IsA("ParticleEmitter") or d:IsA("Fire") then d:Destroy() end
-			end
-			m:PivotTo(CFrame.new())
-			m.Parent = wm
-			-- (framed on the head and shoulders, from the root: an accessory's handle can sit far off until
-			-- its weld settles, so the bounding box can't be trusted; a copy that hasn't settled yet has its
-			-- head at its feet, so give it a moment, and a kid's usual head height if it still hasn't)
-			task.wait()
-			task.wait()
-			local head = m:FindFirstChild("Head")
-			local root = m.PrimaryPart
-			local twin = m:FindFirstChild("Twin")
-			local midX = root and root.Position.X or 0
-			if twin and twin.PrimaryPart then midX = (midX + twin.PrimaryPart.Position.X) / 2 end
-			local headY = head and head.Position.Y or 1.6
-			if root and headY - root.Position.Y < 0.5 then headY = root.Position.Y + 1.6 end
-			local focus = Vector3.new(midX, headY - 0.55, 0)
-			local cam = Instance.new("Camera")
-			cam.FieldOfView = 32
-			local half = twin and 2.3 or 1.45
-			cam.CFrame = CFrame.lookAt(focus + Vector3.new(0.35, 0.25, -half / math.tan(math.rad(16))), focus)
-			cam.Parent = vp
-			vp.CurrentCamera = cam
-		end)
-		return vp
-	end
-
-	local function pct(x)
-		if x >= 10 then return ("%d%%"):format(math.floor(x + 0.5)) end
-		if x >= 1 then return (("%.2f"):format(x):gsub("0+$", ""):gsub("%.$", "")) .. "%" end
-		return (("%.3f"):format(x):gsub("0+$", "")) .. "%"
-	end
-
-	local cards = {}
-	local lucky = false
-	local function odds()
-		local w = table.clone(Config.BusOdds)
-		if lucky then for i = #w - 2, #w do w[i] *= 2 end end
-		local total = 0
-		for _, x in w do total += x end
-		for i, x in w do w[i] = x / total * 100 end
-		return w
-	end
-
-	-- the Robux extras, in a strip across the top
-	local extras = UI.new("Frame", { Name = "Extras", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 64), LayoutOrder = 0, ZIndex = 11, Parent = list })
-	UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = extras })
-	local extraButtons = {}
-	local autoOn, lastBus = false, nil
-	for i, key in { "BusLuck", "TripleBus", "AutoBus" } do
-		local def
-		for _, x in Config.Passes do if x.key == key then def = x end end
-		local chip = UI.new("Frame", { Name = key, BackgroundColor3 = Color3.fromRGB(255, 250, 235), Size = UDim2.fromOffset(262, 60), LayoutOrder = i, ZIndex = 12, Parent = extras })
-		UI.corner(chip, 12)
-		UI.stroke(chip, 3)
-		UI.studs(chip, { zindex = 12, transparency = UI.STUD.chip })
-		Icons.view(chip, Icons.FOR[key] or "gift", { size = UDim2.fromOffset(56, 56), position = UDim2.fromOffset(2, 2), zindex = 13, sway = 8 })
-		UI.label(chip, { Text = def and def.name or key, Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -150, 0, 26), Position = UDim2.fromOffset(60, 4), ZIndex = 13, stroke = 2 })
-		UI.label(chip, { Text = def and def.desc or "", TextColor3 = UI.C.navy, TextWrapped = true, TextScaled = true, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -150, 0, 26), Position = UDim2.fromOffset(60, 30), ZIndex = 13, stroke = 0 })
-		local b = UI.button(chip, { text = (def and def.robux or 0) .. " R$", color = UI.C.green, size = UDim2.fromOffset(82, 40), position = UDim2.new(1, -8, 0.5, 0), anchor = Vector2.new(1, 0.5), font = UI.BIG })
-		lift(b.button, 14)
-		b.button.Activated:Connect(function()
-			if key == "AutoBus" and player:GetAttribute("Pass_AutoBus") then
-				autoOn = not autoOn
-				b.setText(autoOn and "ON" or "AUTO")
-				b.setColor(autoOn and UI.C.green or UI.C.grey)
-				return
-			end
-			if player:GetAttribute("Pass_" .. key) then return end
-			sfx("Click")
-			call("buy", "pass", key)
-		end)
-		extraButtons[key] = b
-	end
-
-	for i, bus in Config.Buses do
-		local c = UI.new("Frame", { Name = bus.id, BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.new(1, -8, 0, 250), LayoutOrder = i, ZIndex = 12, Parent = list })
-		UI.corner(c, 20)
-		UI.stroke(c, 4)
-		UI.gradient(c, UI.lighten(bus.color, 0.35), bus.color, 90)
-		UI.studs(c, { zindex = 12, transparency = UI.STUD.card })
-		-- the bus, with a soft shine behind it
-		UI.halo(c, { size = 230, position = UDim2.fromOffset(116, 128), zindex = 13, color = UI.lighten(bus.color, 0.6), speed = 10 })
-		Icons.view(c, bus.icon, { size = UDim2.fromOffset(220, 190), position = UDim2.fromOffset(6, 34), zindex = 14, sway = 10 })
-		UI.label(c, { Name = "Title", Text = bus.name:upper() .. "!", Font = UI.BIG, Size = UDim2.new(1, -240, 0, 40), Position = UDim2.fromOffset(228, 6), ZIndex = 15, stroke = 3 })
-		-- the seven kids and their chances
-		local tiles = {}
-		for k, id in bus.kids do
-			local def = Config.StudentById[id]
-			local rar = Config.RarityById[def.rarity]
-			local secret = k == #bus.kids
-			local t = UI.new("Frame", { Name = "Kid" .. k, BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromOffset(74, 74), Position = UDim2.fromOffset(228 + (k - 1) * 81, 50), ZIndex = 14, Parent = c })
-			UI.corner(t, 12)
-			UI.stroke(t, 2.5)
-			if secret then
-				UI.gradient(t, Color3.fromRGB(60, 50, 80), Color3.fromRGB(15, 12, 25), 90)
-			else
-				UI.gradient(t, UI.lighten(rar.color, 0.45), rar.color, 90)
-			end
-			portrait(t, id, 15, secret)
-			if secret then
-				UI.label(t, { Text = "???", Font = UI.BIG, Size = UDim2.new(1, 0, 0, 30), Position = UDim2.new(0, 0, 0.5, -15), ZIndex = 16, stroke = 2.5 })
-				UI.twinkle(t, { zindex = 17, every = 0.9, min = 8, max = 14 })
-			end
-			local chance = UI.label(c, { Name = "Chance" .. k, Text = "", Font = UI.BIG, TextColor3 = secret and Color3.fromRGB(255, 120, 230) or UI.lighten(rar.color, 0.2), Size = UDim2.fromOffset(74, 22), Position = UDim2.fromOffset(228 + (k - 1) * 81, 126), ZIndex = 15, stroke = 2.5 })
-			tiles[k] = { tile = t, chance = chance }
-		end
-		-- OPEN 100 / 10 / 1
-		local buttons = {}
-		for j, n in { 100, 10, 1 } do
-			local x = 228 + (j - 1) * 190
-			local b = UI.button(c, { name = "Open" .. n, text = "", color = UI.C.green, size = UDim2.fromOffset(176, 50), position = UDim2.fromOffset(x, 170), font = UI.BIG })
-			lift(b.button, 15)
-			UI.label(c, { Text = n == 1 and "1 BUS" or (n .. " BUSES"), Font = UI.BIG, Size = UDim2.fromOffset(176, 20), Position = UDim2.fromOffset(x, 224), ZIndex = 16, stroke = 2 })
-			local was
-			if BULK[n] ~= n then
-				was = UI.label(c, { Text = "", Font = UI.BIG, TextColor3 = Color3.fromRGB(255, 90, 90), Size = UDim2.fromOffset(90, 20), Position = UDim2.fromOffset(x + 4, 150), Rotation = -6, ZIndex = 17, stroke = 2 })
-				UI.new("Frame", { Name = "Strike", BackgroundColor3 = Color3.fromRGB(255, 60, 60), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.55), Size = UDim2.new(0.95, 0, 0, 3), ZIndex = 18, Parent = was })
-			end
-			if n == 100 then UI.shineEvery(b.glint, 3.5 + i * 0.5) end
-			b.button.Activated:Connect(function()
-				if not b.button.Active then return end
-				lastBus = bus.id
-				local res = call("openBus", bus.id, n)
-				if res and res.ok then
-					if BusReveal then BusReveal(bus, res.results, false) end
-				elseif res and res.err then
-					UI.punch(c, 1.03)
-				end
-			end)
-			buttons[n] = { btn = b, was = was }
-		end
-		cards[bus.id] = { tiles = tiles, buttons = buttons }
-	end
-
-	local function refresh()
-		local st = call("busOdds")
-		if st and st.ok then
-			lucky = st.lucky == true
-			for key, b in extraButtons do
-				local owned = st[key == "BusLuck" and "lucky" or key == "TripleBus" and "triple" or "auto"] == true
-				if key == "AutoBus" and owned then
-					b.setText(autoOn and "ON" or "AUTO")
-					b.setColor(autoOn and UI.C.green or UI.C.grey)
-					b.setEnabled(true)
-				elseif owned then
-					b.setText("\u{2714}")
-					b.setEnabled(false)
-				end
-			end
-		end
-		local w = odds()
-		for _, bus in Config.Buses do
-			local cd = cards[bus.id]
-			for k, t in cd.tiles do t.chance.Text = pct(w[k]) end
-			for n, bt in cd.buttons do
-				local price = bus.price * BULK[n]
-				bt.btn.setText(Config.formatCash(price))
-				bt.btn.setEnabled(cash() >= price)
-				if bt.btn.button.Active then bt.btn.setColor(UI.C.green) end
-				if bt.was then bt.was.Text = Config.formatCash(bus.price * n) end
-			end
-		end
-	end
-	panel.onOpen = refresh
-	player:GetAttributeChangedSignal("Cash"):Connect(function() if panel.frame.Visible then refresh() end end)
-	for _, k in { "Pass_BusLuck", "Pass_TripleBus", "Pass_AutoBus" } do
-		player:GetAttributeChangedSignal(k):Connect(function() if panel.frame.Visible then refresh() end end)
-	end
-
-	-- Auto Bus: one bus at a time, by itself, while it's on and there's the cash
-	task.spawn(function()
-		while true do
-			task.wait(1.3)
-			if autoOn and lastBus and player:GetAttribute("Pass_AutoBus") then
-				local bus = Config.BusById[lastBus]
-				if bus and cash() >= bus.price then
-					local res = call("openBus", bus.id, 1)
-					if res and res.ok and BusReveal then BusReveal(bus, res.results, true) end
-				end
-			end
-		end
-	end)
-end
-
----------------------------------------------------------------------------
 -- Shop: School Supplies / Teachers / School Builder
 ---------------------------------------------------------------------------
 do
@@ -1459,9 +1240,8 @@ do
 		MoneyRain = { "Make It Rain!", "Cash for the server", rgb(60, 190, 110) },
 		CandyBag = { "Bag of Candy", "100 candy", rgb(255, 120, 180) },
 		CandyJar = { "Jar of Candy", "600 candy", rgb(200, 100, 230) },
-		BusLuck = { "Bus Luck", "x2 rarest bus kids", rgb(70, 200, 90) },
-		TripleBus = { "Triple Bus", "Open 3 at once", rgb(255, 170, 40) },
-		AutoBus = { "Auto Bus", "Opens buses for you", rgb(70, 150, 255) },
+		BusLuck = { "Bus Luck", "x2 rarest Magic Bus kids", rgb(170, 90, 255) },
+
 	}
 
 	-- the hover tip: the full description
@@ -1643,6 +1423,193 @@ do
 	-- the cards
 	---------------------------------------------------------------------------
 	local sections = { boost }
+
+	---------------------------------------------------------------------------
+	-- FEATURED: the MAGIC BUS (tomas, 2026-09-27, after his reference: a featured card below the
+	-- boost, like Pet Sim X's eggs): the bus big on the left with its speed trail, its kids in a row
+	-- with their chances and what they earn, the ??? bigger at the end, and 50 / 10 / 3 / 1 along the
+	-- bottom; the 50 with the price of fifty singles crossed out (a real saving). BusReveal.client
+	-- plays what comes off the bus.
+	---------------------------------------------------------------------------
+	local featuredButtons = {}
+	local featuredChances = {}
+	local featured
+	do
+		local magic = Config.BusById.MagicBus
+		local head = UI.new("Frame", { Name = "FeaturedHeading", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 46), LayoutOrder = nextOrder(), ZIndex = 11, Parent = scroll })
+		local ft = UI.label(head, { Text = "\u{2014} FEATURED \u{2014}", Font = UI.BIG, TextColor3 = Color3.fromRGB(255, 230, 60), Size = UDim2.new(1, 0, 1, 0), ZIndex = 12, stroke = 4 })
+		UI.pop(ft, 0)
+		featured = head
+		local c = UI.new("Frame", { Name = "MagicBus", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.new(1, -6, 0, 300), LayoutOrder = nextOrder(), ZIndex = 12, ClipsDescendants = false, Parent = scroll })
+		UI.corner(c, 20)
+		UI.stroke(c, 5)
+		local bg = UI.gradient(c, rgb(120, 40, 200), rgb(40, 12, 90), 60)
+		bg.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, rgb(255, 90, 200)), ColorSequenceKeypoint.new(0.45, rgb(140, 50, 230)), ColorSequenceKeypoint.new(1, rgb(35, 12, 90)) })
+		UI.studs(c, { zindex = 12, transparency = 0.86 })
+		-- (a slow turning burst of light behind the bus, sparkles all over)
+		UI.halo(c, { size = 380, position = UDim2.fromOffset(100, 170), zindex = 12, color = rgb(255, 170, 255), speed = 14 })
+		UI.twinkle(c, { zindex = 19, every = 0.35, max = 26 })
+		local busView = Icons.view(c, "magicbus", { size = UDim2.fromOffset(250, 200), position = UDim2.fromOffset(-24, 70), zindex = 13, sway = 10, bob = 0.2 })
+		_ = busView
+		local newTag = UI.label(c, { Text = "NEW!", Font = UI.BIG, BackgroundTransparency = 0, BackgroundColor3 = rgb(230, 40, 50), Size = UDim2.fromOffset(92, 38), Position = UDim2.fromOffset(14, 12), Rotation = -6, ZIndex = 20, stroke = 3 })
+		UI.corner(newTag, 8)
+		UI.stroke(newTag, 3)
+		local title = UI.label(c, { Text = "MAGIC BUS!", Font = UI.BIG, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.fromOffset(420, 58), Position = UDim2.fromOffset(118, 4), ZIndex = 20, stroke = 5 })
+		UI.gradient(title, rgb(255, 245, 120), rgb(255, 170, 30), 90)
+		UI.label(c, { Text = "Kids you can only get here!", Font = UI.BIG, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.fromOffset(420, 26), Position = UDim2.fromOffset(122, 56), ZIndex = 20, stroke = 3 })
+
+		-- the kids: a portrait each on its rarity's colour, the chance in the corner, what it earns below
+		local TEMPLATES = ReplicatedStorage:WaitForChild("StudentTemplates", 10)
+		-- (a kid's template arrives on this client a piece at a time: copying it half-arrived gave a kid with
+		-- no head or legs. Ready = its head and both feet are there and it has stopped growing)
+		local function kidReady(t, timeout)
+			local t0 = os.clock()
+			local last = -1
+			while os.clock() - t0 < (timeout or 20) do
+				if t.Parent and t:FindFirstChild("Head") and t:FindFirstChild("LeftFoot") and t:FindFirstChild("RightFoot") then
+					local n = #t:GetDescendants()
+					if n == last then return true end
+					last = n
+				end
+				task.wait(0.25)
+			end
+			return false
+		end
+
+		local function portrait(parent, id, z, silhouette)
+			local vp = UI.new("ViewportFrame", { Name = "Kid", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = z, Parent = parent })
+			vp.Ambient = Color3.fromRGB(175, 175, 182)
+			vp.LightDirection = Vector3.new(-0.4, -1, 0.6)
+			if silhouette then vp.ImageColor3 = Color3.fromRGB(20, 0, 40) end
+			task.spawn(function()
+				local t
+				for _ = 1, 240 do
+					t = TEMPLATES and TEMPLATES:FindFirstChild(id)
+					if t or not vp.Parent then break end
+					task.wait(0.5)
+				end
+				if not t or not vp.Parent then return end
+				kidReady(t)
+				if not vp.Parent then return end
+				local wm = Instance.new("WorldModel")
+				wm.Parent = vp
+				local m = t:Clone()
+				for _, d in m:GetDescendants() do
+					if d:IsA("BaseScript") or d:IsA("BillboardGui") or d:IsA("ParticleEmitter") or d:IsA("Fire") then d:Destroy() end
+				end
+				m:PivotTo(CFrame.new())
+				m.Parent = wm
+				task.wait()
+				task.wait()
+				local headP = m:FindFirstChild("Head")
+				local root = m.PrimaryPart
+				local twin = m:FindFirstChild("Twin")
+				local midX = root and root.Position.X or 0
+				if twin and twin.PrimaryPart then midX = (midX + twin.PrimaryPart.Position.X) / 2 end
+				local headY = headP and headP.Position.Y or 1.6
+				if root and headY - root.Position.Y < 0.5 then headY = root.Position.Y + 1.6 end
+				local focus = Vector3.new(midX, headY - (silhouette and 1.0 or 0.55), 0)
+				local cam = Instance.new("Camera")
+				cam.FieldOfView = 32
+				local half = twin and 2.6 or 1.45
+				cam.CFrame = CFrame.lookAt(focus + Vector3.new(0.35, 0.25, -half / math.tan(math.rad(16))), focus)
+				cam.Parent = vp
+				vp.CurrentCamera = cam
+			end)
+			return vp
+		end
+		local n = #magic.kids
+		for k, id in magic.kids do
+			local def = Config.StudentById[id]
+			local rar = Config.RarityById[def.rarity]
+			local secret = k == n
+			local x = secret and 712 or (214 + (k - 1) * 82)
+			local size = secret and UDim2.fromOffset(128, 140) or UDim2.fromOffset(76, 76)
+			local y = secret and 68 or 92
+			local t = UI.new("Frame", { Name = "Kid" .. k, BackgroundColor3 = Color3.new(1, 1, 1), Size = size, Position = UDim2.fromOffset(x, y), ZIndex = 14, Parent = c })
+			UI.corner(t, 12)
+			UI.stroke(t, 3)
+			if secret then
+				UI.gradient(t, rgb(255, 120, 230), rgb(60, 10, 110), 90)
+				UI.halo(t, { size = 200, position = UDim2.fromScale(0.5, 0.5), zindex = 14, color = rgb(255, 200, 255), speed = 24 })
+				local tag = UI.label(c, { Text = "SECRET", Font = UI.BIG, Size = UDim2.fromOffset(150, 30), Position = UDim2.fromOffset(x - 11, y - 26), Rotation = -4, ZIndex = 21, stroke = 3 })
+				local g = UI.gradient(tag, rgb(255, 90, 90), rgb(90, 160, 255), 0)
+				task.spawn(function()
+					while tag.Parent do
+						local h = (os.clock() * 0.25) % 1
+						local keys = {}
+						for i = 0, 5 do keys[i + 1] = ColorSequenceKeypoint.new(i / 5, Color3.fromHSV((h + i / 5) % 1, 0.7, 1)) end
+						g.Color = ColorSequence.new(keys)
+						task.wait(0.05)
+					end
+				end)
+				UI.twinkle(t, { zindex = 18, every = 0.3, min = 10, max = 18 })
+			else
+				UI.gradient(t, UI.lighten(rar.color, 0.5), rar.color, 90)
+			end
+			portrait(t, id, 15, secret)
+			if secret then
+				UI.label(t, { Text = "???", Font = UI.BIG, Size = UDim2.new(1, 0, 0, 40), Position = UDim2.new(0, 0, 0.5, -30), ZIndex = 17, stroke = 3 })
+			end
+			local chance = UI.label(t, { Name = "Chance", Text = "", Font = UI.BIG, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.new(1, -6, 0, secret and 30 or 24), Position = UDim2.new(0, 0, 1, secret and -32 or -26), ZIndex = 17, stroke = 3 })
+			featuredChances[k] = chance
+			local earn = UI.label(c, { Text = "+" .. Config.formatCash(def.income) .. "/s", Font = UI.BIG, TextColor3 = Color3.fromRGB(140, 255, 140), Size = UDim2.fromOffset(secret and 128 or 80, 20), Position = UDim2.fromOffset(secret and x or x - 2, secret and (y - 48) or (y + 78)), ZIndex = 17, stroke = 2.5 })
+			_ = earn
+		end
+		-- 50 / 10 / 3 / 1
+		local packs = { { key = "MagicBus50", n = 50 }, { key = "MagicBus10", n = 10 }, { key = "MagicBus3", n = 3 }, { key = "MagicBus1", n = 1 } }
+		local byKey = {}
+		for _, x in Config.Products do byKey[x.key] = x end
+		for j, pk in packs do
+			local def = byKey[pk.key]
+			local x = 214 + (j - 1) * 158
+			local b = UI.button(c, { name = pk.key, text = "R$ " .. def.robux, color = j == 1 and rgb(255, 60, 90) or UI.C.green, size = UDim2.fromOffset(146, 48), position = UDim2.fromOffset(x, 222), font = UI.BIG })
+			lift(b.button, 18)
+			UI.label(c, { Text = pk.n == 1 and "1 BUS" or (pk.n .. " BUSES"), Font = UI.BIG, Size = UDim2.fromOffset(146, 20), Position = UDim2.fromOffset(x, 272), ZIndex = 19, stroke = 2.5 })
+			if pk.n == 50 then
+				-- (the price of fifty singles, crossed out: what the pack really saves)
+				local single = byKey.MagicBus1.robux
+				local was = UI.label(c, { Text = "R$ " .. single * 50, Font = UI.BIG, TextColor3 = Color3.fromRGB(255, 110, 110), Size = UDim2.fromOffset(100, 20), Position = UDim2.fromOffset(x + 22, 199), Rotation = -5, ZIndex = 20, stroke = 2.5 })
+				UI.new("Frame", { Name = "Strike", BackgroundColor3 = Color3.fromRGB(255, 50, 50), BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.55), Size = UDim2.new(0.9, 0, 0, 3), ZIndex = 21, Parent = was })
+				-- (a rainbow drifting across the big one)
+				local g = Instance.new("UIGradient")
+				g.Parent = b.button
+				task.spawn(function()
+					while b.button.Parent do
+						if c.Parent and panel.frame.Visible then
+							local h = (os.clock() * 0.2) % 1
+							local keys = {}
+							for i = 0, 5 do keys[i + 1] = ColorSequenceKeypoint.new(i / 5, Color3.fromHSV((h + i / 5) % 1, 0.55, 1)) end
+							g.Color = ColorSequence.new(keys)
+						end
+						task.wait(0.05)
+					end
+				end)
+				UI.shineEvery(b.glint, 2.5)
+			else
+				UI.shineEvery(b.glint, 4 + j * 0.6)
+			end
+			b.button.Activated:Connect(function()
+				if not b.button.Active then return end
+				sfx("Click")
+				call("buy", "product", pk.key)
+			end)
+			featuredButtons[pk.key] = b
+		end
+	end
+	sections[4] = featured
+	local function showOdds(lucky)
+		local w = table.clone(Config.BusById.MagicBus.odds)
+		if lucky then for i = #w - 2, #w do w[i] *= 2 end end
+		local total = 0
+		for _, x in w do total += x end
+		for k, lbl in featuredChances do
+			local v = w[k] / total * 100
+			lbl.Text = v >= 10 and (math.floor(v + 0.5) .. "%") or v >= 1 and (("%.1f"):format(v):gsub("%.0$", "") .. "%") or (("%.2f"):format(v):gsub("0$", "") .. "%")
+		end
+	end
+	showOdds(false)
+
 	sections[2] = heading("\u{1F451} GAMEPASSES", rgb(255, 170, 40))
 	local passGrid = grid()
 	for i, x in Config.Passes do
@@ -1653,8 +1620,8 @@ do
 	sections[3] = heading("\u{26A1} EXTRAS", rgb(70, 150, 255))
 	local extraGrid = grid()
 	for i, x in Config.Products do
-		-- (the Money Boost doublings are the big card at the top)
-		if x.boost then continue end
+		-- (the Money Boost doublings are the big card at the top, the Magic Bus the featured one)
+		if x.boost or x.bus then continue end
 		card(extraGrid, x.key, x, function() call("buy", "product", x.key) end, i)
 	end
 
@@ -1673,9 +1640,12 @@ do
 		for _, s in res.products do
 			local c = cards[s.key]
 			if c then c.set(robux[s.key] or 0, false, s.ready == true) end
+			local fb = featuredButtons[s.key]
+			if fb then fb.setEnabled(s.ready == true) end
 		end
+		showOdds(player:GetAttribute("Pass_BusLuck") == true)
 	end
-	-- (other scripts can ask for a section: 1 the boost, 2 the passes, 3 the extras)
+	-- (other scripts can ask for a section: 1 the boost, 2 the passes, 3 the extras, 4 the Magic Bus)
 	function panel.select(i)
 		task.defer(function()
 			local h = sections[i]
@@ -2053,7 +2023,7 @@ end
 local SIDE_ICON = {
 	Home = "house", Shop = "basket", Store = "gem", Upgrades = "upArrow", Board = "pillar", Yearbook = "book",
 	Name = "pencil", Settings = "gear", Daily = "calendar", Coop = "people", Files = "folder", Quests = "scroll",
-	Admin = "wrench", Buses = "schoolbus",
+	Admin = "wrench",
 }
 local function tileButton(caption, color, order)
 	local LIP = 5
@@ -2122,7 +2092,6 @@ end
 
 sideButton(1, "\u{1F6D2}", "Shop", UI.C.green, panels.Shop)
 sideButton(2, "\u{2B06}\u{FE0F}", "Upgrades", UI.C.orange, panels.Upgrades)
-sideButton(3, "\u{1F68C}", "Buses", Color3.fromRGB(255, 170, 30), panels.Buses)
 -- (the Board, the Yearbook, the school's name, the Files and Co-op are places in the world now:
 -- PlacesService; the Daily rewards pop up by themselves and the Quest Log opens from the quest card)
 sideButton(6, "\u{2699}\u{FE0F}", "Settings", UI.C.navy, panels.Settings)
@@ -2381,251 +2350,4 @@ do
 	Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
 		if kind == "deal" and type(data) == "table" then show(data) end
 	end)
-end
-
----------------------------------------------------------------------------
--- the BUS REVEAL: the bus pulls in with its speed trail, stops, rocks, and in a flash the kid is
--- there: its rarity, its name, what it earns, where it went. Ten (or three) show as a grid of cards
--- turning over one by one; a hundred as every kind of kid with how many. A Mythic or better gets
--- the full reveal on top. quick: Auto Bus, a toast only.
----------------------------------------------------------------------------
-do
-	local TweenService = game:GetService("TweenService")
-	local TEMPLATES = ReplicatedStorage:WaitForChild("StudentTemplates", 10)
-	local sg = Instance.new("ScreenGui")
-	sg.Name = "BusReveal"
-	sg.IgnoreGuiInset = true
-	sg.ResetOnSpawn = false
-	sg.DisplayOrder = 70
-	sg.Enabled = false
-	sg.Parent = player:WaitForChild("PlayerGui")
-	local shade = UI.new("TextButton", { Name = "Shade", Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.fromRGB(8, 8, 18), BackgroundTransparency = 0.04, Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = sg })
-	local stage = UI.new("Frame", { Name = "Stage", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.45), Size = UDim2.fromOffset(760, 420), ZIndex = 2, Parent = sg })
-	local glowHolder = UI.new("Frame", { Name = "GlowHolder", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = stage })
-	local vp = UI.new("ViewportFrame", { Name = "View", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = stage })
-	vp.Ambient = Color3.fromRGB(175, 175, 182)
-	vp.LightDirection = Vector3.new(-0.4, -1, 0.6)
-	local wm = Instance.new("WorldModel")
-	wm.Parent = vp
-	local cam = Instance.new("Camera")
-	cam.FieldOfView = 40
-	cam.CFrame = CFrame.lookAt(Vector3.new(0, 1.2, -16), Vector3.new(0, 0.6, 0))
-	cam.Parent = vp
-	vp.CurrentCamera = cam
-	local flash = UI.new("Frame", { Name = "Flash", BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = sg })
-	local rarityL = UI.label(sg, { Name = "Rarity", Text = "", Font = UI.BIG, AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(700, 60), Position = UDim2.fromScale(0.5, 0.08), ZIndex = 10, stroke = 4 })
-	local nameL = UI.label(sg, { Name = "KidName", Text = "", Font = UI.BIG, AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(700, 54), Position = UDim2.fromScale(0.5, 0.7), ZIndex = 10, stroke = 4 })
-	local infoL = UI.label(sg, { Name = "Info", Text = "", AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(700, 30), Position = UDim2.fromScale(0.5, 0.78), ZIndex = 10, stroke = 2.5 })
-	local hint = UI.label(sg, { Name = "Hint", Text = "click to continue", TextColor3 = Color3.fromRGB(220, 220, 230), AnchorPoint = Vector2.new(0.5, 0), Size = UDim2.fromOffset(300, 24), Position = UDim2.fromScale(0.5, 0.88), ZIndex = 10, stroke = 1.5 })
-	local grid = UI.new("Frame", { Name = "Grid", BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.48), Size = UDim2.fromOffset(900, 460), ZIndex = 5, Visible = false, Parent = sg })
-	UI.new("UIGridLayout", { CellSize = UDim2.fromOffset(160, 200), CellPadding = UDim2.fromOffset(12, 12), HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = grid })
-
-	local clicked = false
-	shade.Activated:Connect(function() clicked = true end)
-	local function waitClick(t)
-		clicked = false
-		local t0 = os.clock()
-		while not clicked and os.clock() - t0 < t do task.wait() end
-	end
-	local function clear()
-		for _, c in glowHolder:GetChildren() do c:Destroy() end
-		for _, c in wm:GetChildren() do c:Destroy() end
-		for _, c in grid:GetChildren() do if c:IsA("GuiObject") then c:Destroy() end end
-		rarityL.Text, nameL.Text, infoL.Text = "", "", ""
-	end
-	local function fateText(r)
-		if r.fate == "desk" then return "Sat down at desk " .. r.slot end
-		if r.fate == "replaced" then return ("Took %s's seat (%s)"):format(r.old or "a kid", "+" .. Config.formatCash(r.gain or 0)) end
-		return "No room: sold for " .. Config.formatCash(r.gain or 0)
-	end
-	local function kidModel(id)
-		local t = TEMPLATES and TEMPLATES:FindFirstChild(id)
-		if not t then return nil end
-		local m = t:Clone()
-		-- (no scripts: a copy's Animate would run here in the player's gui)
-		for _, d in m:GetDescendants() do if d:IsA("BaseScript") or d:IsA("BillboardGui") then d:Destroy() end end
-		return m
-	end
-	local function styleRarity(def, secret)
-		local rar = Config.RarityById[def.rarity]
-		rarityL.Text = secret and "\u{2753} SECRET! \u{2753}" or rar.id:upper() .. "!"
-		rarityL.TextColor3 = secret and Color3.fromRGB(255, 120, 230) or UI.lighten(rar.color, 0.1)
-	end
-
-	-- one bus, all the way in and the kid off it
-	local function single(bus, r, isFirstOfMany)
-		clear()
-		local def = Config.StudentById[r.id]
-		local secret = r.tier == #bus.kids
-		stage.Visible, grid.Visible = true, false
-		hint.Visible = false
-		local b = Icons.build(bus.icon)
-		b:PivotTo(CFrame.Angles(0, math.rad(-18), 0))
-		b.Parent = wm
-		local cf, size = b:GetBoundingBox()
-		local scale = 7 / math.max(size.X, size.Y)
-		b:ScaleTo(scale)
-		-- (in from the left of the screen, which is +X here)
-		local rest = b:GetPivot()
-		local from = rest + Vector3.new(26, 0, 0)
-		local v = Instance.new("CFrameValue")
-		v.Value = from
-		v.Changed:Connect(function(x) if b.Parent then b:PivotTo(x) end end)
-		b:PivotTo(from)
-		sfx("Buy")
-		TweenService:Create(v, TweenInfo.new(0.75, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Value = rest }):Play()
-		task.wait(0.8)
-		-- it rocks, harder each time (longer for the rare ones)
-		local shakes = r.tier >= 5 and 5 or 3
-		for k = 1, shakes do
-			local a = math.rad(4 + k * 2)
-			TweenService:Create(v, TweenInfo.new(0.09), { Value = rest * CFrame.Angles(0, 0, a) }):Play()
-			task.wait(0.1)
-			TweenService:Create(v, TweenInfo.new(0.09), { Value = rest * CFrame.Angles(0, 0, -a) }):Play()
-			task.wait(0.1)
-		end
-		v:Destroy()
-		-- the flash, and the kid
-		flash.BackgroundColor3 = secret and Color3.fromRGB(255, 200, 255) or Color3.new(1, 1, 1)
-		flash.BackgroundTransparency = 0
-		TweenService:Create(flash, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
-		sfx("Upgrade")
-		b:Destroy()
-		local m = kidModel(r.id)
-		if m then
-			m:PivotTo(CFrame.new(0, 0, 0))
-			m.Parent = wm
-			m:ScaleTo(1.5)
-			local head = m:FindFirstChild("Head")
-			local twin = m:FindFirstChild("Twin")
-			local midX = m.PrimaryPart.Position.X
-			if twin and twin.PrimaryPart then midX = (midX + twin.PrimaryPart.Position.X) / 2 end
-			local top = head and head.Position.Y or 3
-			m:PivotTo(m:GetPivot() - Vector3.new(midX, top - 3.4, 0))
-			task.spawn(function()
-				local t0 = os.clock()
-				while m.Parent do
-					m:PivotTo(CFrame.new(m:GetPivot().Position) * CFrame.Angles(0, math.sin((os.clock() - t0) * 1.2) * 0.35, 0))
-					task.wait()
-				end
-			end)
-		end
-		styleRarity(def, secret)
-		local rar = Config.RarityById[def.rarity]
-		UI.halo(glowHolder, { size = 520, position = UDim2.fromScale(0.5, 0.5), zindex = 2, color = secret and Color3.fromRGB(255, 150, 240) or UI.lighten(rar.color, 0.3), speed = 18 })
-		if r.tier >= 4 then UI.twinkle(glowHolder, { zindex = 4, every = 0.25, max = 34 }) end
-		nameL.Text = def.name .. (r.first and "  \u{2728} NEW!" or "")
-		infoL.Text = ("+%s/s  \u{2022}  %s"):format(Config.formatCash(def.income), fateText(r))
-		UI.pop(rarityL, 0.3)
-		if secret or r.tier >= 5 then sfx("Enroll") end
-		hint.Visible = true
-		waitClick(isFirstOfMany and 2.2 or 3.2)
-		clear()
-	end
-
-	-- a grid of cards (up to 10) or every kind of kid with how many (100)
-	local function many(bus, results)
-		clear()
-		stage.Visible, grid.Visible = false, true
-		local rows = {}
-		if #results <= 10 then
-			for _, r in results do table.insert(rows, { r = r, n = 1 }) end
-		else
-			local by = {}
-			for _, r in results do
-				by[r.id] = by[r.id] or { r = r, n = 0 }
-				by[r.id].n += 1
-			end
-			for _, x in by do table.insert(rows, x) end
-			table.sort(rows, function(a, b) return a.r.tier > b.r.tier end)
-		end
-		for i, row in rows do
-			local def = Config.StudentById[row.r.id]
-			local rar = Config.RarityById[def.rarity]
-			local secret = row.r.tier == #bus.kids
-			local card = UI.new("Frame", { Name = "Card", BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = i, ZIndex = 6, Parent = grid })
-			UI.corner(card, 14)
-			UI.stroke(card, 3)
-			UI.gradient(card, secret and Color3.fromRGB(90, 60, 120) or UI.lighten(rar.color, 0.45), secret and Color3.fromRGB(20, 12, 35) or rar.color, 90)
-			local holder = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 130), Position = UDim2.fromOffset(0, 6), ZIndex = 7, Parent = card })
-			local kv = UI.new("ViewportFrame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 7, Parent = holder })
-			kv.Ambient = Color3.fromRGB(175, 175, 182)
-			local kw = Instance.new("WorldModel")
-			kw.Parent = kv
-			local m = kidModel(row.r.id)
-			if m then
-				m:PivotTo(CFrame.new())
-				m.Parent = kw
-				local head = m:FindFirstChild("Head")
-				local twin = m:FindFirstChild("Twin")
-				local midX = m.PrimaryPart.Position.X
-				if twin and twin.PrimaryPart then midX = (midX + twin.PrimaryPart.Position.X) / 2 end
-				local focus = Vector3.new(midX, head and head.Position.Y - 0.8 or 1.2, 0)
-				local kc = Instance.new("Camera")
-				kc.FieldOfView = 30
-				kc.CFrame = CFrame.lookAt(focus + Vector3.new(0.4, 0.3, -(twin and 2.6 or 1.9) / math.tan(math.rad(15))), focus)
-				kc.Parent = kv
-				kv.CurrentCamera = kc
-			end
-			UI.label(card, { Text = secret and "SECRET!" or rar.id:upper(), Font = UI.BIG, TextColor3 = secret and Color3.fromRGB(255, 120, 230) or Color3.new(1, 1, 1), Size = UDim2.new(1, -8, 0, 20), Position = UDim2.fromOffset(4, 136), ZIndex = 8, stroke = 2 })
-			UI.label(card, { Text = def.name, Font = UI.BIG, TextWrapped = true, Size = UDim2.new(1, -8, 0, 36), Position = UDim2.fromOffset(4, 158), ZIndex = 8, stroke = 2 })
-			if row.n > 1 then
-				UI.label(card, { Text = "x" .. row.n, Font = UI.BIG, Size = UDim2.fromOffset(60, 30), Position = UDim2.new(1, -64, 0, 4), ZIndex = 9, stroke = 3 })
-			end
-			if row.r.first then UI.label(card, { Text = "NEW!", Font = UI.BIG, TextColor3 = Color3.fromRGB(255, 230, 90), Size = UDim2.fromOffset(60, 24), Position = UDim2.fromOffset(4, 4), Rotation = -10, ZIndex = 9, stroke = 3 }) end
-			if row.r.tier >= 5 then UI.twinkle(card, { zindex = 10, every = 0.5 }) end
-			local sc = Instance.new("UIScale")
-			sc.Scale = 0
-			sc.Parent = card
-			TweenService:Create(sc, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Scale = 1 }):Play()
-			sfx(row.r.tier >= 4 and "Enroll" or "Collect")
-			task.wait(#rows > 10 and 0.08 or 0.18)
-		end
-		local sold, desk, took, back = 0, 0, 0, 0
-		for _, r in results do
-			if r.fate == "sold" then sold += 1 elseif r.fate == "desk" then desk += 1 else took += 1 end
-			back += r.gain or 0
-		end
-		rarityL.Text = ("%d BUSES!"):format(#results)
-		rarityL.TextColor3 = UI.lighten(bus.color, 0.2)
-		infoL.Text = ("%d to desks  \u{2022}  %d took a weaker kid's seat  \u{2022}  %d sold (+%s)"):format(desk, took, sold, Config.formatCash(back))
-		hint.Visible = true
-		waitClick(6)
-		clear()
-	end
-
-	local playing = false
-	local queue = {}
-	BusReveal = function(bus, results, quick)
-		if quick then
-			-- (Auto Bus: a toast, and the full reveal only for the rare ones)
-			local r = results[1]
-			local def = r and Config.StudentById[r.id]
-			if not def then return end
-			if r.tier < 5 then
-				local cb = ReplicatedStorage:FindFirstChild("ClientBus")
-				if cb and cb:FindFirstChild("Toast") then cb.Toast:Fire(("%s: %s (%s)"):format(bus.name, def.name, def.rarity), "good") end
-				return
-			end
-		end
-		table.insert(queue, { bus = bus, results = results })
-		if playing then return end
-		playing = true
-		sg.Enabled = true
-		while #queue > 0 do
-			local job = table.remove(queue, 1)
-			local rs = job.results
-			if #rs == 1 then
-				single(job.bus, rs[1], false)
-			else
-				-- the bus comes in once, then the cards; a Mythic or better gets its own reveal after
-				local best = rs[1]
-				for _, r in rs do if r.tier > best.tier then best = r end end
-				single(job.bus, best, true)
-				many(job.bus, rs)
-			end
-		end
-		sg.Enabled = false
-		playing = false
-	end
 end

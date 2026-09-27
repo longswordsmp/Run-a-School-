@@ -2587,92 +2587,99 @@ B.TwinBeanies = function(model, head, hs)
 	propeller(model, head, hs, rgb(230, 60, 70), rgb(40, 110, 230))
 	sparkles(part(model, "HumanoidRootPart"), rgb(255, 255, 255), 3)
 end
+-- the MAGIC BUS's kids (tomas, 2026-09-27: "even cooler, with wizard staffs, mages, elves"): robes to
+-- their shins, pointed hats, staffs with glowing crystals, an elf archer, the Twin Sorcerers
+-- a staff in the right hand: a long shaft, a cradle at the top and a glowing crystal in it
+local function staff(model, len, wood, gem, crook)
+	inHand(model, "RightHand", function(h)
+		cylY(model, h, 0.17, len, CFrame.new(0, len * 0.28, -0.22), wood)
+		for _, y in { 0.1, len * 0.22 } do cylY(model, h, 0.24, 0.12, CFrame.new(0, y, -0.22), rgb(255, 205, 70), Enum.Material.Metal) end
+		local topY = len * 0.28 + len / 2
+		if crook then
+			-- a hooked top
+			for k = 0, 5 do
+				local a = math.rad(k * 36)
+				block(model, h, Vector3.new(0.16, 0.26, 0.16), CFrame.new(math.sin(a) * 0.32, topY + math.cos(a) * 0.32 - 0.02, -0.22) * CFrame.Angles(0, 0, -a), wood)
+			end
+		else
+			-- a three-pronged cradle
+			for _, a in { -35, 0, 35 } do
+				block(model, h, Vector3.new(0.1, 0.5, 0.1), CFrame.new(math.sin(math.rad(a)) * 0.22, topY + 0.2, -0.22) * CFrame.Angles(0, 0, math.rad(-a)), rgb(255, 205, 70), Enum.Material.Metal)
+			end
+		end
+		local orb = ball(model, h, 0.52, CFrame.new(0, topY + 0.32, -0.22), gem, Enum.Material.Neon)
+		sparkles(orb, gem:Lerp(Color3.new(1, 1, 1), 0.4), 7)
+		local l = Instance.new("PointLight")
+		l.Color = gem
+		l.Range = 7
+		l.Brightness = 1.4
+		l.Parent = orb
+	end)
+end
+-- (their clothes, hats, wings, bows and books are real catalog items: KidAvatars. These are what they
+-- hold, and the magic round them)
+-- Rare: the apprentice's wand, spitting sparks
 B.Wand = function(model, head, hs)
-	wizardHat(model, head, hs, rgb(70, 50, 150), rgb(255, 205, 60))
 	inHand(model, "RightHand", function(h)
 		cylY(model, h, 0.1, 1.4, CFrame.new(0, 0.5, -0.25) * CFrame.Angles(math.rad(-30), 0, 0), rgb(90, 55, 30))
 		local tip = ball(model, h, 0.3, CFrame.new(0, 1.15, -0.65), rgb(255, 240, 150), Enum.Material.Neon)
-		sparkles(tip, rgb(255, 230, 150), 8)
+		sparkles(tip, rgb(255, 230, 150), 10)
 	end)
 end
+-- Epic: the alchemist's bubbling flask
 B.Potion = function(model, head, hs)
 	inHand(model, "RightHand", function(h)
-		local glass = ball(model, h, 0.75, CFrame.new(0, 0.35, -0.3), rgb(220, 240, 255), Enum.Material.Glass)
+		local glass = ball(model, h, 0.8, CFrame.new(0, 0.35, -0.3), rgb(220, 240, 255), Enum.Material.Glass)
 		glass.Transparency = 0.5
-		local brew = ball(model, h, 0.6, CFrame.new(0, 0.3, -0.3), rgb(120, 255, 120), Enum.Material.Neon)
-		cylY(model, h, 0.26, 0.4, CFrame.new(0, 0.8, -0.3), rgb(220, 240, 255), Enum.Material.Glass)
-		cylY(model, h, 0.3, 0.14, CFrame.new(0, 1.02, -0.3), rgb(150, 100, 60))
+		local brew = ball(model, h, 0.64, CFrame.new(0, 0.3, -0.3), rgb(120, 255, 120), Enum.Material.Neon)
+		cylY(model, h, 0.26, 0.45, CFrame.new(0, 0.85, -0.3), rgb(220, 240, 255), Enum.Material.Glass)
+		cylY(model, h, 0.3, 0.14, CFrame.new(0, 1.1, -0.3), rgb(150, 100, 60))
 		local b = Instance.new("ParticleEmitter")
 		b.Texture = "rbxasset://textures/particles/sparkles_main.dds"
 		b.Color = ColorSequence.new(rgb(150, 255, 150))
-		b.Size = NumberSequence.new(0.2, 0)
-		b.Rate = 6
+		b.Size = NumberSequence.new(0.25, 0)
+		b.Rate = 8
 		b.Lifetime = NumberRange.new(0.6, 1)
 		b.Speed = NumberRange.new(1, 2)
 		b.SpreadAngle = Vector2.new(20, 20)
 		b.EmissionDirection = Enum.NormalId.Top
 		b.Parent = brew
 	end)
-	-- goggles pushed up on the head
-	for _, x in { -0.22, 0.22 } do cylZ(model, head, 0.34, 0.12, CFrame.new(hs.X * x, hs.Y * 0.36, -hs.Z * 0.46), rgb(90, 200, 120), Enum.Material.Glass) end
 end
+-- Epic: the witch's broom
 B.Broomstick = function(model, head, hs)
-	-- a pointy black witch hat
-	wizardHat(model, head, hs, rgb(30, 30, 38), rgb(150, 70, 200))
 	inHand(model, "RightHand", function(h)
 		cylY(model, h, 0.14, 3.6, CFrame.new(0, 0.9, -0.15), rgb(120, 80, 40))
-		for k = 0, 2 do cylY(model, h, 0.75 - k * 0.12, 0.34, CFrame.new(0, -1.05 - k * 0.3, -0.15), rgb(220, 180, 90)) end
-		cylY(model, h, 0.34, 0.14, CFrame.new(0, -0.8, -0.15), rgb(120, 60, 160))
+		for k = 0, 2 do cylY(model, h, 0.78 - k * 0.12, 0.34, CFrame.new(0, -1.05 - k * 0.3, -0.15), rgb(220, 180, 90)) end
+		cylY(model, h, 0.34, 0.14, CFrame.new(0, -0.8, -0.15), rgb(150, 70, 210))
 	end)
+	sparkles(part(model, "HumanoidRootPart"), rgb(200, 150, 255), 3)
 end
-B.CrystalBall = function(model, head, hs)
-	local torso = part(model, "UpperTorso")
-	local ts = torso.Size
-	local orb = ball(model, torso, 1.0, CFrame.new(0, -ts.Y * 0.05, -ts.Z * 1.25), rgb(200, 150, 255), Enum.Material.Neon)
-	orb.Transparency = 0.15
-	cylY(model, torso, 0.7, 0.2, CFrame.new(0, -ts.Y * 0.4, -ts.Z * 1.25), rgb(200, 170, 80), Enum.Material.Metal)
-	sparkles(orb, rgb(230, 190, 255), 6)
-	-- a shawl and a headscarf
-	block(model, torso, Vector3.new(ts.X * 1.1, ts.Y * 0.35, ts.Z * 1.1), CFrame.new(0, ts.Y * 0.35, 0), rgb(140, 60, 170))
-	blob(model, head, Vector3.new(hs.X * 1.12, hs.Y * 0.5, hs.Z * 1.12), CFrame.new(0, hs.Y * 0.36, 0), rgb(140, 60, 170))
-	ball(model, head, 0.22, CFrame.new(0, hs.Y * 0.3, -hs.Z * 0.56), rgb(255, 205, 60), Enum.Material.Neon)
+-- Legendary: the elf's glow (her ears, bow and quiver are catalog items)
+B.ElfArcher = function(model, head, hs)
+	sparkles(part(model, "HumanoidRootPart"), rgb(160, 255, 170), 4)
 end
+-- Mythic: the dragon knight's dragon egg, glowing (his armour, wings and horns are catalog items)
 B.DragonWings = function(model, head, hs)
-	local torso = part(model, "UpperTorso")
-	local ts = torso.Size
-	local GREEN, LIGHT = rgb(60, 170, 80), rgb(150, 230, 120)
-	for _, s in { -1, 1 } do
-		local wing = CFrame.new(s * ts.X * 0.45, ts.Y * 0.3, ts.Z * 0.6) * CFrame.Angles(0, s * math.rad(25), s * math.rad(-30))
-		block(model, torso, Vector3.new(0.14, 0.14, 0.14), wing, GREEN)
-		for k = 0, 2 do
-			block(model, torso, Vector3.new(1.4 - k * 0.3, 0.08, 0.5), wing * CFrame.new(s * (0.7 - k * 0.1), 0.3 - k * 0.35, 0) * CFrame.Angles(0, 0, s * math.rad(15 - k * 15)), k == 1 and LIGHT or GREEN)
-		end
-		-- the horns
-		cylY(model, head, 0.2, 0.5, CFrame.new(s * hs.X * 0.3, hs.Y * 0.6, 0) * CFrame.Angles(0, 0, s * math.rad(-25)), rgb(240, 230, 210))
-	end
-	-- a little dragon tail
-	local lower = part(model, "LowerTorso")
-	if lower then
-		for k = 0, 3 do ball(model, lower, 0.5 - k * 0.08, CFrame.new(0, -0.2 - k * 0.2, lower.Size.Z * 0.6 + k * 0.35), GREEN) end
-	end
-end
-B.Archmage = function(model, head, hs)
-	wizardHat(model, head, hs, rgb(40, 60, 170), rgb(255, 205, 60))
-	for k = 0, 2 do ball(model, head, 0.2, CFrame.new(hs.X * (0.25 - k * 0.2), hs.Y * (0.9 + k * 0.35), -hs.Z * (0.5 - k * 0.1)), rgb(255, 240, 150), Enum.Material.Neon) end
-	inHand(model, "RightHand", function(h)
-		cylY(model, h, 0.16, 3.6, CFrame.new(0, 0.9, -0.2), rgb(110, 70, 40))
-		local orb = ball(model, h, 0.6, CFrame.new(0, 2.8, -0.2), rgb(120, 200, 255), Enum.Material.Neon)
-		sparkles(orb, rgb(170, 220, 255), 10)
+	inHand(model, "LeftHand", function(h)
+		local egg = blob(model, h, Vector3.new(0.6, 0.8, 0.6), CFrame.new(0, -0.1, -0.35), rgb(255, 130, 60), Enum.Material.Neon)
+		sparkles(egg, rgb(255, 170, 80), 5)
 	end)
-	sparkles(part(model, "HumanoidRootPart"), rgb(200, 180, 255), 4)
 end
-B.MirrorTwins = function(model, head, hs)
-	-- a silver halo over the head, and a shimmer
-	for k = 0, 9 do
-		local a = k / 10 * math.pi * 2
-		ball(model, head, 0.18, CFrame.new(math.cos(a) * hs.X * 0.55, hs.Y * 0.95, math.sin(a) * hs.Z * 0.55), rgb(230, 235, 255), Enum.Material.Neon)
-	end
-	sparkles(part(model, "HumanoidRootPart"), rgb(220, 220, 255), 5)
+-- Prodigy: the archmage's staff with its blue crystal
+B.Archmage = function(model, head, hs)
+	staff(model, 4.2, rgb(110, 70, 40), rgb(120, 200, 255), false)
+	sparkles(part(model, "HumanoidRootPart"), rgb(200, 180, 255), 6)
+end
+-- the ??? SECRET: the Twin Sorcerers' staffs with pink crystals, an orb of magic over each hand
+B.TwinSorcerers = function(model, head, hs)
+	staff(model, 4.4, rgb(60, 40, 70), rgb(255, 110, 230), true)
+	inHand(model, "LeftHand", function(h)
+		local orb = ball(model, h, 0.7, CFrame.new(0, -0.9, -0.35), rgb(200, 120, 255), Enum.Material.Neon)
+		orb.Transparency = 0.15
+		sparkles(orb, rgb(255, 170, 255), 12)
+	end)
+	sparkles(part(model, "HumanoidRootPart"), rgb(255, 180, 255), 10)
 end
 B.SpaceHelmet = function(model, head, hs)
 	spaceHelmet(model, head, hs)

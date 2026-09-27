@@ -191,6 +191,13 @@ local function boostUp(player)
 end
 for _, x in Config.Products do
 	if x.boost then GRANTS[x.key] = boostUp end
+	-- the Magic Bus: its kids, and the reveal on the buyer's screen (BusReveal.client)
+	if x.bus then
+		GRANTS[x.key] = function(player)
+			local res = require(script.Parent.BusDepotService).open(player, x.bus, x.count or 1)
+			if res then Remotes.Push:FireClient(player, "busOpen", res) end
+		end
+	end
 end
 
 function MonetizationService.grantProduct(player, key)
