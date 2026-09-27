@@ -56,6 +56,7 @@ local panel = UI.new("Frame", {
 UI.corner(panel, 18)
 UI.stroke(panel, 5, BRASS)
 UI.gradient(panel, Color3.fromRGB(96, 98, 112), Color3.fromRGB(44, 46, 56))
+UI.studs(panel, { zindex = panel.ZIndex, transparency = UI.STUD.panel })
 -- brushed-metal lines
 for i = 1, 26 do
 	UI.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.94, BorderSizePixel = 0, Size = UDim2.new(1, -20, 0, 1), Position = UDim2.fromOffset(10, 8 + i * 21), ZIndex = 10, Parent = panel })
@@ -88,6 +89,7 @@ local function floorButton(f, here)
 	})
 	UI.corner(b, 12)
 	UI.stroke(b, 2.5, current and TOXIC or Color3.fromRGB(20, 20, 26))
+	UI.studs(b, { zindex = b.ZIndex, transparency = UI.STUD.row })
 	-- the round button
 	local knob = UI.new("Frame", { Size = UDim2.fromOffset(40, 40), Position = UDim2.fromOffset(6, 6), BackgroundColor3 = open and BRASS or Color3.fromRGB(90, 90, 96), ZIndex = 12, Parent = b })
 	UI.corner(knob, 20)
@@ -150,6 +152,7 @@ local card = UI.new("Frame", {
 })
 UI.corner(card, 14)
 UI.stroke(card, 3, TOXIC)
+UI.studs(card, { zindex = card.ZIndex, transparency = UI.STUD.hud })
 local cardTitle = UI.label(card, { Text = "", Font = UI.BIG, TextColor3 = TOXIC, Size = UDim2.new(1, -24, 0, 24), Position = UDim2.fromOffset(12, 5), stroke = 2 })
 local cardText = UI.label(card, { Text = "", TextColor3 = Color3.new(1, 1, 1), TextScaled = false, TextSize = 18, TextWrapped = true, Size = UDim2.new(1, -24, 0, 26), Position = UDim2.fromOffset(12, 32), stroke = 1.5 })
 
@@ -218,6 +221,7 @@ local function message(text, kind)
 	end
 	UI.corner(m, 12)
 	UI.stroke(m, 3, color)
+	UI.studs(m, { zindex = m.ZIndex, transparency = UI.STUD.chip })
 	UI.label(m, { Text = text, TextColor3 = color, TextScaled = false, TextSize = 19, TextWrapped = true, Size = UDim2.new(1, -20, 1, -8), Position = UDim2.fromOffset(10, 4), ZIndex = 26, stroke = 1.5 })
 	UI.pop(m, 0.7)
 	if kind == "bad" then sfx("Error") end
@@ -372,6 +376,7 @@ local keypad = UI.new("Frame", {
 UI.corner(keypad, 18)
 UI.stroke(keypad, 5, BRASS)
 UI.gradient(keypad, Color3.fromRGB(96, 98, 112), Color3.fromRGB(44, 46, 56))
+UI.studs(keypad, { zindex = keypad.ZIndex, transparency = UI.STUD.panel })
 local kDisplay = UI.new("Frame", { Size = UDim2.new(1, -28, 0, 70), Position = UDim2.fromOffset(14, 14), BackgroundColor3 = Color3.fromRGB(10, 20, 10), ZIndex = 21, Parent = keypad })
 UI.corner(kDisplay, 10)
 UI.stroke(kDisplay, 3, BRASS)

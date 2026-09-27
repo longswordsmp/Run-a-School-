@@ -159,6 +159,7 @@ local function dialogBox(speaker, templateId)
 	UI.new("UISizeConstraint", { MaxSize = Vector2.new(900, 150), Parent = box })
 	UI.corner(box, 18)
 	UI.stroke(box, 4)
+	UI.studs(box, { zindex = box.ZIndex, transparency = UI.STUD.dialogue })
 	local portrait = UI.new("Frame", {
 		Size = UDim2.fromOffset(120, 120),
 		Position = UDim2.fromOffset(14, 15),
@@ -168,6 +169,7 @@ local function dialogBox(speaker, templateId)
 	})
 	UI.corner(portrait, 14)
 	UI.stroke(portrait, 3)
+	UI.studs(portrait, { zindex = portrait.ZIndex, transparency = UI.STUD.card })
 	local function fill(chair)
 		if not chair or not portrait.Parent then return end
 		local vp, m = UI.viewport(portrait, chair, { zindex = 8, zoom = 0.55 })

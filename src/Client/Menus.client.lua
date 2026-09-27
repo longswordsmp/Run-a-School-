@@ -4,6 +4,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local UI = require(Shared:WaitForChild("UI"))
@@ -150,6 +151,8 @@ local function shopRow(parent, order, opts)
 	})
 	UI.corner(iconBox, 12)
 	UI.stroke(iconBox, 2.5)
+	UI.studs(iconBox, { zindex = iconBox.ZIndex, transparency = UI.STUD.chip })
+	UI.studs(r, { zindex = r.ZIndex, transparency = UI.STUD.row })
 	if opts.model then
 		UI.viewport(iconBox, opts.model, { zindex = 14, zoom = 0.95 })
 	else
@@ -574,9 +577,11 @@ do
 		UI.corner(f, 12)
 		UI.stroke(f, 3)
 		local check = UI.label(f, { Text = "", Size = UDim2.fromOffset(44, 44), Position = UDim2.new(0, 10, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 13, stroke = 0 })
+		UI.studs(f, { zindex = f.ZIndex, transparency = UI.STUD.row })
 		local text = UI.label(f, { Text = "", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = UI.C.navy, Size = UDim2.new(1, -70, 0, 26), Position = UDim2.fromOffset(62, 6), ZIndex = 13, stroke = 0 })
 		local barBg = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(60, 60, 70), Size = UDim2.new(1, -76, 0, 16), Position = UDim2.fromOffset(62, 38), ZIndex = 13, Parent = f })
 		UI.corner(barBg, 8)
+		UI.studs(barBg, { zindex = barBg.ZIndex, transparency = UI.STUD.bar })
 		local fill = UI.new("Frame", { BackgroundColor3 = UI.C.green, Size = UDim2.fromScale(0, 1), ZIndex = 14, Parent = barBg })
 		UI.corner(fill, 8)
 		return { check = check, text = text, fill = fill, bar = barBg }
@@ -664,6 +669,7 @@ do
 		UI.corner(c, 16)
 		UI.stroke(c, f.next and 5 or 3, f.next and UI.C.ink or Color3.fromRGB(60, 60, 70))
 		UI.gradient(c, UI.lighten(color, f.owned and 0.2 or 0.55), f.owned and color or UI.lighten(color, 0.25))
+		UI.studs(c, { zindex = c.ZIndex, transparency = UI.STUD.card })
 		UI.label(c, { Text = f.icon, Size = UDim2.new(1, 0, 0, 60), Position = UDim2.fromOffset(0, 8), ZIndex = 14, stroke = 0 })
 		UI.label(c, { Text = f.name, Font = UI.BIG, Size = UDim2.new(1, -16, 0, 36), Position = UDim2.fromOffset(8, 70), ZIndex = 14, stroke = 3 })
 		UI.label(c, { Text = ("x%d TUITION"):format(f.mult), Font = UI.BIG, TextColor3 = Color3.fromRGB(40, 150, 70), Size = UDim2.new(1, -16, 0, 26), Position = UDim2.fromOffset(8, 108), ZIndex = 14, stroke = 2 })
@@ -726,6 +732,7 @@ do
 		UI.stroke(f, 3)
 		local bar = UI.new("Frame", { Size = UDim2.new(0, 12, 1, -12), Position = UDim2.fromOffset(6, 6), BackgroundColor3 = color, ZIndex = 13, Parent = f })
 		UI.corner(bar, 6)
+		UI.studs(f, { zindex = f.ZIndex, transparency = UI.STUD.card })
 		local t = UI.label(f, { Text = title, Font = UI.BIG, TextColor3 = color, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -40, 0, 28), Position = UDim2.fromOffset(28, 6), ZIndex = 13, stroke = 1 })
 		local q = UI.label(f, { Text = "", TextColor3 = UI.C.ink, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Size = UDim2.new(1, -44, 0, 62), Position = UDim2.fromOffset(28, 36), ZIndex = 13, stroke = 0 })
 		local cap = Instance.new("UITextSizeConstraint")
@@ -912,6 +919,7 @@ do
 	UI.corner(box, 12)
 	UI.stroke(box, 3).ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	UI.padding(box, 10)
+	UI.studsUnderText(box)
 	local err = UI.label(panel.body, { Text = "", TextColor3 = UI.C.red, Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(0, 106), ZIndex = 12, stroke = 0 })
 	local save = UI.button(panel.body, { text = "SAVE NAME", color = UI.C.green, size = UDim2.fromOffset(220, 58), position = UDim2.new(0.5, 0, 1, -4), anchor = Vector2.new(0.5, 1) })
 	lift(save.button, 12)
@@ -944,6 +952,7 @@ do
 	local function toggle(order, label, attr, key)
 		local r = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(255, 236, 206), Size = UDim2.new(1, 0, 0, 70), LayoutOrder = order, ZIndex = 12, Parent = list })
 		UI.corner(r, 14)
+		UI.studs(r, { zindex = r.ZIndex, transparency = UI.STUD.row })
 		UI.stroke(r, 3)
 		UI.label(r, { Text = label, Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -170, 0, 34), Position = UDim2.new(0, 16, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 13 })
 		local b = UI.button(r, { text = "", size = UDim2.fromOffset(130, 50), position = UDim2.new(1, -12, 0.5, 0), anchor = Vector2.new(1, 0.5) })
@@ -970,6 +979,7 @@ do
 	local codeRow = UI.new("Frame", { Name = "Codes", BackgroundColor3 = Color3.fromRGB(255, 236, 206), Size = UDim2.new(1, 0, 0, 70), LayoutOrder = 5, ZIndex = 12, Parent = list })
 	UI.corner(codeRow, 14)
 	UI.stroke(codeRow, 3)
+	UI.studs(codeRow, { zindex = codeRow.ZIndex, transparency = UI.STUD.row })
 	local codeBox = UI.new("TextBox", {
 		Name = "CodeInput", Text = "", PlaceholderText = "\u{1F511} Got a code?", Font = UI.FONT, TextScaled = true,
 		TextColor3 = UI.C.ink, PlaceholderColor3 = UI.C.grey, BackgroundColor3 = UI.C.white, ClearTextOnFocus = false,
@@ -978,6 +988,7 @@ do
 	UI.corner(codeBox, 10)
 	UI.stroke(codeBox, 2).ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	UI.padding(codeBox, 8)
+	UI.studsUnderText(codeBox)
 	local codeErr = UI.label(list, { Text = "", TextColor3 = UI.C.red, TextWrapped = true, Size = UDim2.new(1, 0, 0, 40), LayoutOrder = 6, ZIndex = 12, stroke = 0 })
 	local redeem = UI.button(codeRow, { text = "REDEEM", color = UI.C.purple, size = UDim2.fromOffset(130, 50), position = UDim2.new(1, -12, 0.5, 0), anchor = Vector2.new(1, 0.5) })
 	lift(redeem.button, 13)
@@ -1019,6 +1030,7 @@ do
 		UI.corner(t, 14)
 		UI.stroke(t, 3)
 		local grad = UI.gradient(t, Color3.fromRGB(255, 240, 210), Color3.fromRGB(255, 210, 150))
+		UI.studs(t, { zindex = t.ZIndex, transparency = UI.STUD.card })
 		UI.label(t, { Name = "Title", Text = "DAY " .. i, Font = UI.BIG, Size = UDim2.new(1, -8, 0, 30), Position = UDim2.fromOffset(4, 6), ZIndex = 13, stroke = 2 })
 		UI.label(t, { Name = "Icon", Text = i == 7 and "\u{1F381}" or "\u{2B50}", Size = UDim2.new(1, -30, 0, 46), Position = UDim2.fromOffset(15, 38), ZIndex = 13, stroke = 0 })
 		local txt = UI.label(t, { Name = "Text", Text = "", TextWrapped = true, TextColor3 = UI.C.navy, Size = UDim2.new(1, -10, 0, 60), Position = UDim2.fromOffset(5, 92), ZIndex = 13, stroke = 0 })
@@ -1042,8 +1054,10 @@ do
 		UI.corner(r, 12)
 		UI.stroke(r, 3)
 		local text = UI.label(r, { Text = "", TextColor3 = UI.C.ink, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(0, 330, 0, 28), Position = UDim2.fromOffset(12, 8), ZIndex = 13, stroke = 0 })
+		UI.studs(r, { zindex = r.ZIndex, transparency = UI.STUD.row })
 		local barBg = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(70, 70, 80), Size = UDim2.fromOffset(200, 20), Position = UDim2.fromOffset(352, 12), ZIndex = 13, Parent = r })
 		UI.corner(barBg, 10)
+		UI.studs(barBg, { zindex = barBg.ZIndex, transparency = UI.STUD.bar })
 		local fill = UI.new("Frame", { BackgroundColor3 = UI.C.green, Size = UDim2.fromScale(0, 1), ZIndex = 14, Parent = barBg })
 		UI.corner(fill, 10)
 		local count = UI.label(barBg, { Text = "", Size = UDim2.fromScale(1, 1), ZIndex = 15, stroke = 2 })
@@ -1159,8 +1173,8 @@ end
 
 ---------------------------------------------------------------------------
 -- Robux store: passes and products (only opens when you press it). Laid out like tomas's reference (a
--- gamepass shop): the MONEY BOOST as a big card across the top, then GAMEPASSES, EXTRAS and OPEN AREAS as
--- cards three to a row, each with its 3D icon on a slowly turning burst of light, its price tilted
+-- gamepass shop): the MONEY BOOST as a big card across the top, then GAMEPASSES and EXTRAS as
+-- cards three to a row, each with its 3D icon (no burst behind it: tomas, 2026-09-27), its price tilted
 -- into the corner and a buy button. Drawn in the game's own style (cream, studs, cartoon type).
 ---------------------------------------------------------------------------
 do
@@ -1185,7 +1199,7 @@ do
 		UI.corner(ribbon, 12)
 		UI.stroke(ribbon, 3)
 		UI.gradient(ribbon, UI.lighten(color, 0.3), color)
-		UI.studs(ribbon, { zindex = 12, transparency = 0.62, tile = 100 })
+		UI.studs(ribbon, { zindex = 12, transparency = UI.STUD.header })
 		UI.label(ribbon, { Text = text, Font = UI.BIG, Size = UDim2.new(1, -20, 1, -8), Position = UDim2.fromOffset(10, 4), ZIndex = 13, stroke = 3 })
 		return row
 	end
@@ -1214,19 +1228,13 @@ do
 		ExpressRare = { "Rare Letter", "Ready right now", rgb(70, 150, 255) },
 		ExpressEpic = { "Epic Letter", "Ready right now", rgb(255, 100, 180) },
 		LockRefresh = { "Lock Refresh", "Lock again now", rgb(40, 190, 180) },
-		UnlockDowntown = { "Downtown", "Open it now", rgb(230, 96, 64) },
-		UnlockLab = { "Mutation Lab", "Open it now", rgb(110, 200, 60) },
-		UnlockMapleHeights = { "Maple Heights", "Open it now", rgb(80, 170, 90) },
-		UnlockPinePark = { "Pine Park", "Open it now", rgb(46, 140, 80) },
-		UnlockVexPrep = { "Vex Prep", "Open it now", rgb(130, 60, 200) },
-		UnlockIndustrial = { "Industrial", "Open it now", rgb(110, 50, 160) },
-		UnlockLair = { "The Lair", "Open it now", rgb(200, 30, 60) },
 	}
 
 	-- the hover tip: the full description
 	local tip = UI.new("Frame", { Name = "Tip", BackgroundColor3 = UI.C.cream, Size = UDim2.fromOffset(300, 60), Visible = false, ZIndex = 40, Parent = panel.frame })
 	UI.corner(tip, 10)
 	UI.stroke(tip, 3)
+	UI.studs(tip, { zindex = tip.ZIndex, transparency = UI.STUD.dialogue })
 	UI.label(tip, { Name = "Text", Text = "", TextColor3 = UI.C.ink, TextWrapped = true, Size = UDim2.new(1, -16, 1, -10), Position = UDim2.fromOffset(8, 5), ZIndex = 41, stroke = 0 })
 	local function showTip(card, text)
 		tip.Text.Text = text
@@ -1242,7 +1250,7 @@ do
 		return g
 	end
 
-	-- one card: the colour with the studs, a burst of light turning behind the 3D icon, the name on top,
+	-- one card: the colour with the studs, the 3D icon, the name on top,
 	-- the price tilted into the corner, what it does and a buy button along the bottom
 	local cards = {}
 	local function card(parent, key, def, onBuy, i)
@@ -1252,8 +1260,7 @@ do
 		UI.corner(c, 16)
 		UI.stroke(c, 3.5)
 		UI.gradient(c, UI.lighten(color, 0.3), UI.darken(color, 0.08))
-		UI.studs(c, { zindex = 12, transparency = 0.66, tile = 110 })
-		UI.burst(c, UI.lighten(color, 0.55), 170, { position = UDim2.new(0.5, 0, 0, 104), zindex = 13, middle = 0.45, edge = 0.8, coreTransparency = 0.6, speed = 14 })
+		UI.studs(c, { zindex = 12, transparency = UI.STUD.card })
 		Icons.view(c, Icons.FOR[key] or "gift", { size = UDim2.fromOffset(140, 118), position = UDim2.new(0.5, 0, 0, 44), anchor = Vector2.new(0.5, 0), zindex = 14 })
 		UI.label(c, { Name = "Title", Text = look[1], Font = UI.BIG, Size = UDim2.new(1, -20, 0, 34), Position = UDim2.fromOffset(10, 8), ZIndex = 15, stroke = 3 })
 		local tag = UI.label(c, { Name = "Tag", Text = "", Font = UI.BIG, Size = UDim2.fromOffset(84, 30), Position = UDim2.new(1, -78, 0, 50), Rotation = 18, ZIndex = 16, stroke = 3 })
@@ -1308,8 +1315,7 @@ do
 	UI.corner(boost, 20)
 	UI.stroke(boost, 4)
 	UI.gradient(boost, rgb(255, 236, 150), rgb(255, 176, 50))
-	UI.studs(boost, { zindex = 12, transparency = 0.7, tile = 120 })
-	UI.burst(boost, rgb(255, 255, 220), 230, { position = UDim2.fromOffset(120, 125), zindex = 13, rays = 10, middle = 0.35, edge = 0.75, speed = 12 })
+	UI.studs(boost, { zindex = 12, transparency = UI.STUD.card })
 	Icons.view(boost, "cash", { size = UDim2.fromOffset(200, 170), position = UDim2.fromOffset(20, 40), zindex = 14, sway = 14 })
 	UI.label(boost, { Text = "MONEY BOOST", Font = UI.BIG, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -500, 0, 46), Position = UDim2.fromOffset(236, 12), ZIndex = 15, stroke = 4 })
 	UI.label(boost, { Text = "Every purchase adds +1x to ALL your tuition. Forever. Up to x100!", TextColor3 = UI.C.navy, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, Size = UDim2.new(1, -500, 0, 40), Position = UDim2.fromOffset(238, 58), ZIndex = 15, stroke = 0 })
@@ -1319,6 +1325,7 @@ do
 	local barBack = UI.new("Frame", { BackgroundColor3 = rgb(200, 140, 40), Size = UDim2.new(1, -500, 0, 24), Position = UDim2.fromOffset(238, 172), ZIndex = 15, Parent = boost })
 	UI.corner(barBack, 12)
 	UI.stroke(barBack, 3)
+	UI.studs(barBack, { zindex = barBack.ZIndex, transparency = UI.STUD.bar })
 	local barFill = UI.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(0, 1), ZIndex = 16, Parent = barBack })
 	UI.corner(barFill, 12)
 	UI.gradient(barFill, rgb(150, 255, 150), rgb(60, 200, 80))
@@ -1394,12 +1401,10 @@ do
 	end
 	sections[3] = heading("\u{26A1} EXTRAS", rgb(70, 150, 255))
 	local extraGrid = grid()
-	local areaHeading = heading("\u{1F5FA}\u{FE0F} OPEN AREAS NOW", rgb(160, 90, 240))
-	local areaGrid = grid()
 	for i, x in Config.Products do
 		-- (the Money Boost bands are the big card at the top)
 		if x.boost then continue end
-		card(x.area and areaGrid or extraGrid, x.key, x, function() call("buy", "product", x.key) end, i)
+		card(extraGrid, x.key, x, function() call("buy", "product", x.key) end, i)
 	end
 
 	function panel.refresh()
@@ -1414,16 +1419,10 @@ do
 			local c = cards[s.key]
 			if c then c.set(robux[s.key] or 0, s.owned == true, s.ready == true) end
 		end
-		local anyArea = false
 		for _, s in res.products do
 			local c = cards[s.key]
-			if c then
-				c.set(robux[s.key] or 0, false, s.ready == true)
-				if s.ready and c.card.Parent == areaGrid then anyArea = true end
-			end
+			if c then c.set(robux[s.key] or 0, false, s.ready == true) end
 		end
-		areaHeading.Visible = anyArea
-		areaGrid.Visible = anyArea
 	end
 	-- (other scripts can ask for a section: 1 the boost, 2 the passes, 3 the extras)
 	function panel.select(i)
@@ -1507,6 +1506,7 @@ do
 		-- (the stroke goes round the box, not round the letters)
 		UI.stroke(box, 3).ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		UI.padding(box, 8)
+		UI.studsUnderText(box)
 		local row = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -262, 0, 50), Position = UDim2.fromOffset(262, 34), ZIndex = 11, Parent = holder })
 		UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		for i, spec in buttons do
@@ -1587,6 +1587,7 @@ do
 			local r = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(255, 236, 206), Size = UDim2.new(1, 0, 0, 64), LayoutOrder = i, ZIndex = 12, Parent = playerHolder })
 			UI.corner(r, 12)
 			UI.stroke(r, 3)
+			UI.studs(r, { zindex = r.ZIndex, transparency = UI.STUD.row })
 			UI.label(r, { Text = ("%s  @%s"):format(pl.name, pl.user), Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = UI.C.navy, Size = UDim2.new(0, 260, 0, 28), Position = UDim2.fromOffset(12, 6), ZIndex = 13, stroke = 0 })
 			UI.label(r, { Text = ("%s \u{2022} %s"):format(Config.formatCash(pl.cash), Config.Tiers[pl.tier] and Config.Tiers[pl.tier].name or "?"), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = UI.C.grey, Size = UDim2.new(0, 260, 0, 22), Position = UDim2.fromOffset(12, 34), ZIndex = 13, stroke = 0 })
 			local row = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -290, 0, 48), Position = UDim2.fromOffset(282, 8), ZIndex = 12, Parent = r })
@@ -1685,9 +1686,11 @@ do
 	})
 	UI.corner(card, 18)
 	UI.stroke(card, 4)
+	UI.studs(card, { zindex = card.ZIndex, transparency = UI.STUD.panel })
 	local head = UI.new("Frame", { Size = UDim2.new(1, 0, 0, 40), BackgroundColor3 = UI.C.white, ZIndex = 41, Parent = card })
 	UI.corner(head, 18)
 	UI.gradient(head, UI.lighten(UI.C.purple, 0.3), UI.C.purple)
+	UI.studs(head, { zindex = head.ZIndex, transparency = UI.STUD.header })
 	UI.label(head, { Text = "\u{1F514} POP QUIZ!", Font = UI.BIG, Size = UDim2.new(0.7, 0, 1, -8), Position = UDim2.fromOffset(12, 4), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 42, stroke = 2 })
 	local timer = UI.label(head, { Text = "10", Font = UI.BIG, Size = UDim2.new(0.25, 0, 1, -8), Position = UDim2.new(0.75, -12, 0, 4), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 42, stroke = 2 })
 	local question = UI.label(card, { Text = "", TextColor3 = UI.C.ink, Size = UDim2.new(1, -24, 0, 50), Position = UDim2.fromOffset(12, 48), ZIndex = 41, stroke = 0 })
@@ -1820,8 +1823,8 @@ local function tileButton(caption, color, order)
 	-- the face: the colour, lit from the top, the studs faintly over it and a soft gloss on its top half
 	local face = UI.new("Frame", { Name = "Face", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = body })
 	UI.corner(face, 16)
-	UI.gradient(face, UI.lighten(color, 0.25), color)
-	UI.studs(face, { zindex = 3, transparency = 0.74, tile = 40 })
+	local faceGrad = UI.gradient(face, UI.lighten(color, 0.25), color)
+	UI.studs(face, { zindex = 3, transparency = UI.STUD.button })
 	local gloss = UI.new("Frame", { Name = "Gloss", BorderSizePixel = 0, BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 0.5), ZIndex = 3, Parent = face })
 	UI.corner(gloss, 16)
 	UI.new("UIGradient", { Rotation = 90, Transparency = NumberSequence.new(0.8, 1), Parent = gloss })
@@ -1851,7 +1854,7 @@ local function tileButton(caption, color, order)
 	b.MouseButton1Down:Connect(function() body.Position = UDim2.fromOffset(0, LIP - 1) end)
 	b.MouseButton1Up:Connect(function() body.Position = UDim2.new() end)
 	b.Parent = bar
-	return { button = b, body = body }
+	return { button = b, body = body, face = face, faceGrad = faceGrad, lip = lip, glow = glow, glint = glint }
 end
 
 local function sideButton(order, icon, caption, color, panel)
@@ -1875,7 +1878,39 @@ sideButton(3, "\u{1F3DB}\u{FE0F}", "Board", UI.C.purple, panels.Board)
 sideButton(4, "\u{1F4D6}", "Yearbook", UI.C.pink, panels.Yearbook)
 sideButton(5, "\u{270F}\u{FE0F}", "Name", UI.C.blue, panels.NameSchool)
 sideButton(6, "\u{2699}\u{FE0F}", "Settings", UI.C.navy, panels.Settings)
-sideButton(0, "\u{1F48E}", "Store", Color3.fromRGB(40, 190, 90), panels.Store)
+-- the Store tile stays green, with a glow breathing round it and a glint every few seconds; its
+-- window's title bar is the rainbow (tomas, 2026-09-27: "the button green but when you click it the
+-- gui is rainbow ... the part where it says Store, behind that")
+local storeTile = sideButton(0, "\u{1F48E}", "Store", Color3.fromRGB(40, 190, 90), panels.Store)
+do
+	local t = storeTile
+	UI.pulse(t.glow, 0.35, 0.85, 1.8)
+	task.spawn(function()
+		while t.button.Parent do
+			task.wait(2.6)
+			if t.button.Visible then UI.sweep(t.glint, 0.7) end
+		end
+	end)
+	local p = panels.Store
+	local acc = 0
+	RunService.RenderStepped:Connect(function(dt)
+		acc += dt
+		if acc < 1 / 30 then return end
+		acc = 0
+		if not p.frame.Visible then return end
+		-- (the whole colour wheel along the bar, drifting; the bar and its squared-off bottom together)
+		local h = (os.clock() * 0.1) % 1
+		local keys = {}
+		for i = 0, 6 do
+			keys[i + 1] = ColorSequenceKeypoint.new(i / 6, Color3.fromHSV((h + i / 6) % 1, 0.6, 1))
+		end
+		local seq = ColorSequence.new(keys)
+		p.headerGrad.Color = seq
+		p.headerGrad.Rotation = 0
+		p.fillGrad.Color = seq
+		p.fillGrad.Rotation = 0
+	end)
+end
 local dailyButton = sideButton(9, "\u{1F4C5}", "Daily", UI.C.orange, panels.Daily)
 -- the Co-op panel lives in Coop.client
 sideButton(8, "\u{1F465}", "Coop", Color3.fromRGB(140, 80, 240), { toggle = function()

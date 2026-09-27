@@ -48,6 +48,7 @@ local function build(prompt, inputType)
 	})
 	UI.corner(pill, 16)
 	local st = UI.stroke(pill, 3, accent)
+	UI.studs(pill, { zindex = pill.ZIndex, transparency = UI.STUD.chip })
 	-- hold bar along the bottom
 	local barBack = UI.new("Frame", {
 		BackgroundColor3 = Color3.fromRGB(60, 60, 70),

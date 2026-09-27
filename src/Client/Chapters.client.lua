@@ -40,6 +40,8 @@ local card = UI.new("Frame", {
 })
 UI.corner(card, 14)
 UI.stroke(card, 3)
+-- (the card's studs first: made later, they'd tie with the title bar and cover it)
+UI.studs(card, { zindex = card.ZIndex, transparency = UI.STUD.hud })
 local scale = Instance.new("UIScale")
 scale.Parent = card
 local fitScale = 1
@@ -54,8 +56,7 @@ local header = UI.new("TextButton", {
 })
 UI.corner(header, 14)
 UI.gradient(header, UI.lighten(ORANGE, 0.3), ORANGE)
-UI.studs(card, { zindex = 0, transparency = 0.84, tile = 130 })
-UI.studs(header, { zindex = 0, transparency = 0.66, tile = 110 })
+UI.studs(header, { zindex = header.ZIndex, transparency = UI.STUD.header })
 local title = UI.label(header, { Text = "", Font = UI.BIG, TextXAlignment = LEFT, Size = UDim2.new(1, -44, 1, -6), Position = UDim2.fromOffset(10, 3), stroke = 2 })
 local chev = UI.label(header, { Text = "\u{25BE}", Font = UI.BIG, Size = UDim2.fromOffset(26, 26), Position = UDim2.new(1, -32, 0, 2), stroke = 2 })
 local sub = UI.label(card, { Text = "", TextColor3 = UI.C.ink, Font = UI.BIG, TextXAlignment = LEFT, Size = UDim2.new(1, -20, 0, 20), Position = UDim2.fromOffset(12, 32), stroke = 0 })
@@ -232,6 +233,7 @@ local function stepDone(d)
 	})
 	UI.corner(t, 12)
 	UI.stroke(t, 3)
+	UI.studs(t, { zindex = t.ZIndex, transparency = UI.STUD.chip })
 	UI.label(t, { Text = "\u{2714} " .. d.text, TextColor3 = UI.C.ink, TextXAlignment = LEFT, Size = UDim2.new(1, -16, 0, 24), Position = UDim2.fromOffset(10, 4), stroke = 0 })
 	UI.label(t, {
 		Text = ("+%s   +%d \u{1F36C}"):format(Config.formatCash(d.reward or 0), d.candy or 0),
@@ -265,9 +267,11 @@ local function chapterStart(d)
 	})
 	UI.corner(f, 18)
 	UI.stroke(f, 4)
+	UI.studs(f, { zindex = f.ZIndex, transparency = UI.STUD.chip })
 	local band = UI.new("Frame", { Size = UDim2.new(1, 0, 0, 44), BackgroundColor3 = UI.C.white, Parent = f })
 	UI.corner(band, 18)
 	UI.gradient(band, UI.lighten(ORANGE, 0.3), ORANGE)
+	UI.studs(band, { zindex = band.ZIndex, transparency = UI.STUD.header })
 	UI.label(band, { Text = ("\u{1F4D6} CHAPTER %d"):format(d.n + 1), Font = UI.BIG, Size = UDim2.new(1, -20, 1, -8), Position = UDim2.fromOffset(10, 4), stroke = 3 })
 	UI.label(f, { Text = d.title, Font = UI.BIG, TextColor3 = UI.C.ink, Size = UDim2.new(1, -30, 0, 40), Position = UDim2.fromOffset(15, 50), stroke = 0 })
 	UI.label(f, {

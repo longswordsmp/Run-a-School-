@@ -319,19 +319,44 @@ end
 -- the classic Roblox stud texture behind the UI (tomas: "super popular for games with high player
 -- counts"): a tiled image, strong on the colours, faint on the cream
 UI.STUDS = "rbxthumb://type=Asset&id=15910695917&w=420&h=420"
+-- one stud size everywhere (the texture is 4 x 4 studs a tile: 18 px studs), so every surface reads as
+-- the same plastic (tomas, 2026-09-27: the buttons had studs the rest of the UI didn't)
+UI.STUD_TILE = 72
+-- how strong, by what it's on: the cream insides of windows faint, colours stronger, typing boxes and
+-- speech faintest (the words on them come first)
+UI.STUD = { panel = 0.84, header = 0.66, card = 0.72, button = 0.72, chip = 0.74, row = 0.8, hud = 0.8, textbox = 0.88, dialogue = 0.86, bar = 0.8 }
 function UI.studs(frame, opts)
 	opts = opts or {}
+	-- (a list or grid inside would lay the texture out as one of its items, shoving the rest along)
+	if frame:FindFirstChildWhichIsA("UIGridStyleLayout") then
+		warn("[UI.studs] " .. frame:GetFullName() .. " lays out its children: no studs on it")
+		return nil
+	end
 	local img = Instance.new("ImageLabel")
 	img.Name = "Studs"
 	img.BackgroundTransparency = 1
 	img.Image = UI.STUDS
 	img.ScaleType = Enum.ScaleType.Tile
-	img.TileSize = UDim2.fromOffset(opts.tile or 140, opts.tile or 140)
-	img.ImageTransparency = opts.transparency or 0.6
+	img.TileSize = UDim2.fromOffset(opts.tile or UI.STUD_TILE, opts.tile or UI.STUD_TILE)
+	img.ImageTransparency = opts.transparency or 0.72
 	img.Size = UDim2.fromScale(1, 1)
+	-- (a padding insets children: undo it so the texture still covers the whole frame)
+	local pad = frame:FindFirstChildOfClass("UIPadding")
+	if pad then
+		local l, r, t, b = pad.PaddingLeft.Offset, pad.PaddingRight.Offset, pad.PaddingTop.Offset, pad.PaddingBottom.Offset
+		img.Position = UDim2.fromOffset(-l, -t)
+		img.Size = UDim2.new(1, l + r, 1, t + b)
+	end
 	img.ZIndex = opts.zindex or frame.ZIndex
 	local c = frame:FindFirstChildOfClass("UICorner")
 	if c then c:Clone().Parent = img end
+	-- (it fades with its frame: a toast fading out doesn't leave its studs hanging in the air)
+	local base = img.ImageTransparency
+	local function follow()
+		img.ImageTransparency = 1 - (1 - base) * (1 - frame.BackgroundTransparency)
+	end
+	follow()
+	frame:GetPropertyChangedSignal("BackgroundTransparency"):Connect(follow)
 	img.Parent = frame
 	return img
 end
@@ -343,6 +368,41 @@ local function globalZ(obj)
 	return g ~= nil and g:IsA("ScreenGui") and g.ZIndexBehavior == Enum.ZIndexBehavior.Global
 end
 UI.globalZ = globalZ
+
+-- studs under something that carries its own text (a typing box, a label with a fill): a child laid
+-- over it would cover the words, so its fill (and gradient) moves onto a backing child drawn BENEATH it
+-- (Global guis draw a lower-ZIndex child under its parent), the studs go on that, the words stay on
+-- top. Needs a Global gui and the element parented into it.
+function UI.studsUnderText(obj, opts)
+	opts = opts or {}
+	if not globalZ(obj) then
+		warn("[UI.studsUnderText] " .. obj:GetFullName() .. " isn't in a Global gui: no studs on it")
+		return nil
+	end
+	local back = Instance.new("Frame")
+	back.Name = "Back"
+	back.BorderSizePixel = 0
+	back.BackgroundColor3 = obj.BackgroundColor3
+	back.BackgroundTransparency = obj.BackgroundTransparency
+	back.Size = UDim2.fromScale(1, 1)
+	local pad = obj:FindFirstChildOfClass("UIPadding")
+	if pad then
+		local l, r, t, b = pad.PaddingLeft.Offset, pad.PaddingRight.Offset, pad.PaddingTop.Offset, pad.PaddingBottom.Offset
+		back.Position = UDim2.fromOffset(-l, -t)
+		back.Size = UDim2.new(1, l + r, 1, t + b)
+	end
+	back.ZIndex = math.max(0, obj.ZIndex - 1)
+	local c = obj:FindFirstChildOfClass("UICorner")
+	if c then c:Clone().Parent = back end
+	local g = obj:FindFirstChildOfClass("UIGradient")
+	if g then g:Clone().Parent = back end
+	back.Parent = obj
+	obj.BackgroundTransparency = 1
+	-- (the backing keeps up if the element's fill colour changes later)
+	obj:GetPropertyChangedSignal("BackgroundColor3"):Connect(function() back.BackgroundColor3 = obj.BackgroundColor3 end)
+	UI.studs(back, { zindex = back.ZIndex, transparency = opts.transparency or UI.STUD.textbox, tile = opts.tile })
+	return back
+end
 
 -- chunky gradient button
 -- opts: text, color, size, position, anchor, font, onClick, textColor, radius, icon, layoutOrder
@@ -371,7 +431,7 @@ function UI.button(parent, opts)
 		Parent = b,
 	})
 	UI.corner(shine, (opts.radius or 12) - 4)
-	UI.studs(b, { zindex = 2, transparency = 0.72, tile = 120 })
+	UI.studs(b, { zindex = 2, transparency = UI.STUD.button })
 	local shineOverlay = UI.shine(b, { zindex = 2, strength = 0.22 })
 	shineOverlay.Name = "Glint"
 	local lbl = UI.label(b, {
@@ -530,7 +590,7 @@ function UI.panel(gui, opts)
 	})
 	UI.corner(frame, 18)
 	UI.stroke(frame, 4)
-	UI.studs(frame, { zindex = 10, transparency = 0.84, tile = 150 })
+	UI.studs(frame, { zindex = 10, transparency = UI.STUD.panel })
 	UI.new("UISizeConstraint", { MaxSize = Vector2.new(900, 640), Parent = frame })
 	local header = UI.new("Frame", {
 		Name = "Header",
@@ -541,9 +601,10 @@ function UI.panel(gui, opts)
 	})
 	UI.corner(header, 18)
 	UI.stroke(header, 4)
-	UI.gradient(header, lighten(color, 0.3), color)
+	local headerGrad = UI.gradient(header, lighten(color, 0.3), color)
 	-- square off the header's bottom corners
 	local fill = UI.new("Frame", {
+		Name = "Fill",
 		Size = UDim2.new(1, 0, 0, 20),
 		Position = UDim2.new(0, 0, 1, -20),
 		BackgroundColor3 = UI.C.white,
@@ -551,8 +612,8 @@ function UI.panel(gui, opts)
 		ZIndex = 11,
 		Parent = header,
 	})
-	UI.gradient(fill, color, color)
-	UI.studs(header, { zindex = 11, transparency = 0.62, tile = 140 })
+	local fillGrad = UI.gradient(fill, color, color)
+	UI.studs(header, { zindex = 11, transparency = UI.STUD.header })
 	local headerShine = UI.shine(header, { zindex = 12, strength = 0.18 })
 	-- the panel's 3D icon hanging off the title bar's corner (Shared/Icons)
 	local okIcons, Icons = pcall(function() return require(script.Parent:WaitForChild("Icons", 5)) end)
@@ -579,7 +640,8 @@ function UI.panel(gui, opts)
 		ZIndex = 11,
 		Parent = frame,
 	})
-	local api = { frame = frame, body = body, header = header }
+	-- (headerGrad and fillGrad colour the title bar, for a panel that wants to dress it up)
+	local api = { frame = frame, body = body, header = header, headerGrad = headerGrad, fillGrad = fillGrad }
 	local closeBtn = UI.button(frame, {
 		name = "Close",
 		text = "X",
@@ -670,7 +732,7 @@ function UI.card(parent, opts)
 	UI.corner(card, 14)
 	UI.stroke(card, 3)
 	UI.gradient(card, lighten(color, 0.45), darken(color, 0.15))
-	UI.studs(card, { zindex = 12, transparency = 0.7, tile = 110 })
+	UI.studs(card, { zindex = 12, transparency = UI.STUD.card })
 	if opts.model then
 		UI.viewport(card, opts.model, {
 			size = UDim2.new(1, -8, 0.62, 0),

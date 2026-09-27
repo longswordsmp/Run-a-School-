@@ -6,7 +6,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-local MarketplaceService = game:GetService("MarketplaceService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
@@ -20,11 +19,6 @@ folder.Parent = workspace
 
 local function toast(text, kind)
 	if bus and bus:FindFirstChild("Toast") then bus.Toast:Fire(text, kind) end
-end
-
-local productOf = {}
-for _, p in Config.Products do
-	if p.area then productOf[p.area] = p end
 end
 
 local barriers = {} -- [area id] = model
@@ -92,11 +86,6 @@ local function makeBarrier(area)
 	else
 		line(area.hint .. " to open it", 0.28, Color3.fromRGB(255, 220, 140), Enum.Font.FredokaOne)
 	end
-	-- (the Robux shortcut only once its product exists: an id of 0 isn't set up yet, and a sign
-	-- promising something that says "coming soon" when you try it reads as unfinished)
-	local product = productOf[area.id]
-	local buyable = product and product.id and product.id ~= 0
-	if buyable then line("or UNLOCK NOW", 0.22, Color3.fromRGB(120, 255, 140), Enum.Font.FredokaOne) end
 	for _, dx in { -5, 5 } do
 		local post = Instance.new("Part")
 		post.Anchored = true
@@ -105,21 +94,6 @@ local function makeBarrier(area)
 		post.Color = Color3.fromRGB(44, 46, 54)
 		post.Material = Enum.Material.Metal
 		post.Parent = m
-	end
-	-- UNLOCK NOW: the Robux shortcut
-	if buyable then
-		local prompt = Instance.new("ProximityPrompt")
-		prompt.Name = "UnlockPrompt"
-		prompt.ActionText = ("Unlock now (R$%d)"):format(product.robux)
-		prompt.ObjectText = area.name
-		prompt.HoldDuration = 0.3
-		prompt.MaxActivationDistance = 14
-		prompt.RequiresLineOfSight = false
-		prompt:SetAttribute("Color", Color3.fromRGB(80, 220, 120))
-		prompt.Parent = board
-		prompt.Triggered:Connect(function()
-			MarketplaceService:PromptProductPurchase(player, product.id)
-		end)
 	end
 	m.Parent = folder
 	return m

@@ -35,6 +35,19 @@ end
 local function corner(o, r) return new("UICorner", { CornerRadius = UDim.new(0, r) }, o) end
 local function stroke(o, t, c) return new("UIStroke", { Thickness = t, Color = c or INK, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }, o) end
 local function textStroke(o, t, c) return new("UIStroke", { Thickness = t, Color = c or INK }, o) end
+-- the Roblox stud texture over a surface, as Shared.UI lays it (this runs before Shared has loaded):
+-- 18 px studs, faint, under the surface's content (children made after it, or on a higher layer)
+local function studs(o, transparency, z)
+	local img = new("ImageLabel", {
+		Name = "Studs", BackgroundTransparency = 1, Image = "rbxthumb://type=Asset&id=15910695917&w=420&h=420",
+		ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(72, 72), ImageTransparency = transparency,
+		Size = UDim2.fromScale(1, 1), ZIndex = z or 0,
+	})
+	local c = o:FindFirstChildOfClass("UICorner")
+	if c then c:Clone().Parent = img end
+	img.Parent = o
+	return img
+end
 local function grad(o, a, b, rot)
 	return new("UIGradient", { Color = ColorSequence.new(a, b), Rotation = rot or 90 }, o)
 end
@@ -105,6 +118,7 @@ local ribbon = new("Frame", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim
 corner(ribbon, 14)
 stroke(ribbon, 5)
 grad(ribbon, Color3.fromRGB(255, 96, 104), RED)
+studs(ribbon, 0.66)
 label(ribbon, { Text = "RECESS IS ON THE LINE!", Font = BIG, Size = UDim2.new(1, -30, 1, -14), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 5 })
 
 -- the kids, waving from the middle of the screen
@@ -129,6 +143,7 @@ local bottom = new("Frame", { Name = "Bottom", BackgroundTransparency = 1, Ancho
 local barBack = new("Frame", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 120), Size = UDim2.fromOffset(760, 44), BackgroundColor3 = Color3.fromRGB(20, 40, 90), BackgroundTransparency = 0.25, ZIndex = 4 }, bottom)
 corner(barBack, 22)
 stroke(barBack, 4)
+studs(barBack, 0.8)
 local barFill = new("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = GREEN, ZIndex = 5 }, barBack)
 corner(barFill, 22)
 grad(barFill, Color3.fromRGB(130, 240, 140), Color3.fromRGB(40, 176, 80))
@@ -291,6 +306,7 @@ local function card(key, icon, name, sub, x)
 	}, bottom)
 	corner(b, 22)
 	local st = stroke(b, 5)
+	studs(b, 0.72)
 	label(b, { Text = icon, Size = UDim2.fromOffset(70, 70), Position = UDim2.fromOffset(18, 29), ZIndex = 5 })
 	local n = label(b, { Text = name, Font = BIG, TextColor3 = INK, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.fromOffset(150, 38), Position = UDim2.fromOffset(94, 30), ZIndex = 5 })
 	label(b, { Text = sub, TextColor3 = Color3.fromRGB(90, 96, 130), TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.fromOffset(150, 26), Position = UDim2.fromOffset(94, 70), ZIndex = 5 })
@@ -329,6 +345,7 @@ local play = new("TextButton", {
 corner(play, 22)
 stroke(play, 5)
 grad(play, Color3.fromRGB(130, 240, 140), Color3.fromRGB(34, 164, 72))
+studs(play, 0.72)
 local playLabel = label(play, { Text = "PLAY!", Font = BIG, Size = UDim2.new(1, -30, 0, 70), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 5 })
 textStroke(playLabel, 5)
 local playScale = new("UIScale", {}, play)
@@ -379,6 +396,7 @@ local coopBtn = new("TextButton", {
 corner(coopBtn, 18)
 stroke(coopBtn, 5)
 grad(coopBtn, Color3.fromRGB(176, 128, 255), PURPLE)
+studs(coopBtn, 0.72)
 local coopText = label(coopBtn, { Text = "\u{1F465}  CO-OP: RUN ONE SCHOOL WITH FRIENDS (UP TO 4)", Font = BIG, Size = UDim2.new(1, -40, 0, 34), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 5 })
 textStroke(coopText, 3)
 local coopScale = new("UIScale", {}, coopBtn)
@@ -391,10 +409,12 @@ local panel = new("Frame", {
 }, root)
 corner(panel, 28)
 stroke(panel, 6)
+studs(panel, 0.84)
 local head = new("Frame", { Size = UDim2.new(1, 0, 0, 76), BackgroundColor3 = WHITE, ZIndex = 11 }, panel)
 corner(head, 28)
 grad(head, Color3.fromRGB(176, 128, 255), PURPLE)
 new("Frame", { Position = UDim2.new(0, 0, 1, -28), Size = UDim2.new(1, 0, 0, 28), BackgroundColor3 = PURPLE, BorderSizePixel = 0, ZIndex = 11 }, head)
+studs(head, 0.66, 11)
 local headTitle = label(head, { Text = "\u{1F465} CO-OP SCHOOL", Font = BIG, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.fromOffset(520, 46), Position = UDim2.fromOffset(26, 16), ZIndex = 12 })
 textStroke(headTitle, 4)
 local headSub = label(head, { Text = "Up to 4 principals, ONE school. Everyone earns together.", TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.fromOffset(540, 28), Position = UDim2.new(1, -566, 0, 26), ZIndex = 12 })
@@ -431,6 +451,7 @@ for i, r in Config.Roles do
 	}, panel)
 	corner(b, 20)
 	local st = stroke(b, 4)
+	studs(b, 0.72)
 	local band = new("Frame", { Size = UDim2.new(1, 0, 0, 10), BackgroundColor3 = r.color, BorderSizePixel = 0, ZIndex = 12 }, b)
 	corner(band, 20)
 	label(b, { Text = r.icon, Size = UDim2.fromOffset(58, 58), Position = UDim2.new(0.5, 0, 0, 16), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 12 })
@@ -455,6 +476,7 @@ local startBtn = new("TextButton", {
 corner(startBtn, 22)
 stroke(startBtn, 5)
 grad(startBtn, Color3.fromRGB(130, 240, 140), Color3.fromRGB(34, 164, 72))
+studs(startBtn, 0.72)
 label(startBtn, { Text = "\u{1F3EB}", Size = UDim2.fromOffset(64, 64), Position = UDim2.new(0.5, 0, 0, 16), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 12 })
 local startTitle = label(startBtn, { Text = "START A CO-OP SCHOOL", Font = BIG, Size = UDim2.new(1, -30, 0, 40), Position = UDim2.new(0.5, 0, 0, 86), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 12 })
 textStroke(startTitle, 4)
@@ -464,6 +486,7 @@ textStroke(startSub, 2)
 local listBox = new("Frame", { Position = UDim2.fromOffset(484, 384), Size = UDim2.fromOffset(612, 214), BackgroundColor3 = Color3.fromRGB(236, 232, 250), ZIndex = 11 }, panel)
 corner(listBox, 22)
 stroke(listBox, 4)
+studs(listBox, 0.8)
 label(listBox, { Text = "SCHOOLS IN THIS SERVER TAKING PLAYERS", Font = BIG, TextColor3 = PURPLE, Size = UDim2.new(1, -30, 0, 26), Position = UDim2.fromOffset(15, 10), ZIndex = 12 })
 local list = new("ScrollingFrame", {
 	Position = UDim2.fromOffset(12, 44), Size = UDim2.new(1, -24, 1, -54), BackgroundTransparency = 1, BorderSizePixel = 0,
@@ -475,6 +498,7 @@ local empty = label(listBox, { Text = "No co-op schools here yet.\nStart one, th
 local back = new("TextButton", { Name = "Back", Text = "", AutoButtonColor = false, Position = UDim2.fromOffset(24, 614), Size = UDim2.fromOffset(180, 56), BackgroundColor3 = WHITE, ZIndex = 11 }, panel)
 corner(back, 18)
 stroke(back, 4)
+studs(back, 0.72)
 label(back, { Text = "\u{25C0} BACK", Font = BIG, TextColor3 = INK, Size = UDim2.new(1, -30, 0, 30), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 12 })
 local coopStatus = label(panel, { Text = "", TextColor3 = RED, TextXAlignment = Enum.TextXAlignment.Left, TextScaled = false, TextSize = 24, Size = UDim2.fromOffset(870, 56), Position = UDim2.fromOffset(222, 614), ZIndex = 11 })
 
@@ -490,6 +514,7 @@ local function row(entry, order)
 	local r = new("Frame", { Size = UDim2.new(1, -10, 0, 66), BackgroundColor3 = WHITE, LayoutOrder = order, ZIndex = 13 }, list)
 	corner(r, 14)
 	stroke(r, 3)
+	studs(r, 0.8)
 	label(r, { Text = entry.school, Font = BIG, TextColor3 = INK, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -160, 0, 28), Position = UDim2.fromOffset(14, 7), ZIndex = 14 })
 	local icons = ""
 	for _, rid in entry.roles or {} do
@@ -502,6 +527,7 @@ local function row(entry, order)
 	corner(j, 14)
 	stroke(j, 3)
 	grad(j, full and Color3.fromRGB(200, 200, 210) or Color3.fromRGB(130, 240, 140), full and Color3.fromRGB(150, 150, 165) or Color3.fromRGB(34, 164, 72))
+	studs(j, 0.72)
 	local jl = label(j, { Text = full and "FULL" or "JOIN", Font = BIG, Size = UDim2.new(1, -20, 0, 30), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 15 })
 	textStroke(jl, 2)
 	j.Activated:Connect(function()

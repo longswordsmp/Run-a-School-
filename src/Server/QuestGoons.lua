@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UI = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("UI"))
 
 local Places = require(ReplicatedStorage.Shared.Places)
 local Factory = require(script.Parent.StudentFactory)
@@ -56,18 +57,24 @@ local function bubble(m, text)
 	bb.MaxDistance = 60
 	bb.LightInfluence = 0
 	bb.Parent = head
+	-- (the bubble, its studs, then the words over them)
+	local f = Instance.new("Frame")
+	f.Size = UDim2.fromScale(1, 1)
+	f.BackgroundColor3 = Color3.fromRGB(255, 250, 240)
+	f.Parent = bb
+	Instance.new("UICorner", f).CornerRadius = UDim.new(0, 12)
+	local s = Instance.new("UIStroke")
+	s.Thickness = 2.5
+	s.Parent = f
+	UI.studs(f, { zindex = f.ZIndex, transparency = UI.STUD.dialogue })
 	local t = Instance.new("TextLabel")
-	t.Size = UDim2.fromScale(1, 1)
-	t.BackgroundColor3 = Color3.fromRGB(255, 250, 240)
+	t.Size = UDim2.new(1, -10, 1, -6)
+	t.Position = UDim2.fromOffset(5, 3)
+	t.BackgroundTransparency = 1
 	t.TextScaled = true
 	t.Font = Enum.Font.FredokaOne
 	t.Text = text
-	t.Parent = bb
-	Instance.new("UICorner", t).CornerRadius = UDim.new(0, 12)
-	local s = Instance.new("UIStroke")
-	s.Thickness = 2.5
-	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	s.Parent = t
+	t.Parent = f
 	task.delay(2.2, function() if bb.Parent then bb:Destroy() end end)
 end
 

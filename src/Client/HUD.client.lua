@@ -68,7 +68,7 @@ g.Color = ColorSequence.new(Color3.fromRGB(120, 255, 140), Color3.fromRGB(30, 17
 g.Rotation = 90
 g.Parent = cashPanel
 -- the stud texture on the cash panel, and a glint across it now and then
-UI.studs(cashPanel, { zindex = 0, transparency = 0.7, tile = 120 })
+UI.studs(cashPanel, { zindex = 0, transparency = UI.STUD.card })
 UI.shine(cashPanel, { zindex = 0, strength = 0.18 })
 local cashText = text(cashPanel, { Name = "Amount", Size = UDim2.new(1, -20, 0.62, 0), Position = UDim2.new(0, 10, 0, 4), Text = "$0" })
 local incomeText = text(cashPanel, { Name = "Income", Size = UDim2.new(1, -20, 0.3, 0), Position = UDim2.new(0, 10, 0.64, 0), Text = "$0/s", TextColor3 = Color3.fromRGB(230, 255, 230), strokeThickness = 2 })
@@ -154,6 +154,7 @@ local function chip(name, color)
 	f.Parent = chips
 	corner(f, 12)
 	stroke(f, 3)
+	UI.studs(f, { zindex = 0, transparency = UI.STUD.chip })
 	local t = text(f, { Name = "Text", Size = UDim2.new(1, -12, 1, -8), Position = UDim2.fromOffset(6, 4), Text = "", strokeThickness = 2 })
 	return t
 end
@@ -271,6 +272,7 @@ do
 	corner(chip, 17)
 	local st = stroke(chip, 2)
 	st.Transparency = 1
+	UI.studs(chip, { zindex = 0, transparency = UI.STUD.chip })
 	local t = text(chip, { Size = UDim2.new(1, -16, 1, -10), Position = UDim2.fromOffset(8, 5), Text = "\u{2714} Saved", TextColor3 = Color3.fromRGB(140, 255, 150), TextTransparency = 1 })
 	t.UIStroke.Transparency = 1
 	Remotes.Push.OnClientEvent:Connect(function(kind)

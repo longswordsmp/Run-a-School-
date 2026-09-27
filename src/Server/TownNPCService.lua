@@ -6,6 +6,7 @@
 -- (TownNPCService.onTalk); with nothing to hand out they just chat.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UI = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("UI"))
 
 local Townsfolk = require(ReplicatedStorage.Shared.Townsfolk)
 local Places = require(ReplicatedStorage.Shared.Places)
@@ -39,6 +40,8 @@ local function speech(model)
 	local s = Instance.new("UIStroke")
 	s.Thickness = 3
 	s.Parent = f
+	-- (the studs on the bubble, under the words: made before them at the bubble's own layer)
+	UI.studs(f, { zindex = f.ZIndex, transparency = UI.STUD.dialogue })
 	local t = Instance.new("TextLabel")
 	t.Name = "Text"
 	t.Size = UDim2.new(1, -16, 1, -10)

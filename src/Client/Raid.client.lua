@@ -37,6 +37,7 @@ local banner = UI.new("Frame", {
 })
 UI.corner(banner, 23)
 UI.stroke(banner, 3)
+UI.studs(banner, { zindex = banner.ZIndex, transparency = UI.STUD.header })
 local function tint(color)
 	for _, g in banner:GetChildren() do
 		if g:IsA("UIGradient") then g:Destroy() end

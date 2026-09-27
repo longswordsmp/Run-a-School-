@@ -61,6 +61,7 @@ local bang = UI.new("Frame", {
 UI.corner(bang, 38)
 UI.stroke(bang, 4)
 UI.gradient(bang, Color3.fromRGB(255, 190, 110), MISSION)
+UI.studs(bang, { zindex = bang.ZIndex, transparency = UI.STUD.chip })
 UI.label(bang, { Text = "!", Font = Enum.Font.FredokaOne, TextScaled = false, TextSize = 60, Size = UDim2.fromScale(1, 1), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), stroke = 3.5 })
 UI.label(marker, { Text = "MISSION", Font = UI.BIG, Size = UDim2.new(1, 0, 0, 26), Position = UDim2.new(0, 0, 0, 86), TextColor3 = Color3.fromRGB(255, 225, 200), stroke = 3 })
 
@@ -134,6 +135,7 @@ local function portraitOf(parent, templateId)
 	UI.corner(frame, 16)
 	UI.stroke(frame, 4)
 	UI.gradient(frame, Color3.fromRGB(120, 95, 190), Color3.fromRGB(55, 40, 100))
+	UI.studs(frame, { zindex = frame.ZIndex, transparency = UI.STUD.card })
 	local tt = ReplicatedStorage:FindFirstChild("TeacherTemplates")
 	local st = ReplicatedStorage:FindFirstChild("StudentTemplates")
 	local tmpl = (tt and tt:FindFirstChild(templateId)) or (st and st:FindFirstChild(templateId))
@@ -168,6 +170,7 @@ local function conversation(lines, buttons, title, nearWob)
 	UI.corner(box, 20)
 	UI.stroke(box, 4)
 	UI.gradient(box, Color3.fromRGB(255, 252, 244), Color3.fromRGB(246, 236, 214))
+	UI.studs(box, { zindex = box.ZIndex, transparency = UI.STUD.dialogue })
 	if title then
 		local tag = UI.new("Frame", {
 			AnchorPoint = Vector2.new(1, 1),
@@ -180,6 +183,7 @@ local function conversation(lines, buttons, title, nearWob)
 		UI.corner(tag, 10)
 		UI.stroke(tag, 3)
 		UI.gradient(tag, Color3.fromRGB(255, 180, 110), MISSION)
+		UI.studs(tag, { zindex = tag.ZIndex, transparency = UI.STUD.header })
 		local isQuest = title:find("^QUEST") ~= nil
 		if isQuest then
 			tag.BackgroundColor3 = QUEST
@@ -348,12 +352,22 @@ local card = UI.new("Frame", {
 })
 UI.corner(card, 16)
 UI.stroke(card, 4)
+UI.studs(card, { zindex = card.ZIndex, transparency = UI.STUD.hud })
 local head = UI.new("Frame", { Size = UDim2.new(1, 0, 0, 34), BackgroundColor3 = MISSION, Parent = card })
 UI.corner(head, 16)
 local headGrad = UI.gradient(head, Color3.fromRGB(255, 180, 110), MISSION)
 -- square off the header's bottom corners
 local headFill = UI.new("Frame", { Size = UDim2.new(1, 0, 0, 14), Position = UDim2.new(0, 0, 1, -14), BackgroundColor3 = MISSION, BorderSizePixel = 0, Parent = head })
-UI.gradient(headFill, Color3.fromRGB(255, 140, 75), MISSION)
+local headFillGrad = UI.gradient(headFill, Color3.fromRGB(255, 140, 75), MISSION)
+-- (the studs at the fill's layer, made after it: over the whole bar, under the words at 2)
+UI.studs(head, { zindex = head.ZIndex, transparency = UI.STUD.header })
+-- the header's colour: the bar and its squared-off bottom together (a secret job's blue, a fail's red)
+local function tintHead(accent, top)
+	head.BackgroundColor3 = accent
+	headFill.BackgroundColor3 = accent
+	headGrad.Color = ColorSequence.new(top, accent)
+	headFillGrad.Color = ColorSequence.new(top:Lerp(accent, 0.6), accent)
+end
 local headText = UI.label(head, { Text = "\u{1F3AF} MISSION", Font = UI.BIG, Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(10, 5), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 2, stroke = 2 })
 local titleL = UI.label(card, { Text = "", Font = UI.BIG, TextColor3 = UI.C.ink, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -24, 0, 26), Position = UDim2.fromOffset(12, 40), stroke = 0 })
 local objL = UI.label(card, { Text = "", TextColor3 = Color3.fromRGB(70, 60, 90), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextScaled = false, TextSize = 17, TextWrapped = true, Size = UDim2.new(1, -24, 0, 40), Position = UDim2.fromOffset(12, 68), stroke = 0 })
@@ -363,6 +377,7 @@ UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding 
 local meter = UI.new("Frame", { Size = UDim2.new(1, -24, 0, 12), Position = UDim2.fromOffset(12, 160), BackgroundColor3 = Color3.fromRGB(225, 215, 200), Visible = false, Parent = card })
 UI.corner(meter, 6)
 UI.stroke(meter, 2)
+UI.studs(meter, { zindex = meter.ZIndex, transparency = UI.STUD.bar })
 local meterFill = UI.new("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = UI.C.red, Parent = meter })
 UI.corner(meterFill, 6)
 local meterL = UI.label(card, { Text = "ESCAPING", Font = UI.BIG, TextColor3 = UI.C.red, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(0, 160, 0, 16), Position = UDim2.fromOffset(12, 141), Visible = false, stroke = 0 })
@@ -459,7 +474,7 @@ Remotes.Push.OnClientEvent:Connect(function(kind, data)
 		local id = player:GetAttribute("Mission")
 		local def = id and Config.Missions[id]
 		cur = { def = def, count = data.count, progress = data.progress or 0, secret = data.secret }
-		headGrad.Color = data.secret and ColorSequence.new(Color3.fromRGB(140, 190, 255), SECRET) or ColorSequence.new(Color3.fromRGB(255, 180, 110), MISSION)
+		tintHead(data.secret and SECRET or MISSION, data.secret and Color3.fromRGB(140, 190, 255) or Color3.fromRGB(255, 180, 110))
 		headText.Text = data.secret and "\u{1F575}\u{FE0F} SECRET JOB" or "\u{1F3AF} MISSION"
 		titleL.Text = data.title or (def and def.title) or ""
 		objL.Text = data.phase or data.objective or (def and def.objective) or ""
@@ -493,7 +508,7 @@ Remotes.Push.OnClientEvent:Connect(function(kind, data)
 		end
 	elseif data.state == "failed" then
 		cur = nil
-		headGrad.Color = ColorSequence.new(Color3.fromRGB(255, 130, 130), UI.C.red)
+		tintHead(UI.C.red, Color3.fromRGB(255, 130, 130))
 		headText.Text = "\u{2716} MISSION FAILED"
 		objL.Text = (data.why and (data.why .. " ") or "") .. (data.secret and "Talk to Janitor Stan for another job." or "Talk to Mr. Wobblesworth to try again.")
 		meter.Visible = false

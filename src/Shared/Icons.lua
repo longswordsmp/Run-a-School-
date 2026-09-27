@@ -680,8 +680,6 @@ Icons.FOR = {
 	MoneyBoost = "cash", Cash10m = "cash", Cash1h = "moneybag", Cash4h = "vault", LuckyBus = "bus",
 	Cash8h = "briefcase", Cash16h = "chest", Cash24h = "truck", Cash1w = "moneyMountain",
 	ServerLuck = "sparkle", ExpressRare = "letter", ExpressEpic = "letterEpic", LockRefresh = "refresh",
-	UnlockDowntown = "shop", UnlockLab = "flask", UnlockMapleHeights = "maple", UnlockPinePark = "pine",
-	UnlockVexPrep = "vexprep", UnlockIndustrial = "factory", UnlockLair = "skull",
 }
 
 -- the panels (by their names) -> icon

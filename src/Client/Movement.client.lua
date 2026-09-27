@@ -98,6 +98,7 @@ local icon = UI.label(stamina, { Text = "\u{1F3C3}", Size = UDim2.fromOffset(34,
 local back = UI.new("Frame", { Position = UDim2.fromOffset(40, 9), Size = UDim2.new(1, -40, 0, 16), BackgroundColor3 = Color3.fromRGB(30, 34, 64), BackgroundTransparency = 0.2, Parent = stamina })
 UI.corner(back, 8)
 local backStroke = UI.stroke(back, 2.5)
+UI.studs(back, { zindex = back.ZIndex, transparency = UI.STUD.bar })
 local fill = UI.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = UI.C.green, Parent = back })
 UI.corner(fill, 8)
 local winded = UI.label(stamina, { Text = "WINDED", Font = UI.BIG, TextColor3 = UI.C.red, Size = UDim2.fromOffset(120, 22), Position = UDim2.new(0.5, 20, 0, -22), AnchorPoint = Vector2.new(0.5, 0), Visible = false, stroke = 2 })
@@ -106,12 +107,14 @@ local winded = UI.label(stamina, { Text = "WINDED", Font = UI.BIG, TextColor3 = 
 local sneakTag = UI.new("Frame", { Name = "Sneak", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -182), Size = UDim2.fromOffset(170, 34), BackgroundColor3 = Color3.fromRGB(40, 28, 80), Visible = false, Parent = root })
 UI.corner(sneakTag, 17)
 UI.stroke(sneakTag, 2.5)
+UI.studs(sneakTag, { zindex = sneakTag.ZIndex, transparency = UI.STUD.chip })
 UI.label(sneakTag, { Text = "\u{1F977} SNEAKING", Font = UI.BIG, Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), TextColor3 = Color3.fromRGB(210, 190, 255), stroke = 2 })
 
 -- the Factory eye: HIDDEN / SPOTTED!
 local eye = UI.new("Frame", { Name = "Eye", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -224), Size = UDim2.fromOffset(210, 44), BackgroundColor3 = Color3.fromRGB(40, 40, 60), Visible = false, Parent = root })
 UI.corner(eye, 22)
 local eyeStroke = UI.stroke(eye, 3)
+UI.studs(eye, { zindex = eye.ZIndex, transparency = UI.STUD.chip })
 local eyeText = UI.label(eye, { Text = "", Font = UI.BIG, Size = UDim2.new(1, -20, 1, -10), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), stroke = 2 })
 local keys = UI.label(root, { Name = "Keys", Text = "Hold SHIFT to sprint  \u{2022}  press C to sneak", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -272), Size = UDim2.fromOffset(460, 26), TextColor3 = Color3.fromRGB(230, 230, 245), Visible = false, stroke = 2 })
 
@@ -122,6 +125,7 @@ local function roundButton(name, icon, caption, color, pos)
 	UI.corner(b, 48)
 	UI.stroke(b, 3.5)
 	UI.gradient(b, UI.lighten and UI.lighten(color, 0.3) or color, color)
+	UI.studs(b, { zindex = b.ZIndex, transparency = UI.STUD.button })
 	UI.label(b, { Text = icon, Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0.5, 0, 0, 12), AnchorPoint = Vector2.new(0.5, 0), stroke = 0 })
 	UI.label(b, { Text = caption, Font = UI.BIG, Size = UDim2.new(1, -12, 0, 22), Position = UDim2.new(0.5, 0, 1, -30), AnchorPoint = Vector2.new(0.5, 0), stroke = 2 })
 	return b

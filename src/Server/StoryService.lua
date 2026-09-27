@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local UI = require(ReplicatedStorage.Shared.UI)
 local Factory = require(script.Parent.StudentFactory)
 local Walkers = require(script.Parent.Walkers)
 local Remotes = require(script.Parent.Remotes)
@@ -74,6 +75,8 @@ local function speech(model)
 	local s = Instance.new("UIStroke")
 	s.Thickness = 3
 	s.Parent = f
+	-- (the studs on the bubble, under the words: made before them at the bubble's own layer)
+	UI.studs(f, { zindex = f.ZIndex, transparency = UI.STUD.dialogue })
 	local t = Instance.new("TextLabel")
 	t.Name = "Text"
 	t.Size = UDim2.new(1, -16, 1, -10)

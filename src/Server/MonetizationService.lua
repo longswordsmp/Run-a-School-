@@ -162,14 +162,6 @@ end
 for _, b in Config.MoneyBoost.bands do
 	GRANTS[b.key] = boostUp
 end
--- open a part of town early (AreaService; kept in the buyer's own save)
-for _, product in Config.Products do
-	if product.area then
-		GRANTS[product.key] = function(player)
-			require(script.Parent.AreaService).open(player, product.area)
-		end
-	end
-end
 
 function MonetizationService.grantProduct(player, key)
 	local product = productByKey[key]
