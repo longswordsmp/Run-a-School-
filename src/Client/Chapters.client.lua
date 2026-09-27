@@ -54,6 +54,8 @@ local header = UI.new("TextButton", {
 })
 UI.corner(header, 14)
 UI.gradient(header, UI.lighten(ORANGE, 0.3), ORANGE)
+UI.studs(card, { zindex = 0, transparency = 0.84, tile = 130 })
+UI.studs(header, { zindex = 0, transparency = 0.66, tile = 110 })
 local title = UI.label(header, { Text = "", Font = UI.BIG, TextXAlignment = LEFT, Size = UDim2.new(1, -44, 1, -6), Position = UDim2.fromOffset(10, 3), stroke = 2 })
 local chev = UI.label(header, { Text = "\u{25BE}", Font = UI.BIG, Size = UDim2.fromOffset(26, 26), Position = UDim2.new(1, -32, 0, 2), stroke = 2 })
 local sub = UI.label(card, { Text = "", TextColor3 = UI.C.ink, Font = UI.BIG, TextXAlignment = LEFT, Size = UDim2.new(1, -20, 0, 20), Position = UDim2.fromOffset(12, 32), stroke = 0 })

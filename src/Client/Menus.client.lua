@@ -38,10 +38,14 @@ local function cash()
 end
 
 -- raise a gui object and everything in it to at least z
+-- (shifts it and everything in it up together, keeping their order: flattening them all to one layer
+-- put a button's lip over the button)
 local function lift(obj, z)
-	if obj:IsA("GuiObject") then obj.ZIndex = math.max(obj.ZIndex, z) end
+	local shift = obj:IsA("GuiObject") and math.max(0, z - obj.ZIndex) or 0
+	if shift == 0 then return end
+	obj.ZIndex += shift
 	for _, d in obj:GetDescendants() do
-		if d:IsA("GuiObject") then d.ZIndex = math.max(d.ZIndex, z + 1) end
+		if d:IsA("GuiObject") then d.ZIndex += shift end
 	end
 end
 
@@ -1154,60 +1158,195 @@ do
 end
 
 ---------------------------------------------------------------------------
--- Robux store: passes and products (only opens when you press it)
+-- Robux store: passes and products (only opens when you press it). Laid out like tomas's reference (a
+-- gamepass shop): the MONEY BOOST as a big card across the top, then GAMEPASSES, EXTRAS and OPEN AREAS as
+-- cards three to a row, each with its 3D icon on a slowly turning burst of light, its price tilted
+-- into the corner and a buy button. Drawn in the game's own style (cream, studs, cartoon type).
 ---------------------------------------------------------------------------
 do
-	local panel = UI.panel(gui, { name = "Store", title = "STORE", color = Color3.fromRGB(40, 190, 90), size = UDim2.fromOffset(820, 560) })
+	local Icons = require(Shared:WaitForChild("Icons"))
+	local rgb = Color3.fromRGB
+	local panel = UI.panel(gui, { name = "Store", title = "STORE", color = Color3.fromRGB(40, 190, 90), size = UDim2.fromOffset(900, 620) })
 	panels.Store = panel
-	local pages = {}
-	for i = 1, 3 do
-		pages[i] = UI.new("Frame", { Name = "Page" .. i, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -56), Position = UDim2.fromOffset(0, 54), Visible = false, ZIndex = 11, Parent = panel.body })
-	end
-	local rows = { pass = {}, product = {} }
+	local scroll = UI.new("ScrollingFrame", {
+		Name = "Scroll", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, BorderSizePixel = 0,
+		ScrollBarThickness = 8, ScrollBarImageColor3 = UI.C.ink, AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(), ZIndex = 11, Parent = panel.body,
+	})
+	UI.new("UIListLayout", { SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 12), HorizontalAlignment = Enum.HorizontalAlignment.Center, Parent = scroll })
+	UI.new("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 12), PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 16), Parent = scroll })
+	local order = 0
+	local function nextOrder() order += 1 return order end
 
-	-- page 1: the MONEY BOOST card. One button: every purchase adds +1x to all your tuition, forever,
-	-- x2 up to x100 (MonetizationService; the price climbs as you go).
-	local GOLD = Color3.fromRGB(255, 200, 50)
-	local card = UI.new("Frame", { Name = "BoostCard", BackgroundColor3 = Color3.fromRGB(255, 244, 205), Size = UDim2.new(1, -8, 1, -10), Position = UDim2.fromOffset(4, 4), ZIndex = 12, Parent = pages[1] })
-	UI.corner(card, 20)
-	UI.stroke(card, 4)
-	UI.gradient(card, Color3.fromRGB(255, 250, 225), Color3.fromRGB(255, 225, 150))
-	UI.label(card, { Text = "\u{1F4B0} MONEY BOOST", Font = UI.BIG, TextColor3 = Color3.fromRGB(255, 190, 40), Size = UDim2.new(1, 0, 0, 48), Position = UDim2.fromOffset(0, 8), ZIndex = 13, stroke = 4 })
-	UI.label(card, { Text = "Every purchase adds +1x to ALL your tuition. Forever. Up to x100!", TextColor3 = UI.C.navy, Size = UDim2.new(1, -40, 0, 24), Position = UDim2.fromOffset(20, 56), ZIndex = 13, stroke = 0 })
-	-- now -> next, big
-	local nowL = UI.label(card, { Text = "x1", Font = UI.BIG, TextColor3 = UI.C.white, Size = UDim2.fromOffset(200, 96), Position = UDim2.new(0.5, -250, 0, 84), ZIndex = 13, stroke = 5 })
-	UI.label(card, { Text = "\u{27A1}", Font = UI.BIG, TextColor3 = UI.C.navy, Size = UDim2.fromOffset(100, 70), Position = UDim2.new(0.5, -50, 0, 97), ZIndex = 13, stroke = 0 })
-	local nextL = UI.label(card, { Text = "x2", Font = UI.BIG, TextColor3 = GOLD, Size = UDim2.fromOffset(200, 96), Position = UDim2.new(0.5, 50, 0, 84), ZIndex = 13, stroke = 5 })
-	UI.label(card, { Text = "NOW", Font = UI.BIG, TextColor3 = UI.C.navy, Size = UDim2.fromOffset(200, 22), Position = UDim2.new(0.5, -250, 0, 180), ZIndex = 13, stroke = 0 })
-	UI.label(card, { Text = "NEXT", Font = UI.BIG, TextColor3 = UI.C.navy, Size = UDim2.fromOffset(200, 22), Position = UDim2.new(0.5, 50, 0, 180), ZIndex = 13, stroke = 0 })
-	-- the ladder to x100
-	local barBack = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(230, 215, 180), Size = UDim2.new(1, -120, 0, 24), Position = UDim2.new(0, 60, 0, 212), ZIndex = 13, Parent = card })
-	UI.corner(barBack, 13)
+	-- a section heading: a ribbon in its colour
+	local function heading(text, color)
+		local row = UI.new("Frame", { Name = "Heading", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 40), LayoutOrder = nextOrder(), ZIndex = 11, Parent = scroll })
+		local ribbon = UI.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromOffset(300, 36), Position = UDim2.new(0.5, 0, 0.5, 0), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 12, Parent = row })
+		UI.corner(ribbon, 12)
+		UI.stroke(ribbon, 3)
+		UI.gradient(ribbon, UI.lighten(color, 0.3), color)
+		UI.studs(ribbon, { zindex = 12, transparency = 0.62, tile = 100 })
+		UI.label(ribbon, { Text = text, Font = UI.BIG, Size = UDim2.new(1, -20, 1, -8), Position = UDim2.fromOffset(10, 4), ZIndex = 13, stroke = 3 })
+		return row
+	end
+
+	-- what each card says: { title, what it does, colour }
+	local CARD = {
+		StarterPack = { "Starter Pack", "$25K + a Rare kid", rgb(255, 110, 170) },
+		VIP = { "VIP", "x2 tuition forever", rgb(255, 180, 40) },
+		SuperSpeed = { "Super Sneakers", "+25% speed", rgb(240, 70, 70) },
+		GoldenBoard = { "Gold Board", "+30% speed, sparkles", rgb(255, 150, 40) },
+		DiamondBoard = { "Diamond Board", "3x speed!", rgb(70, 160, 255) },
+		Luck = { "2x Luck", "x2 luck on buses", rgb(70, 200, 90) },
+		AutoCollect = { "Auto Collect", "Max janitor cart", rgb(160, 90, 240) },
+		LongLock = { "Long Lock", "+30s gate lock", rgb(40, 190, 180) },
+		TeleportHome = { "Home Button", "Teleport home", rgb(255, 120, 90) },
+		OfflinePlus = { "Offline+", "50% for 12 hours", rgb(110, 90, 220) },
+		Cash10m = { "Tuition Pack", "10 min of tuition", rgb(70, 200, 90) },
+		Cash1h = { "Tuition Bag", "1 hour of tuition", rgb(50, 170, 90) },
+		Cash4h = { "Tuition Vault", "4 hours of tuition", rgb(40, 180, 170) },
+		LuckyBus = { "Lucky Bus", "Legendary or better!", rgb(255, 190, 40) },
+		ServerLuck = { "Server Luck", "x2 luck for 15 min", rgb(160, 90, 240) },
+		ExpressRare = { "Rare Letter", "Ready right now", rgb(70, 150, 255) },
+		ExpressEpic = { "Epic Letter", "Ready right now", rgb(255, 100, 180) },
+		LockRefresh = { "Lock Refresh", "Lock again now", rgb(40, 190, 180) },
+		UnlockDowntown = { "Downtown", "Open it now", rgb(230, 96, 64) },
+		UnlockLab = { "Mutation Lab", "Open it now", rgb(110, 200, 60) },
+		UnlockMapleHeights = { "Maple Heights", "Open it now", rgb(80, 170, 90) },
+		UnlockPinePark = { "Pine Park", "Open it now", rgb(46, 140, 80) },
+		UnlockVexPrep = { "Vex Prep", "Open it now", rgb(130, 60, 200) },
+		UnlockIndustrial = { "Industrial", "Open it now", rgb(110, 50, 160) },
+		UnlockLair = { "The Lair", "Open it now", rgb(200, 30, 60) },
+	}
+
+	-- the hover tip: the full description
+	local tip = UI.new("Frame", { Name = "Tip", BackgroundColor3 = UI.C.cream, Size = UDim2.fromOffset(300, 60), Visible = false, ZIndex = 40, Parent = panel.frame })
+	UI.corner(tip, 10)
+	UI.stroke(tip, 3)
+	UI.label(tip, { Name = "Text", Text = "", TextColor3 = UI.C.ink, TextWrapped = true, Size = UDim2.new(1, -16, 1, -10), Position = UDim2.fromOffset(8, 5), ZIndex = 41, stroke = 0 })
+	local function showTip(card, text)
+		tip.Text.Text = text
+		local rel = card.AbsolutePosition - panel.frame.AbsolutePosition
+		local k = panel.frame.AbsoluteSize.X / math.max(panel.frame.Size.X.Offset, 1)
+		tip.Position = UDim2.fromOffset(rel.X / k + card.AbsoluteSize.X / k / 2 - 150, rel.Y / k + card.AbsoluteSize.Y / k + 4)
+		tip.Visible = true
+	end
+
+	local function grid()
+		local g = UI.new("Frame", { Name = "Grid", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = nextOrder(), ZIndex = 11, Parent = scroll })
+		UI.new("UIGridLayout", { CellSize = UDim2.new(1 / 3, -12, 0, 258), CellPadding = UDim2.fromOffset(16, 16), SortOrder = Enum.SortOrder.LayoutOrder, Parent = g })
+		return g
+	end
+
+	-- one card: the colour with the studs, a burst of light turning behind the 3D icon, the name on top,
+	-- the price tilted into the corner, what it does and a buy button along the bottom
+	local cards = {}
+	local function card(parent, key, def, onBuy, i)
+		local look = CARD[key] or { def.name, "", UI.C.blue }
+		local color = look[3]
+		local c = UI.new("TextButton", { Name = key, Text = "", AutoButtonColor = false, BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = i, ZIndex = 12, Parent = parent })
+		UI.corner(c, 16)
+		UI.stroke(c, 3.5)
+		UI.gradient(c, UI.lighten(color, 0.3), UI.darken(color, 0.08))
+		UI.studs(c, { zindex = 12, transparency = 0.66, tile = 110 })
+		UI.burst(c, UI.lighten(color, 0.55), 170, { position = UDim2.new(0.5, 0, 0, 104), zindex = 13, middle = 0.45, edge = 0.8, coreTransparency = 0.6, speed = 14 })
+		Icons.view(c, Icons.FOR[key] or "gift", { size = UDim2.fromOffset(140, 118), position = UDim2.new(0.5, 0, 0, 44), anchor = Vector2.new(0.5, 0), zindex = 14 })
+		UI.label(c, { Name = "Title", Text = look[1], Font = UI.BIG, Size = UDim2.new(1, -20, 0, 34), Position = UDim2.fromOffset(10, 8), ZIndex = 15, stroke = 3 })
+		local tag = UI.label(c, { Name = "Tag", Text = "", Font = UI.BIG, Size = UDim2.fromOffset(84, 30), Position = UDim2.new(1, -78, 0, 50), Rotation = 18, ZIndex = 16, stroke = 3 })
+		UI.label(c, { Name = "Caption", Text = look[2], Size = UDim2.new(1, -20, 0, 22), Position = UDim2.new(0, 10, 1, -88), ZIndex = 15, stroke = 2.5 })
+		local buy = UI.button(c, { text = "", color = UI.C.green, size = UDim2.new(1, -28, 0, 42), position = UDim2.new(0.5, 0, 1, -12), anchor = Vector2.new(0.5, 1), font = UI.BIG })
+		lift(buy.button, 16)
+		local owned = false
+		local glow = UI.glow(c, UI.lighten(color, 0.35), { alpha = 0, spread = 5 })
+		local sc = Instance.new("UIScale")
+		sc.Parent = c
+		c.MouseEnter:Connect(function()
+			TweenService:Create(sc, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Scale = 1.04 }):Play()
+			UI.glowTo(glow, 1, 0.15)
+			showTip(c, def.desc or "")
+		end)
+		c.MouseLeave:Connect(function()
+			TweenService:Create(sc, TweenInfo.new(0.15), { Scale = 1 }):Play()
+			UI.glowTo(glow, 0, 0.2)
+			tip.Visible = false
+		end)
+		local function tryBuy()
+			if owned or not buy.button.Active then return end
+			sfx("Click")
+			onBuy()
+		end
+		c.Activated:Connect(tryBuy)
+		buy.button.Activated:Connect(tryBuy)
+		local api = { card = c }
+		function api.set(price, ownedNow, ready)
+			owned = ownedNow
+			c.Visible = ready or ownedNow
+			tag.Text = ownedNow and "" or (price .. " R$")
+			if ownedNow then
+				buy.setText("\u{2714} OWNED")
+				buy.setEnabled(false)
+			else
+				buy.setText("BUY")
+				buy.setEnabled(true)
+				buy.setColor(UI.C.green)
+			end
+		end
+		cards[key] = api
+		return api
+	end
+
+	---------------------------------------------------------------------------
+	-- the MONEY BOOST: the big card across the top. One button: every purchase adds +1x to all your
+	-- tuition, forever, x2 up to x100 (MonetizationService; the price climbs as you go).
+	---------------------------------------------------------------------------
+	local GOLD = rgb(255, 200, 50)
+	local boost = UI.new("Frame", { Name = "BoostCard", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.new(1, -6, 0, 250), LayoutOrder = nextOrder(), ZIndex = 12, Parent = scroll })
+	UI.corner(boost, 20)
+	UI.stroke(boost, 4)
+	UI.gradient(boost, rgb(255, 236, 150), rgb(255, 176, 50))
+	UI.studs(boost, { zindex = 12, transparency = 0.7, tile = 120 })
+	UI.burst(boost, rgb(255, 255, 220), 230, { position = UDim2.fromOffset(120, 125), zindex = 13, rays = 10, middle = 0.35, edge = 0.75, speed = 12 })
+	Icons.view(boost, "cash", { size = UDim2.fromOffset(200, 170), position = UDim2.fromOffset(20, 40), zindex = 14, sway = 14 })
+	UI.label(boost, { Text = "MONEY BOOST", Font = UI.BIG, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -500, 0, 46), Position = UDim2.fromOffset(236, 12), ZIndex = 15, stroke = 4 })
+	UI.label(boost, { Text = "Every purchase adds +1x to ALL your tuition. Forever. Up to x100!", TextColor3 = UI.C.navy, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, Size = UDim2.new(1, -500, 0, 40), Position = UDim2.fromOffset(238, 58), ZIndex = 15, stroke = 0 })
+	local nowL = UI.label(boost, { Text = "x1", Font = UI.BIG, Size = UDim2.fromOffset(110, 64), Position = UDim2.fromOffset(236, 100), ZIndex = 15, stroke = 5 })
+	UI.label(boost, { Text = "\u{27A1}", Font = UI.BIG, TextColor3 = UI.C.navy, Size = UDim2.fromOffset(60, 50), Position = UDim2.fromOffset(350, 108), ZIndex = 15, stroke = 0 })
+	local nextL = UI.label(boost, { Text = "x2", Font = UI.BIG, TextColor3 = rgb(120, 255, 130), Size = UDim2.fromOffset(110, 64), Position = UDim2.fromOffset(414, 100), ZIndex = 15, stroke = 5 })
+	local barBack = UI.new("Frame", { BackgroundColor3 = rgb(200, 140, 40), Size = UDim2.new(1, -500, 0, 24), Position = UDim2.fromOffset(238, 172), ZIndex = 15, Parent = boost })
+	UI.corner(barBack, 12)
 	UI.stroke(barBack, 3)
-	local barFill = UI.new("Frame", { BackgroundColor3 = GOLD, Size = UDim2.fromScale(0, 1), ZIndex = 14, Parent = barBack })
-	UI.corner(barFill, 13)
-	UI.gradient(barFill, Color3.fromRGB(255, 235, 120), Color3.fromRGB(255, 170, 30))
-	local barText = UI.label(barBack, { Text = "x1 / x100", Font = UI.BIG, Size = UDim2.fromScale(1, 1), ZIndex = 15, stroke = 2 })
-	local boostBtn = UI.button(card, { text = "", color = Color3.fromRGB(40, 190, 90), size = UDim2.fromOffset(300, 66), position = UDim2.new(0.5, 0, 0, 250), anchor = Vector2.new(0.5, 0) })
-	lift(boostBtn.button, 14)
-	local boostNote = UI.label(card, { Text = "", TextColor3 = Color3.fromRGB(110, 90, 70), Size = UDim2.new(1, -40, 0, 22), Position = UDim2.fromOffset(20, 322), ZIndex = 13, stroke = 0 })
-	-- the whole price ladder, up front: one chip per band, the band you're in lit up
+	local barFill = UI.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(0, 1), ZIndex = 16, Parent = barBack })
+	UI.corner(barFill, 12)
+	UI.gradient(barFill, rgb(150, 255, 150), rgb(60, 200, 80))
+	local barText = UI.label(barBack, { Text = "x1 / x100", Font = UI.BIG, Size = UDim2.fromScale(1, 1), ZIndex = 17, stroke = 2 })
+	local boostNote = UI.label(boost, { Text = "", TextColor3 = rgb(110, 70, 20), TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -500, 0, 20), Position = UDim2.fromOffset(238, 204), ZIndex = 15, stroke = 0 })
+	-- the BUY button, glowing, with the price tilted over its corner
+	local boostBtn = UI.button(boost, { name = "BoostBuy", text = "BOOST!", color = rgb(40, 190, 90), size = UDim2.fromOffset(220, 76), position = UDim2.new(1, -24, 0.5, 14), anchor = Vector2.new(1, 0.5), font = UI.BIG })
+	lift(boostBtn.button, 16)
+	local boostGlow = UI.glow(boostBtn.button, rgb(150, 255, 150), { spread = 5 })
+	UI.pulse(boostGlow, 0.35, 1, 1.6)
+	local boostPrice = UI.label(boost, { Name = "Price", Text = "9 R$", Font = UI.BIG, Size = UDim2.fromOffset(120, 40), Position = UDim2.new(1, -262, 0.5, -62), Rotation = -12, ZIndex = 19, stroke = 4 })
+	-- the whole price ladder: one chip per band, the band you're in lit up
 	local bandChips = {}
 	do
 		local price = {}
 		for _, x in Config.Products do price[x.key] = x.robux end
-		local strip = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -60, 0, 40), Position = UDim2.fromOffset(30, 356), ZIndex = 13, Parent = card })
-		UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 8), Parent = strip })
+		local strip = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -40, 0, 26), Position = UDim2.new(0, 20, 1, -32), ZIndex = 15, Parent = boost })
+		UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, Padding = UDim.new(0, 6), Parent = strip })
 		local from = 2
 		for i, band in Config.MoneyBoost.bands do
-			local chip = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(255, 255, 255), BackgroundTransparency = 0.35, Size = UDim2.new(0.2, -7, 1, 0), LayoutOrder = i, ZIndex = 13, Parent = strip })
-			UI.corner(chip, 10)
-			local st = UI.stroke(chip, 2)
-			UI.label(chip, { Text = ("x%d-%d  R$%d"):format(from, band.to, price[band.key] or 0), TextColor3 = UI.C.navy, Size = UDim2.new(1, -8, 1, 0), Position = UDim2.fromOffset(4, 0), ZIndex = 14, stroke = 0 })
-			bandChips[i] = { chip = chip, from = from, to = band.to, stroke = st }
+			local chip = UI.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.35, Size = UDim2.fromOffset(104, 26), LayoutOrder = i, ZIndex = 15, Parent = strip })
+			UI.corner(chip, 8)
+			UI.stroke(chip, 2)
+			UI.label(chip, { Text = ("x%d-%d R$%d"):format(from, band.to, price[band.key] or 0), TextColor3 = UI.C.navy, Size = UDim2.new(1, -8, 1, -4), Position = UDim2.fromOffset(4, 2), ZIndex = 16, stroke = 0 })
+			bandChips[i] = { chip = chip, from = from, to = band.to }
 			from = band.to + 1
 		end
+		-- (the chips sit under the note, right of the text column)
+		strip.Size = UDim2.new(0, 560, 0, 26)
+		strip.Position = UDim2.new(1, -580, 1, -32)
 	end
+	boostNote.Visible = false -- (the chips take its place)
 	boostBtn.button.Activated:Connect(function()
 		if not boostBtn.button.Active then return end
 		call("buy", "boost")
@@ -1221,103 +1360,82 @@ do
 		local nxt = b.nextLevel or b.max
 		for _, c in bandChips do
 			local here = nxt >= c.from and nxt <= c.to
-			c.chip.BackgroundColor3 = here and GOLD or Color3.fromRGB(255, 255, 255)
+			c.chip.BackgroundColor3 = here and GOLD or Color3.new(1, 1, 1)
 			c.chip.BackgroundTransparency = here and 0 or (nxt > c.to and 0.7 or 0.35)
 		end
 		if not b.nextLevel then
 			nextL.Text = "MAX"
-			boostBtn.setText("\u{2714} MAXED OUT")
+			boostBtn.setText("\u{2714} MAXED")
 			boostBtn.setEnabled(false)
-			boostNote.Text = "You've got the biggest boost there is. Legend."
-		elseif not b.ready then
-			nextL.Text = "x" .. b.nextLevel
-			boostBtn.setText("R$ " .. b.robux)
-			boostBtn.setEnabled(false)
-			boostNote.Text = ""
+			boostPrice.Text = ""
 		else
 			nextL.Text = "x" .. b.nextLevel
-			boostBtn.setText(("BOOST!  R$ %d"):format(b.robux))
-			boostBtn.setEnabled(true)
-			boostBtn.setColor(Color3.fromRGB(40, 190, 90))
-			boostNote.Text = ("Your school earns x%d instead of x%d. Stacks with VIP."):format(b.nextLevel, b.level)
+			boostPrice.Text = b.robux .. " R$"
+			boostBtn.setText("BOOST!")
+			boostBtn.setEnabled(b.ready == true)
 		end
 	end
 	player:GetAttributeChangedSignal("MoneyBoost"):Connect(function()
 		if panel.frame.Visible then panel.refresh() end
 	end)
 
-	local passList = scrollList(pages[2])
+	---------------------------------------------------------------------------
+	-- the cards
+	---------------------------------------------------------------------------
+	local sections = { boost }
+	sections[2] = heading("\u{1F451} GAMEPASSES", rgb(255, 170, 40))
+	local passGrid = grid()
 	for i, x in Config.Passes do
-		local row = shopRow(passList, i, { name = x.key, icon = x.icon, title = x.name, desc = x.desc, sub = "Game pass \u{2022} yours forever", iconBg = Color3.fromRGB(230, 255, 230) })
-		rows.pass[x.key] = row
-		row.buy.button.Activated:Connect(function()
-			if not row.buy.button.Active then return end
-			call("buy", "pass", x.key)
-		end)
+		card(passGrid, x.key, x, function() call("buy", "pass", x.key) end, i)
 	end
-	local productList = scrollList(pages[3])
+	sections[3] = heading("\u{26A1} EXTRAS", rgb(70, 150, 255))
+	local extraGrid = grid()
+	local areaHeading = heading("\u{1F5FA}\u{FE0F} OPEN AREAS NOW", rgb(160, 90, 240))
+	local areaGrid = grid()
 	for i, x in Config.Products do
-		-- (the Money Boost bands are the card on page 1, not rows here)
+		-- (the Money Boost bands are the big card at the top)
 		if x.boost then continue end
-		local row = shopRow(productList, i, { name = x.key, icon = x.icon, title = x.name, desc = x.desc, sub = "One-time purchase", iconBg = Color3.fromRGB(230, 245, 255), height = 96 })
-		row.desc.TextWrapped = true
-		row.desc.Size = UDim2.new(1, -280, 0, 34)
-		row.sub.Position = UDim2.new(0, 88, 0, 76)
-		rows.product[x.key] = row
-		row.buy.button.Activated:Connect(function()
-			if not row.buy.button.Active then return end
-			call("buy", "product", x.key)
-		end)
+		card(x.area and areaGrid or extraGrid, x.key, x, function() call("buy", "product", x.key) end, i)
 	end
-	local function robuxText(n)
-		return "R$ " .. n
-	end
-	local current = 1
+
 	function panel.refresh()
 		local res = call("store")
 		if not res or res.ok == false then return end
 		showBoost(res.boost)
-		-- (anything not on sale yet stays out of the store: no "SOON" buttons)
+		-- (anything not on sale yet stays out of the store: no "SOON" cards)
+		local robux = {}
+		for _, x in Config.Passes do robux[x.key] = x.robux end
+		for _, x in Config.Products do robux[x.key] = x.robux end
 		for _, s in res.passes do
-			local row = rows.pass[s.key]
-			local def
-			for _, x in Config.Passes do if x.key == s.key then def = x end end
-			row.frame.Visible = s.ready or s.owned
-			if s.owned then
-				row.buy.setText("\u{2714} OWNED")
-				row.buy.setEnabled(false)
-			else
-				row.buy.setText(robuxText(def.robux))
-				row.buy.setEnabled(true)
-				row.buy.setColor(Color3.fromRGB(40, 190, 90))
-			end
+			local c = cards[s.key]
+			if c then c.set(robux[s.key] or 0, s.owned == true, s.ready == true) end
 		end
+		local anyArea = false
 		for _, s in res.products do
-			local row = rows.product[s.key]
-			local def
-			for _, x in Config.Products do if x.key == s.key then def = x end end
-			if not row then continue end
-			row.frame.Visible = s.ready
-			if not s.ready then
-				row.buy.setEnabled(false)
-			else
-				row.buy.setText(robuxText(def.robux))
-				row.buy.setEnabled(true)
-				row.buy.setColor(Color3.fromRGB(40, 190, 90))
+			local c = cards[s.key]
+			if c then
+				c.set(robux[s.key] or 0, false, s.ready == true)
+				if s.ready and c.card.Parent == areaGrid then anyArea = true end
 			end
 		end
+		areaHeading.Visible = anyArea
+		areaGrid.Visible = anyArea
 	end
-	local selectTab = tabs(panel.body, {
-		{ "\u{1F4B0} Money Boost", Color3.fromRGB(255, 180, 40), 240 },
-		{ "\u{1F451} Passes", Color3.fromRGB(40, 190, 90), 220 },
-		{ "\u{26A1} Extras", UI.C.blue, 220 },
-	}, function(i)
-		current = i
-		for j, pg in pages do pg.Visible = j == i end
+	-- (other scripts can ask for a section: 1 the boost, 2 the passes, 3 the extras)
+	function panel.select(i)
+		task.defer(function()
+			local h = sections[i]
+			if h and h.Parent then
+				scroll.CanvasPosition = Vector2.new(0, math.max(0, h.AbsolutePosition.Y - scroll.AbsolutePosition.Y + scroll.CanvasPosition.Y - 6))
+			end
+		end)
+	end
+	panel.onOpen = function()
+		tip.Visible = false
 		panel.refresh()
-	end)
-	panel.onOpen = function() selectTab(current) end
-	panel.select = function(i) selectTab(i) end
+		scroll.CanvasPosition = Vector2.zero
+	end
+	panel.onClose = function() tip.Visible = false end
 	-- owning a pass changes what the store shows
 	player.AttributeChanged:Connect(function(attr)
 		if attr:sub(1, 5) == "Pass_" and panel.frame.Visible then panel.refresh() end
@@ -1631,12 +1749,12 @@ local bar = UI.new("Frame", {
 	BackgroundTransparency = 1,
 	AnchorPoint = Vector2.new(0, 0.5),
 	Position = UDim2.new(0, 12, 0.5, 0),
-	Size = UDim2.fromOffset(170, 520),
+	Size = UDim2.fromOffset(186, 560),
 	Parent = gui,
 })
 UI.new("UIGridLayout", {
-	CellSize = UDim2.fromOffset(78, 78),
-	CellPadding = UDim2.fromOffset(8, 8),
+	CellSize = UDim2.fromOffset(86, 86),
+	CellPadding = UDim2.fromOffset(10, 10),
 	SortOrder = Enum.SortOrder.LayoutOrder,
 	VerticalAlignment = Enum.VerticalAlignment.Center,
 	Parent = bar,
@@ -1671,27 +1789,71 @@ local function watchUnlock(caption, b)
 	end)
 end
 
+-- a side button in the style of tomas's reference (a gamepass shop, 2026-09-27): a bright tile with a
+-- diagonal lattice, a darker border inside a thick outline, sitting on a darker lip it dips onto when
+-- pressed, a 3D icon (Shared/Icons) and the caption with a drop shadow
+local Icons = require(Shared:WaitForChild("Icons"))
+local SIDE_ICON = {
+	Home = "house", Shop = "basket", Store = "gem", Upgrades = "upArrow", Board = "pillar", Yearbook = "book",
+	Name = "pencil", Settings = "gear", Daily = "calendar", Coop = "people", Files = "folder", Quests = "scroll",
+	Admin = "wrench",
+}
+local LATTICE = "rbxthumb://type=Asset&id=100611400436149&w=420&h=420" -- (a white diagonal net)
+local function tileButton(caption, color, order)
+	local LIP = 5
+	local b = Instance.new("TextButton")
+	b.Name = caption
+	b.Text = ""
+	b.AutoButtonColor = false
+	b.BackgroundTransparency = 1
+	b.LayoutOrder = order
+	b.ZIndex = 1
+	local lip = UI.new("Frame", { Name = "Lip", BackgroundColor3 = UI.darken(color, 0.45), Size = UDim2.new(1, 0, 1, -LIP), Position = UDim2.fromOffset(0, LIP), ZIndex = 1, Parent = b })
+	UI.corner(lip, 16)
+	UI.stroke(lip, 3)
+	local body = UI.new("Frame", { Name = "Body", BackgroundColor3 = UI.darken(color, 0.22), Size = UDim2.new(1, 0, 1, -LIP), ZIndex = 2, Parent = b })
+	UI.corner(body, 16)
+	UI.stroke(body, 3.5)
+	-- the face: the colour, lit from the top, with the lattice over it
+	local face = UI.new("Frame", { Name = "Face", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.new(1, -8, 1, -8), Position = UDim2.fromOffset(4, 4), ZIndex = 2, Parent = body })
+	UI.corner(face, 12)
+	UI.gradient(face, UI.lighten(color, 0.3), color)
+	local net = UI.new("ImageLabel", { Name = "Lattice", BackgroundTransparency = 1, Image = LATTICE, ScaleType = Enum.ScaleType.Tile, TileSize = UDim2.fromOffset(46, 46), ImageTransparency = 0.55, Size = UDim2.fromScale(1, 1), ZIndex = 3, Parent = face })
+	UI.corner(net, 12)
+	local shine = UI.new("Frame", { Name = "Shine", BorderSizePixel = 0, BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.55, Size = UDim2.new(1, -16, 0, 4), Position = UDim2.fromOffset(8, 5), ZIndex = 3, Parent = face })
+	UI.corner(shine, 2)
+	Icons.view(face, SIDE_ICON[caption] or "gift", { size = UDim2.new(1, 4, 0.72, 0), position = UDim2.new(0.5, 0, 0, -3), anchor = Vector2.new(0.5, 0), zindex = 4, sway = 12, bob = 0.08 })
+	-- the caption and its shadow
+	UI.label(face, { Name = "CaptionShadow", Text = caption, Font = UI.BIG, TextColor3 = UI.C.ink, Size = UDim2.new(1, -4, 0.3, 0), Position = UDim2.new(0.5, 2, 1, -1), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 5, stroke = 2 })
+	UI.label(face, { Name = "Caption", Text = caption, Font = UI.BIG, Size = UDim2.new(1, -4, 0.3, 0), Position = UDim2.new(0.5, 0, 1, -3), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 6, stroke = 2.5 })
+	-- a glint that sweeps across now and then; hover grows it, lights a glow round it and glints it;
+	-- pressing dips it onto the lip
+	local glint = UI.shine(face, { zindex = 7, strength = 0.2 })
+	local glow = UI.glow(lip, UI.lighten(color, 0.3), { alpha = 0, spread = 4 })
+	glow.ZIndex = 0
+	for _, r in glow:GetChildren() do r.ZIndex = 0 end
+	local sc = Instance.new("UIScale")
+	sc.Parent = b
+	b.MouseEnter:Connect(function()
+		TweenService:Create(sc, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Scale = 1.07 }):Play()
+		UI.glowTo(glow, 1, 0.15)
+		UI.sweep(glint, 0.45)
+	end)
+	b.MouseLeave:Connect(function()
+		TweenService:Create(sc, TweenInfo.new(0.15), { Scale = 1 }):Play()
+		UI.glowTo(glow, 0, 0.2)
+		body.Position = UDim2.new()
+	end)
+	b.MouseButton1Down:Connect(function() body.Position = UDim2.fromOffset(0, LIP - 1) end)
+	b.MouseButton1Up:Connect(function() body.Position = UDim2.new() end)
+	b.Parent = bar
+	return { button = b, body = body }
+end
+
 local function sideButton(order, icon, caption, color, panel)
-	local b = UI.button(bar, { name = caption, text = "", color = color, size = UDim2.fromOffset(78, 78), radius = 18, layoutOrder = order })
+	local b = tileButton(caption, color, order)
 	sideButtons[caption] = b
-	UI.label(b.button, {
-		Name = "Icon",
-		Text = icon,
-		Size = UDim2.new(1, -16, 0.56, 0),
-		Position = UDim2.new(0.5, 0, 0, 6),
-		AnchorPoint = Vector2.new(0.5, 0),
-		ZIndex = 4,
-		stroke = 0,
-	})
-	UI.label(b.button, {
-		Name = "Caption",
-		Text = caption,
-		Size = UDim2.new(1, -6, 0.28, 0),
-		Position = UDim2.new(0.5, 0, 1, -5),
-		AnchorPoint = Vector2.new(0.5, 1),
-		ZIndex = 4,
-		stroke = 2,
-	})
+	_ = icon
 	b.button.Activated:Connect(function()
 		local badge = b.button:FindFirstChild("New")
 		if badge then badge:Destroy() end
@@ -1747,8 +1909,8 @@ end
 -- Home: back to your school in one press (H on a keyboard); a short cooldown shows as a dark sweep
 do
 	local home = sideButton(-1, "\u{1F3E0}", "Home", Color3.fromRGB(255, 120, 60), nil)
-	local shade = UI.new("Frame", { Name = "Cooldown", BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.45, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromScale(1, 0), ZIndex = 5, Parent = home.button })
-	UI.corner(shade, 18)
+	local shade = UI.new("Frame", { Name = "Cooldown", BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.45, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.fromScale(1, 0), ZIndex = 7, Parent = home.body })
+	UI.corner(shade, 16)
 	local busy = false
 	local function goHome()
 		if busy then return end

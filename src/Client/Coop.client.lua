@@ -40,10 +40,14 @@ end
 local function sfx(name)
 	if bus and bus:FindFirstChild("Sfx") then bus.Sfx:Fire(name) end
 end
+-- (shifts it and everything in it up together, keeping their order: flattening them all to one layer
+-- put a button's lip over the button)
 local function lift(obj, z)
-	if obj:IsA("GuiObject") then obj.ZIndex = math.max(obj.ZIndex, z) end
+	local shift = obj:IsA("GuiObject") and math.max(0, z - obj.ZIndex) or 0
+	if shift == 0 then return end
+	obj.ZIndex += shift
 	for _, d in obj:GetDescendants() do
-		if d:IsA("GuiObject") then d.ZIndex = math.max(d.ZIndex, z + 1) end
+		if d:IsA("GuiObject") then d.ZIndex += shift end
 	end
 end
 local function clock(s)

@@ -111,6 +111,239 @@ function UI.punch(obj, amount)
 	TweenService:Create(s, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 end
 
+---------------------------------------------------------------------------
+-- LIFE: glows, shines and bounces for the whole UI (tomas, 2026-09-27: "our original style is good,
+-- but with animations and glow effects it could be SO much better"). Drawn from frames, no images.
+---------------------------------------------------------------------------
+-- a soft glow round a frame: rings of its colour growing out behind it, fading away. The glow is a child
+-- drawn under its parent (the menus use Global ZIndex). Returns the holder; UI.glowTo(holder, alpha)
+-- fades it (0 = off, 1 = full).
+function UI.glow(obj, color, opts)
+	opts = opts or {}
+	local holder = Instance.new("Frame")
+	holder.Name = "Glow"
+	holder.BackgroundTransparency = 1
+	holder.Size = UDim2.fromScale(1, 1)
+	holder.ZIndex = math.max(0, obj.ZIndex - 1)
+	local corner = obj:FindFirstChildOfClass("UICorner")
+	local r = corner and corner.CornerRadius.Offset or 12
+	local spread = opts.spread or 5
+	local layers = {}
+	for i = 1, opts.layers or 4 do
+		local g = Instance.new("Frame")
+		g.Name = "GlowRing"
+		g.BorderSizePixel = 0
+		g.BackgroundColor3 = color
+		g.AnchorPoint = Vector2.new(0.5, 0.5)
+		g.Position = UDim2.fromScale(0.5, 0.5)
+		g.Size = UDim2.new(1, i * spread * 2, 1, i * spread * 2)
+		g.ZIndex = holder.ZIndex
+		local c = Instance.new("UICorner")
+		c.CornerRadius = UDim.new(0, r + i * spread)
+		c.Parent = g
+		g.Parent = holder
+		layers[i] = { frame = g, base = 0.72 + i * 0.065 }
+	end
+	holder:SetAttribute("GlowAlpha", opts.alpha or 1)
+	local function apply(a)
+		for _, l in layers do l.frame.BackgroundTransparency = 1 - (1 - l.base) * a end
+	end
+	apply(opts.alpha or 1)
+	holder:GetAttributeChangedSignal("GlowAlpha"):Connect(function() apply(holder:GetAttribute("GlowAlpha")) end)
+	holder.Parent = obj
+	return holder
+end
+function UI.glowTo(holder, alpha, t)
+	if not holder then return end
+	local v = Instance.new("NumberValue")
+	v.Value = holder:GetAttribute("GlowAlpha") or 0
+	v.Changed:Connect(function(x) holder:SetAttribute("GlowAlpha", x) end)
+	local tw = TweenService:Create(v, TweenInfo.new(t or 0.2, Enum.EasingStyle.Quad), { Value = alpha })
+	tw.Completed:Connect(function() v:Destroy() end)
+	tw:Play()
+end
+
+-- a shine: a bright diagonal band that sweeps across a frame now and then (the glint on shiny
+-- plastic). An overlay the frame's shape carries a UIGradient; its Offset is what moves. Sweeps are
+-- dealt out by one scheduler to whichever shiny things are on screen, a few a second.
+local shiners = setmetatable({}, { __mode = "k" }) -- overlay -> gradient
+local function onScreen(g)
+	local a = g
+	while a and a:IsA("GuiObject") do
+		if not a.Visible then return false end
+		a = a.Parent
+	end
+	if a and a:IsA("LayerCollector") and not a.Enabled then return false end
+	return g.AbsoluteSize.X > 0
+end
+function UI.shine(obj, opts)
+	opts = opts or {}
+	local o = Instance.new("Frame")
+	o.Name = "Shine"
+	o.BackgroundColor3 = Color3.new(1, 1, 1)
+	o.BorderSizePixel = 0
+	o.Size = UDim2.fromScale(1, 1)
+	o.ZIndex = opts.zindex or (obj.ZIndex + 1)
+	local c = obj:FindFirstChildOfClass("UICorner")
+	if c then c:Clone().Parent = o end
+	local g = Instance.new("UIGradient")
+	g.Rotation = 25
+	local peak = opts.strength or 0.55
+	g.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.42, 1),
+		NumberSequenceKeypoint.new(0.5, 1 - peak), NumberSequenceKeypoint.new(0.58, 1),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	g.Offset = Vector2.new(-1.2, 0)
+	g.Parent = o
+	o.Parent = obj
+	shiners[o] = g
+	return o
+end
+function UI.sweep(overlay, t)
+	local g = shiners[overlay]
+	if not g then return end
+	g.Offset = Vector2.new(-1.2, 0)
+	TweenService:Create(g, TweenInfo.new(t or 0.55, Enum.EasingStyle.Sine), { Offset = Vector2.new(1.2, 0) }):Play()
+end
+if game:GetService("RunService"):IsClient() then
+	task.spawn(function()
+		-- (tomas: subtler, and less often: one glint every couple of seconds, whatever is on screen)
+		while true do
+			task.wait(2.2 + math.random() * 1.5)
+			local live = {}
+			for o in shiners do
+				if o.Parent and onScreen(o) then table.insert(live, o) end
+			end
+			if #live > 0 then UI.sweep(live[math.random(#live)], 0.8) end
+		end
+	end)
+end
+
+-- a sunburst: bars of light turning slowly behind something (a prize, a 3D icon). size in px
+local bursts = setmetatable({}, { __mode = "k" })
+function UI.burst(parent, color, size, opts)
+	opts = opts or {}
+	local holder = Instance.new("Frame")
+	holder.Name = "Burst"
+	holder.BackgroundTransparency = 1
+	holder.AnchorPoint = Vector2.new(0.5, 0.5)
+	holder.Position = opts.position or UDim2.fromScale(0.5, 0.5)
+	holder.Size = UDim2.fromOffset(size, size)
+	holder.ZIndex = opts.zindex or parent.ZIndex
+	for k = 0, (opts.rays or 8) - 1 do
+		local ray = Instance.new("Frame")
+		ray.Name = "Ray"
+		ray.BorderSizePixel = 0
+		ray.BackgroundColor3 = color
+		ray.AnchorPoint = Vector2.new(0.5, 0.5)
+		ray.Position = UDim2.fromScale(0.5, 0.5)
+		ray.Size = UDim2.new(1, 0, 0, math.max(6, size * 0.11))
+		ray.Rotation = k * 180 / (opts.rays or 8)
+		ray.ZIndex = holder.ZIndex
+		local g = Instance.new("UIGradient")
+		g.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.3, opts.edge or 0.75),
+			NumberSequenceKeypoint.new(0.5, opts.middle or 0.35), NumberSequenceKeypoint.new(0.7, opts.edge or 0.75),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		g.Parent = ray
+		ray.Parent = holder
+	end
+	-- a soft round glow in the middle
+	local core = Instance.new("Frame")
+	core.Name = "Core"
+	core.BorderSizePixel = 0
+	core.BackgroundColor3 = color
+	core.BackgroundTransparency = opts.coreTransparency or 0.55
+	core.AnchorPoint = Vector2.new(0.5, 0.5)
+	core.Position = UDim2.fromScale(0.5, 0.5)
+	core.Size = UDim2.fromScale(0.5, 0.5)
+	core.ZIndex = holder.ZIndex
+	local cc = Instance.new("UICorner")
+	cc.CornerRadius = UDim.new(1, 0)
+	cc.Parent = core
+	core.Parent = holder
+	holder.Parent = parent
+	bursts[holder] = opts.speed or 18 -- degrees a second
+	return holder
+end
+if game:GetService("RunService"):IsClient() then
+	local acc = 0
+	game:GetService("RunService").RenderStepped:Connect(function(dt)
+		acc += dt
+		if acc < 1 / 30 then return end
+		local step = acc
+		acc = 0
+		for h, speed in bursts do
+			if h.Parent then
+				if h.Visible and h.AbsoluteSize.X > 0 then h.Rotation = (h.Rotation + speed * step) % 360 end
+			else
+				bursts[h] = nil
+			end
+		end
+	end)
+end
+
+-- a gentle pulse: a frame's glow (or its UIScale) breathing in and out forever
+function UI.pulse(holder, lo, hi, period)
+	task.spawn(function()
+		local t0 = os.clock() + math.random() * 2
+		while holder.Parent do
+			local a = lo + (hi - lo) * (0.5 + 0.5 * math.sin((os.clock() - t0) * math.pi * 2 / (period or 1.8)))
+			holder:SetAttribute("GlowAlpha", a)
+			task.wait(1 / 20)
+		end
+	end)
+end
+
+-- the reference's diagonal lattice, laid lightly over a frame (a tiled image: a white net)
+UI.LATTICE = "rbxthumb://type=Asset&id=100611400436149&w=420&h=420"
+function UI.lattice(frame, opts)
+	opts = opts or {}
+	local img = Instance.new("ImageLabel")
+	img.Name = "Lattice"
+	img.BackgroundTransparency = 1
+	img.Image = UI.LATTICE
+	img.ScaleType = Enum.ScaleType.Tile
+	img.TileSize = UDim2.fromOffset(opts.tile or 46, opts.tile or 46)
+	img.ImageTransparency = opts.transparency or 0.78
+	img.Size = UDim2.fromScale(1, 1)
+	img.ZIndex = opts.zindex or frame.ZIndex
+	local c = frame:FindFirstChildOfClass("UICorner")
+	if c then c:Clone().Parent = img end
+	img.Parent = frame
+	return img
+end
+
+-- the classic Roblox stud texture behind the UI (tomas: "super popular for games with high player
+-- counts"): a tiled image, strong on the colours, faint on the cream
+UI.STUDS = "rbxthumb://type=Asset&id=15910695917&w=420&h=420"
+function UI.studs(frame, opts)
+	opts = opts or {}
+	local img = Instance.new("ImageLabel")
+	img.Name = "Studs"
+	img.BackgroundTransparency = 1
+	img.Image = UI.STUDS
+	img.ScaleType = Enum.ScaleType.Tile
+	img.TileSize = UDim2.fromOffset(opts.tile or 140, opts.tile or 140)
+	img.ImageTransparency = opts.transparency or 0.6
+	img.Size = UDim2.fromScale(1, 1)
+	img.ZIndex = opts.zindex or frame.ZIndex
+	local c = frame:FindFirstChildOfClass("UICorner")
+	if c then c:Clone().Parent = img end
+	img.Parent = frame
+	return img
+end
+
+-- does this gui draw children under their parents (Global ZIndex)? The lip under a button and the
+-- glow round it are children drawn underneath; in a Sibling gui they'd cover it instead
+local function globalZ(obj)
+	local g = obj:FindFirstAncestorWhichIsA("LayerCollector")
+	return g ~= nil and g:IsA("ScreenGui") and g.ZIndexBehavior == Enum.ZIndexBehavior.Global
+end
+UI.globalZ = globalZ
+
 -- chunky gradient button
 -- opts: text, color, size, position, anchor, font, onClick, textColor, radius, icon, layoutOrder
 function UI.button(parent, opts)
@@ -138,6 +371,9 @@ function UI.button(parent, opts)
 		Parent = b,
 	})
 	UI.corner(shine, (opts.radius or 12) - 4)
+	UI.studs(b, { zindex = 2, transparency = 0.72, tile = 120 })
+	local shineOverlay = UI.shine(b, { zindex = 2, strength = 0.22 })
+	shineOverlay.Name = "Glint"
 	local lbl = UI.label(b, {
 		Name = "Label",
 		Size = UDim2.new(1, -16, 1, -12),
@@ -150,11 +386,51 @@ function UI.button(parent, opts)
 		stroke = opts.textStroke or 2.5,
 	})
 	local s = scaler(b)
+	-- the lip (a darker edge under the button: it looks like you can press it) and the hover glow
+	local lip, glow
+	-- (the lip and the glow stay one and two layers under the button whatever sets the ZIndexes:
+	-- several menus set a button's whole tree to one layer, which put the lip over the button)
+	local function keepUnder()
+		local z = b.ZIndex
+		if lip and lip.ZIndex ~= math.max(0, z - 1) then lip.ZIndex = math.max(0, z - 1) end
+		if glow then
+			local gz = math.max(0, z - 2)
+			if glow.ZIndex ~= gz then glow.ZIndex = gz end
+			for _, r in glow:GetChildren() do
+				if r:IsA("GuiObject") and r.ZIndex ~= gz then r.ZIndex = gz end
+			end
+		end
+	end
+	local function dress()
+		if lip or not globalZ(b) then return end
+		lip = Instance.new("Frame")
+		lip.Name = "Lip"
+		lip.BackgroundColor3 = darken(color, 0.45)
+		lip.Size = UDim2.fromScale(1, 1)
+		lip.Position = UDim2.fromOffset(0, 4)
+		lip.ZIndex = math.max(0, b.ZIndex - 1)
+		UI.corner(lip, opts.radius or 12)
+		UI.stroke(lip, opts.strokeThickness or 3)
+		lip:GetPropertyChangedSignal("ZIndex"):Connect(keepUnder)
+		lip.Parent = b
+	end
+	b.AncestryChanged:Connect(dress)
+	b:GetPropertyChangedSignal("ZIndex"):Connect(keepUnder)
 	b.MouseEnter:Connect(function()
 		TweenService:Create(s, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Scale = 1.06 }):Play()
+		if b.Active and globalZ(b) then
+			if not glow then
+				glow = UI.glow(b, lighten(color, 0.25), { alpha = 0, spread = 4 })
+				glow:GetPropertyChangedSignal("ZIndex"):Connect(keepUnder)
+				keepUnder()
+			end
+			UI.glowTo(glow, 1, 0.15)
+			UI.sweep(shineOverlay, 0.4)
+		end
 	end)
 	b.MouseLeave:Connect(function()
 		TweenService:Create(s, TweenInfo.new(0.15), { Scale = 1 }):Play()
+		if glow then UI.glowTo(glow, 0, 0.2) end
 	end)
 	b.MouseButton1Down:Connect(function()
 		TweenService:Create(s, TweenInfo.new(0.08), { Scale = 0.92 }):Play()
@@ -166,10 +442,12 @@ function UI.button(parent, opts)
 		b.Activated:Connect(opts.onClick)
 	end
 	b.Parent = parent
+	dress()
 
 	local api = { button = b, label = lbl }
 	function api.setColor(c)
 		grad.Color = ColorSequence.new(lighten(c, 0.35), c)
+		if lip then lip.BackgroundColor3 = darken(c, 0.45) end
 	end
 	function api.setText(t)
 		lbl.Text = t
@@ -178,6 +456,7 @@ function UI.button(parent, opts)
 		b.Active = on
 		b.AutoButtonColor = false
 		grad.Color = on and ColorSequence.new(lighten(color, 0.35), color) or ColorSequence.new(Color3.fromRGB(190, 190, 195), Color3.fromRGB(130, 130, 140))
+		if lip then lip.BackgroundColor3 = on and darken(color, 0.45) or Color3.fromRGB(90, 90, 100) end
 	end
 	return api
 end
@@ -251,6 +530,7 @@ function UI.panel(gui, opts)
 	})
 	UI.corner(frame, 18)
 	UI.stroke(frame, 4)
+	UI.studs(frame, { zindex = 10, transparency = 0.84, tile = 150 })
 	UI.new("UISizeConstraint", { MaxSize = Vector2.new(900, 640), Parent = frame })
 	local header = UI.new("Frame", {
 		Name = "Header",
@@ -272,6 +552,15 @@ function UI.panel(gui, opts)
 		Parent = header,
 	})
 	UI.gradient(fill, color, color)
+	UI.studs(header, { zindex = 11, transparency = 0.62, tile = 140 })
+	local headerShine = UI.shine(header, { zindex = 12, strength = 0.18 })
+	-- the panel's 3D icon hanging off the title bar's corner (Shared/Icons)
+	local okIcons, Icons = pcall(function() return require(script.Parent:WaitForChild("Icons", 5)) end)
+	local iconKey = okIcons and Icons and Icons.PANEL and Icons.PANEL[opts.name or ""]
+	if iconKey then
+		local holder = UI.new("Frame", { Name = "Icon", BackgroundTransparency = 1, Size = UDim2.fromOffset(96, 96), Position = UDim2.fromOffset(-26, -32), ZIndex = 22, Parent = frame })
+		Icons.view(holder, iconKey, { zindex = 22, sway = 10 })
+	end
 	UI.label(header, {
 		Name = "Title",
 		Text = opts.title or "",
@@ -304,26 +593,41 @@ function UI.panel(gui, opts)
 			api.close()
 		end,
 	})
+	local shift = 20 - closeBtn.button.ZIndex
 	closeBtn.button.ZIndex = 20
 	for _, d in closeBtn.button:GetDescendants() do
-		if d:IsA("GuiObject") then d.ZIndex = 21 end
+		if d:IsA("GuiObject") and d.Name ~= "Lip" and d.Name ~= "Glow" and d.Name ~= "GlowRing" then d.ZIndex += shift end
 	end
 
+	local closing = 0
 	function api.open()
-		if frame.Visible then return end
+		if frame.Visible and closing == 0 then return end
+		closing = 0
 		if UI.current and UI.current ~= api then UI.current.close() end
 		UI.current = api
 		frame.Visible = true
-		UI.pop(frame, 0.5)
+		UI.pop(frame, 0.55)
+		task.delay(0.25, function() if frame.Visible then UI.sweep(headerShine, 0.6) end end)
 		if api.onOpen then api.onOpen() end
 	end
 	function api.close()
 		if UI.current == api then UI.current = nil end
-		frame.Visible = false
 		if api.onClose then api.onClose() end
+		-- (a quick shrink, then gone)
+		closing += 1
+		local mine = closing
+		local sc = scaler(frame)
+		TweenService:Create(sc, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Scale = 0.85 }):Play()
+		task.delay(0.1, function()
+			if closing == mine then
+				frame.Visible = false
+				sc.Scale = 1
+				closing = 0
+			end
+		end)
 	end
 	function api.toggle()
-		if frame.Visible then api.close() else api.open() end
+		if frame.Visible and closing == 0 then api.close() else api.open() end
 	end
 	return api
 end
@@ -366,6 +670,7 @@ function UI.card(parent, opts)
 	UI.corner(card, 14)
 	UI.stroke(card, 3)
 	UI.gradient(card, lighten(color, 0.45), darken(color, 0.15))
+	UI.studs(card, { zindex = 12, transparency = 0.7, tile = 110 })
 	if opts.model then
 		UI.viewport(card, opts.model, {
 			size = UDim2.new(1, -8, 0.62, 0),

@@ -19,7 +19,8 @@ gui.IgnoreGuiInset = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = player:WaitForChild("PlayerGui")
 -- scales down on phones (UI.autoScale)
-require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("UI")).autoScale(gui)
+local UI = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("UI"))
+UI.autoScale(gui)
 
 local FONT = Enum.Font.FredokaOne
 
@@ -66,6 +67,9 @@ local g = Instance.new("UIGradient")
 g.Color = ColorSequence.new(Color3.fromRGB(120, 255, 140), Color3.fromRGB(30, 170, 70))
 g.Rotation = 90
 g.Parent = cashPanel
+-- the stud texture on the cash panel, and a glint across it now and then
+UI.studs(cashPanel, { zindex = 0, transparency = 0.7, tile = 120 })
+UI.shine(cashPanel, { zindex = 0, strength = 0.18 })
 local cashText = text(cashPanel, { Name = "Amount", Size = UDim2.new(1, -20, 0.62, 0), Position = UDim2.new(0, 10, 0, 4), Text = "$0" })
 local incomeText = text(cashPanel, { Name = "Income", Size = UDim2.new(1, -20, 0.3, 0), Position = UDim2.new(0, 10, 0.64, 0), Text = "$0/s", TextColor3 = Color3.fromRGB(230, 255, 230), strokeThickness = 2 })
 
