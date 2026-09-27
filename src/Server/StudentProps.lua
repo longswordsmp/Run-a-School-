@@ -1675,7 +1675,9 @@ end
 -- in the forearm's column above the fist (in hand space)
 local function inArmColumn(hand, forearm, pt)
 	local l = hand.CFrame:PointToObjectSpace(pt)
-	local hx, hz = forearm.Size.X / 2 + 0.1, forearm.Size.Z / 2 + 0.12
+	-- (a hair wider than the forearm: a bigger margin parked everything a fifth of a stud in front of
+	-- the fist, floating, which read as "holding it without their hands")
+	local hx, hz = forearm.Size.X / 2 + 0.05, forearm.Size.Z / 2 + 0.03
 	return l.Y > hand.Size.Y / 2 - 0.1 and math.abs(l.X) < hx and l.Z > -hz and l.Z < hz
 end
 -- points on (inside) a part's actual shape, in its own space
@@ -1741,9 +1743,48 @@ function Props.declash(model)
 			if hitArm then dz -= 0.05 end
 			if hitBody then dx += 0.05 * out end
 		end
-		if dx ~= 0 or dz ~= 0 then
+		-- then back onto the fist: a held thing touches the hand. Slide the lot towards the hand, a
+		-- fiftieth of a stud at a time, until something touches it, never into the arm or the body.
+		-- (measured before: 15 of 90 hands held their thing 0.13 to 0.8 studs off the fist)
+		local function clashes(off)
 			for _, it in items do
-				it.weld.C0 = CFrame.new(dx, 0, dz) * it.weld.C0
+				local cf = hand.CFrame * off * it.weld.C0
+				for _, v in it.pts do
+					local pt = cf:PointToWorldSpace(v)
+					if inArmColumn(hand, forearm, pt) then return true end
+					for _, n in TRUNK do
+						local b = model:FindFirstChild(n)
+						if b and insideBox(b, pt, 0.05) then return true end
+					end
+				end
+			end
+			return false
+		end
+		local function gap(off)
+			local best, from, to = math.huge, nil, nil
+			local h = hand.Size / 2
+			for _, it in items do
+				local cf = hand.CFrame * off * it.weld.C0
+				for _, v in it.pts do
+					local l = hand.CFrame:PointToObjectSpace(cf:PointToWorldSpace(v))
+					local c = Vector3.new(math.clamp(l.X, -h.X, h.X), math.clamp(l.Y, -h.Y, h.Y), math.clamp(l.Z, -h.Z, h.Z))
+					local d = (l - c).Magnitude
+					if d < best then best, from, to = d, l, c end
+				end
+			end
+			return best, from, to
+		end
+		local off = CFrame.new(dx, 0, dz)
+		for _ = 1, 60 do
+			local g, from, to = gap(off)
+			if g <= 0.03 then break end
+			local step = CFrame.new((to - from).Unit * math.min(0.02, g))
+			if clashes(step * off) then break end
+			off = step * off
+		end
+		if off ~= CFrame.identity then
+			for _, it in items do
+				it.weld.C0 = off * it.weld.C0
 				it.part.CFrame = hand.CFrame * it.weld.C0
 			end
 		end
@@ -1989,9 +2030,13 @@ T.mage = function(model, head, hs, torso, ts)
 		ball(model, head, 0.2, CFrame.new(hs.X * (0.2 - i * 0.15), hs.Y * (0.6 + i * 0.25), -hs.Z * 0.3), rgb(255, 230, 90), Enum.Material.Neon)
 	end
 	blob(model, head, Vector3.new(hs.X * 0.8, hs.Y * 1.1, hs.Z * 0.4), CFrame.new(0, -hs.Y * 0.6, -hs.Z * 0.3), rgb(240, 240, 245))
+	-- the staff up the outside of his fist (in front of it, it had to clear the forearm and floated
+	-- 0.7 studs off his hand). The right hand's +X is outward.
 	local hand = part(model, "RightHand")
-	cylY(model, hand, 0.18, 4.2, CFrame.new(0, 0.9, -0.2), rgb(110, 70, 40), Enum.Material.Wood)
-	local orb = ball(model, hand, 0.7, CFrame.new(0, 3.2, -0.2), rgb(120, 200, 255), Enum.Material.Neon)
+	local fore = part(model, "RightLowerArm")
+	local sx = math.max(hand.Size.X, fore and fore.Size.X or 0) / 2 + 0.16 -- (clear of the forearm)
+	cylY(model, hand, 0.2, 4.2, CFrame.new(sx, 0.9, 0), rgb(110, 70, 40), Enum.Material.Wood)
+	local orb = ball(model, hand, 0.7, CFrame.new(sx, 3.2, 0), rgb(120, 200, 255), Enum.Material.Neon)
 	sparkles(orb, rgb(170, 220, 255), 10)
 	blob(model, part(model, "LowerTorso"), Vector3.new(ts.X * 1.25, ts.Y * 1.6, ts.Z * 1.4), CFrame.new(0, -ts.Y * 0.6, 0), purple)
 end
@@ -2160,9 +2205,14 @@ T.vex = function(model, head, hs, torso, ts)
 		block(model, torso, Vector3.new(ts.X * 0.55, 0.35, ts.Z * 1.25), CFrame.new(x * ts.X * 0.6, ts.Y * 0.48, 0) * CFrame.Angles(0, 0, math.rad(x * -12)), rgb(130, 50, 170))
 	end
 	block(model, torso, Vector3.new(ts.X * 0.3, ts.Y * 0.8, 0.05), CFrame.new(0, 0, -ts.Z * 0.53), rgb(30, 20, 40))
+	-- her tablet, carried like a clipboard: gripped by its edge down at her side, the glowing screen
+	-- facing out (held flat in front of the fist it had to clear the forearm and floated off her hand).
+	-- The left hand's -X is outward.
 	local hand = part(model, "LeftHand")
-	block(model, hand, Vector3.new(1.1, 1.5, 0.1), CFrame.new(0, 0.3, -0.35), rgb(25, 25, 30))
-	block(model, hand, Vector3.new(0.95, 1.3, 0.11), CFrame.new(0, 0.3, -0.37), rgb(120, 220, 255), Enum.Material.Neon)
+	local fore = part(model, "LeftLowerArm")
+	local tx = -(math.max(hand.Size.X, fore and fore.Size.X or 0) / 2 + 0.11) -- (clear of the forearm)
+	block(model, hand, Vector3.new(0.1, 1.5, 1.1), CFrame.new(tx, -0.35, -0.15), rgb(25, 25, 30))
+	block(model, hand, Vector3.new(0.11, 1.3, 0.95), CFrame.new(tx - 0.01, -0.35, -0.15), rgb(120, 220, 255), Enum.Material.Neon)
 end
 
 -- VexCorp goon: the raiders. Purple coveralls with a VexCorp V on the chest, a black beanie,
