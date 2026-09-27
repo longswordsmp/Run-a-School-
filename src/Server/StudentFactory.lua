@@ -310,7 +310,9 @@ function Factory.setMode(model, mode, extra)
 		price.Text = "-> " .. tostring(extra) .. "'s school"
 		price.TextColor3 = Color3.new(1, 1, 1)
 	elseif mode == "owned" then
+		-- (at a desk the line shows what they earn you: PlotService fills it in with Factory.setEarning)
 		price.Visible = false
+		price.Text = ""
 		bb.StudsOffsetWorldSpace = Vector3.new(0, 3 + (model:GetAttribute("TagLift") or 0), 0)
 		bb.MaxDistance = 45
 	elseif mode == "carried" then
@@ -318,6 +320,22 @@ function Factory.setMode(model, mode, extra)
 		price.Text = "STOLEN!"
 		price.TextColor3 = Color3.fromRGB(255, 70, 70)
 	end
+end
+
+-- a seated kid's earnings line: "+$1.2K/s", everything counted (the school's tier, teachers, IQ,
+-- VIP, the Money Boost); nil hides it (not earning right now)
+function Factory.setEarning(model, perSec)
+	local bb = model:FindFirstChild("Head") and model.Head:FindFirstChild("Tag")
+	local price = bb and bb:FindFirstChild("Price")
+	if not price then return end
+	if not perSec then
+		price.Visible = false
+		return
+	end
+	price.Visible = true
+	price.RichText = true
+	price.TextColor3 = Color3.fromRGB(110, 255, 110)
+	price.Text = ('<font color="#6EFF6E">+%s/s</font>'):format(Config.formatCash(perSec))
 end
 
 -- The ground speed (studs/s) each looped move clip covers at 1x on the adult rig (HipHeight 2.366),

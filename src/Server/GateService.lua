@@ -34,6 +34,10 @@ function GateService.lock(player)
 	local p = Data.get(player)
 	if not plot or not p then return false end
 	local now = workspace:GetServerTimeNow()
+	if not UpgradeService.gateWorks(p) then
+		Remotes.Notify:FireClient(player, "Your laser gate is broken! Fix it in Upgrades (Laser Gate Repair).", "bad")
+		return false
+	end
 	if GateService.isLocked(plot) then
 		Remotes.Notify:FireClient(player, ("Your gate is already locked (%ds left)."):format(math.ceil((plot:GetAttribute("LockedUntil") or now) - now)), "info")
 		return false
@@ -50,6 +54,32 @@ function GateService.lock(player)
 	Remotes.Notify:FireClient(player, ("Gate locked for %ds!"):format(dur), "good")
 	Signals.fire("lock", player)
 	return true
+end
+
+-- the old lasers' last zap (the First Morning): they spit sparks and go dark, lock or no lock
+function GateService.fizzle(plot)
+	local now = workspace:GetServerTimeNow()
+	plot:SetAttribute("LockedUntil", now)
+	plot:SetAttribute("CooldownUntil", now)
+	for _, p in plot.Gate:GetChildren() do
+		if p.Name == "Laser" and p:IsA("BasePart") then
+			local a = Instance.new("Attachment")
+			a.Parent = p
+			local sp = Instance.new("ParticleEmitter")
+			sp.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+			sp.Color = ColorSequence.new(Color3.fromRGB(255, 220, 120), Color3.fromRGB(255, 90, 60))
+			sp.LightEmission = 1
+			sp.Size = NumberSequence.new(0.6, 0)
+			sp.Lifetime = NumberRange.new(0.3, 0.7)
+			sp.Speed = NumberRange.new(8, 16)
+			sp.SpreadAngle = Vector2.new(180, 180)
+			sp.Rate = 0
+			sp.Parent = a
+			sp:Emit(40)
+			game:GetService("Debris"):AddItem(a, 2)
+		end
+	end
+	setVisual(plot, false)
 end
 
 -- push a character back out through the gate
@@ -106,6 +136,18 @@ function GateService.start()
 			end
 			local lockedUntil = plot:GetAttribute("LockedUntil") or 0
 			local cooldown = plot:GetAttribute("CooldownUntil") or 0
+			-- (broken: dark lasers, and the button says what to do about it)
+			local ownerPlayer = Players:GetPlayerByUserId(owner)
+			local op = ownerPlayer and Data.get(ownerPlayer)
+			local broken = op and not UpgradeService.gateWorks(op)
+			local prompt = plot.LockButton.Button:FindFirstChild("LockPrompt")
+			if prompt then prompt.ActionText = broken and "Broken!" or "Lock Gate" end
+			if broken and lockedUntil <= now then
+				label.Text = "BROKEN: FIX IN UPGRADES"
+				label.TextColor3 = Color3.fromRGB(255, 120, 90)
+				if plot.Gate.Laser.Transparency < 1 then setVisual(plot, false) end
+				continue
+			end
 			if lockedUntil > now then
 				label.Text = ("LOCKED %ds"):format(math.ceil(lockedUntil - now))
 				label.TextColor3 = Color3.fromRGB(120, 255, 140)

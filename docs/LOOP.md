@@ -108,6 +108,9 @@ The same way, the checks from tomas's earlier asks:
   - guard attributes PathOK/PathFail.
 - **Moving the player.** A client-side teleport reaches the server late, so do test teleports on the
   Server.
+- **Never load module copies into tomas's Play session**, not even to check syntax. Modules register
+  Actions and signals when loaded, so a copy swaps handlers in his running game. Check syntax in a
+  session the loop started itself.
 
 ## Rules
 

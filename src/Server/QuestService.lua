@@ -156,6 +156,8 @@ local DONE = {
 	k07_row4 = function(_, p) return yes((p.rows[1] or 0) >= 4) end,
 	k07_swap = function(_, p) return did(p, "swapped") end,
 	k08_crew = function(_, p) return yes(won(p, "k_crew")) end,
+	-- (a gate that never broke, from a save before the First Morning's burnout, counts as fixed)
+	k08_gate = function(_, p) return yes(not p.gateBroken or (p.upgrades and p.upgrades.LaserGate or 0) >= 1) end,
 	k09_map = function(_, p) return yes(won(p, "k_map")) end,
 	k10_peek = function(_, p) return yes(p.rivalSeen) end,
 	k11_pothole = function(_, p) return yes(p.sewerScouted) end,

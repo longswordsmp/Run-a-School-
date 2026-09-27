@@ -135,11 +135,12 @@ if _tb:
 STEP_TIME = {  # seconds of play per step (estimates: walking there, the chase or heist, a retry or two)
     "welcome": 60, "scholar": 20, "collect": 20, "bonk": 40, "lock": 30, "rescue": 150, "desks": 30,
     "k01_pencils": 20, "k02_teacher": 20, "k03_name": 20, "k04_hector": 120, "k05_janitor": 20,
-    "k06_thief": 120, "k07_row4": 20, "k07_swap": 60, "k08_crew": 150, "k09_map": 300, "k10_peek": 90,
+    "k06_thief": 120, "k07_row4": 20, "k07_swap": 60, "k08_crew": 150, "k08_gate": 20, "k09_map": 300, "k10_peek": 90,
     "k11_pothole": 180, "k12_heist": 600, "board": 0,
 }
 STEP_NEEDS = {"desks": ("row", 3), "k07_row4": ("row", 4), "k01_pencils": ("supply", "Pencils"),
-              "k02_teacher": ("teacher", "SubSteve"), "k05_janitor": ("cash", 25e3)}
+              "k02_teacher": ("teacher", "SubSteve"), "k05_janitor": ("cash", 25e3),
+              "k08_gate": ("cash", 60e3)}
 STEP_GIFT = {"k04_hector": "HallMonitor", "k06_thief": "DramaQueen"}
 USE_TUTORIAL = "--no-tutorial" not in sys.argv
 

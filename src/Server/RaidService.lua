@@ -25,6 +25,8 @@ local SchoolBuilder = require(script.Parent.SchoolBuilder)
 local Factory = require(script.Parent.StudentFactory)
 local Walkers = require(script.Parent.Walkers)
 local StealService = require(script.Parent.StealService)
+local UpgradeService = require(script.Parent.UpgradeService)
+local GateService = require(script.Parent.GateService)
 
 local RaidService = {}
 
@@ -406,6 +408,7 @@ local function runToVan(raid, g, speed)
 end
 
 local sendGoon -- (below: a story goon who finds no kid goes round again)
+local zapBack -- (below: the laser gate flings a goon back)
 
 local function lift(raid, g)
 	local player = raid.player
@@ -440,6 +443,15 @@ local function lift(raid, g)
 	g.model:SetAttribute("Carrying", true)
 	Remotes.Notify:FireClient(player, ("\u{1F6A8} A goon grabbed %s! Chase him down and bonk him!"):format(def.name), "bad")
 	runToVan(raid, g, (raid.tutorial or raid.lockDemo) and R.tutorialCarrySpeed or R.carrySpeed)
+end
+
+-- the laser gate zaps a goon: a red burst, the zap sound, and he's flung back away from the school
+zapBack = function(raid, g)
+	local groot = g.model.PrimaryPart
+	if not groot then return end
+	burst(groot.Position + Vector3.new(0, 1.5, 0), Color3.fromRGB(255, 80, 80), 30)
+	for _, pl in Data.schoolPlayers(raid.player) do Remotes.Sfx:FireClient(pl, "Zap", groot.Position) end
+	knockback(g, g.path[1] - groot.Position, 6, 2.5, 0.45)
 end
 
 -- into the school from wherever the goon is: to the gate first if he's still outside (a locked
@@ -496,8 +508,29 @@ sendGoon = function(raid, g)
 			return
 		end
 		-- (the tutorial's Crumpet has a key: the lock is the step after him)
-		if not raid.tutorial and not raid.story and lockedUntil > workspace:GetServerTimeNow() then
-			goonSay(g, "It's LOCKED?! Ugh.")
+		if not raid.tutorial and lockedUntil > workspace:GetServerTimeNow() then
+			-- the lasers work on goons too: ZAP, flung back from the gate
+			zapBack(raid, g)
+			if g.gone or not g.model.Parent then return end
+			if raid.story then
+				-- Vex's crews don't give up: they wait it out by the gate, then come on in
+				goonSay(g, "OW! We'll wait. That lock can't last forever!")
+				Factory.play(g.model, "idle")
+				local token = {}
+				g.lockToken = token
+				task.spawn(function()
+					while (plot:GetAttribute("LockedUntil") or 0) > workspace:GetServerTimeNow() do
+						task.wait(0.5)
+						if g.gone or raid.ended or not g.model.Parent or g.lockToken ~= token then return end
+					end
+					if g.gone or raid.ended or g.lockToken ~= token then return end
+					g.lockToken = nil
+					goonSay(g, "It's open! GO GO GO!")
+					sendGoon(raid, g)
+				end)
+				return
+			end
+			goonSay(g, "OW! It's LOCKED?! Ugh.")
 			Factory.play(g.model, "idle")
 			Factory.emote(g.model, "point")
 			local token = {}
@@ -662,6 +695,17 @@ raidEnded = function(raid)
 	nextRaid[player] = now() + math.random(R.every[1], R.every[2])
 	player:SetAttribute("Raid", nil)
 	if not player.Parent then return end
+	if raid.lockDemo and raid.repelled > 0 then
+		-- that was the old lasers' last zap: sparks, dark, broken until Chapter 1's "Fix the gate"
+		local p = Data.get(player)
+		if p and UpgradeService.breakGate(p) then
+			GateService.fizzle(raid.plot)
+			for _, pl in Data.schoolPlayers(player) do
+				Remotes.Sfx:FireClient(pl, "Zap", raid.plot.Entry.Position)
+				Remotes.Notify:FireClient(pl, "\u{26A1} Fzzt! Your old laser gate burnt out saving the school. You'll fix it later.", "info")
+			end
+		end
+	end
 	if raid.lockDemo then
 		local p = Data.get(player)
 		local step = p and p.tutorial and Config.Tutorial[p.tutorial]
@@ -880,6 +924,49 @@ function RaidService.start()
 	Players.PlayerRemoving:Connect(function(player)
 		cleanup(player)
 		nextRaid[player], lastMove[player], lastPos[player] = nil, nil, nil
+	end)
+	-- locking the gate zaps every goon inside the school back out through it (a goon holding a kid
+	-- drops them: they run back to class). Crumpet in the First Morning has a key; the lock demo's
+	-- goons are still outside by then.
+	Signals.on("lock", function(player)
+		local raid = raids[Data.hostOf(player)]
+		if not raid or raid.ended or raid.tutorial or raid.lockDemo then return end
+		local plot = raid.plot
+		for _, g in raid.goons do
+			local groot = g.model.PrimaryPart
+			if not g.gone and groot and g.model.Parent and PlotService.inside(plot, groot.Position) then
+				Walkers.stop(g.model)
+				g.lockToken = nil
+				g.waiting = nil
+				if g.kid then
+					local def = Config.StudentById[g.e.id]
+					giveBack(raid.player, g)
+					g.model:SetAttribute("Carrying", nil)
+					raid.saved += 1
+					for _, pl in Data.schoolPlayers(raid.player) do
+						Remotes.Notify:FireClient(pl, ("\u{26A1} ZAP! The lasers got a goon and %s ran back to class!"):format(def and def.name or "your kid"), "good")
+					end
+				end
+				-- out through the gate in a flash
+				burst(groot.Position + Vector3.new(0, 1.5, 0), Color3.fromRGB(255, 80, 80), 30)
+				local entry = plot.Entry.Position
+				local away = (entry - plot.Spawn.Position)
+				away = Vector3.new(away.X, 0, away.Z).Unit
+				local out = entry + away * 7
+				groot.CFrame = CFrame.lookAt(Vector3.new(out.X, groot.Position.Y, out.Z), Vector3.new(entry.X, groot.Position.Y, entry.Z))
+				task.spawn(function()
+					zapBack(raid, g)
+					if g.gone or raid.ended or not g.model.Parent then return end
+					if raid.story then
+						sendGoon(raid, g) -- (he meets the lasers at the gate and waits there)
+					else
+						goonSay(g, "OW! Forget it!")
+						raid.repelled += 1
+						runToVan(raid, g, R.fleeSpeed)
+					end
+				end)
+			end
+		end
 	end)
 	-- the first random raid comes a while after Crumpet's Crew is beaten
 	Signals.on("questDone", function(player, q)

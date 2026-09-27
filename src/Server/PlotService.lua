@@ -395,6 +395,7 @@ function PlotService.place(player, slot)
 	end)
 
 	seated[plot][slot] = model
+	if PlotService.earning(e) then Factory.setEarning(model, PlotService.incomeOf(player, e, slot)) end
 	PlotService.updatePad(plot, slot, e.stored or 0)
 	Signals.fire("seated", player, slot, model)
 	return model
@@ -497,11 +498,17 @@ function PlotService.updateIncome(player)
 	local p = Data.get(player)
 	if not p then return end
 	local total, baseTotal = 0, 0
+	local plot = plotOf[player]
 	for slot, e in p.students do
+		local each = nil
 		if PlotService.earning(e) then
-			total += PlotService.incomeOf(player, e, slot)
+			each = PlotService.incomeOf(player, e, slot)
+			total += each
 			baseTotal += PlotService.incomeOf(player, e, slot, true)
 		end
+		-- (each kid's tag in the classroom shows what they earn you, per second)
+		local m = plot and seated[plot] and seated[plot][slot]
+		if m then Factory.setEarning(m, each) end
 	end
 	schoolAttr(player, "IncomePerSec", total)
 	schoolAttr(player, "BaseIncome", baseTotal)

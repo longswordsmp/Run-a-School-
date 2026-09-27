@@ -7,7 +7,10 @@ Brick**, the **Sugar Baron** (a hired candy smuggler, comic), **ROBO-7** the rec
 machine: the **Homework Machine**, in the **Top Secret Lair** under VexCorp Tower. Its fuel:
 Mutagen X and the brain of the **Tiny Professor** (a genius kid Vex kidnapped).
 
-The player's allies: **Mr. Wobblesworth** (retired principal, mentor), **Janitor Stan** (spy
+The player's allies: **Mr. Wobblesworth** (ran the school for forty years; the School Board lets him
+retire only once he has trained a replacement, so he coaches you through Chapter 1, each of his calls a
+numbered lesson, and hands over at the first Board review; two days of crosswords later he's back as
+an adviser, because he can't stay away and because Vex scares him more than boredom), **Janitor Stan** (spy
 master), **Mayor Maxine**, **Officer Penny**, and inside VexCorp **Engineer Ellie** (has doubts) and
 **Gary the Goon** (wants out).
 

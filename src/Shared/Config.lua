@@ -300,6 +300,9 @@ Config.Upgrades = {
 	{ id = "Recruitment", name = "Recruitment Office", icon = "\u{1F4E3}", max = 10, base = 10e3, growth = 4, desc = "+2% luck for rare students per level" },
 	{ id = "Janitor", name = "Janitor's Cart", icon = "\u{1F9F9}", max = 5, base = 25e3, growth = 6, desc = "Auto-collects desk cash every 60s, 45s, 30s, 20s, 10s" },
 	{ id = "TuitionOffice", name = "Tuition Office", icon = "\u{1F3E6}", max = 1, base = 50e3, growth = 1, desc = "A Collect All pad by your gate" },
+	-- (the school's old laser gate: it works in the First Morning, fizzles out after zapping Vex's
+	-- goons, and Chapter 1's "Fix the gate" step buys it back; locked, nobody gets in, goons included)
+	{ id = "LaserGate", name = "Laser Gate Repair", icon = "\u{26A1}", max = 1, base = 60e3, growth = 1, desc = "Fix the old laser gate. Locked, NOBODY gets in: players, goons, Vex's crews" },
 	{ id = "LockTime", name = "Longer Lock", icon = "\u{1F512}", max = 10, base = 5e3, growth = 4, desc = "+8s of lock per level" },
 	{ id = "LockCooldown", name = "Quick Re-lock", icon = "\u{23F1}\u{FE0F}", max = 5, base = 20e3, growth = 5, desc = "Lock cooldown 10s -> 2.5s" },
 	{ id = "HallPass", name = "Hall Pass", icon = "\u{1F3C3}", max = 5, base = 100e3, growth = 6, desc = "+6% speed while carrying a student per level" },
@@ -409,9 +412,9 @@ end
 
 ---------------------------------------------------------------------------
 -- The To-Do list: the FIRST MORNING (7 steps, the first five minutes) and then CHAPTER 1, "Down the
--- Pothole" (13 steps, Kindergarten, up to the first Board review). One list; the save keeps the
+-- Pothole" (15 steps, Kindergarten, up to the first Board review). One list; the save keeps the
 -- step's id (QuestService), so the list can change without breaking saves.
---   part     which header the card shows ("morning": FIRST MORNING n/7, "ch1": CHAPTER 1 n/13)
+--   part     which header the card shows ("morning": FIRST MORNING n/7, "ch1": CHAPTER 1 n/15)
 --   short    the card's words (four or fewer); text: the hint underneath
 --   secs/min the reward: max(min, tuition per second x secs); reward: a flat amount instead
 --            (Chapter 1's last steps pay big, $150K up to $2.5M for the Vex Prep Job, so the Board's
@@ -444,6 +447,7 @@ Config.Tutorial = {
 	-- (the game's real loop: a full school grows by swapping weak kids for better ones)
 	{ id = "k07_swap", part = "ch1", icon = "\u{1F504}", short = "Swap up!", text = "Hold F on your weakest kid to sell them, then enroll a better one from the street", count = 1, secs = 120, min = 25000, guide = "weakest" },
 	{ id = "k08_crew", part = "ch1", icon = "\u{1F690}", short = "Crumpet's Crew", text = "Mr. Wobblesworth has news about Vex's goons", count = 1, secs = 240, min = 150000, guide = "npc:Wobblesworth", mission = "k_crew" },
+	{ id = "k08_gate", part = "ch1", icon = "\u{26A1}", short = "Fix the gate", text = "Upgrades > Laser Gate Repair: those goons walked right in!", count = 1, secs = 120, min = 20000, guide = "panel:Upgrades" },
 	{ id = "k09_map", part = "ch1", icon = "\u{1F5FA}\u{FE0F}", short = "Steal the map", text = "Janitor Stan by the Confiscation Closet has a job", count = 1, secs = 240, min = 300000, guide = "npc:JanitorStan", mission = "k_map" },
 	{ id = "k10_peek", part = "ch1", icon = "\u{1F440}", short = "Scout Vex Prep", text = "Walk up to the Vex Prep gate at the east end of the street", count = 1, secs = 180, min = 100000, guide = "place:VexPrepLookout" },
 	{ id = "k11_pothole", part = "ch1", icon = "\u{1F573}\u{FE0F}", short = "Down the pothole", text = "Climb down the pothole by Vex Prep and find the ladder under the Headmaster's office", count = 1, secs = 240, min = 400000, guide = "sewer" },
@@ -456,18 +460,19 @@ Config.StepCalls = {
 	scholar = { { "OTIS", "Otis", "Word travels fast, Principal! Three star students want your school. You can only take ONE." } },
 	rescue = { { "MR. WOBBLESWORTH", "Wobblesworth", "Vex took him to her Homework Factory, in the middle of the street. The guards are sleepy this early: sneak in and carry him out!" } },
 	desks = { { "MR. WOBBLESWORTH", "Wobblesworth", "Every desk is taken! Build another row: press E on the see-through desks in your classroom." } },
-	k01_pencils = { { "MR. WOBBLESWORTH", "Wobblesworth", "Now let's grow. Sharp pencils make smart kids, and smart kids pay more tuition. The Shop's open!" } },
-	k02_teacher = { { "MR. WOBBLESWORTH", "Wobblesworth", "A classroom needs a teacher. Substitute Steve works cheap: hire him in the Shop." } },
-	k04_hector = { { "MR. WOBBLESWORTH", "Wobblesworth", "The School Board won't promote a school without a Hall Monitor. Hall Monitor Hector trains them: find him on the sidewalk!" } },
-	k05_janitor = { { "MR. WOBBLESWORTH", "Wobblesworth", "Tired of running between desks? A Janitor's Cart collects the tuition for you. Look in Upgrades." } },
+	k01_pencils = { { "MR. WOBBLESWORTH", "Wobblesworth", "Lesson one: sharp pencils make smart kids, and smart kids pay more tuition. The Shop's open!" } },
+	k02_teacher = { { "MR. WOBBLESWORTH", "Wobblesworth", "Lesson two: a classroom needs a teacher. Substitute Steve works cheap: hire him in the Shop." } },
+	k04_hector = { { "MR. WOBBLESWORTH", "Wobblesworth", "Lesson three: the School Board won't promote a school without a Hall Monitor. Hector trains them: find him on the sidewalk!" } },
+	k05_janitor = { { "MR. WOBBLESWORTH", "Wobblesworth", "Lesson four: work smarter. A Janitor's Cart collects the tuition for you. Look in Upgrades." } },
 	k06_thief = { { "MR. WOBBLESWORTH", "Wobblesworth", "Principal! Come to the fountain, quickly! Crumpet's up to something dreadful." } },
-	k07_swap = { { "MR. WOBBLESWORTH", "Wobblesworth", "Full school? Not all kids earn the same. Sell your weakest (hold F on them) and enroll a better one: that's how schools grow!" } },
+	k07_swap = { { "MR. WOBBLESWORTH", "Wobblesworth", "Lesson five, my favourite: not all kids earn the same. Sell your weakest (hold F) and enroll a better one. That's how schools grow!" } },
 	k08_crew = { { "MR. WOBBLESWORTH", "Wobblesworth", "Vex is furious you keep beating Crumpet. She's hired a whole crew! Come to the fountain." } },
+	k08_gate = { { "MR. WOBBLESWORTH", "Wobblesworth", "Lesson six: those goons strolled right past your gate. The old lasers died zapping Vex's lot on your first morning. Get them fixed in Upgrades: locked, NOBODY gets in." } },
 	k09_map = { { "MR. WOBBLESWORTH", "Wobblesworth", "Janitor Stan runs the Confiscation Closet. He knows every secret on this street, and he's asking for you." } },
 	k10_peek = { { "JANITOR STAN", "Stan", "That map shows an old tunnel running right under Vex Prep. Go and have a look at the place first: the gate at the east end." } },
 	k11_pothole = { { "JANITOR STAN", "Stan", "See the pothole in the road by Vex Prep? That's the way down. Find the ladder under the Headmaster's office. Just LOOK, kid." } },
 	k12_heist = { { "MR. WOBBLESWORTH", "Wobblesworth", "Stan says the Headmaster, old Grindle, sleeps in his office on top of that ladder. Come to the fountain: I have a plan." } },
-	board = { { "MR. WOBBLESWORTH", "Wobblesworth", "You did it! Now show the School Board: the Board button. Elementary School, here we come!" } },
+	board = { { "MR. WOBBLESWORTH", "Wobblesworth", "That's everything I can teach you. Show the School Board what you've built (the Board button), and the school is truly yours." } },
 }
 
 -- the header each part shows on the To-Do card
@@ -504,7 +509,7 @@ Config.Goals = {
 ---------------------------------------------------------------------------
 Config.Chapters = {
 	{ title = "The New Building", host = "Wobblesworth", letter = "Rare",
-		line = "Elementary! Real classrooms, Principal. Let's fill them properly.",
+		line = "I tried retiring. Two days of crosswords. Elementary! Real classrooms, Principal: let's fill them properly.",
 		steps = {
 			{ kind = "hire", id = "MrChalk" },
 			{ kind = "build", id = "Playground" },

@@ -481,6 +481,8 @@ local function intro(data)
 	pose(wob, "wave")
 	say("MR. WOBBLESWORTH", "Wobblesworth", "Ah, the new Principal! Mr. Wobblesworth. I ran this old school for forty years.", 1.8)
 	say("MR. WOBBLESWORTH", "Wobblesworth", "It's yours now. Empty, I'm afraid... but every great school starts with one kid.", 1.4)
+	say("MR. WOBBLESWORTH", "Wobblesworth", "I'm retiring. But the School Board gave me one last job: train my replacement. That's you!", 1.8)
+	say("MR. WOBBLESWORTH", "Wobblesworth", "I'll coach you until your first Board review. After that, the school is all yours.", 1.6)
 	-- the key goes from his hand to yours
 	local yourHand = player.Character and (player.Character:FindFirstChild("RightHand") or player.Character:FindFirstChild("Right Arm"))
 	if yourHand and key.PrimaryPart then
@@ -585,6 +587,7 @@ local function intro(data)
 	end
 	say("MR. WOBBLESWORTH", "Wobblesworth", "That was Dr. Veronica Vex. VexCorp, the Homework Factory, Vex Prep across the street: all hers.", 2)
 	say("MR. WOBBLESWORTH", "Wobblesworth", "She thinks recess is a waste of homework time. And Crumpet does her dirty work. Keep an eye on your kids!", 2)
+	say("MR. WOBBLESWORTH", "Wobblesworth", "That's why I picked you. Somebody has to stand up to her, and my knees aren't what they were.", 1.8)
 
 	-- 5: here comes the Welcome Bus
 	local rowAt = typeof(data.row) == "Vector3" and data.row or Vector3.new(gate.X, 0, gate.Z - side * 5)

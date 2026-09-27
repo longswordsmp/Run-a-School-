@@ -33,6 +33,18 @@ function UpgradeService.lockCooldown(p)
 	return Config.LockCooldown - 1.5 * UpgradeService.level(p, "LockCooldown")
 end
 
+-- the laser gate: the school's old one works until it fizzles out on the First Morning (zapping Vex's
+-- goons was its last job); Chapter 1's "Fix the gate" buys the repair (the LaserGate upgrade)
+function UpgradeService.gateWorks(p)
+	return not p.gateBroken or UpgradeService.level(p, "LaserGate") >= 1
+end
+function UpgradeService.breakGate(p)
+	if p.gateBroken then return false end
+	p.gateBroken = true
+	p.upgrades.LaserGate = 0
+	return true
+end
+
 function UpgradeService.carrySpeedMult(p)
 	return 1 + 0.06 * UpgradeService.level(p, "HallPass")
 end
@@ -98,6 +110,8 @@ Actions.register("upgrades", function(player, p)
 	local list = {}
 	for _, u in Config.Upgrades do
 		local lvl = UpgradeService.level(p, u.id)
+		-- (a gate that never broke shows as working, not as a repair to buy)
+		if u.id == "LaserGate" and UpgradeService.gateWorks(p) then lvl = u.max end
 		table.insert(list, {
 			id = u.id, name = u.name, icon = u.icon, desc = u.desc, level = lvl, max = u.max,
 			cost = lvl < u.max and Config.upgradeCost(u.id, lvl) or nil,
@@ -121,13 +135,18 @@ Actions.register("buyUpgrade", function(player, p, id)
 	local u = Config.UpgradeById[id]
 	if not u then return { ok = false, err = "Unknown upgrade" } end
 	local lvl = UpgradeService.level(p, id)
+	if id == "LaserGate" and UpgradeService.gateWorks(p) then return { ok = false, err = "Your laser gate works fine!" } end
 	if lvl >= u.max then return { ok = false, err = "Maxed out" } end
 	local cost = Config.upgradeCost(id, lvl)
 	if not Data.addCash(player, -cost) then return { ok = false, err = "Not enough cash!" } end
 	p.upgrades[id] = lvl + 1
 	UpgradeService.applyAll(player)
 	Remotes.Sfx:FireClient(player, "Upgrade")
-	Remotes.Notify:FireClient(player, u.name .. " level " .. (lvl + 1) .. "!", "good")
+	if id == "LaserGate" then
+		Remotes.Notify:FireClient(player, "\u{26A1} Laser gate fixed! Lock it and NOBODY gets in, not even Vex's goons.", "good")
+	else
+		Remotes.Notify:FireClient(player, u.name .. " level " .. (lvl + 1) .. "!", "good")
+	end
 	Signals.fire("upgrade", player, id, lvl + 1)
 	return { ok = true }
 end)
