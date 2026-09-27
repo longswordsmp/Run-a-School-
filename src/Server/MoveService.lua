@@ -43,9 +43,11 @@ MoveService.HOVER = 2.2 -- (the hoverboard: 48 studs/s, well past a sprint's 35,
 MoveService.GOLDEN = 1.3 -- (the Golden Hoverboard pass: 63 studs/s)
 MoveService.SUPER = 1.25 -- (the Super Sneakers pass: every speed on foot)
 MoveService.CODE = 2.5 -- (the Secret Gold Hoverboard from the code 963GOLDHOVER: 2.5x a regular board)
+MoveService.DIAMOND = 3 -- (the Diamond Hoverboard pass: 3x a regular board, the fastest there is)
 function MoveService.mult(player)
 	-- (on the hoverboard: one steady speed, no sprinting or sneaking on top)
 	if player:GetAttribute("Hover") then
+		if player:GetAttribute("Pass_DiamondBoard") then return MoveService.HOVER * MoveService.DIAMOND end
 		if player:GetAttribute("CodeGoldBoard") then return MoveService.HOVER * MoveService.CODE end
 		return MoveService.HOVER * (player:GetAttribute("Pass_GoldenBoard") and MoveService.GOLDEN or 1)
 	end

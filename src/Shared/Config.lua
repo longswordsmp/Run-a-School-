@@ -1137,6 +1137,7 @@ Config.Passes = {
 	{ key = "VIP", id = 0, name = "VIP Principal", robux = 149, icon = "\u{1F451}", desc = "x2 tuition forever, VIP tag" },
 	{ key = "SuperSpeed", id = 0, name = "Super Sneakers", robux = 49, icon = "\u{1F45F}", desc = "Run 25% faster, forever" },
 	{ key = "GoldenBoard", id = 0, name = "Golden Hoverboard", robux = 79, icon = "\u{1F6F9}", desc = "Ride a golden board: 30% faster, with a sparkle trail (and get one right away)" },
+	{ key = "DiamondBoard", id = 0, name = "Diamond Hoverboard", robux = 149, icon = "\u{1F48E}", desc = "The fastest board there is: 3x a regular hoverboard, crystal clear, with a diamond sparkle trail (and get one right away)" },
 	{ key = "Luck", id = 0, name = "2x Luck", robux = 99, icon = "\u{1F340}", desc = "x2 luck on the buses you stand near" },
 	{ key = "AutoCollect", id = 0, name = "Auto Collect", robux = 79, icon = "\u{1F9F9}", desc = "The Janitor's Cart at max level from the start" },
 	{ key = "LongLock", id = 0, name = "Long Lock", robux = 39, icon = "\u{1F510}", desc = "+30s every time you lock your gate" },

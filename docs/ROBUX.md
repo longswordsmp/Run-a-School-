@@ -1,8 +1,8 @@
 # Robux: what to create on the Creator Dashboard
 
-Everything the game sells, generated from `Config.Passes` and `Config.Products` (src/Shared/Config.lua).
-Nothing is on sale until it has an id: while an id is 0, the store hides it in a live game (in Studio
-it works as a free test purchase).
+Everything the game sells, generated from `Config.Passes` and `Config.Products` (src/Shared/Config.lua)
+by tools/robux_doc.py. Nothing is on sale until it has an id: while an id is 0, the store hides it in a
+live game (in Studio it works as a free test purchase).
 
 **How:** Creator Dashboard, then Run A School!, then Monetization.
 1. Create each **pass** under Passes, and each **product** under Developer Products, with the name,
@@ -18,6 +18,7 @@ it works as a free test purchase).
 | VIP | VIP Principal | 149 | x2 tuition forever, VIP tag |
 | SuperSpeed | Super Sneakers | 49 | Run 25% faster, forever |
 | GoldenBoard | Golden Hoverboard | 79 | Ride a golden board: 30% faster, with a sparkle trail (and get one right away) |
+| DiamondBoard | Diamond Hoverboard | 149 | The fastest board there is: 3x a regular hoverboard, crystal clear, with a diamond sparkle trail (and get one right away) |
 | Luck | 2x Luck | 99 | x2 luck on the buses you stand near |
 | AutoCollect | Auto Collect | 79 | The Janitor's Cart at max level from the start |
 | LongLock | Long Lock | 39 | +30s every time you lock your gate |

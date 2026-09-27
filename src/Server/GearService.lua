@@ -466,13 +466,53 @@ local function buildBoard(golden)
 	return m
 end
 
+-- the Diamond Hoverboard pass: a clear crystal deck and tips, white diamond-plate grip, an ice-blue
+-- centre line, bright silver rails, and a white-blue glow
+local DIAMOND_GLOW = rgb(200, 245, 255)
+local function diamondize(m)
+	m:SetAttribute("Diamond", true)
+	for _, b in m:GetChildren() do
+		if not b:IsA("BasePart") then continue end
+		if b.Name == "Deck" or b.Name == "Tip" then
+			b.Color, b.Material, b.Transparency, b.Reflectance = rgb(185, 238, 255), Enum.Material.Glass, 0.2, 0.35
+		elseif b.Name == "Grip" then
+			b.Color, b.Material, b.Reflectance = rgb(235, 248, 255), Enum.Material.DiamondPlate, 0.25
+		elseif b.Name == "Stripe" then
+			b.Color, b.Material = rgb(120, 225, 255), Enum.Material.Neon
+		elseif b.Name == "Rail" then
+			b.Color, b.Reflectance = rgb(240, 248, 255), 0.5
+		elseif b.Name == "Thruster" then
+			b.Color = rgb(200, 215, 230)
+		elseif b.Name == "Glow" or b.Name == "ThrusterRing" then
+			b.Color = DIAMOND_GLOW
+			local l = b:FindFirstChildOfClass("PointLight")
+			if l then l.Color = DIAMOND_GLOW end
+		end
+	end
+end
+
 -- ridden only: a ribbon of light off the tail and a shimmer under the thrusters (and on a golden
 -- board, sparkles streaming off it)
 local function rideEffects(board)
 	local golden = board:GetAttribute("Golden") == true
 	local BOARD = golden and GOLD_DECK or BOARD
 	local GLOW = golden and GOLD_GLOW or GLOW
+	local diamond = board:GetAttribute("Diamond") == true
+	if diamond then BOARD, GLOW = rgb(185, 238, 255), DIAMOND_GLOW end
 	local deck = board.PrimaryPart
+	if diamond then
+		local sp = Instance.new("ParticleEmitter")
+		sp.Name = "DiamondSparkles"
+		sp.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		sp.Color = ColorSequence.new(rgb(255, 255, 255), rgb(140, 225, 255))
+		sp.LightEmission = 1
+		sp.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
+		sp.Lifetime = NumberRange.new(0.5, 1)
+		sp.Rate = 45
+		sp.Speed = NumberRange.new(0.5, 2)
+		sp.SpreadAngle = Vector2.new(180, 180)
+		sp.Parent = deck
+	end
 	if golden then
 		local sp = Instance.new("ParticleEmitter")
 		sp.Name = "GoldSparkles"
@@ -538,8 +578,11 @@ local function ride(player, on)
 	if old then old:Destroy() end
 	if on and not player:GetAttribute("Hover") then
 		hum.HipHeight += LIFT
-		local secret = player:GetAttribute("CodeGoldBoard") == true
-		local board = buildBoard(player:GetAttribute("Pass_GoldenBoard") == true or secret)
+		-- (the fastest board you own: Diamond, then the Secret Gold one, then Golden)
+		local diamond = player:GetAttribute("Pass_DiamondBoard") == true
+		local secret = not diamond and player:GetAttribute("CodeGoldBoard") == true
+		local board = buildBoard(not diamond and (player:GetAttribute("Pass_GoldenBoard") == true or secret))
+		if diamond then diamondize(board) end
 		-- (the Secret Gold Hoverboard: gold, with a rainbow trail behind it)
 		if secret then board:SetAttribute("Secret", true) end
 		rideEffects(board)

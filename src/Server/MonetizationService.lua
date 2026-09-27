@@ -77,13 +77,13 @@ local function applyPass(player, key)
 		end
 	end
 	-- the Golden Hoverboard comes with a hoverboard, whether or not you've won Grindle's yet
-	if key == "GoldenBoard" then
+	if key == "GoldenBoard" or key == "DiamondBoard" then
 		task.defer(function()
 			local GearService = require(script.Parent.GearService)
 			if GearService.has and not GearService.has(player, "Hoverboard") then GearService.give(player, "Hoverboard") end
 		end)
 	end
-	if key == "SuperSpeed" or key == "GoldenBoard" then
+	if key == "SuperSpeed" or key == "GoldenBoard" or key == "DiamondBoard" then
 		task.defer(function() require(script.Parent.StealService).setSpeed(player) end)
 	end
 	Signals.fire("pass", player, key)
