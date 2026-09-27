@@ -439,7 +439,7 @@ Config.Tutorial = {
 	-- CHAPTER 1: DOWN THE POTHOLE
 	{ id = "k01_pencils", part = "ch1", icon = "\u{270F}\u{FE0F}", short = "Buy Pencils", text = "Shop > Supplies: sharp pencils make smarter kids", count = 1, secs = 60, min = 500, guide = "shop:1" },
 	{ id = "k02_teacher", part = "ch1", icon = "\u{1F469}\u{200D}\u{1F3EB}", short = "Hire a teacher", text = "Shop > Teachers: Substitute Steve works cheap", count = 1, secs = 60, min = 500, guide = "shop:2" },
-	{ id = "k03_name", part = "ch1", icon = "\u{1F3EB}", short = "Name your school", text = "Give your school a name for the sign over the gate", count = 1, secs = 60, min = 1000, guide = "panel:NameSchool" },
+	{ id = "k03_name", part = "ch1", icon = "\u{1F3EB}", short = "Name your school", text = "Walk up to the sign over your gate and give your school a name", count = 1, secs = 60, min = 1000, guide = "place:SchoolSign" },
 	{ id = "k04_hector", part = "ch1", icon = "\u{1F397}\u{FE0F}", short = "Help Hector", text = "Talk to Hall Monitor Hector on the sidewalk", count = 1, secs = 90, min = 2000, guide = "npc:Hector", mission = "k_hallrun" },
 	{ id = "k05_janitor", part = "ch1", icon = "\u{1F9F9}", short = "Janitor's Cart", text = "Upgrades > Janitor's Cart: it collects tuition for you", count = 1, secs = 90, min = 3000, guide = "panel:Upgrades" },
 	{ id = "k06_thief", part = "ch1", icon = "\u{1F451}", short = "Stop, thief!", text = "Mr. Wobblesworth at the fountain needs you", count = 1, secs = 90, min = 5000, guide = "npc:Wobblesworth", mission = "k_tiara" },
@@ -452,7 +452,7 @@ Config.Tutorial = {
 	{ id = "k10_peek", part = "ch1", icon = "\u{1F440}", short = "Scout Vex Prep", text = "Walk up to the Vex Prep gate at the east end of the street", count = 1, secs = 180, min = 100000, guide = "place:VexPrepLookout" },
 	{ id = "k11_pothole", part = "ch1", icon = "\u{1F573}\u{FE0F}", short = "Down the pothole", text = "Climb down the pothole by Vex Prep and find the ladder under the Headmaster's office", count = 1, secs = 240, min = 400000, guide = "sewer" },
 	{ id = "k12_heist", part = "ch1", icon = "\u{1F3EB}", short = "The Vex Prep Job", text = "Mr. Wobblesworth has the plan. Tonight's the night", count = 1, secs = 900, min = 2500000, guide = "npc:Wobblesworth", mission = "k_heist" },
-	{ id = "board", part = "ch1", icon = "\u{2B50}", short = "Face the Board", text = "Become an Elementary School", count = 1, reward = 0, guide = "panel:Board" },
+	{ id = "board", part = "ch1", icon = "\u{2B50}", short = "Face the Board", text = "At the District Office: become an Elementary School", count = 1, reward = 0, guide = "place:DistrictOffice" },
 }
 -- a short call when a step starts, so every new person and place has been introduced before you meet
 -- them ({ speaker, portrait template, line }; QuestService pushes it as a missionTalk call)
@@ -475,7 +475,7 @@ Config.StepCalls = {
 	k10_peek = { { "JANITOR STAN", "Stan", "That map shows an old tunnel running right under Vex Prep. Go and have a look at the place first: the gate at the east end." } },
 	k11_pothole = { { "JANITOR STAN", "Stan", "See the pothole in the road by Vex Prep? That's the way down. Find the ladder under the Headmaster's office. Just LOOK, kid." } },
 	k12_heist = { { "MR. WOBBLESWORTH", "Wobblesworth", "Stan says the Headmaster, old Grindle, sleeps in his office on top of that ladder. Come to the fountain: I have a plan." } },
-	board = { { "MR. WOBBLESWORTH", "Wobblesworth", "That's everything I can teach you. Show the School Board what you've built (the Board button), and the school is truly yours." } },
+	board = { { "MR. WOBBLESWORTH", "Wobblesworth", "That's everything I can teach you. Show the School Board what you've built (their desk is at the District Office, in town), and the school is truly yours." } },
 }
 
 -- the header each part shows on the To-Do card

@@ -314,7 +314,7 @@ local function escape(job)
 	task.delay(7, function()
 		if player.Parent then
 			Remotes.Announce:FireClient(player, "CHAPTER 1 COMPLETE!", Color3.fromRGB(255, 170, 60))
-			Remotes.Notify:FireClient(player, "Now face the School Board: the Board button is waiting!", "good")
+			Remotes.Notify:FireClient(player, "Now face the School Board: their desk is at the District Office!", "good")
 		end
 	end)
 end

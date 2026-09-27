@@ -151,7 +151,7 @@ function ChapterService.state(player)
 			mission = step.kind == "mission" or nil,
 		}
 	end
-	steps[STEPS] = { text = boardText(c.n), done = c.done[STEPS], guide = "panel:Board", board = true }
+	steps[STEPS] = { text = boardText(c.n), done = c.done[STEPS], guide = "place:DistrictOffice", board = true }
 	return {
 		n = c.n,
 		total = #Config.Chapters,

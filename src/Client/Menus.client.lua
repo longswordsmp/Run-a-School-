@@ -1877,9 +1877,8 @@ end
 
 sideButton(1, "\u{1F6D2}", "Shop", UI.C.green, panels.Shop)
 sideButton(2, "\u{2B06}\u{FE0F}", "Upgrades", UI.C.orange, panels.Upgrades)
-sideButton(3, "\u{1F3DB}\u{FE0F}", "Board", UI.C.purple, panels.Board)
-sideButton(4, "\u{1F4D6}", "Yearbook", UI.C.pink, panels.Yearbook)
-sideButton(5, "\u{270F}\u{FE0F}", "Name", UI.C.blue, panels.NameSchool)
+-- (the Board, the Yearbook, the school's name, the Files and Co-op are places in the world now:
+-- PlacesService; the Daily rewards pop up by themselves and the Quest Log opens from the quest card)
 sideButton(6, "\u{2699}\u{FE0F}", "Settings", UI.C.navy, panels.Settings)
 -- the Store tile stays green, with a glow breathing round it and a glint every few seconds; its
 -- window's title bar is the rainbow (tomas, 2026-09-27: "the button green but when you click it the
@@ -1914,39 +1913,22 @@ do
 		p.fillGrad.Rotation = 0
 	end)
 end
-local dailyButton = sideButton(9, "\u{1F4C5}", "Daily", UI.C.orange, panels.Daily)
--- the Co-op panel lives in Coop.client
-sideButton(8, "\u{1F465}", "Coop", Color3.fromRGB(140, 80, 240), { toggle = function()
-	local e = bus and bus:FindFirstChild("OpenCoop")
-	if e then e:Fire() end
-end })
--- the VexCorp Files book lives in Files.client
-sideButton(10, "\u{1F5C2}\u{FE0F}", "Files", UI.C.purple, { toggle = function()
-	local e = bus and bus:FindFirstChild("OpenFiles")
-	if e then e:Fire() end
-end })
--- the Quest Log lives in QuestLog.client
-sideButton(11, "\u{1F4DC}", "Quests", Color3.fromRGB(40, 170, 110), { toggle = function()
-	local e = bus and bus:FindFirstChild("OpenQuests")
-	if e then e:Fire() end
-end })
--- a red "!" when today's streak reward or the Lunch Box is waiting (DailyService sets DailyReady)
+-- the Daily rewards pop up by themselves when one is waiting (DailyService sets DailyReady): at
+-- join (the Daily panel's own check, 8 s in), and whenever one comes up later or the First Morning ends
 do
-	local badge = UI.new("Frame", { Name = "Badge", Size = UDim2.fromOffset(26, 26), Position = UDim2.new(1, 4, 0, -4), AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = UI.C.red, ZIndex = 6, Visible = false, Parent = dailyButton.button })
-	UI.corner(badge, 13)
-	UI.stroke(badge, 2)
-	UI.label(badge, { Text = "!", Font = UI.BIG, Size = UDim2.fromScale(1, 1), ZIndex = 7, stroke = 2 })
-	local function refresh()
-		badge.Visible = player:GetAttribute("DailyReady") == true
+	local shownFor = false
+	local function check()
+		local ready = player:GetAttribute("DailyReady") == true
+		if not ready then shownFor = false return end
+		if shownFor or player:GetAttribute("InTutorial") or not player:GetAttribute("UI_Daily") then return end
+		shownFor = true
+		task.delay(1.5, function()
+			if panels.Daily and not UI.current then panels.Daily.open() end
+		end)
 	end
-	player:GetAttributeChangedSignal("DailyReady"):Connect(refresh)
-	refresh()
-	task.spawn(function()
-		while true do
-			if badge.Visible then UI.punch(badge, 1.25) end
-			task.wait(1.6)
-		end
-	end)
+	player:GetAttributeChangedSignal("DailyReady"):Connect(check)
+	player:GetAttributeChangedSignal("InTutorial"):Connect(check)
+	task.delay(12, check)
 end
 -- Home: back to your school in one press (H on a keyboard); a short cooldown shows as a dark sweep
 do
@@ -1977,8 +1959,16 @@ do
 	end)
 end
 -- the server opens a panel (a prompt in the world, like Stan's gear stall)
+local OTHER_PANELS = { Coop = "OpenCoop", Files = "OpenFiles", Quests = "OpenQuests" }
 Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
 	if kind ~= "openPanel" or type(data) ~= "table" then return end
+	-- (the Co-op window, the Files book and the Quest Log live in their own scripts)
+	local other = OTHER_PANELS[data.name]
+	if other then
+		local e = bus and bus:FindFirstChild(other)
+		if e then e:Fire() end
+		return
+	end
 	local p = panels[data.name]
 	if not p then return end
 	p.open()
@@ -1989,7 +1979,21 @@ end)
 Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
 	if kind ~= "unlock" or type(data) ~= "table" then return end
 	local b = sideButtons[data.name]
-	if not b then return end
+	-- (the features that are places now say where to find them)
+	local WHERE = {
+		Board = "\u{2728} The School Board will see you: their desk is at the District Office, in town",
+		Yearbook = "\u{2728} Your Yearbook's started: it's on the shelf in your front yard",
+		Name = "\u{2728} Name your school: walk up to the sign over your gate",
+		Files = "\u{2728} VexCorp Files: read them at the cabinet in your front yard",
+		Quests = "\u{2728} Quest Log unlocked: tap your quest card (top left)",
+	}
+	if not b then
+		if WHERE[data.name] and bus and bus:FindFirstChild("Toast") then
+			sfx("Upgrade")
+			bus.Toast:Fire(WHERE[data.name], "good")
+		end
+		return
+	end
 	task.defer(function()
 		if not b.button:FindFirstChild("New") then newBadge(b.button) end
 		sfx("Upgrade")

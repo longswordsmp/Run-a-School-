@@ -128,6 +128,8 @@ timed("TownQuestService.start_service", TownQuestService.start_service)
 timed("Server.SewerHeist", require(Server.SewerHeist).start_service) -- (Chapter 1: the pothole, the sewer, the Vex Prep Job)
 TownQuestService.targets.hqFloor = function(player, s) return HQService.target(player, s.arg) end
 require(Server.QuestGoons).start(TownQuestService)
+-- (the Board, the Yearbook, the Files, Co-op and the school's name: places in the world, not side buttons)
+timed("PlacesService.start", require(Server.PlacesService).start)
 
 if BOOT_LOG then print(("[Boot] services up at %.1f s"):format(os.clock() - BOOT_T0)) end
 

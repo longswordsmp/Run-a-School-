@@ -298,7 +298,7 @@ end
 function B.house(m) houseAt(m, CF(), 1, rgb(255, 242, 220), rgb(230, 65, 65)) end
 
 -- a sleepy crescent moon (Offline Tuition+): slim, tapering to its horns, its back to the left of the
--- screen (+X here), eyes shut and smiling, a nightcap on its top horn and a Z z drifting off
+-- screen (+X here), a nightcap on its top horn and a Z z drifting off (no face: tomas, 2026-09-27)
 function B.moon(m)
 	local Y = rgb(255, 215, 80)
 	local C, Rr = V(-0.3, 0, 0), 1.9
@@ -308,15 +308,6 @@ function B.moon(m)
 		-- (each disc touches the outer circle, so the back is one smooth curve)
 		disc(m, d, 0.9, CF(C + V(math.cos(a), math.sin(a), 0) * (Rr - d / 2)), Y)
 	end
-	-- asleep: a shut eye, a smile, a pink cheek
-	local F = -0.47
-	for _, e in { { 1.05, 0.42, 0.35 }, { 0.87, 0.35, 0 }, { 0.69, 0.42, -0.35 } } do
-		p(m, V(0.22, 0.09, 0.06), CF(e[1], e[2], F) * CFrame.Angles(0, 0, e[3]), INK)
-	end
-	for _, e in { { 1.05, -0.28, -0.45 }, { 0.87, -0.38, 0 }, { 0.69, -0.28, 0.45 } } do
-		p(m, V(0.22, 0.09, 0.06), CF(e[1], e[2], F) * CFrame.Angles(0, 0, e[3]), INK)
-	end
-	disc(m, 0.34, 0.06, CF(0.42, -0.05, F), rgb(255, 160, 150))
 	-- a nightcap on its top horn, drooping, with a white rim and a pom-pom
 	local capAt = CF(-0.35, 1.55, 0) * CFrame.Angles(0, 0, math.rad(38))
 	cone(m, capAt, 1.2, 0.2, 1.7, 8, rgb(70, 110, 230))

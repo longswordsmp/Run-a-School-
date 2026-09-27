@@ -46,6 +46,17 @@ local headerGrad = UI.gradient(header, UI.lighten(UI.C.blue, 0.3), UI.C.blue)
 -- its own frame's layer, made before that frame's content)
 UI.studs(header, { zindex = header.ZIndex, transparency = UI.STUD.header })
 local title = UI.label(header, { Text = "", Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -20, 1, -6), Position = UDim2.fromOffset(10, 3), stroke = 2 })
+-- the Quest Log opens from here (it's not a side button any more): tap the title bar
+local logHint = UI.label(header, { Name = "LogHint", Text = "\u{1F4DC} LOG", Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.new(0, 80, 1, -8), Position = UDim2.new(1, -8, 0, 4), AnchorPoint = Vector2.new(1, 0), Visible = false, stroke = 2 })
+local openLog = UI.new("TextButton", { Name = "OpenLog", Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = header.ZIndex + 3, Parent = header })
+local function refreshLogHint() logHint.Visible = player:GetAttribute("UI_Quests") == true end
+player:GetAttributeChangedSignal("UI_Quests"):Connect(refreshLogHint)
+refreshLogHint()
+openLog.Activated:Connect(function()
+	if not player:GetAttribute("UI_Quests") then return end
+	local e = bus and bus:FindFirstChild("OpenQuests")
+	if e then e:Fire() end
+end)
 -- the step in four words or fewer, big, with its icon; the how-to underneath, small
 -- (fixed sizes: an emoji in the line made TextScaled shrink the whole line to a speck)
 local text = UI.label(card, { Text = "", Font = UI.BIG, TextScaled = false, TextSize = 25, TextColor3 = UI.C.ink, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Size = UDim2.new(1, -110, 0, 30), Position = UDim2.fromOffset(12, 34), stroke = 0 })
@@ -487,6 +498,12 @@ local function worldTarget()
 		return story(g:sub(5))
 	elseif g == "place:VexPrepLookout" then
 		return Vector3.new(427, 1, -36)
+	elseif g == "place:DistrictOffice" then
+		-- (the School Board's desk: PlacesService)
+		return workspace:GetAttribute("BoardDeskAt") or Vector3.new(190, 1, -63)
+	elseif g == "place:SchoolSign" then
+		local plot = myPlot()
+		return plot and plot:FindFirstChild("Sign")
 	elseif g == "sewer" then
 		-- down the pothole; once down in the tunnels, the ladder under the Headmaster's office
 		if root and root.Position.Y < -30 then return Vector3.new(440, -47, -152) end

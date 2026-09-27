@@ -4,7 +4,8 @@
 -- (walls, floors, roofs, the ground, roads, paths) is plastic with studs on its top and sides, like the
 -- stud texture on the UI. Engine surfaces: nothing added, nothing to load.
 -- Left alone: anything small (props, furniture, trim), balls and cylinders, glass, neon and see-through
--- parts, and anything in a character (a Humanoid), a tree, a bush or a vehicle.
+-- parts, signs (a SurfaceGui on them), and anything in a character (a Humanoid), a tree, a bush or a
+-- vehicle.
 -- Unfight.run smooths every surface first (the old stray studs and inlets) and then calls
 -- StudStyle.run on the same root, so a rebuilt school gets its studs back.
 --   StudStyle.qualifies(part)  should this part be studded?
@@ -36,6 +37,8 @@ function StudStyle.qualifies(p)
 		return false
 	end
 	if p.Transparency >= 0.3 or SKIP_MATERIALS[p.Material] or p.Name:find("Leaves") then return false end
+	-- (a sign or a board with words on it stays smooth: the studs would show through its text)
+	if p:FindFirstChildOfClass("SurfaceGui") then return false end
 	-- (walls, floors, roofs, ground, pillars: long one way and at least 2 studs another; a lamp post or
 	-- a fence rail is thinner)
 	local s = p.Size
