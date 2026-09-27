@@ -30,8 +30,8 @@ done after it's been played in Studio and checked on screen. "Built, not verifie
 ## P2: quality, one thing at a time
 
 - [x] Hoverboard: the board model and a proper riding pose and motion. New board (upturned tips, chrome rails, two thruster pods with glowing rings, underglow), mounted along the way you ride (it was across it); a surf stance instead of running on the spot (side-on, knees bent, leading arm up, head looking ahead), bobbing on the thrusters and banking into turns; a light trail and thruster sparkles while ridden. Screenshots standing, riding and carving. (Found on the way: this place's avatars use AnimationConstraint joints, and rigged accessories carry joints with the same names, so the pose code only touches the body's own joints.)
-- [ ] Gear (Smoke Bomb, Whoopee Cushion, Energy Drink, Cardboard Box): models, held look, use animations.
-- [ ] NPCs hold items weirdly (props through hands, wrong grips; the Ruler in your own hand too).
+- [~] Gear (Smoke Bomb, Whoopee Cushion, Energy Drink, Cardboard Box): models, held look, use animations. Looked at each in hand (screenshots): the four models read fine. Added the moves that were missing (GearMoves.client): a swig for the drink (seen mid-swig: can at the mouth, head back), an overarm throw for the cushion and a slam at your feet for the smoke bomb, with the effect leaving the hand at the release. NOT yet seen: the throw and the slam on screen, and the blend-in/out (pushed to the repo, not yet to Studio: tomas was playing in the session).
+- [~] NPCs hold items weirdly (props through hands, wrong grips; the Ruler in your own hand too). The Ruler: held near its end and tipped forward at the ready, not stood up in front of your face (screenshot). NPC props: not yet looked at.
 - [ ] Recess Commons: the sign blocks the path; the playground is awful.
 - [ ] The Confiscation Closet is poorly made and makes no sense.
 - [x] Detention sits in the middle of the road: moved onto its own lot facing the east road (screenshot).

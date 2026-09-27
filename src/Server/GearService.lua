@@ -242,6 +242,17 @@ local function useGear(player, def, tool)
 		if (gear.uses[def.id] or 0) <= 0 then return end
 		gear.uses[def.id] -= 1
 	end
+	-- the move that goes with it, on every client (GearMoves.client): a swig, an overarm throw, a slam
+	-- at your feet. What's thrown leaves the hand at the end of the wind-up.
+	local move = ({ EnergyDrink = "drink", WhoopeeCushion = "throw", SmokeBomb = "slam" })[def.id]
+	if move then
+		char:SetAttribute("GearMove", ("%s:%.3f"):format(move, os.clock()))
+		if move ~= "drink" then
+			task.wait(0.2)
+			root = char.Parent and char:FindFirstChild("HumanoidRootPart")
+			if not root then return end
+		end
+	end
 	if def.id == "SmokeBomb" then
 		-- a big cloud right where you stand that hangs about, and you flicker out of sight in it
 		local puff = Instance.new("Part")
@@ -346,12 +357,7 @@ local function useGear(player, def, tool)
 			Debris:AddItem(m, 0.6)
 		end)
 	elseif def.id == "EnergyDrink" then
-		-- a swig (the can comes up to the mouth), then a streak of lightning behind you for 20 s
-		if tool then
-			local grip = tool.Grip
-			tool.Grip = grip * CFrame.new(0, -0.6, 0.4) * CFrame.Angles(math.rad(-70), 0, 0)
-			task.delay(0.6, function() if tool.Parent then tool.Grip = grip end end)
-		end
+		-- a swig (GearMoves: the can comes up to the mouth), then a streak of lightning behind you for 20 s
 		player:SetAttribute("EnergyUntil", workspace:GetServerTimeNow() + 20)
 		require(script.Parent.StealService).setSpeed(player)
 		local old = root:FindFirstChild("EnergyTrail")
@@ -384,7 +390,8 @@ local function useGear(player, def, tool)
 	-- update the count on the tool (or take it away when it's the last one)
 	if def.kind == "use" and tool then
 		local n = gear.uses[def.id] or 0
-		if n <= 0 then tool:Destroy() else tool.Name = toolName(def, n) end
+		-- (the last one goes once its move is over, not out of your hand halfway through the swig)
+		if n <= 0 then task.delay(move == "drink" and 1.1 or 0.4, function() tool:Destroy() end) else tool.Name = toolName(def, n) end
 	end
 end
 

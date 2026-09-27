@@ -206,7 +206,9 @@ local function makeRuler()
 	tool.Name = "Ruler"
 	tool.ToolTip = "Bonk thieves (and friends)"
 	tool.CanBeDropped = false
-	tool.Grip = CFrame.new(0, -1.2, 0) * CFrame.Angles(0, math.rad(90), 0)
+	-- (held near the bottom end and tipped 40 degrees forward, at the ready: straight up, it stood in
+	-- front of your face like a flagpole)
+	tool.Grip = CFrame.new(0, -1.3, 0) * CFrame.Angles(math.rad(40), math.rad(90), 0)
 	local h = Instance.new("Part")
 	h.Name = "Handle"
 	h.Size = Vector3.new(0.18, 3.6, 0.6)
