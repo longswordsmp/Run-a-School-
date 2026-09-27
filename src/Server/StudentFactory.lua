@@ -120,6 +120,34 @@ local function trimProp(model, mode)
 	for _, part in drop do part:Destroy() end
 end
 
+-- classic joints. CreateHumanoidModelFromDescription now builds the physics joints (Roblox's avatar
+-- joint upgrade: an AnimationConstraint, a BallSocketConstraint and NoCollisionConstraints per limb).
+-- On an NPC that made every arm and leg its own physics body held on by constraints: 136 rigs were
+-- ~3,500 moving parts for the physics to solve every frame, on the server and on every player's
+-- screen. With Motor6Ds the rig is one rigid body hanging off its anchored root, no physics at all;
+-- the animations drive Motor6D.Transform just the same (and Factory.poseTarget, CarryPose, Ambient...
+-- already handle both kinds).
+local function toMotors(model)
+	for _, d in model:GetDescendants() do
+		if d.ClassName == "AnimationConstraint" then
+			local a0, a1 = d.Attachment0, d.Attachment1
+			if a0 and a1 and a0.Parent and a1.Parent then
+				local m = Instance.new("Motor6D")
+				m.Name = d.Name
+				m.Part0 = a0.Parent
+				m.Part1 = a1.Parent
+				m.C0 = a0.CFrame
+				m.C1 = a1.CFrame
+				m.Parent = a1.Parent
+			end
+			d:Destroy()
+		elseif d:IsA("BallSocketConstraint") or d:IsA("NoCollisionConstraint") then
+			d:Destroy()
+		end
+	end
+end
+Factory.toMotors = toMotors
+
 local function makeTemplate(def)
 	local look = def.look
 	local av = KidAvatars.Kids[def.id]
@@ -137,6 +165,7 @@ local function makeTemplate(def)
 		end
 	end
 	model = model or Players:CreateHumanoidModelFromDescription(blockyDescription(def), Enum.HumanoidRigType.R15)
+	toMotors(model)
 	model.Name = def.id
 	local hum = model:FindFirstChildOfClass("Humanoid")
 	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
@@ -517,6 +546,7 @@ local function makeTeacherTemplate(tdef)
 	desc.BodyTypeScale = 0.2
 	desc.ProportionScale = 0
 	local model = Players:CreateHumanoidModelFromDescription(desc, Enum.HumanoidRigType.R15)
+	toMotors(model)
 	model.Name = tdef.id
 	local hum = model:FindFirstChildOfClass("Humanoid")
 	hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
