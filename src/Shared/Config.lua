@@ -1145,14 +1145,18 @@ Config.Passes = {
 	{ key = "OfflinePlus", id = 0, name = "Offline Tuition+", robux = 49, icon = "\u{1F319}", desc = "Earn 50% for up to 12h while offline (was 25% for 2h)" },
 }
 Config.Products = {
-	-- the MONEY BOOST: one button, x2 on the first purchase and +1x every purchase after, up to x100,
-	-- forever (Config.MoneyBoost). Each price band is its own product; the store picks the one for
-	-- your next level.
-	{ key = "MoneyBoostA", id = 0, name = "Money Boost", robux = 9, icon = "\u{1F4B0}", desc = "x2 to x5 tuition", boost = true },
-	{ key = "MoneyBoostB", id = 0, name = "Money Boost", robux = 19, icon = "\u{1F4B0}", desc = "x6 to x10 tuition", boost = true },
-	{ key = "MoneyBoostC", id = 0, name = "Money Boost", robux = 39, icon = "\u{1F4B0}", desc = "x11 to x25 tuition", boost = true },
-	{ key = "MoneyBoostD", id = 0, name = "Money Boost", robux = 79, icon = "\u{1F4B0}", desc = "x26 to x50 tuition", boost = true },
-	{ key = "MoneyBoostE", id = 0, name = "Money Boost", robux = 149, icon = "\u{1F4B0}", desc = "x51 to x100 tuition", boost = true },
+	-- the MONEY BOOST: one button; every purchase DOUBLES all your tuition, forever (x2, x4, x8 ...
+	-- x1024), and costs double the last (tomas, 2026-09-27). One product a step (Config.MoneyBoost).
+	{ key = "MoneyBoost1", id = 0, name = "Money Boost x2", robux = 25, icon = "\u{1F4B0}", desc = "Doubles your tuition to x2", boost = true, step = 1 },
+	{ key = "MoneyBoost2", id = 0, name = "Money Boost x4", robux = 50, icon = "\u{1F4B0}", desc = "Doubles your tuition to x4", boost = true, step = 2 },
+	{ key = "MoneyBoost3", id = 0, name = "Money Boost x8", robux = 100, icon = "\u{1F4B0}", desc = "Doubles your tuition to x8", boost = true, step = 3 },
+	{ key = "MoneyBoost4", id = 0, name = "Money Boost x16", robux = 200, icon = "\u{1F4B0}", desc = "Doubles your tuition to x16", boost = true, step = 4 },
+	{ key = "MoneyBoost5", id = 0, name = "Money Boost x32", robux = 400, icon = "\u{1F4B0}", desc = "Doubles your tuition to x32", boost = true, step = 5 },
+	{ key = "MoneyBoost6", id = 0, name = "Money Boost x64", robux = 800, icon = "\u{1F4B0}", desc = "Doubles your tuition to x64", boost = true, step = 6 },
+	{ key = "MoneyBoost7", id = 0, name = "Money Boost x128", robux = 1600, icon = "\u{1F4B0}", desc = "Doubles your tuition to x128", boost = true, step = 7 },
+	{ key = "MoneyBoost8", id = 0, name = "Money Boost x256", robux = 3200, icon = "\u{1F4B0}", desc = "Doubles your tuition to x256", boost = true, step = 8 },
+	{ key = "MoneyBoost9", id = 0, name = "Money Boost x512", robux = 6400, icon = "\u{1F4B0}", desc = "Doubles your tuition to x512", boost = true, step = 9 },
+	{ key = "MoneyBoost10", id = 0, name = "Money Boost x1024", robux = 12800, icon = "\u{1F4B0}", desc = "Doubles your tuition to x1024", boost = true, step = 10 },
 	{ key = "Cash10m", id = 0, name = "Tuition Pack", robux = 15, icon = "\u{1F4B5}", desc = "10 minutes of your tuition", seconds = 600 },
 	{ key = "Cash1h", id = 0, name = "Tuition Bag", robux = 39, icon = "\u{1F4B0}", desc = "1 hour of your tuition", seconds = 3600 },
 	{ key = "Cash4h", id = 0, name = "Tuition Vault", robux = 99, icon = "\u{1F3E6}", desc = "4 hours of your tuition", seconds = 14400 },
@@ -1167,29 +1171,22 @@ Config.Products = {
 	{ key = "LockRefresh", id = 0, name = "Instant Lock Refresh", robux = 9, icon = "\u{1F504}", desc = "Your gate can lock again right now" },
 }
 
--- the MONEY BOOST ladder: your tuition multiplier after n purchases is x(n + 1), up to x100. The level
--- you'd buy next decides the band, so the price climbs as you go (9 R$ each up to x5, then 19, 39,
--- 79, 149 R$; the whole ladder is 10,141 R$).
-Config.MoneyBoost = {
-	max = 100,
-	bands = {
-		{ to = 5, key = "MoneyBoostA" },
-		{ to = 10, key = "MoneyBoostB" },
-		{ to = 25, key = "MoneyBoostC" },
-		{ to = 50, key = "MoneyBoostD" },
-		{ to = 100, key = "MoneyBoostE" },
-	},
-}
--- the product for the level after `level` (nil at the max)
+-- the MONEY BOOST ladder: every purchase doubles your tuition multiplier (x2, x4 ... x1024 after the
+-- 10th) and costs double the one before (25, 50, 100 ... 12,800 R$). The save keeps the multiplier.
+Config.MoneyBoost = { steps = 10 }
+Config.MoneyBoost.max = 2 ^ Config.MoneyBoost.steps
+-- how many doublings a multiplier stands for (an older +1x save counts its last whole doubling)
+function Config.boostSteps(level)
+	local n = 0
+	while n < Config.MoneyBoost.steps and 2 ^ (n + 1) <= (level or 1) do n += 1 end
+	return n
+end
+-- the product for the doubling after `level`, and the multiplier it gives (nil at the max)
 function Config.boostProductFor(level)
-	local nextLevel = (level or 1) + 1
-	if nextLevel > Config.MoneyBoost.max then return nil end
-	for _, b in Config.MoneyBoost.bands do
-		if nextLevel <= b.to then
-			for _, x in Config.Products do
-				if x.key == b.key then return x, nextLevel end
-			end
-		end
+	local n = Config.boostSteps(level) + 1
+	if n > Config.MoneyBoost.steps then return nil end
+	for _, x in Config.Products do
+		if x.boost and x.step == n then return x, 2 ^ n end
 	end
 	return nil
 end

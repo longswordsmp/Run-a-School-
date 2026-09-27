@@ -5,8 +5,8 @@
 --   Products: MarketplaceService.ProcessReceipt grants them once per receipt (receipt ids are kept in
 --     the saved profile so a retried receipt is never granted twice).
 -- Nothing here ever opens a purchase prompt by itself; the client's Store panel asks via "buy".
--- The MONEY BOOST (Config.MoneyBoost): one button; every purchase adds +1x to all your tuition, x2 up to
--- x100, forever (kept in the buyer's own save, attribute MoneyBoost). Each price band is a product.
+-- The MONEY BOOST (Config.MoneyBoost): one button; every purchase doubles all your tuition, x2 up to
+-- x1024, forever (kept in the buyer's own save, attribute MoneyBoost). Each doubling is a product.
 -- In Studio, anything without an id yet is a free test purchase; live, it stays out of the store.
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -149,18 +149,18 @@ GRANTS.LockRefresh = function(player)
 	local plot = PlotService.getPlot(player)
 	if plot then plot:SetAttribute("CooldownUntil", 0) end
 end
--- the MONEY BOOST: +1x, up to the max, in the buyer's own save
+-- the MONEY BOOST: double it, up to the max, in the buyer's own save
 local function boostUp(player)
 	local own = Data.own(player)
 	if not own then return end
-	own.moneyBoost = math.min(Config.MoneyBoost.max, (own.moneyBoost or 1) + 1)
+	own.moneyBoost = math.min(Config.MoneyBoost.max, 2 ^ (Config.boostSteps(own.moneyBoost or 1) + 1))
 	player:SetAttribute("MoneyBoost", own.moneyBoost)
 	PlotService.updateIncome(Data.hostOf(player))
 	Remotes.Announce:FireClient(player, ("\u{1F4B0} MONEY BOOST x%d!"):format(own.moneyBoost), Color3.fromRGB(255, 205, 60))
 	Remotes.Sfx:FireClient(player, "StingParty")
 end
-for _, b in Config.MoneyBoost.bands do
-	GRANTS[b.key] = boostUp
+for _, x in Config.Products do
+	if x.boost then GRANTS[x.key] = boostUp end
 end
 
 function MonetizationService.grantProduct(player, key)
@@ -234,7 +234,8 @@ Actions.register("store", function(player)
 	local level = own and own.moneyBoost or 1
 	local nextProduct, nextLevel = Config.boostProductFor(level)
 	return { ok = true, passes = passes, products = products,
-		boost = { level = level, max = Config.MoneyBoost.max, nextLevel = nextLevel, robux = nextProduct and nextProduct.robux, ready = nextProduct ~= nil and ready(nextProduct) } }
+		boost = { level = level, max = Config.MoneyBoost.max, nextLevel = nextLevel, robux = nextProduct and nextProduct.robux, ready = nextProduct ~= nil and ready(nextProduct),
+			done = Config.boostSteps(level), steps = Config.MoneyBoost.steps } }
 end)
 
 -- the client asks to buy; the prompt only ever opens because the player pressed a button

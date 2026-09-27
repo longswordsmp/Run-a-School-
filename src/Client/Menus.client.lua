@@ -1318,7 +1318,7 @@ do
 	UI.studs(boost, { zindex = 12, transparency = UI.STUD.card })
 	Icons.view(boost, "cash", { size = UDim2.fromOffset(200, 170), position = UDim2.fromOffset(20, 40), zindex = 14, sway = 14 })
 	UI.label(boost, { Text = "MONEY BOOST", Font = UI.BIG, TextColor3 = Color3.new(1, 1, 1), TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -500, 0, 46), Position = UDim2.fromOffset(236, 12), ZIndex = 15, stroke = 4 })
-	UI.label(boost, { Text = "Every purchase adds +1x to ALL your tuition. Forever. Up to x100!", TextColor3 = UI.C.navy, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, Size = UDim2.new(1, -500, 0, 40), Position = UDim2.fromOffset(238, 58), ZIndex = 15, stroke = 0 })
+	UI.label(boost, { Text = "Every purchase DOUBLES all your tuition. Forever!", TextColor3 = UI.C.navy, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, Size = UDim2.new(1, -500, 0, 40), Position = UDim2.fromOffset(238, 58), ZIndex = 15, stroke = 0 })
 	local nowL = UI.label(boost, { Text = "x1", Font = UI.BIG, Size = UDim2.fromOffset(110, 64), Position = UDim2.fromOffset(236, 100), ZIndex = 15, stroke = 5 })
 	UI.label(boost, { Text = "\u{27A1}", Font = UI.BIG, TextColor3 = UI.C.navy, Size = UDim2.fromOffset(60, 50), Position = UDim2.fromOffset(350, 108), ZIndex = 15, stroke = 0 })
 	local nextL = UI.label(boost, { Text = "x2", Font = UI.BIG, TextColor3 = rgb(120, 255, 130), Size = UDim2.fromOffset(110, 64), Position = UDim2.fromOffset(414, 100), ZIndex = 15, stroke = 5 })
@@ -1329,33 +1329,30 @@ do
 	local barFill = UI.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(0, 1), ZIndex = 16, Parent = barBack })
 	UI.corner(barFill, 12)
 	UI.gradient(barFill, rgb(150, 255, 150), rgb(60, 200, 80))
-	local barText = UI.label(barBack, { Text = "x1 / x100", Font = UI.BIG, Size = UDim2.fromScale(1, 1), ZIndex = 17, stroke = 2 })
+	local barText = UI.label(barBack, { Text = "BOOST 0 / 10", Font = UI.BIG, Size = UDim2.fromScale(1, 1), ZIndex = 17, stroke = 2 })
 	local boostNote = UI.label(boost, { Text = "", TextColor3 = rgb(110, 70, 20), TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -500, 0, 20), Position = UDim2.fromOffset(238, 204), ZIndex = 15, stroke = 0 })
 	-- the BUY button, glowing, with the price tilted over its corner
 	local boostBtn = UI.button(boost, { name = "BoostBuy", text = "BOOST!", color = rgb(40, 190, 90), size = UDim2.fromOffset(220, 76), position = UDim2.new(1, -24, 0.5, 14), anchor = Vector2.new(1, 0.5), font = UI.BIG })
 	lift(boostBtn.button, 16)
 	local boostGlow = UI.glow(boostBtn.button, rgb(150, 255, 150), { spread = 5 })
 	UI.pulse(boostGlow, 0.35, 1, 1.6)
-	local boostPrice = UI.label(boost, { Name = "Price", Text = "9 R$", Font = UI.BIG, Size = UDim2.fromOffset(120, 40), Position = UDim2.new(1, -262, 0.5, -62), Rotation = -12, ZIndex = 19, stroke = 4 })
-	-- the whole price ladder: one chip per band, the band you're in lit up
-	local bandChips = {}
+	local boostPrice = UI.label(boost, { Name = "Price", Text = "25 R$", Font = UI.BIG, Size = UDim2.fromOffset(120, 40), Position = UDim2.new(1, -262, 0.5, -62), Rotation = -12, ZIndex = 19, stroke = 4 })
+	-- the next doublings and what each costs: the one you'd buy now lit up
+	local price = {}
+	for _, x in Config.Products do
+		if x.boost then price[x.step] = x.robux end
+	end
+	local ladder = {}
 	do
-		local price = {}
-		for _, x in Config.Products do price[x.key] = x.robux end
-		local strip = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -40, 0, 26), Position = UDim2.new(0, 20, 1, -32), ZIndex = 15, Parent = boost })
-		UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, Padding = UDim.new(0, 6), Parent = strip })
-		local from = 2
-		for i, band in Config.MoneyBoost.bands do
-			local chip = UI.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.35, Size = UDim2.fromOffset(104, 26), LayoutOrder = i, ZIndex = 15, Parent = strip })
+		local strip = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(0, 560, 0, 26), Position = UDim2.new(1, -580, 1, -32), ZIndex = 15, Parent = boost })
+		UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Right, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = strip })
+		for i = 1, 5 do
+			local chip = UI.new("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.35, Size = UDim2.fromOffset(106, 26), LayoutOrder = i, ZIndex = 15, Parent = strip })
 			UI.corner(chip, 8)
 			UI.stroke(chip, 2)
-			UI.label(chip, { Text = ("x%d-%d R$%d"):format(from, band.to, price[band.key] or 0), TextColor3 = UI.C.navy, Size = UDim2.new(1, -8, 1, -4), Position = UDim2.fromOffset(4, 2), ZIndex = 16, stroke = 0 })
-			bandChips[i] = { chip = chip, from = from, to = band.to }
-			from = band.to + 1
+			local text = UI.label(chip, { Text = "", TextColor3 = UI.C.navy, Size = UDim2.new(1, -8, 1, -4), Position = UDim2.fromOffset(4, 2), ZIndex = 16, stroke = 0 })
+			ladder[i] = { chip = chip, text = text }
 		end
-		-- (the chips sit under the note, right of the text column)
-		strip.Size = UDim2.new(0, 560, 0, 26)
-		strip.Position = UDim2.new(1, -580, 1, -32)
 	end
 	boostNote.Visible = false -- (the chips take its place)
 	boostBtn.button.Activated:Connect(function()
@@ -1365,14 +1362,18 @@ do
 	end)
 	local function showBoost(b)
 		if not b then return end
+		local done, steps = b.done or 0, b.steps or 10
 		nowL.Text = "x" .. b.level
-		barFill.Size = UDim2.fromScale(math.clamp((b.level - 1) / (b.max - 1), 0, 1), 1)
-		barText.Text = ("x%d / x%d"):format(b.level, b.max)
-		local nxt = b.nextLevel or b.max
-		for _, c in bandChips do
-			local here = nxt >= c.from and nxt <= c.to
-			c.chip.BackgroundColor3 = here and GOLD or Color3.new(1, 1, 1)
-			c.chip.BackgroundTransparency = here and 0 or (nxt > c.to and 0.7 or 0.35)
+		barFill.Size = UDim2.fromScale(math.clamp(done / steps, 0, 1), 1)
+		barText.Text = ("BOOST %d / %d"):format(done, steps)
+		for i, c in ladder do
+			local n = done + i
+			c.chip.Visible = n <= steps
+			if n <= steps then
+				c.text.Text = ("x%d  %d R$"):format(2 ^ n, price[n] or 0)
+				c.chip.BackgroundColor3 = i == 1 and GOLD or Color3.new(1, 1, 1)
+				c.chip.BackgroundTransparency = i == 1 and 0 or 0.35
+			end
 		end
 		if not b.nextLevel then
 			nextL.Text = "MAX"
@@ -1402,7 +1403,7 @@ do
 	sections[3] = heading("\u{26A1} EXTRAS", rgb(70, 150, 255))
 	local extraGrid = grid()
 	for i, x in Config.Products do
-		-- (the Money Boost bands are the big card at the top)
+		-- (the Money Boost doublings are the big card at the top)
 		if x.boost then continue end
 		card(extraGrid, x.key, x, function() call("buy", "product", x.key) end, i)
 	end
