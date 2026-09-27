@@ -8,10 +8,13 @@
 -- looking different, the smaller one grows 0.05 studs along that face's axis, so its face stands
 -- just in front and wins cleanly. Undersides (faces pointing down) are left alone: nobody sees them.
 -- Only anchored parts are touched (never a rig, a tool, a welded prop or anything that moves).
--- It also makes every surface smooth (Unfight.smooth): no studs.
+-- It also makes every surface smooth (Unfight.smooth: no stray studs or inlets), then puts the studs
+-- back where the stud style wants them (StudStyle.run: the big blocks' tops and sides).
 --   Unfight.run(root)   one pass over everything under root; returns how many parts it grew
 --   Unfight.watch(root) run again on a child of root a moment after parts stop being added to it
 --                       (the schools are rebuilt at runtime)
+local StudStyle = require(script.Parent.StudStyle)
+
 local Unfight = {}
 
 local EPS = 0.012
@@ -137,6 +140,7 @@ end
 -- (a part that grew can land in a new neighbour's plane: go again until nothing moves, three times at most)
 function Unfight.run(root)
 	Unfight.smooth(root)
+	StudStyle.run(root)
 	local total = 0
 	for _ = 1, 3 do
 		local n = pass(root)

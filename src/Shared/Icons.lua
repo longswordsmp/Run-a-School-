@@ -131,19 +131,25 @@ function B.basket(m)
 	end
 end
 
+-- a crown (VIP), front on like the emoji: a band with a gold rim, five points with a pearl on each
+-- (the middle one tallest), red velvet showing between them, jewels along the band
 function B.crown(m)
-	for k = 0, 7 do
-		local a = k / 8 * math.pi * 2
-		local cf = CF(math.sin(a) * 1.7, 0, -math.cos(a) * 1.7) * CFrame.Angles(0, -a, 0)
-		p(m, V(1.45, 1.3, 0.45), cf, GOLD)
-		local tall = k % 2 == 0
-		p(m, V(0.55, tall and 1.5 or 0.9, 0.45), cf * CF(0, tall and 1.35 or 1.05, 0), GOLD)
-		ball(m, 0.55, (cf * CF(0, tall and 2.2 or 1.6, 0)).Position, GOLD_D)
+	local G, GD, GL = rgb(255, 200, 50), rgb(215, 150, 25), rgb(255, 235, 140)
+	local T = 1.1
+	-- (the velvet sits well behind the band: only its top shows, between the points)
+	ball(m, 2.3, V(0, 1.05, 1.25), rgb(200, 30, 60))
+	p(m, V(4.4, 1.2, T), CF(0, -0.6, 0), G)
+	p(m, V(4.5, 0.24, T + 0.1), CF(0, -1.24, 0), GD)
+	p(m, V(4.5, 0.22, T + 0.1), CF(0, 0.05, 0), GL)
+	local H = { 1.5, 1.9, 2.3, 1.9, 1.5 }
+	for i, x in { -1.75, -0.9, 0, 0.9, 1.75 } do
+		tri(m, 1.05, H[i], T * 0.9, CF(x, 0.15 + H[i] / 2, 0), G)
+		ball(m, 0.52, V(x, 0.15 + H[i] + 0.1, 0), rgb(255, 250, 235))
 	end
-	p(m, V(4.1, 0.3, 4.1), CF(0, -0.55, 0), GOLD_D)
-	ball(m, 0.8, V(0, 0.05, -1.95), rgb(235, 40, 70))
-	ball(m, 0.6, V(-1.4, 0.05, -1.45), rgb(70, 140, 255))
-	ball(m, 0.6, V(1.4, 0.05, -1.45), rgb(80, 210, 110))
+	disc(m, 0.78, 0.2, CF(0, -0.6, -T / 2 - 0.05), rgb(235, 40, 70))
+	disc(m, 0.5, 0.22, CF(1.35, -0.6, -T / 2 - 0.05), rgb(70, 140, 255))
+	disc(m, 0.5, 0.22, CF(-1.35, -0.6, -T / 2 - 0.05), rgb(70, 210, 110))
+	star(m, CF(2.2, 2.0, -0.8), 0.4, rgb(255, 255, 255))
 end
 
 function B.gift(m)
@@ -168,19 +174,32 @@ function B.sneaker(m)
 	p(m, V(0.6, 0.9, 1.4), CF(-2.1, 1.0, 0), RED)
 end
 
-local function board(m, deck, trim, glow)
-	-- a chunky deck turned up to face you, rails along its sides, a glow under it and a spark or two
-	local tilt = CFrame.Angles(math.rad(-68), 0, math.rad(-20))
-	p(m, V(4.4, 0.55, 2.2), tilt, deck)
+-- a hoverboard on the move, seen three-quarters on with its nose up: a thick capsule deck, dark grip
+-- with a lightning bolt, a glowing strip and two jets underneath, speed lines trailing off behind
+local function board(m, deck, bolt, glow)
+	local tilt = CFrame.Angles(0, math.rad(22), 0) * CFrame.Angles(math.rad(-18), 0, math.rad(24))
+	local function at(x, y, z) return tilt * CF(x, y, z) end
+	local GRIP = rgb(45, 45, 55)
+	p(m, V(3.4, 0.7, 1.7), at(0, 0, 0), deck)
+	for _, s in { -1, 1 } do cylc(m, 1.7, 0.7, at(s * 1.7, 0, 0), deck) end
+	p(m, V(3.2, 0.06, 1.36), at(0, 0.37, 0), GRIP)
+	for _, s in { -1, 1 } do cylc(m, 1.36, 0.06, at(s * 1.6, 0.37, 0), GRIP) end
+	-- (the bolt: two slanted bars and the step between them)
+	p(m, V(1.2, 0.07, 0.34), at(0.45, 0.41, 0.22) * CFrame.Angles(0, math.rad(22), 0), bolt)
+	p(m, V(1.2, 0.07, 0.34), at(-0.45, 0.41, -0.22) * CFrame.Angles(0, math.rad(22), 0), bolt)
+	p(m, V(0.34, 0.07, 0.62), at(0, 0.41, 0), bolt)
+	p(m, V(3.4, 0.1, 1.5), at(0, -0.38, 0), glow, nil, Enum.Material.Neon)
 	for _, s in { -1, 1 } do
-		local tip = cyl(m, 2.2, 0.55, (tilt * CF(s * 2.2, 0, 0)).Position, deck, "y")
-		tip.CFrame = tilt * CF(s * 2.2, 0, 0) * CFrame.Angles(0, 0, math.rad(90))
-		p(m, V(4.4, 0.6, 0.18), tilt * CF(0, 0, s * 1.12), trim)
+		cylc(m, 0.95, 0.35, at(s * 1.2, -0.5, 0), rgb(150, 155, 170))
+		cylc(m, 0.72, 0.12, at(s * 1.2, -0.72, 0), glow, Enum.Material.Neon)
 	end
-	p(m, V(3.8, 0.1, 0.45), tilt * CF(0, 0.3, 0), trim)
-	p(m, V(3.6, 0.1, 1.6), tilt * CF(0, -0.33, 0), glow, nil, Enum.Material.Neon)
+	-- (behind it: +X on the deck, which is the screen's left)
+	for i, z in { -0.5, 0, 0.5 } do
+		local len = i == 2 and 1.0 or 0.7
+		p(m, V(len, 0.14, 0.14), at(2.75 + len / 2, -0.1, z), rgb(255, 255, 255), nil, Enum.Material.Neon)
+	end
 end
-function B.goldboard(m) board(m, GOLD, rgb(255, 245, 200), rgb(255, 150, 40)) end
+function B.goldboard(m) board(m, GOLD, rgb(255, 225, 90), rgb(255, 150, 40)) end
 
 -- a cut gem (the Store; the Diamond Board): a crown with its corners cut over a pavilion coming to a
 -- point, pale facets on the lit side, deep ones on the other, and a glint
@@ -278,29 +297,39 @@ local function houseAt(m, at, s, wall, roof)
 end
 function B.house(m) houseAt(m, CF(), 1, rgb(255, 242, 220), rgb(230, 65, 65)) end
 
--- a sleepy crescent moon (Offline Tuition+): thick in the middle, tapering to its horns, its back to
--- the left of the screen (+X here), eyes shut and smiling, a couple of stars in its hollow
+-- a sleepy crescent moon (Offline Tuition+): slim, tapering to its horns, its back to the left of the
+-- screen (+X here), eyes shut and smiling, a nightcap on its top horn and a Z z drifting off
 function B.moon(m)
 	local Y = rgb(255, 215, 80)
-	local C, Rr = V(-0.4, 0, 0), 1.9
-	for deg = -100, 100, 8 do
+	local C, Rr = V(-0.3, 0, 0), 1.9
+	for deg = -110, 110, 6 do
 		local a = math.rad(deg)
-		local d = 0.5 + 1.8 * math.cos(a * 0.9)
+		local d = 0.35 + 1.25 * math.cos(a * 0.82)
 		-- (each disc touches the outer circle, so the back is one smooth curve)
-		local at = C + V(math.cos(a), math.sin(a), 0) * (Rr - d / 2)
-		disc(m, d, 1.0, CF(at), Y)
+		disc(m, d, 0.9, CF(C + V(math.cos(a), math.sin(a), 0) * (Rr - d / 2)), Y)
 	end
-	-- the face on the fat middle: a shut eye (a little smile of a line), a smile and a pink cheek
-	local F = -0.52
-	for _, e in { { 0.95, 0.5, 0.35 }, { 0.75, 0.42, 0 }, { 0.55, 0.5, -0.35 } } do
-		p(m, V(0.26, 0.1, 0.06), CF(e[1], e[2], F) * CFrame.Angles(0, 0, e[3]), INK)
+	-- asleep: a shut eye, a smile, a pink cheek
+	local F = -0.47
+	for _, e in { { 1.05, 0.42, 0.35 }, { 0.87, 0.35, 0 }, { 0.69, 0.42, -0.35 } } do
+		p(m, V(0.22, 0.09, 0.06), CF(e[1], e[2], F) * CFrame.Angles(0, 0, e[3]), INK)
 	end
-	for _, e in { { 1.05, -0.3, -0.45 }, { 0.8, -0.42, 0 }, { 0.55, -0.3, 0.45 } } do
-		p(m, V(0.26, 0.1, 0.06), CF(e[1], e[2], F) * CFrame.Angles(0, 0, e[3]), INK)
+	for _, e in { { 1.05, -0.28, -0.45 }, { 0.87, -0.38, 0 }, { 0.69, -0.28, 0.45 } } do
+		p(m, V(0.22, 0.09, 0.06), CF(e[1], e[2], F) * CFrame.Angles(0, 0, e[3]), INK)
 	end
-	disc(m, 0.4, 0.06, CF(0.2, -0.05, F), rgb(255, 160, 150))
-	star(m, CF(-1.45, 0.75, -0.2), 0.42, rgb(255, 250, 210))
-	star(m, CF(-1.0, -0.85, -0.2), 0.28, rgb(255, 250, 210))
+	disc(m, 0.34, 0.06, CF(0.42, -0.05, F), rgb(255, 160, 150))
+	-- a nightcap on its top horn, drooping, with a white rim and a pom-pom
+	local capAt = CF(-0.35, 1.55, 0) * CFrame.Angles(0, 0, math.rad(38))
+	cone(m, capAt, 1.2, 0.2, 1.7, 8, rgb(70, 110, 230))
+	cylc(m, 1.35, 0.28, capAt, rgb(250, 250, 255))
+	ball(m, 0.5, (capAt * CF(0, 1.85, 0)).Position, rgb(250, 250, 255))
+	-- Z z (on screen: top bar, a slash from top right to bottom left, bottom bar; right is -X here)
+	for _, z in { { -1.55, 0.35, 0.55 }, { -2.05, 0.95, 0.4 } } do
+		local at, sz = CF(z[1], z[2], -0.2), z[3]
+		local ZC = rgb(205, 225, 255)
+		p(m, V(sz, sz * 0.22, 0.14), at * CF(0, sz / 2, 0), ZC)
+		p(m, V(sz, sz * 0.22, 0.14), at * CF(0, -sz / 2, 0), ZC)
+		p(m, V(sz * 1.3, sz * 0.2, 0.14), at * CFrame.Angles(0, 0, math.rad(-45)), ZC)
+	end
 end
 
 local function cashStack(m, at, layers)
@@ -315,14 +344,31 @@ local function cashStack(m, at, layers)
 end
 function B.cash(m) cashStack(m, CF(0, -0.8, 0), 4) end
 
+-- a sack of money (the Tuition Bag): round and full, cinched at the neck with a rope, its top flaring
+-- out, a big green dollar sign on the front and coins spilt at its feet
 function B.moneybag(m)
-	local TAN = rgb(215, 170, 100)
-	ball(m, 3.2, V(0, -0.4, 0), TAN)
-	cyl(m, 1.2, 0.9, V(0, 1.4, 0), TAN, "y")
-	cyl(m, 1.4, 0.3, V(0, 1.1, 0), GOLD, "y")
-	for _, s in { -1, 1 } do ball(m, 0.9, V(s * 0.5, 2.1, 0), TAN) end
-	cyl(m, 1.6, 0.3, V(1.1, -0.9, -1.4), GOLD, "z")
-	cyl(m, 1.1, 0.32, V(1.1, -0.9, -1.4), GOLD_D, "z")
+	local TAN, TAND, ROPE = rgb(215, 170, 100), rgb(185, 140, 75), rgb(140, 90, 45)
+	ball(m, 3.4, V(0, -0.5, 0), TAN)
+	ball(m, 2.7, V(0, -1.0, 0.25), TAN)
+	cylc(m, 1.3, 0.8, CF(0, 1.35, 0), TAN)
+	cylc(m, 1.48, 0.3, CF(0, 1.15, 0), ROPE)
+	ball(m, 0.42, V(0.55, 1.1, -0.55), ROPE)
+	for k = 0, 6 do
+		local a = k / 7 * math.pi * 2
+		ball(m, 0.62, V(math.cos(a) * 0.55, 1.85, math.sin(a) * 0.55), TAN)
+	end
+	ball(m, 0.7, V(0, 2.0, 0), TAND)
+	-- the $ (an S of bars, drawn mirrored: the screen's left is +X), a bar through it
+	local D, Z = rgb(40, 150, 70), -1.62
+	local c = V(0, -0.45, Z)
+	for _, y in { 0.5, 0, -0.5 } do p(m, V(0.85, 0.2, 0.3), CF(c + V(0, y, 0)), D) end
+	p(m, V(0.2, 0.52, 0.3), CF(c + V(0.33, 0.25, 0)), D)
+	p(m, V(0.2, 0.52, 0.3), CF(c + V(-0.33, -0.25, 0)), D)
+	p(m, V(0.14, 1.55, 0.32), CF(c), D)
+	for _, cn in { { 1.35, -2.1, -0.9 }, { -1.15, -2.15, -1.0 }, { 0.2, -2.2, -1.5 } } do
+		cylc(m, 0.9, 0.16, CF(cn[1], cn[2], cn[3]), GOLD)
+	end
+	disc(m, 0.95, 0.16, CF(1.85, -1.55, -0.7) * CFrame.Angles(0, 0, math.rad(15)), GOLD)
 end
 
 function B.vault(m)
@@ -354,23 +400,52 @@ function B.sparkle(m)
 	star(m, CF(1.4, -1.3, 0.3), 0.5, rgb(255, 180, 230))
 end
 
-local function letter(m, paper, flap, seal)
-	p(m, V(4, 2.6, 0.3), CF(), paper)
-	for _, s in { -1, 1 } do
-		p(m, V(2.35, 0.25, 0.1), CF(s * 1, 0.55, -0.18) * CFrame.Angles(0, 0, s * -0.55), flap)
+-- a sealed letter: the envelope, its flap folded down to a point with the wax seal on it (a star
+-- pressed in), the folds of its pocket, and the rarity's badge in the corner
+local function letter(m, paper, flap, seal, sealDark, badge)
+	p(m, V(4.2, 2.8, 0.35), CF(0, 0, 0), paper)
+	-- the pocket's folds: from each bottom corner up to the middle
+	for _, sx in { -1, 1 } do
+		p(m, V(2.37, 0.1, 0.06), CF(sx * 1.05, -0.85, -0.2) * CFrame.Angles(0, 0, sx * math.rad(-27.6)), flap)
 	end
-	ball(m, 0.9, V(0, 0, -0.3), seal)
+	tri(m, 4.2, 1.6, 0.08, CF(0, 0.6, -0.21) * CFrame.Angles(0, 0, math.pi), flap)
+	disc(m, 1.0, 0.18, CF(0, -0.15, -0.3), seal)
+	star5(m, CF(0, -0.15, -0.41), 0.26, sealDark, 0.06)
+	badge(m)
 end
-function B.letter(m) letter(m, rgb(250, 248, 240), rgb(200, 196, 190), rgb(220, 40, 50)) end
-function B.letterEpic(m) letter(m, rgb(255, 180, 220), rgb(220, 120, 180), rgb(150, 60, 220)) end
+function B.letter(m)
+	letter(m, rgb(248, 243, 230), rgb(222, 214, 196), rgb(60, 130, 240), rgb(30, 80, 180), function(m2)
+		star5(m2, CF(1.55, 1.0, -0.25), 0.3, rgb(60, 130, 240), 0.1)
+	end)
+end
+function B.letterEpic(m)
+	letter(m, rgb(255, 190, 225), rgb(240, 150, 200), rgb(150, 60, 220), rgb(100, 30, 160), function(m2)
+		star(m2, CF(1.6, 1.2, -0.4), 0.42, rgb(255, 255, 255))
+		star(m2, CF(-1.7, -1.1, -0.4), 0.3, rgb(255, 230, 255))
+	end)
+end
 
+-- Lock Refresh: a padlock inside a round arrow
 function B.refresh(m)
-	local BL = rgb(70, 150, 255)
-	for k = 0, 11 do
-		local a = math.rad(40 + k * 24)
-		p(m, V(0.75, 0.75, 0.6), CF(math.cos(a) * 1.7, math.sin(a) * 1.7, 0) * CFrame.Angles(0, 0, a), BL)
+	local BL = rgb(90, 160, 255)
+	local R = 2.0
+	for deg = 50, 320, 9 do
+		local a = math.rad(deg)
+		p(m, V(0.62, 0.44, 0.5), CF(math.cos(a) * R, math.sin(a) * R, 0) * CFrame.Angles(0, 0, a + math.pi / 2), BL)
 	end
-	wedge(m, V(0.6, 1.4, 1.4), CF(1.55, 0.95, 0) * CFrame.Angles(0, math.rad(-90), math.rad(-60)), BL)
+	-- the head at the ring's start, pointing on round
+	local a = math.rad(50)
+	local tangent = V(math.sin(a), -math.cos(a), 0)
+	tri(m, 1.3, 1.0, 0.5, CF(V(math.cos(a) * R, math.sin(a) * R, 0) + tangent * 0.35) * CFrame.Angles(0, 0, a + math.pi), BL)
+	-- the padlock
+	p(m, V(1.5, 1.2, 0.7), CF(0, -0.35, 0), GOLD)
+	p(m, V(1.56, 0.18, 0.74), CF(0, 0.2, 0), GOLD_D)
+	for k = 0, 8 do
+		local b = math.pi * k / 8
+		p(m, V(0.26, 0.26, 0.3), CF(-math.cos(b) * 0.48, 0.3 + math.sin(b) * 0.6, 0), rgb(200, 205, 218))
+	end
+	disc(m, 0.34, 0.1, CF(0, -0.25, -0.38), INK)
+	p(m, V(0.14, 0.34, 0.1), CF(0, -0.5, -0.38), INK)
 end
 
 function B.shop(m)
