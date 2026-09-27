@@ -254,6 +254,8 @@ local CAST = {
 	{ id = "Baron", name = "The Sugar Baron", title = "???", outfit = "baron" },
 	{ id = "Wobblesworth", name = "Mr. Wobblesworth", title = "Retired Principal", outfit = "wobble" },
 	{ id = "Stan", name = "Janitor Stan", title = "Janitor", outfit = "stan" },
+	-- (Vex Prep's showcase cutscene has Grindle asleep at his desk before you ever fight him)
+	{ id = "Headmaster", name = "Headmaster Grindle", title = "Vex Prep", outfit = "dean" },
 }
 
 function TownNPCService.start()

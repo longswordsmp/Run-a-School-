@@ -19,7 +19,7 @@ done after it's been played in Studio and checked on screen. "Built, not verifie
 - [x] A way to hide the GUI: H or the eye button; Settings toggles the guide (screenshots).
 - [x] Remove every leftover "coming soon" / unfinished thing (signs reworded; UNLOCK NOW only once the product exists). Missed one, found on screen: Vex's billboard behind the Sugar Shack still said "COMING SOON: VEX HOMEWORK FACTORY" (baked into the place); now "NOW OPEN". A search of every text in the running game finds no other "soon". Not re-checked on screen at chapters 3-9.
 - [x] Vex Prep is missing one side of its roof (gable ends, screenshot).
-- [ ] A Vex Prep showcase cutscene that really shows the rival school off.
+- [~] A Vex Prep showcase cutscene that really shows the rival school off. Rewritten (Cutscene.client "Rival", plays the first time you walk up to the gate): a sweep round the clock tower, the name from inside the gate, Dr. Vex on her front steps with two monitors (waves, points), down the Great Hall between the desks, the blackboards and a monitor, Headmaster Grindle asleep at his desk (eyes shut, head slumped, Zs drifting up) while Vex says nothing gets past him, the trophy case (now a real lit case with four Best School trophies; it was a solid block), Vex out on her drive sizing up your school, then Wobblesworth and the pothole. SKIP button; a click hurries a line. Seen on screen: the tower, the title, Vex on the steps, the hall, Grindle with the Zs. NOT yet seen: the trophy shot as reframed (the first version went through Grindle's head) and the shot of Vex looking at your school (reworked, not captured).
 - [ ] More cutscenes, and better ones.
 
 - [x] Run faster by default, sprint even faster (walk 22, sprint 35, measured).

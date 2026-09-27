@@ -472,10 +472,37 @@ local function buildHall(m)
 	-- the office: a desk, a globe, a trophy case
 	part(m, "OfficeDesk", Vector3.new(8, 3.2, 3), CFrame.new(CX, FLOOR + 1.6, -154), rgb(80, 48, 30), Enum.Material.Wood)
 	cyl(m, "Globe", 1.6, 1.6, Vector3.new(CX + 3, FLOOR + 4, -154), rgb(90, 150, 210), Enum.Material.SmoothPlastic, { Shape = Enum.PartType.Ball, Size = Vector3.new(1.6, 1.6, 1.6) })
-	part(m, "TrophyCase", Vector3.new(10, 7, 1.6), CFrame.new(CX, FLOOR + 3.5, -158.6), rgb(80, 48, 30), Enum.Material.Wood)
-	part(m, "CaseGlass", Vector3.new(9, 6, 0.2), CFrame.new(CX, FLOOR + 3.8, -157.7), rgb(200, 230, 255), Enum.Material.Glass, { Transparency = 0.6 })
+	-- the trophy case: a hollow wooden cabinet (back, sides, top, a plinth and a shelf) with a glass
+	-- front, lit from inside. (It was one solid block: the trophies were inside the wood.)
+	local caseWood = rgb(80, 48, 30)
+	local cz = -158.6
+	part(m, "CaseBack", Vector3.new(10, 7, 0.2), CFrame.new(CX, FLOOR + 3.5, cz - 0.7), caseWood, Enum.Material.Wood)
+	for _, s in { -1, 1 } do
+		part(m, "CaseSide", Vector3.new(0.3, 7, 1.6), CFrame.new(CX + s * 4.85, FLOOR + 3.5, cz), caseWood, Enum.Material.Wood)
+	end
+	part(m, "CaseTop", Vector3.new(10.4, 0.4, 1.8), CFrame.new(CX, FLOOR + 7.2, cz), caseWood, Enum.Material.Wood)
+	part(m, "CasePlinth", Vector3.new(10, 2.6, 1.6), CFrame.new(CX, FLOOR + 1.3, cz), caseWood, Enum.Material.Wood)
+	part(m, "CaseShelf", Vector3.new(9.4, 0.2, 1.4), CFrame.new(CX, FLOOR + 4.1, cz), rgb(110, 70, 45), Enum.Material.Wood)
+	part(m, "CaseBackCloth", Vector3.new(9.4, 4.4, 0.05), CFrame.new(CX, FLOOR + 4.8, cz - 0.58), rgb(92, 40, 132), Enum.Material.Fabric)
+	part(m, "CaseGlass", Vector3.new(9.4, 4.4, 0.12), CFrame.new(CX, FLOOR + 4.8, cz + 0.75), rgb(200, 230, 255), Enum.Material.Glass, { Transparency = 0.75 })
+	local caseLight = part(m, "CaseLight", Vector3.new(8, 0.1, 0.3), CFrame.new(CX, FLOOR + 6.9, cz), rgb(255, 240, 200), Enum.Material.Neon)
+	local cl = Instance.new("SurfaceLight")
+	cl.Face = Enum.NormalId.Bottom
+	cl.Range = 6
+	cl.Brightness = 1.5
+	cl.Color = rgb(255, 235, 190)
+	cl.Parent = caseLight
+	-- four years of Best School on Recess Row: a cup each on the top shelf, and a plaque on the plinth
 	for i = 0, 3 do
-		cyl(m, "Trophy", 0.8, 1.4, Vector3.new(CX - 3 + i * 2, FLOOR + 5.2, -158.4), GOLD, Enum.Material.Metal)
+		local x = CX - 3.3 + i * 2.2
+		part(m, "TrophyBase", Vector3.new(0.9, 0.35, 0.7), CFrame.new(x, FLOOR + 4.38, cz), rgb(40, 30, 30), Enum.Material.Wood)
+		cyl(m, "TrophyStem", 0.3, 0.6, Vector3.new(x, FLOOR + 4.85, cz), GOLD, Enum.Material.Metal)
+		cyl(m, "TrophyCup", 1, 0.9, Vector3.new(x, FLOOR + 5.6, cz), GOLD, Enum.Material.Metal)
+		for _, s in { -1, 1 } do
+			part(m, "TrophyHandle", Vector3.new(0.12, 0.55, 0.12), CFrame.new(x + s * 0.6, FLOOR + 5.65, cz) * CFrame.Angles(0, 0, math.rad(s * 25)), GOLD, Enum.Material.Metal)
+		end
+		local plaque = part(m, "TrophyPlaque", Vector3.new(1.8, 0.8, 0.06), CFrame.new(x, FLOOR + 1.6, cz + 0.83), GOLD, Enum.Material.Metal)
+		sign(plaque, Enum.NormalId.Back, ("BEST SCHOOL\nON RECESS ROW\n%d"):format(2022 + i), rgb(40, 20, 20), Enum.Font.Fantasy)
 	end
 	buildOffice(m)
 end

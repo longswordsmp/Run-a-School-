@@ -707,60 +707,293 @@ local function finale(data)
 end
 
 ---------------------------------------------------------------------------
--- Rival: the first look at Vex Prep Academy (one campus for the whole server, across the street)
+-- Rival: Vex Prep Academy shows itself off (the first time you walk up to its gate). Dr. Vex gives the
+-- tour herself: round the clock tower, her on the front steps with two monitors, down the Great Hall
+-- past the desks, the blackboard, Headmaster Grindle asleep in his office, the trophy case, and her
+-- at the gate looking across the street at your school. SKIP in the corner; a click hurries a line.
+-- (Vex Prep: gate at z -45, the hall's front wall at z -95, the office behind the partition at z -146.)
 ---------------------------------------------------------------------------
 local function rival(data)
 	if busy then return end
 	busy = true
-	pcall(function() player:RequestStreamAroundAsync(Vector3.new(427, 5, -100), 4) end)
+	local cast = {}
+	local skipped, clicked = false, false
+	pcall(function() player:RequestStreamAroundAsync(Vector3.new(427, 5, -110), 4) end)
 	fade(0, 0.35)
 	hideHud(true)
 	letterbox(true)
 	local prevType = camera.CameraType
 	camera.CameraType = Enum.CameraType.Scriptable
-	local hall = Vector3.new(427, 14, -100)
-	-- over the street: the gate, the fountains and the hall behind them
-	camera.CFrame = CFrame.lookAt(Vector3.new(372, 44, 18), hall)
-	fade(1, 0.5)
-	local move = TweenService:Create(camera, TweenInfo.new(10, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(Vector3.new(427, 18, -20), hall) })
-	move:Play()
-	local c1 = caption("MEANWHILE, ACROSS THE STREET...", Color3.new(1, 1, 1), 0.2, 44)
-	task.wait(2.2)
-	c1:Destroy()
-	local c2 = caption("VEX PREP ACADEMY", Color3.fromRGB(205, 150, 255), 0.2, 84)
-	sfx("GavelBig")
-	sayLine("DR. VERONICA VEX", "Vex", "Welcome to Vex Prep Academy. MY school. The only school on Recess Row that matters.")
-	c2:Destroy()
-	-- inside the Great Hall: the desks, the kids, a hall monitor
-	move:Cancel()
-	camera.CFrame = CFrame.lookAt(Vector3.new(452, 15, -99), Vector3.new(420, 3, -128))
-	move = TweenService:Create(camera, TweenInfo.new(9, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(Vector3.new(440, 10, -104), Vector3.new(415, 3, -128)) })
-	move:Play()
-	sayLine("DR. VERONICA VEX", "Vex", "Eight of the smartest kids in town, at MY desks, doing homework twenty-five hours a day.")
-	sayLine("DR. VERONICA VEX", "Vex", "And my hall monitors never blink. Touch one of my students and the bell rings. Everybody comes running.")
-	-- back at the gate: Wobblesworth's tip
-	move:Cancel()
-	camera.CFrame = CFrame.lookAt(Vector3.new(446, 8, -28), Vector3.new(427, 9, -60))
-	move = TweenService:Create(camera, TweenInfo.new(8, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(Vector3.new(438, 7, -34), Vector3.new(427, 9, -60)) })
-	move:Play()
-	if data and data.chapter1 then
-		-- Chapter 1: the front door is no good; Stan's map says there's a way in from below
-		sayLine("MR. WOBBLESWORTH", "Wobblesworth", "The front door is guarded day and night, and her Headmaster, old Grindle, never leaves his office. But Stan's map says there's a way in... from BELOW.")
-		move:Cancel()
-		camera.CFrame = CFrame.lookAt(Vector3.new(452, 9, 14), Vector3.new(466, 0.5, -7))
-		move = TweenService:Create(camera, TweenInfo.new(5, Enum.EasingStyle.Sine), { CFrame = CFrame.lookAt(Vector3.new(459, 4.5, 4), Vector3.new(466, 0.3, -7)) })
+
+	local skipBtn = UI.button(gui, { text = "SKIP \u{25B6}\u{25B6}", color = Color3.fromRGB(60, 60, 75), size = UDim2.fromOffset(150, 46), position = UDim2.new(1, -24, 0, 24), anchor = Vector2.new(1, 0) })
+	skipBtn.button.ZIndex = 30
+	for _, d in skipBtn.button:GetDescendants() do if d:IsA("GuiObject") then d.ZIndex = 31 end end
+	local clickLayer = UI.new("TextButton", { Text = "", BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 20, Parent = gui })
+	clickLayer.Activated:Connect(function() clicked = true end)
+	skipBtn.button.Activated:Connect(function() skipped = true clicked = true end)
+	local function say(speaker, template, line, hold)
+		if skipped then return end
+		local box, text, hint = dialogBox(speaker, template)
+		clicked = false
+		hint.Visible = false
+		for c = 1, #line do
+			if clicked or skipped then break end
+			text.Text = line:sub(1, c)
+			if c % 2 == 0 and line:sub(c, c) ~= " " then talk(speaker) end
+			task.wait(0.026)
+		end
+		text.Text = line
+		clicked = false
+		hint.Visible = true
+		local t0 = os.clock()
+		while not clicked and not skipped and os.clock() - t0 < (hold or 1.8) do task.wait(0.05) end
+		box:Destroy()
+	end
+	local function wait(t)
+		local t0 = os.clock()
+		while not skipped and os.clock() - t0 < t do task.wait(0.05) end
+	end
+	-- the camera from a to b (CFrames) over t seconds, eased; returns at once (the move carries on)
+	local move
+	local function glide(a, b, t)
+		if move then move:Cancel() end
+		camera.CFrame = a
+		move = TweenService:Create(camera, TweenInfo.new(t, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { CFrame = b })
 		move:Play()
+	end
+	local function cut() fade(0, 0.18) end
+	local function reveal() fade(1, 0.3) end
+
+	-- the lock sign across Vex Prep's gate is this client's own: out of the picture while this plays
+	local barrierParts = {}
+	local barriers = workspace:FindFirstChild("AreaBarriers")
+	for _, d in barriers and barriers:GetDescendants() or {} do
+		if d:IsA("BasePart") and d.LocalTransparencyModifier < 1 then
+			barrierParts[d] = d.LocalTransparencyModifier
+			d.LocalTransparencyModifier = 1
+		elseif d:IsA("SurfaceGui") and d.Enabled then
+			barrierParts[d] = true
+			d.Enabled = false
+		end
+	end
+
+	local CX, FLOOR = 427, 0.9
+	-- the cast: Dr. Vex on the steps with a monitor either side, Grindle asleep at his desk
+	local vex = actor("Vex", Vector3.new(CX, FLOOR + 0.4, -90.5), Vector3.new(CX, 0, -40))
+	table.insert(cast, vex)
+	pose(vex, "idle", true)
+	for _, s in { -1, 1 } do
+		local mon = actor("HallMonitor", Vector3.new(CX + s * 4.4, FLOOR + 0.4, -92), Vector3.new(CX + s * 4.4, 0, -40))
+		table.insert(cast, mon)
+		pose(mon, "idle", true)
+	end
+	local grindle = actor("Headmaster", Vector3.new(CX, FLOOR, -156.2), Vector3.new(CX, 0, -140))
+	if grindle then
+		table.insert(cast, grindle)
+		-- (in his chair: the seat's top is 2.35 up; a sitting rig's root sits half its height plus a
+		-- tenth of its hip height above the seat)
+		local root = grindle.PrimaryPart
+		local hum = grindle:FindFirstChildOfClass("Humanoid")
+		local y = FLOOR + 2.35 + root.Size.Y * 0.5 + hum.HipHeight * 0.1
+		grindle:PivotTo(CFrame.lookAt(Vector3.new(CX, y, -156.2), Vector3.new(CX, y, -140)) * CFrame.Angles(math.rad(-8), 0, 0))
+		pose(grindle, "sit", true)
+		local head = grindle:FindFirstChild("Head")
+		-- asleep: eyelids down over the eyes (a patch of skin with a dark lash line), and his head
+		-- slumped forward and to one side
+		if head then
+			local hs = head.Size
+			for _, x in { -0.2, 0.2 } do
+				for k, spec in { { Vector3.new(hs.X * 0.2, hs.Y * 0.14, 0.04), 0.1, head.Color }, { Vector3.new(hs.X * 0.2, 0.05, 0.045), 0.04, Color3.fromRGB(30, 22, 18) } } do
+					local lid = Instance.new("Part")
+					lid.Name = k == 1 and "Eyelid" or "Lash"
+					lid.Size = spec[1]
+					lid.Color = spec[3]
+					lid.Material = Enum.Material.SmoothPlastic
+					lid.CanCollide, lid.CanQuery, lid.CanTouch, lid.Massless, lid.CastShadow = false, false, false, true, false
+					lid.CFrame = head.CFrame * CFrame.new(hs.X * x, hs.Y * spec[2], -hs.Z * 0.5 - (k == 1 and 0.02 or 0.045))
+					local w = Instance.new("WeldConstraint")
+					w.Part0, w.Part1 = head, lid
+					w.Parent = lid
+					lid.Parent = grindle
+				end
+			end
+			local neck
+			for _, part in grindle:GetChildren() do
+				local j = part:IsA("BasePart") and part:FindFirstChild("Neck")
+				if j and (j:IsA("Motor6D") or j:IsA("AnimationConstraint")) then neck = j end
+			end
+			if neck then
+				local slump = RunService.Stepped:Connect(function()
+					local t = os.clock()
+					neck.Transform = CFrame.Angles(math.rad(-28 + math.sin(t * 1.6) * 3), 0, math.rad(12))
+				end)
+				grindle.Destroying:Connect(function() slump:Disconnect() end)
+			end
+		end
+		-- snoring: a Z drifts up off his head every second or so. (Drawn on the cutscene's own screen
+		-- layer at the point above his head: BillboardGuis on this local stand-in never showed.)
+		if head then
+			task.spawn(function()
+				while grindle.Parent do
+					local born = os.clock()
+					local z = UI.label(gui, { Text = "Z", Font = UI.BIG, TextColor3 = Color3.fromRGB(210, 225, 255), AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(56, 56), ZIndex = 6, stroke = 3 })
+					local conn
+					conn = RunService.RenderStepped:Connect(function()
+						local a = (os.clock() - born) / 1.8
+						if a >= 1 or not head.Parent then
+							conn:Disconnect()
+							z:Destroy()
+							return
+						end
+						local p = head.Position + Vector3.new(0.6 + a * 1.4, 1.2 + a * 3, 0)
+						local v, on = camera:WorldToViewportPoint(p)
+						-- (not up in the letterbox bars)
+						local h = camera.ViewportSize.Y
+						z.Visible = on and v.Y > h * 0.13 and v.Y < h * 0.87
+						z.Position = UDim2.fromOffset(v.X, v.Y)
+						z.Size = UDim2.fromOffset(36 + a * 34, 36 + a * 34)
+						z.Rotation = a * 20
+						z.TextTransparency = a * a
+						local st = z:FindFirstChildOfClass("UIStroke")
+						if st then st.Transparency = a * a end
+					end)
+					task.wait(1.1)
+				end
+			end)
+		end
+	end
+
+	-- 1. round the clock tower, high over the campus
+	local tower = Vector3.new(CX, 40, -101)
+	local orbit = { t = 0 }
+	local orbitConn = RunService.RenderStepped:Connect(function(dt)
+		orbit.t += dt
+		local a = math.rad(-70 + math.min(orbit.t / 7, 1) * 80)
+		local pos = tower + Vector3.new(math.sin(a) * 62, 14 - math.min(orbit.t / 7, 1) * 6, math.cos(a) * 62)
+		camera.CFrame = CFrame.lookAt(pos, tower - Vector3.new(0, 6, 0))
+	end)
+	reveal()
+	local c1 = caption("MEANWHILE, ACROSS THE STREET...", Color3.new(1, 1, 1), 0.2, 44)
+	wait(3.2)
+	c1:Destroy()
+	sfx("Bell")
+	wait(3)
+	orbitConn:Disconnect()
+
+	-- 2. down at the gate, looking up the path at the hall: the name
+	cut()
+	-- (starting just inside the gate: from outside it, the gate's own name board cut across the title)
+	glide(CFrame.lookAt(Vector3.new(CX, 3.5, -50), Vector3.new(CX, 15, -95)), CFrame.lookAt(Vector3.new(CX, 4.5, -62), Vector3.new(CX, 12, -95)), 6)
+	reveal()
+	local title = caption("VEX PREP ACADEMY", Color3.fromRGB(205, 150, 255), 0.2, 84)
+	sfx("GavelBig")
+	wait(1.2)
+	local sub = caption("EXCELLENCE THROUGH HOMEWORK", Color3.fromRGB(255, 230, 170), 0.3, 34)
+	wait(2)
+	title:Destroy()
+	sub:Destroy()
+
+	-- 3. Dr. Vex herself, on her front steps
+	cut()
+	glide(CFrame.lookAt(Vector3.new(CX + 7, 3, -74), Vector3.new(CX, 5.2, -90.5)), CFrame.lookAt(Vector3.new(CX + 3.5, 4.2, -81), Vector3.new(CX, 5.6, -90.5)), 7)
+	reveal()
+	if vex then pose(vex, "wave") end
+	say("DR. VERONICA VEX", "Vex", "Welcome to Vex Prep Academy. MY school. The only school on Recess Row that matters.")
+	if vex then pose(vex, "point") end
+	say("DR. VERONICA VEX", "Vex", "The finest children in town. Straight A's. No recess. Homework twenty-five hours a day.")
+
+	-- 4. the Great Hall: down the carpet between the desks
+	cut()
+	glide(CFrame.lookAt(Vector3.new(CX, 9, -98), Vector3.new(CX, 4, -140)), CFrame.lookAt(Vector3.new(CX, 7, -118), Vector3.new(CX, 4, -145)), 7)
+	reveal()
+	say("DR. VERONICA VEX", "Vex", "Eight of the smartest kids on Recess Row, at MY desks. And they are never, EVER leaving.")
+
+	-- 5. the blackboard and a hall monitor on his rounds
+	cut()
+	glide(CFrame.lookAt(Vector3.new(CX + 6, 7, -118), Vector3.new(CX + 21, 8.5, -145)), CFrame.lookAt(Vector3.new(CX + 12, 7, -124), Vector3.new(CX + 21, 8.5, -145)), 6)
+	reveal()
+	say("DR. VERONICA VEX", "Vex", "My hall monitors never blink. Touch one of my students and the bell rings... and EVERYBODY comes running.")
+	sfx("Bell")
+
+	-- 6. the Headmaster's office: Grindle, "on guard"
+	cut()
+	glide(CFrame.lookAt(Vector3.new(CX - 2, 8, -145.8), Vector3.new(CX, 4.2, -156)), CFrame.lookAt(Vector3.new(CX - 1, 6.6, -150), Vector3.new(CX, 4.6, -156.2)), 7)
+	reveal()
+	local c6 = caption("HEADMASTER GRINDLE", Color3.fromRGB(255, 200, 140), 0.2, 50)
+	say("DR. VERONICA VEX", "Vex", "And my Headmaster, Grindle, guards this school day and night. Nothing gets past Grindle.")
+	c6:Destroy()
+	say("HEADMASTER GRINDLE", "Headmaster", "Zzzz... no recess... EVER... zzzz... mmm, homework...")
+
+	-- 7. the trophy case behind him
+	cut()
+	-- (from beside the end of his desk: the case, with Grindle snoring at the edge of the frame; head
+	-- on, the camera went straight through him)
+	glide(CFrame.lookAt(Vector3.new(CX + 7, 6.4, -152.6), Vector3.new(CX + 2.5, 5.5, -158.6)), CFrame.lookAt(Vector3.new(CX + 5.5, 6.2, -153.4), Vector3.new(CX + 2.5, 5.5, -158.6)), 5)
+	reveal()
+	say("DR. VERONICA VEX", "Vex", "Best School on Recess Row. Four years running.")
+
+	-- 8. at the gate, looking across the street at your school
+	cut()
+	local plotName = player:GetAttribute("Plot")
+	local plot = plotName and workspace:FindFirstChild("Plots") and workspace.Plots:FindFirstChild(plotName)
+	local mine = plot and plot:FindFirstChild("Bounds") and plot.Bounds.Position or Vector3.new(CX, 0, 100)
+	-- (out on her drive, past the gate, so neither the gate nor its sign is in the shot)
+	local stand = Vector3.new(CX + 3, 0.65, -35)
+	local toSchool = (Vector3.new(mine.X, 0, mine.Z) - Vector3.new(stand.X, 0, stand.Z)).Unit
+	if vex then
+		local root = vex.PrimaryPart
+		local hum = vex:FindFirstChildOfClass("Humanoid")
+		local y = stand.Y + hum.HipHeight + root.Size.Y / 2
+		vex:PivotTo(CFrame.lookAt(Vector3.new(stand.X, y, stand.Z), Vector3.new(mine.X, y, mine.Z)))
+		pose(vex, "idle", true)
+	end
+	-- over her right shoulder from well back: her on the left of the frame, your school beyond
+	-- (side: her right, facing toSchool; the camera there puts her on the left of the frame)
+	local side = Vector3.new(-toSchool.Z, 0, toSchool.X)
+	local over = Vector3.new(stand.X, 7, stand.Z) - toSchool * 11 + side * 3.2
+	local aim = Vector3.new(mine.X, 6, mine.Z)
+	glide(CFrame.lookAt(over, aim), CFrame.lookAt(over + toSchool * 3, aim), 7)
+	reveal()
+	-- (your school is across the street from Vex Prep, or down the street on her own side)
+	local where = mine.Z > 0 and "across the street" or "down the street"
+	say("DR. VERONICA VEX", "Vex", ("And that sad little school %s? Give it a month. Its kids will be MY kids."):format(where))
+	if vex then pose(vex, "laugh") end
+	wait(1.4)
+
+	-- 9. Wobblesworth's tip (in Chapter 1: the way in from below)
+	cut()
+	if data and data.chapter1 then
+		glide(CFrame.lookAt(Vector3.new(446, 8, -28), Vector3.new(CX, 9, -60)), CFrame.lookAt(Vector3.new(438, 7, -34), Vector3.new(CX, 9, -60)), 6)
+		reveal()
+		say("MR. WOBBLESWORTH", "Wobblesworth", "Guarded day and night, is it? Ha! Stan's map says there's a way in... from BELOW. And old Grindle sleeps right on top of it.")
+		cut()
+		glide(CFrame.lookAt(Vector3.new(452, 9, 14), Vector3.new(466, 0.5, -7)), CFrame.lookAt(Vector3.new(459, 4.5, 4), Vector3.new(466, 0.3, -7)), 5)
+		reveal()
 		local c3 = caption("THE POTHOLE", Color3.fromRGB(255, 200, 140), 0.2, 56)
-		task.wait(2.6)
+		wait(2.6)
 		c3:Destroy()
 	else
-		sayLine("MR. WOBBLESWORTH", "Wobblesworth", "Psst! Sneak in, grab a kid, carry them out through the gate. Every kid you take, Vex sends smarter ones... and angrier goons.")
+		glide(CFrame.lookAt(Vector3.new(446, 8, -28), Vector3.new(CX, 9, -60)), CFrame.lookAt(Vector3.new(438, 7, -34), Vector3.new(CX, 9, -60)), 8)
+		reveal()
+		say("MR. WOBBLESWORTH", "Wobblesworth", "Psst! Sneak in, grab a kid, carry them out through the gate. Every kid you take, Vex sends smarter ones... and angrier goons.")
 		local c3 = caption("ONE VEX PREP. EVERY SCHOOL ON THE STREET WANTS ITS KIDS.", Color3.fromRGB(255, 200, 140), 0.2, 40)
-		task.wait(2.6)
+		wait(2.6)
 		c3:Destroy()
 	end
+
 	fade(0, 0.35)
-	move:Cancel()
+	if move then move:Cancel() end
+	for _, m in cast do if m then m:Destroy() end end
+	for d, v in barrierParts do
+		if d.Parent then
+			if d:IsA("BasePart") then d.LocalTransparencyModifier = v else d.Enabled = true end
+		end
+	end
+	skipBtn.button:Destroy()
+	clickLayer:Destroy()
+	for _, g in gui:GetChildren() do
+		if g:IsA("TextLabel") and g.ZIndex == 5 then g:Destroy() end
+	end
 	camera.CameraType = prevType == Enum.CameraType.Scriptable and Enum.CameraType.Custom or prevType
 	letterbox(false)
 	hideHud(false)
