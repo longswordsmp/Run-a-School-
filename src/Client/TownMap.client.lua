@@ -1,8 +1,9 @@
 -- StarterPlayer.StarterPlayerScripts.TownMap
 -- The town map: press M (or Tab), or tap the map button above the eye, bottom right. It is the town
 -- itself seen from straight above: every part the server finds from overhead (roofs, roads, lawns,
--- tree tops, the fountain...: MapPlan) drawn in a ViewportFrame, so the map shows the real buildings
--- in their real colours. On top of it:
+-- tree tops, the fountain...: MapPlan) drawn as a flat shape in its real colour, so the map shows the
+-- real buildings where they are. (Flat 2D shapes, drawn once: it used to be the parts themselves in a
+-- 3D ViewportFrame, which took the frame rate down to about 1 while it was open.) On top of it:
 --   your quest     a pulsing star where the guide points (Quests.client shares GuideTarget)
 --   people         Mr. Wobblesworth, Janitor Stan, Hall Monitor Hector ("!" on whoever has a mission
 --                  for you), other players
@@ -15,6 +16,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local StarterGui = game:GetService("StarterGui")
+local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -26,7 +28,7 @@ local rgb = Color3.fromRGB
 
 local MIN_X, MAX_X, MIN_Z, MAX_Z = -820, 820, -580, 580
 local W, H = 1000, 680
-local FOV = 14 -- (a narrow lens from high up: close to a flat plan)
+local WW, HH = MAX_X - MIN_X, MAX_Z - MIN_Z -- the town's size in studs
 
 local gui = UI.new("ScreenGui", {
 	Name = "TownMap",
@@ -42,6 +44,8 @@ local holder = UI.new("Frame", {
 	Position = UDim2.fromScale(0.5, 0.52),
 	Size = UDim2.fromOffset(W + 24, H + 76),
 	BackgroundColor3 = rgb(255, 244, 222),
+	-- (it takes its own clicks: a drag on the map fell through to the dark backdrop, which closes it)
+	Active = true,
 	Parent = gui,
 })
 UI.corner(holder, 22)
@@ -66,21 +70,14 @@ local map = UI.new("Frame", {
 	Parent = holder,
 })
 UI.corner(map, 16)
-local world = UI.new("ViewportFrame", {
-	Size = UDim2.fromScale(1, 1),
+-- the canvas: the whole town, one pixel per stud at 1:1; zoom and pan move and size this one frame
+-- (its shapes are placed in fractions of it, so they follow on their own)
+local canvas = UI.new("Frame", {
 	BackgroundTransparency = 1,
-	Ambient = rgb(170, 170, 175),
-	LightColor = rgb(255, 250, 240),
-	LightDirection = Vector3.new(-0.35, -1, -0.45),
+	Size = UDim2.fromOffset(WW, HH),
 	ZIndex = 1,
 	Parent = map,
 })
-local worldModel = Instance.new("WorldModel")
-worldModel.Parent = world
-local vcam = Instance.new("Camera")
-vcam.FieldOfView = FOV
-vcam.Parent = world
-world.CurrentCamera = vcam
 local overlay = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 5, Parent = map })
 local loading = UI.label(map, { Text = "Drawing the map...", Font = UI.BIG, Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromScale(0, 0.45), ZIndex = 9, stroke = 3, Visible = false })
 
@@ -90,44 +87,88 @@ local loading = UI.label(map, { Text = "Drawing the map...", Font = UI.BIG, Size
 local center = Vector3.new(0, 0, 0)
 local span = 460 -- studs of town across the map's width
 local follow = true
-local function height()
-	-- the camera height that shows `span` studs across at ground level
-	local halfV = math.tan(math.rad(FOV / 2))
-	return (span / 2) / (halfV * (W / H))
-end
+local lastView
 local function applyView()
-	local h = height()
-	vcam.CFrame = CFrame.lookAt(center + Vector3.new(0, h, 0), center, Vector3.new(0, 0, -1))
+	-- (only when it moved: resizing the canvas re-lays out every shape on it)
+	local s = W / span
+	local x, y = math.floor(W / 2 - (center.X - MIN_X) * s + 0.5), math.floor(H / 2 - (center.Z - MIN_Z) * s + 0.5)
+	local key = x .. "," .. y .. "," .. span
+	if key == lastView then return end
+	lastView = key
+	canvas.Size = UDim2.fromOffset(WW * s, HH * s)
+	canvas.Position = UDim2.fromOffset(x, y)
 end
--- world point (at ground height) -> map pixel
+-- world point -> map pixel (straight down: -Z up, +X right)
 local function project(p)
-	local h = height()
-	local d = h - (p.Y or 0)
-	local halfV = d * math.tan(math.rad(FOV / 2))
-	local halfU = halfV * (W / H)
-	return W / 2 + (p.X - center.X) / halfU * (W / 2), H / 2 + (p.Z - center.Z) / halfV * (H / 2)
+	local s = W / span
+	return W / 2 + (p.X - center.X) * s, H / 2 + (p.Z - center.Z) * s
 end
 
 ---------------------------------------------------------------------------
--- the town, as seen from above: the server's copy (MapPlan: ReplicatedStorage.MapPlan, not streamed,
--- so the whole town is there however far away you are), copied into the viewport
+-- the town, as seen from above: the server's footprints (MapPlan: ReplicatedStorage.MapPlan, not
+-- streamed, so the whole town is there however far away you are), each drawn once as a flat shape
 ---------------------------------------------------------------------------
-local townCopy, schoolsCopy, schoolsVersion
+local function readPlan(f)
+	local n = f:GetAttribute("Chunks") or 0
+	local parts = {}
+	for i = 1, n do
+		local v = f:FindFirstChild(tostring(i))
+		if not v then return nil end
+		parts[i] = v.Value
+	end
+	local ok, list = pcall(HttpService.JSONDecode, HttpService, table.concat(parts))
+	return ok and list or nil
+end
+-- (lowest first, as the server sorted them: roofs over lawns; a tall thing a layer up as well)
+local function drawShapes(list, into)
+	for _, fp in list do
+		local x, z, w, d, turn, color, round, top = fp[1], fp[2], fp[3], fp[4], fp[5], fp[6], fp[7], fp[8]
+		local f = Instance.new("Frame")
+		f.BorderSizePixel = 0
+		f.AnchorPoint = Vector2.new(0.5, 0.5)
+		f.Position = UDim2.fromScale((x - MIN_X) / WW, (z - MIN_Z) / HH)
+		f.Size = UDim2.fromScale(math.max(w, 0.6) / WW, math.max(d, 0.6) / HH)
+		f.Rotation = turn
+		f.BackgroundColor3 = Color3.fromRGB(color // 65536 % 256, color // 256 % 256, color % 256)
+		f.ZIndex = top > 8 and 3 or (top > 1.5 and 2 or 1)
+		if round == 1 then
+			local c = Instance.new("UICorner")
+			c.CornerRadius = UDim.new(0.5, 0)
+			c.Parent = f
+		end
+		f.Parent = into
+	end
+end
+local townLayer, schoolsLayer, schoolsVersion
+local function layer(name)
+	local f = Instance.new("Frame")
+	f.Name = name
+	f.BackgroundTransparency = 1
+	f.Size = UDim2.fromScale(1, 1)
+	f.Parent = canvas
+	return f
+end
 local function draw()
 	local plan = ReplicatedStorage:FindFirstChild("MapPlan")
 	local town = plan and plan:FindFirstChild("Town")
 	local schools = plan and plan:FindFirstChild("Schools")
-	loading.Visible = town == nil
-	if town and not townCopy then
-		townCopy = town:Clone()
-		townCopy.Parent = worldModel
+	loading.Visible = town == nil and townLayer == nil
+	if town and not townLayer then
+		local list = readPlan(town)
+		if list then
+			townLayer = layer("Town")
+			drawShapes(list, townLayer)
+		end
 	end
 	local v = plan and plan:GetAttribute("SchoolsVersion")
 	if schools and v ~= schoolsVersion then
-		schoolsVersion = v
-		if schoolsCopy then schoolsCopy:Destroy() end
-		schoolsCopy = schools:Clone()
-		schoolsCopy.Parent = worldModel
+		local list = readPlan(schools)
+		if list then
+			schoolsVersion = v
+			if schoolsLayer then schoolsLayer:Destroy() end
+			schoolsLayer = layer("Schools")
+			drawShapes(list, schoolsLayer)
+		end
 	end
 end
 
@@ -173,7 +214,9 @@ local function buildOverlay()
 	local function lm(n)
 		local l = workspace.Map:FindFirstChild("Landmarks")
 		local m = l and l:FindFirstChild(n)
-		return m and m:GetPivot().Position
+		-- (MapAt, set by whoever built it, beats the pivot: a streamed model's pivot on this client is
+		-- the middle of whatever parts have arrived, which put Recess Commons' name over the next plot)
+		return m and (m:GetAttribute("MapAt") or m:GetPivot().Position)
 	end
 	local function box(n)
 		local m = workspace:FindFirstChild(n) or workspace.Map:FindFirstChild(n)
@@ -330,7 +373,14 @@ local function setOpen(on)
 		end
 	end
 end
-dim.Activated:Connect(function() setOpen(false) end)
+-- a click on the dark backdrop outside the map closes it (not a click that lands on the map: the
+-- backdrop's Activated also fired for those, so dragging the map shut it)
+dim.Activated:Connect(function()
+	local m = UserInputService:GetMouseLocation() - game:GetService("GuiService"):GetGuiInset()
+	local p, s = holder.AbsolutePosition, holder.AbsoluteSize
+	if m.X >= p.X and m.X <= p.X + s.X and m.Y >= p.Y and m.Y <= p.Y + s.Y then return end
+	setOpen(false)
+end)
 UserInputService.InputBegan:Connect(function(input, processed)
 	if input.KeyCode ~= Enum.KeyCode.M and input.KeyCode ~= Enum.KeyCode.Tab then return end
 	if UserInputService:GetFocusedTextBox() then return end
