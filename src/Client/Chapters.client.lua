@@ -77,11 +77,12 @@ for i = 1, 5 do
 	local cap = Instance.new("UITextSizeConstraint")
 	cap.MaxTextSize = 17
 	cap.Parent = text
-	local right = UI.label(r, { Text = "", TextColor3 = Color3.fromRGB(40, 150, 70), Size = UDim2.new(0, 70, 1, -8), Position = UDim2.new(1, -72, 0, 4), stroke = 0 })
+	local right = UI.label(r, { Text = "", TextColor3 = Color3.fromRGB(120, 255, 130), Size = UDim2.new(0, 70, 1, -8), Position = UDim2.new(1, -72, 0, 4), stroke = 1.5 })
 	local line = UI.new("Frame", { Name = "Strike", BackgroundColor3 = UI.C.grey, BorderSizePixel = 0, Size = UDim2.new(1, -110, 0, 2), Position = UDim2.new(0, 32, 0.5, 0), Visible = false, Parent = r })
 	rows[i] = { frame = r, box = box, tick = tick, text = text, right = right, strike = line }
 end
 local footer = UI.label(card, { Text = "", TextColor3 = UI.C.navy, Size = UDim2.new(1, -20, 0, 20), Position = UDim2.new(0, 10, 1, -26), stroke = 0 })
+UI.pixelCard(card, header)
 
 local state
 local collapsed = false
@@ -131,10 +132,10 @@ local function show(s)
 			r.text.Text = st.text
 			r.tick.Visible = st.done == true
 			r.strike.Visible = st.done == true
-			r.text.TextColor3 = st.done and UI.C.grey or UI.C.ink
+			r.text.TextColor3 = st.done and UI.P.muted or UI.P.text
 			r.box.BackgroundColor3 = st.done and Color3.fromRGB(220, 255, 225) or UI.C.white
 			r.right.Text = st.done and "" or fmtReward(st)
-			r.right.TextColor3 = st.count and UI.C.navy or Color3.fromRGB(40, 150, 70)
+			r.right.TextColor3 = st.count and UI.P.text or Color3.fromRGB(120, 255, 130)
 		end
 	end
 	footer.Text = ("Finish them all: \u{1F4E8} %s Letter"):format(s.letter or "")
