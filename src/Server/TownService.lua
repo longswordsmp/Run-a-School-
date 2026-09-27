@@ -14,6 +14,7 @@ local RING_Z = 222
 local ROAD_W = 24
 local FENCE_X, FENCE_Z = 540, 240 -- the district fences
 local EDGE_X, EDGE_Z = 800, 560 -- the edge of the world
+local EDGE_NORTH = 960 -- (the north edge is further out: Sunny Shores and the sea, TownShores)
 
 -- the old map's trees and lamps that would stand on a new road
 local function clearRoads(roads)
@@ -99,13 +100,14 @@ local function buildFrame(town)
 	-- the edge of the world: an invisible wall behind a double row of pines
 	local edge = Kit.folder(frame, "Edge")
 	Kit.wall(edge, -EDGE_X, EDGE_Z, EDGE_X, EDGE_Z)
-	Kit.wall(edge, -EDGE_X, -EDGE_Z, EDGE_X, -EDGE_Z)
-	Kit.wall(edge, EDGE_X, -EDGE_Z, EDGE_X, EDGE_Z)
-	Kit.wall(edge, -EDGE_X, -EDGE_Z, -EDGE_X, EDGE_Z)
+	Kit.wall(edge, -EDGE_X, -EDGE_NORTH, EDGE_X, -EDGE_NORTH)
+	Kit.wall(edge, EDGE_X, -EDGE_NORTH, EDGE_X, EDGE_Z)
+	Kit.wall(edge, -EDGE_X, -EDGE_NORTH, -EDGE_X, EDGE_Z)
 	local rng = Random.new(11)
+	-- (pines along the south edge; the north one opens onto the beach now)
 	for x = -EDGE_X + 10, EDGE_X - 10, 22 do
 		Kit.pine(edge, x + rng:NextNumber(-4, 4), EDGE_Z - 10, rng:NextNumber(1.1, 1.6))
-		Kit.pine(edge, x + rng:NextNumber(-4, 4), -EDGE_Z + 10, rng:NextNumber(1.1, 1.6))
+		rng:NextNumber() rng:NextNumber() -- (the same random sequence for everything after)
 	end
 	for z = -EDGE_Z + 32, EDGE_Z - 32, 22 do
 		Kit.pine(edge, EDGE_X - 10, z + rng:NextNumber(-4, 4), rng:NextNumber(1.1, 1.6))
@@ -120,7 +122,7 @@ function TownService.start()
 	town.Name = "Town"
 	buildFrame(town)
 	-- the districts (each file builds into its own model)
-	for _, name in { "TownDowntown", "TownMaple", "TownPark", "TownIndustrial", "TownHQ", "TownUFO", "TownInteriors", "TownSewer" } do
+	for _, name in { "TownDowntown", "TownMaple", "TownPark", "TownIndustrial", "TownHQ", "TownUFO", "TownInteriors", "TownSewer", "TownShores" } do
 		local mod = script.Parent:FindFirstChild(name)
 		if mod then
 			local ok, err = pcall(function() require(mod).build(town, Kit) end)

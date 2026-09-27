@@ -58,6 +58,16 @@ for _, m in CollectionService:GetTagged("Turn") do addTurn(m) end
 CollectionService:GetInstanceAddedSignal("Turn"):Connect(addTurn)
 CollectionService:GetInstanceRemovedSignal("Turn"):Connect(function(m) turners[m] = nil end)
 
+-- "Wheel": a Ferris wheel (Sunny Shores). Its "Rim" model turns about the hub's Z at SpinSpeed; the
+-- "Gondola" models (attribute Index) ride round at Radius, kept hanging level.
+local wheels = {}
+local function addWheel(m)
+	if m:IsA("Model") then wheels[m] = false end
+end
+for _, m in CollectionService:GetTagged("Wheel") do addWheel(m) end
+CollectionService:GetInstanceAddedSignal("Wheel"):Connect(addWheel)
+CollectionService:GetInstanceRemovedSignal("Wheel"):Connect(function(m) wheels[m] = nil end)
+
 -- "Flicker": a light that stutters now and then (the sewer lamps)
 local flickers = {}
 local function addFlicker(l)
@@ -117,6 +127,27 @@ RunService.RenderStepped:Connect(function()
 			if (base.Position - camPos).Magnitude < 220 then m:PivotTo(base * CFrame.Angles(0, t * (m:GetAttribute("SpinSpeed") or 0.5), 0)) end
 		elseif not m.Parent then
 			turners[m] = nil
+		end
+	end
+	for m in wheels do
+		local base = m.Parent and baseOf(wheels, m)
+		if base then
+			if (base.Position - camPos).Magnitude < 450 then
+				local ang = t * (m:GetAttribute("SpinSpeed") or 0.1)
+				local rim = m:FindFirstChild("Rim")
+				if rim and rim.PrimaryPart then rim:PivotTo(base * CFrame.Angles(0, 0, ang)) end
+				local R = m:GetAttribute("Radius") or 20
+				local n = 0
+				for _, g in m:GetChildren() do if g.Name == "Gondola" then n += 1 end end
+				for _, g in m:GetChildren() do
+					if g.Name == "Gondola" and g.PrimaryPart then
+						local a = (g:GetAttribute("Index") or 0) / math.max(n, 1) * math.pi * 2 + ang
+						g:PivotTo(base * CFrame.new(math.cos(a) * R, math.sin(a) * R, 0))
+					end
+				end
+			end
+		elseif not m.Parent then
+			wheels[m] = nil
 		end
 	end
 	for m in spinners do
