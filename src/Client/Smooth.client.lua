@@ -28,7 +28,8 @@ end
 
 local function track(model)
 	local root = model.PrimaryPart
-	-- (Ambient: kids who ride on what they sit on, moved by Decor with it; never moved by the server)
+	-- (Ambient: moved on this client, never by the server: kids who ride on what they sit on (Decor),
+	-- the cutscenes' actors)
 	if not root or tracked[root] or isPlayerChar(model) or model:GetAttribute("Ambient") then return end
 	tracked[root] = { snaps = {}, wrote = nil }
 	root.AncestryChanged:Connect(function()

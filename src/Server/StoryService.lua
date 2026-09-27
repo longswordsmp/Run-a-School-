@@ -13,6 +13,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Factory = require(script.Parent.StudentFactory)
 local Walkers = require(script.Parent.Walkers)
 local Remotes = require(script.Parent.Remotes)
+local Limo = require(ReplicatedStorage.Shared.Limo)
 
 local StoryService = {}
 local folder
@@ -397,99 +398,28 @@ local VEX_LINES = {
 	"Is that a school or a shoebox?",
 	"I'll buy it. I'll buy ALL of it.",
 }
-local function buildLimo()
-	local limo = Instance.new("Model")
-	limo.Name = "VexLimo"
-	local function p(name, size, cf, color, mat, shape)
-		local x = Instance.new("Part")
-		x.Name = name
-		x.Size = size
-		x.CFrame = cf
-		x.Color = color
-		x.Material = mat or Enum.Material.SmoothPlastic
-		x.Anchored = true
-		x.CanCollide = false
-		if shape then x.Shape = shape end
-		x.Parent = limo
-		return x
-	end
-	-- a long black stretch limo: front +X, chrome everywhere, purple underglow and flags
-	local black = Color3.fromRGB(20, 20, 26)
-	local chrome = Color3.fromRGB(210, 212, 222)
-	local tint = Color3.fromRGB(34, 30, 48)
-	local front = CFrame.Angles(0, math.rad(-90), 0) -- (wedges sloping down towards +X)
-	local back = CFrame.Angles(0, math.rad(90), 0) -- (wedges sloping down towards -X)
-	local function wedge(name, size, cf, color, mat)
-		local w = Instance.new("WedgePart")
-		w.Name = name
-		w.Size = size
-		w.CFrame = cf
-		w.Color = color
-		w.Material = mat or Enum.Material.Metal
-		w.Anchored, w.CanCollide = true, false
-		w.Parent = limo
-		return w
-	end
-	local function wheel(x, z)
-		local r = CFrame.new(x, 1.5, z) * CFrame.Angles(0, math.rad(90), 0) -- (round faces across the car)
-		p("Wheel", Vector3.new(1.2, 3, 3), r, Color3.fromRGB(15, 15, 17), nil, Enum.PartType.Cylinder)
-		p("Rim", Vector3.new(1.26, 1.8, 1.8), r, chrome, Enum.Material.Metal, Enum.PartType.Cylinder)
-		p("RimCap", Vector3.new(1.3, 0.6, 0.6), r, Color3.fromRGB(120, 50, 170), Enum.Material.Metal, Enum.PartType.Cylinder)
-	end
-	local body = p("Body", Vector3.new(30, 3, 8), CFrame.new(0, 2.5, 0), black, Enum.Material.Metal)
-	limo.PrimaryPart = body
-	-- the long cabin with a raked windshield and a sloping back window
-	p("Cabin", Vector3.new(19, 2.6, 7.4), CFrame.new(-1.5, 5.3, 0), black, Enum.Material.Metal)
-	wedge("Windshield", Vector3.new(7.2, 2.6, 2.4), CFrame.new(9.2, 5.3, 0) * front, tint, Enum.Material.Glass)
-	wedge("BackWindow", Vector3.new(7.2, 2.6, 2), CFrame.new(-12, 5.3, 0) * back, tint, Enum.Material.Glass)
-	wedge("Hood", Vector3.new(7.8, 0.5, 4.6), CFrame.new(12.7, 4.25, 0) * front, black)
-	for _, z in { -3.72, 3.72 } do
-		-- tinted windows in chrome frames, a chrome belt line and a sill
-		p("WindowFrame", Vector3.new(17.4, 2, 0.06), CFrame.new(-1.5, 5.35, z), chrome, Enum.Material.Metal)
-		for i = 0, 3 do
-			p("Windows", Vector3.new(3.9, 1.7, 0.06), CFrame.new(-8.7 + i * 4.3, 5.35, z * 1.016), tint, Enum.Material.Glass)
-		end
-		p("Chrome", Vector3.new(30, 0.2, 0.1), CFrame.new(0, 3.95, z * 1.077), chrome, Enum.Material.Metal)
-		p("Sill", Vector3.new(22, 0.3, 0.1), CFrame.new(0, 1.3, z * 1.077), chrome, Enum.Material.Metal)
-	end
-	-- the front: a tall chrome grille, rectangular lights, a bumper; flags on the fenders
-	p("Grille", Vector3.new(0.2, 2, 3.6), CFrame.new(15.05, 2.6, 0), chrome, Enum.Material.Metal)
-	for i = -3, 3 do p("GrilleBar", Vector3.new(0.12, 1.8, 0.12), CFrame.new(15.2, 2.6, i * 0.45), Color3.fromRGB(40, 40, 50), Enum.Material.Metal) end
-	for _, z in { -2.9, 2.9 } do
-		p("Headlight", Vector3.new(0.3, 0.6, 1.6), CFrame.new(15.1, 3.1, z), Color3.fromRGB(255, 250, 220), Enum.Material.Neon)
-		p("Taillight", Vector3.new(0.3, 0.7, 1.6), CFrame.new(-15.1, 3.1, z), Color3.fromRGB(220, 30, 40), Enum.Material.Neon)
-		p("FlagPole", Vector3.new(0.12, 2, 0.12), CFrame.new(13.8, 5, z * 1.2), chrome, Enum.Material.Metal)
-		p("Flag", Vector3.new(1.4, 0.9, 0.05), CFrame.new(13.1, 5.5, z * 1.2), Color3.fromRGB(140, 50, 210), Enum.Material.Fabric)
-	end
-	p("Bumper", Vector3.new(0.6, 0.7, 8.2), CFrame.new(15.3, 1.4, 0), chrome, Enum.Material.Metal)
-	p("RearBumper", Vector3.new(0.6, 0.7, 8.2), CFrame.new(-15.3, 1.4, 0), chrome, Enum.Material.Metal)
-	for _, x in { -11, 11 } do
-		for _, z in { -3.75, 3.75 } do wheel(x, z) end
-	end
-	local plate = p("Plate", Vector3.new(0.2, 1, 3), CFrame.new(-15.2, 2.3, 0), Color3.fromRGB(250, 250, 240))
-	local g = Instance.new("SurfaceGui")
-	g.Face = Enum.NormalId.Left
-	g.Parent = plate
-	local t = Instance.new("TextLabel")
-	t.Size = UDim2.fromScale(1, 1)
-	t.BackgroundTransparency = 1
-	t.TextScaled = true
-	t.Font = Enum.Font.Arcade
-	t.Text = "VEX 1"
-	t.TextColor3 = Color3.fromRGB(90, 30, 130)
-	t.Parent = g
-	-- underglow
-	p("Underglow", Vector3.new(28, 0.2, 7), CFrame.new(0, 0.7, 0), Color3.fromRGB(170, 60, 255), Enum.Material.Neon)
-	-- Vex stands up through the sunroof
+-- the limo (Shared/Limo) with Vex on the velvet bench at the open window on `side` (the school's side:
+-- +1 / -1) and Crumpet at the wheel, both sitting, welded in. They sit once the car is in the world
+-- (an animation can't load before that).
+local function buildLimo(side)
+	local limo = Limo.build(side or -1)
 	local vex = Factory.buildTeacher({ id = "Vex", name = "Dr. Veronica Vex", title = "VexCorp CEO", mult = 1, outfit = "vex" }, 1)
 	vex.Name = "Vex"
-	local so = Factory.standOffset(vex)
-	-- feet just under the roof line (cabin top is y 6.7), so she stands out of the sunroof from the knees up
-	vex.PrimaryPart.CFrame = CFrame.new(3, 5.2 + so, 0) * CFrame.Angles(0, math.rad(-90), 0)
-	p("Sunroof", Vector3.new(3.2, 0.3, 3.2), CFrame.new(3, 6.8, 0), Color3.fromRGB(60, 60, 70), Enum.Material.Metal)
-	vex.Parent = limo
+	Limo.seat(limo, vex, "VexSeat")
 	nameTag(vex, "Dr. Veronica Vex", "VexCorp CEO", Color3.fromRGB(190, 110, 255))
-	return limo, vex
+	local crumpet = Factory.buildTeacher({ id = "Crumpet", name = "Crumpet", title = "Butler", mult = 1, outfit = "butler" }, 1)
+	crumpet.Name = "Crumpet"
+	Limo.seat(limo, crumpet, "DriverSeat")
+	Limo.weld(limo)
+	task.spawn(function()
+		local t0 = os.clock()
+		while not limo:IsDescendantOf(workspace) and os.clock() - t0 < 30 do task.wait(0.2) end
+		if not limo:IsDescendantOf(workspace) then return end
+		for _, rider in { vex, crumpet } do
+			if rider.Parent == limo then Factory.play(rider, "sit") end
+		end
+	end)
+	return limo, vex, crumpet
 end
 
 local function vexDriveBy()
@@ -503,13 +433,13 @@ local function vexDriveBy()
 		-- (not a principal still on the To-Do list: their first minutes are scripted)
 		if plot and not player:GetAttribute("InTutorial") and (not lowest or inc < lowest) then target, lowest = plot, inc end
 	end
-	local limo, vex = buildLimo()
-	-- the sidewalk on the target school's side of the street, clear of the carpet
-	local z = (target and target.Origin.Position.Z < 0) and -6 or 6 -- (the lane on that side: StreetLayout.LANE)
-	-- facing along the street; Vex turns to the school when the limo stops (the pivot is the body's
-	-- middle, 2.5 over the wheels' bottoms)
+	-- the lane on the target school's side of the street (StreetLayout.LANE); Vex sits facing that way
+	local side = (target and target.Origin.Position.Z < 0) and -1 or 1
+	local z = side * 6
+	local limo, vex = buildLimo(side)
+	-- facing along the street (the pivot is the body's middle, 2.5 over the wheels' bottoms)
 	local function at(x) return CFrame.new(x, 2.8, z) end
-	limo:PivotTo(at(-460))
+	Limo.moveTo(limo, at(-460))
 	limo.Parent = folder
 	local npc = { model = vex }
 	npc.bubble, npc.text = speech(vex)
@@ -520,17 +450,13 @@ local function vexDriveBy()
 		local t0, dur = os.clock(), dist / speed
 		while true do
 			local a = math.min(1, (os.clock() - t0) / dur)
-			limo:PivotTo(at(fromX + (toX - fromX) * a))
+			Limo.moveTo(limo, at(fromX + (toX - fromX) * a))
 			if a >= 1 then break end
 			task.wait()
 		end
 	end
 	drive(-460, stopX, 40)
-	-- stop, turn to the school, deliver a line
-	if target then
-		local vr = vex.PrimaryPart
-		vr.CFrame = CFrame.lookAt(vr.Position, Vector3.new(target.Origin.Position.X, vr.Position.Y, target.Origin.Position.Z))
-	end
+	-- stop and deliver a line out of the window
 	npc.text.Text = VEX_LINES[math.random(#VEX_LINES)]
 	npc.bubble.Enabled = true
 	Factory.emote(vex, "point")
@@ -560,7 +486,7 @@ local function roofCage(limo)
 		x.Anchored, x.CanCollide = true, false
 		x.Parent = limo
 	end
-	local cx, base = -8, 6.7
+	local cx, base = -8, 7.0 -- (on the roof: Shared/Limo's roof top)
 	bar(Vector3.new(3.6, 0.25, 3.6), CFrame.new(cx, base + 0.12, 0))
 	bar(Vector3.new(3.8, 0.25, 3.8), CFrame.new(cx, base + 3.9, 0))
 	for _, a in { -1.65, 1.65 } do
@@ -580,17 +506,19 @@ function StoryService.tutorialLimo(player)
 	local Data = require(script.Parent.DataService)
 	local plot = PlotService.getPlot(player)
 	if not plot or tutorialLimos[player] then return end
-	local limo, vex = buildLimo()
+	local side = plot.Origin.Position.Z < 0 and -1 or 1
+	local limo, vex = buildLimo(side)
 	limo.Name = "VexLimoTutorial"
 	tutorialLimos[player] = limo
-	local side = plot.Origin.Position.Z < 0 and -1 or 1
 	-- Skater Kid, caged on the roof, facing your school, tagged STOLEN!
 	local floor = roofCage(limo)
 	local kid = Factory.build(Config.StudentById.SkaterKid, "Normal")
 	Factory.setMode(kid, "carried")
 	local kso = Factory.standOffset(kid)
 	kid.PrimaryPart.CFrame = CFrame.lookAt(floor + Vector3.new(0, kso, 0), floor + Vector3.new(0, kso, side * 5))
+	kid.PrimaryPart.Anchored = true
 	kid.Parent = limo
+	Limo.weld(limo) -- (the cage and the kid ride along too)
 	local kidNpc = { model = kid }
 	kidNpc.bubble, kidNpc.text = speech(kid)
 	local npc = { model = vex }
@@ -607,7 +535,7 @@ function StoryService.tutorialLimo(player)
 			local a = math.min(1, (os.clock() - t0) / dur)
 			-- (easing in to the stop)
 			local e = 1 - (1 - a) * (1 - a)
-			limo:PivotTo(at(fromX + (toX - fromX) * e))
+			Limo.moveTo(limo, at(fromX + (toX - fromX) * e))
 			if a >= 1 then break end
 			task.wait()
 		end
@@ -623,13 +551,11 @@ function StoryService.tutorialLimo(player)
 		return st ~= nil and st.id == "lock"
 	end
 	task.spawn(function()
-		limo:PivotTo(at(stopX - 170))
+		Limo.moveTo(limo, at(stopX - 170))
 		limo.Parent = folder
 		Remotes.Sfx:FireClient(player, "BusHorn")
 		drive(stopX - 170, stopX, 45)
 		if not player.Parent or not limo.Parent then limo:Destroy() tutorialLimos[player] = nil return end
-		local vr = vex.PrimaryPart
-		vr.CFrame = CFrame.lookAt(vr.Position, Vector3.new(plot.Entry.Position.X, vr.Position.Y, plot.Entry.Position.Z))
 		Factory.emote(vex, "point")
 		line(npc, "Your first transfer student, Principal? He rides with ME now.")
 		task.wait(1.2)

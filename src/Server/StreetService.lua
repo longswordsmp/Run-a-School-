@@ -140,8 +140,10 @@ local function buildForSale(folder)
 	local StoryService = require(script.Parent.StoryService)
 	local limo = StoryService.buildLimo()
 	-- (parked and empty: Vex is off buying things)
-	local vex = limo:FindFirstChild("Vex")
-	if vex then vex:Destroy() end
+	for _, rider in { "Vex", "Crumpet" } do
+		local m = limo:FindFirstChild(rider)
+		if m then m:Destroy() end
+	end
 	for _, d in limo:GetDescendants() do
 		if d:IsA("BasePart") then d.CanCollide = false d.Anchored = true end
 	end

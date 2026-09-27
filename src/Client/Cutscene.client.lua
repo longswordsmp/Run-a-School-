@@ -10,6 +10,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local UI = require(Shared:WaitForChild("UI"))
 local Config = require(Shared:WaitForChild("Config"))
+local Limo = require(Shared:WaitForChild("Limo"))
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 local bus = ReplicatedStorage:WaitForChild("ClientBus", 10)
 
@@ -119,6 +120,7 @@ local function standIn(at)
 	local hum = clone:FindFirstChildOfClass("Humanoid")
 	if hum then hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None end
 	clone:PivotTo(at)
+	clone:SetAttribute("Ambient", true) -- (moved here, not by the server: Smooth leaves it alone)
 	clone.Parent = workspace
 	return clone
 end
@@ -336,6 +338,9 @@ local function actor(templateId, at, face)
 	local so = hum.HipHeight + root.Size.Y / 2
 	local pos = at + Vector3.new(0, so, 0)
 	m:PivotTo(CFrame.lookAt(pos, Vector3.new(face.X, pos.Y, face.Z)))
+	-- (moved by this scene, not by the server: Smooth, which redraws server NPCs a moment behind, left
+	-- Vex and Crumpet stranded in the road when the limo carried them off)
+	m:SetAttribute("Ambient", true)
 	m.Parent = workspace
 	return m
 end
@@ -499,33 +504,33 @@ local function intro(data)
 	end
 	wait(0.6)
 
-	-- 3: the limo glides up the street and stops at your gate
+	-- 3: the limo glides up the street and stops at your gate, Crumpet at the wheel and Vex in the back.
+	-- Her door swings open and she's out on the pavement beside it; after her piece she's back in, the
+	-- door shuts, and they're away. (Shared/Limo: she used to stand up out of a sunroof from the knees,
+	-- and Crumpet stood on nothing behind the boot.)
 	local limo
-	local stages = ReplicatedStorage:FindFirstChild("StreetStages")
-	local tmpl = stages and stages:FindFirstChild("ForSale") and stages.ForSale:FindFirstChild("VexLimo")
 	local laneZ = side * 6 -- (your side's lane of the road)
 	-- (the limo's pivot is its body's middle, 2.5 above its wheels' contact)
 	local function limoAt(x) return CFrame.new(x, ground + 2.4, laneZ) end
+	local function stopAll(m)
+		local hum = m and m:FindFirstChildOfClass("Humanoid")
+		local an = hum and hum:FindFirstChildOfClass("Animator")
+		if an then for _, tr in an:GetPlayingAnimationTracks() do tr:Stop(0.1) end end
+	end
 	local vex, crumpet
-	if tmpl and not skipped then
-		limo = tmpl:Clone()
-		for _, d in limo:GetDescendants() do
-			if d:IsA("BasePart") then d.Anchored = true d.CanCollide = false end
-		end
+	if not skipped then
+		limo = Limo.build(side)
 		limo:PivotTo(limoAt(gate.X - 90))
 		limo.Parent = workspace
 		table.insert(cast, limo)
-		-- Vex up through the sunroof; Crumpet riding on the back like a footman
-		local base = limo:GetPivot()
-		vex = actor("Vex", (base * CFrame.new(3, 1.3, 0)).Position, (base * CFrame.new(3, 1.3, -side * 10)).Position)
-		crumpet = actor("Crumpet", (base * CFrame.new(-16.2, -1.4, 0)).Position, (base * CFrame.new(10, -1.4, 0)).Position)
-		table.insert(cast, vex)
-		table.insert(cast, crumpet)
-		pose(vex, "idle", true)
-		pose(crumpet, "idle", true)
-		local riders = {}
-		for _, r in { vex, crumpet } do
-			if r then riders[r] = base:ToObjectSpace(r:GetPivot()) end
+		vex = actor("Vex", youAt, youAt)
+		crumpet = actor("Crumpet", youAt, youAt)
+		for _, rider in { { vex, "VexSeat" }, { crumpet, "DriverSeat" } } do
+			if rider[1] then
+				table.insert(cast, rider[1])
+				Limo.seat(limo, rider[1], rider[2])
+				pose(rider[1], "sit", true)
+			end
 		end
 		-- over your shoulder, looking out through the gate at the street
 		local behind = youAt + inward * 9 + Vector3.new(4, 7, 0)
@@ -536,43 +541,53 @@ local function intro(data)
 		while os.clock() - t0 < dur and not skipped do
 			local a = (os.clock() - t0) / dur
 			local e = 1 - (1 - a) * (1 - a) -- (easing to a stop)
-			local cf = limoAt(gate.X - 90 + 90 * e)
-			limo:PivotTo(cf)
-			for r, off in riders do r:PivotTo(cf * off) end
+			limo:PivotTo(limoAt(gate.X - 90 + 90 * e))
 			task.wait()
 		end
-		limo:PivotTo(limoAt(gate.X))
-		for r, off in riders do r:PivotTo(limoAt(gate.X) * off) end
-		-- she turns to your school
-		if vex and vex.PrimaryPart then
-			local vr = vex.PrimaryPart
-			vex:PivotTo(CFrame.lookAt(vr.Position, Vector3.new(youAt.X, vr.Position.Y, youAt.Z)))
-		end
-		-- Vex from across the street, your school behind her
 		local stop = limoAt(gate.X)
-		local vexHead = (stop * CFrame.new(3, 6.2, 0)).Position
-		local vexShot = CFrame.lookAt(Vector3.new(gate.X + 7, vexHead.Y + 1.5, laneZ - side * 15), vexHead)
+		limo:PivotTo(stop)
+		-- her door swings open (from the pavement, down the side of the car)
+		local doorAt = (stop * CFrame.new(-3, 1.2, side * 4)).Position
+		camera.CFrame = CFrame.lookAt(doorAt + Vector3.new(9, 2.2, side * 8), doorAt)
+		wait(0.35)
+		Limo.door(limo, side, true, 0.45)
+		wait(0.8)
+		-- cut: she's out, on the pavement behind the open door, facing your school
+		local outAt = Vector3.new((stop * CFrame.new(-5.4, 0, 0)).Position.X, ground, laneZ + side * 6.6)
+		if vex and vex.PrimaryPart then
+			stopAll(vex)
+			local hum = vex:FindFirstChildOfClass("Humanoid")
+			local so = hum.HipHeight + vex.PrimaryPart.Size.Y / 2
+			vex.PrimaryPart.CFrame = CFrame.lookAt(outAt + Vector3.new(0, so, 0), Vector3.new(youAt.X, outAt.Y + so, youAt.Z))
+			pose(vex, "idle", true)
+		end
+		-- Vex face on, her limo and its open door behind her
+		local vexHead = outAt + Vector3.new(0, 5.2, 0)
+		local vexShot = CFrame.lookAt(outAt + Vector3.new(4.5, 5.6, side * 8.5), vexHead)
 		camera.CFrame = vexShot
 		pose(vex, "point")
 		say("DR. VERONICA VEX", "Vex", "Enjoy your little school while it lasts, Principal.", 1.2)
 		say("DR. VERONICA VEX", "Vex", "By summer, every kid on Recess Row will be at MY school.", 1.6)
-		-- Crumpet on the back of the limo
-		local crumpetHead = (stop * CFrame.new(-16.2, 3.4, 0)).Position
-		camera.CFrame = CFrame.lookAt(crumpetHead + Vector3.new(-7, 1.2, -side * 7), crumpetHead)
+		-- Crumpet at the wheel, through his open window
+		local crumpetHead = crumpet and crumpet:FindFirstChild("Head") and crumpet.Head.Position or (stop * CFrame.new(4.1, 3.4, side * 1.8)).Position
+		camera.CFrame = CFrame.lookAt(crumpetHead + Vector3.new(3.2, 0.8, side * 6.5), crumpetHead)
 		pose(crumpet, "wave")
 		say("CRUMPET", "Crumpet", "Shall I fetch one of their students now, Madam?", 1.2)
 		camera.CFrame = vexShot
 		pose(vex, "laugh")
 		say("DR. VERONICA VEX", "Vex", "Patience, Crumpet. Soon.", 1.0)
-		-- (from inside your gate as she drives away)
+		-- (cut: from inside your gate, she's back in and the door is shut as they pull away)
+		if vex then
+			stopAll(vex)
+			Limo.seat(limo, vex, "VexSeat")
+			pose(vex, "sit", true)
+		end
+		Limo.door(limo, side, false)
 		camera.CFrame = CFrame.lookAt(youAt + inward * 9 + Vector3.new(4, 7, 0), Vector3.new(gate.X, 3, laneZ))
-		-- and away
 		local t1 = os.clock()
 		while os.clock() - t1 < 2.2 and not skipped do
 			local a = (os.clock() - t1) / 2.2
-			local cf = limoAt(gate.X + 140 * a * a)
-			limo:PivotTo(cf)
-			for r, off in riders do r:PivotTo(cf * off) end
+			limo:PivotTo(limoAt(gate.X + 140 * a * a))
 			task.wait()
 		end
 	end
@@ -1041,6 +1056,7 @@ local function spawnActor(a, folder)
 		if m then m.Parent = folder end
 	elseif tmpl then
 		m = tmpl:Clone()
+		m:SetAttribute("Ambient", true) -- (moved by the scene: Smooth leaves it alone)
 		m.Parent = folder
 	end
 	if not m then return nil end
