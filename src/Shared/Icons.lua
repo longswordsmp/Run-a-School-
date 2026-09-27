@@ -107,55 +107,45 @@ end
 
 local B = {}
 
--- the Store's basket, after tomas's reference (2026-09-27): a chunky red stud-plastic basket seen from
--- above, empty, its sides a weave of bars with the dark inside showing through the holes, a pale rim
--- with studs on it and a grey handle with a red grip over the top
+-- the Shop's basket, after tomas's reference (2026-09-27): a pink-red stud-plastic basket seen corner on
+-- from above, its sides solid with the stud weave all over them, a thick rim standing out over them, the
+-- inside a shade darker, and a plain pale grey handle standing up across it from the middle of one long
+-- side to the other
+local ALL_STUDS = { "TopSurface", "FrontSurface", "BackSurface", "LeftSurface", "RightSurface" }
+local function studded(x)
+	x.Material = Enum.Material.Plastic
+	for _, f in ALL_STUDS do x[f] = Enum.SurfaceType.Studs end
+	return x
+end
 function B.basket(m)
-	local RED, RED_L, INNER, FLOOR = rgb(235, 55, 70), rgb(255, 120, 128), rgb(125, 18, 38), rgb(170, 30, 50)
-	local W, D = 4.6, 3.4 -- across (x), front to back (z)
-	local T = 0.3 -- the inside wall's thickness
-	local P = 0.22 -- how far the weave stands out from it
-	-- (bottom to top: a bar, a row of holes, a bar, a row of holes, a bar, then the rim)
-	local BARS = { { -1.1, 0.4 }, { -0.05, 0.3 }, { 0.85, 0.3 } } -- { middle y, height }
-	local HOLE_Y0, HOLE_Y1 = -1.3, 1.0
-	studs(p(m, V(W, 0.36, D), CF(0, -1.12, 0), FLOOR))
+	local RED, RIM, INNER = rgb(232, 48, 88), rgb(244, 78, 112), rgb(172, 26, 58)
+	local W, D = 4.6, 3.8 -- the long sides run along x; the handle goes across, along z
+	local T = 0.36 -- the walls' thickness
+	local Y0, Y1 = -1.5, 1.0 -- the body, bottom to the rim
+	studs(p(m, V(W, 0.4, D), CF(0, Y0 + 0.2, 0), INNER))
 	for _, side in { -1, 1 } do
-		-- the dark inside walls: front and back, left and right
-		p(m, V(W, 2.3, T), CF(0, -0.15, side * (D / 2 - T / 2)), INNER)
-		p(m, V(T, 2.3, D - 2 * T), CF(side * (W / 2 - T / 2), -0.15, 0), INNER)
-		-- the weave on them: bars across, posts up
-		for _, b in BARS do
-			p(m, V(W + 2 * P, b[2], P), CF(0, b[1], side * (D / 2 + P / 2)), RED)
-			p(m, V(P, b[2], D), CF(side * (W / 2 + P / 2), b[1], 0), RED)
-		end
-		for k = 0, 4 do
-			p(m, V(0.3, HOLE_Y1 - HOLE_Y0, P), CF(-W / 2 + 0.15 + k * (W - 0.3) / 4, (HOLE_Y0 + HOLE_Y1) / 2, side * (D / 2 + P / 2)), RED)
-		end
-		for k = 0, 3 do
-			p(m, V(P, HOLE_Y1 - HOLE_Y0, 0.3), CF(side * (W / 2 + P / 2), (HOLE_Y0 + HOLE_Y1) / 2, -D / 2 + 0.15 + k * (D - 0.3) / 3), RED)
-		end
-		-- (the corners, where the weave on two sides meets)
-		for _, s2 in { -1, 1 } do
-			p(m, V(P, HOLE_Y1 - HOLE_Y0, P), CF(side * (W / 2 + P / 2), (HOLE_Y0 + HOLE_Y1) / 2, s2 * (D / 2 + P / 2)), RED)
-		end
+		studded(p(m, V(W, Y1 - Y0, T), CF(0, (Y0 + Y1) / 2, side * (D / 2 - T / 2)), RED))
+		studded(p(m, V(T, Y1 - Y0, D - 2 * T), CF(side * (W / 2 - T / 2), (Y0 + Y1) / 2, 0), RED))
+		-- (the inside faces a shade darker, as the photo's are)
+		p(m, V(W - 2 * T, Y1 - Y0 - 0.4, 0.04), CF(0, (Y0 + Y1) / 2 + 0.2, side * (D / 2 - T - 0.02)), INNER)
+		p(m, V(0.04, Y1 - Y0 - 0.4, D - 2 * T), CF(side * (W / 2 - T - 0.02), (Y0 + Y1) / 2 + 0.2, 0), INNER)
 	end
-	-- the rim: a pale band all round the top, wider than the walls, studs on it
-	local RIM_W, RIM_H, RIM_Y = 0.62, 0.42, 1.2
+	-- the rim: a thick band standing out past the sides all round
+	local O, H = 0.3, 0.6 -- how far it stands out, how tall
+	local RW = T + O + 0.06
 	for _, side in { -1, 1 } do
-		studs(p(m, V(W + 2 * P + 0.1, RIM_H, RIM_W), CF(0, RIM_Y, side * (D / 2 + P - RIM_W / 2 + 0.05)), RED_L))
-		studs(p(m, V(RIM_W, RIM_H, D + 2 * P - 2 * RIM_W + 0.1), CF(side * (W / 2 + P - RIM_W / 2 + 0.05), RIM_Y, 0), RED_L))
+		studded(p(m, V(W + 2 * O, H, RW), CF(0, Y1 + H / 2, side * (D / 2 + O - RW / 2)), RIM))
+		studded(p(m, V(RW, H, D + 2 * O - 2 * RW), CF(side * (W / 2 + O - RW / 2), Y1 + H / 2, 0), RIM))
 	end
-	-- the handle, front to back like the reference's (tomas, 2026-09-27: "the cart bars are on the wrong
-	-- way"): grey posts up out of the middle of the front and back rims, a bar over, a red grip on it
-	local STEEL, STEEL_D = rgb(210, 214, 226), rgb(150, 156, 175)
-	local zr = D / 2 + P - RIM_W / 2 + 0.05
+	-- the handle: a square arch, pale grey, its feet in the rim at the middle of the long sides
+	local GREY, GREY_L = rgb(212, 220, 234), rgb(240, 244, 250)
+	local zf = D / 2 - 0.1
+	local top = Y1 + H + 1.95
 	for _, side in { -1, 1 } do
-		p(m, V(0.34, 1.9, 0.34), CF(0, RIM_Y + 1.15, side * zr), STEEL)
-		p(m, V(0.5, 0.3, 0.5), CF(0, RIM_Y + 0.3, side * zr), STEEL_D)
+		p(m, V(0.5, top - Y1 + 0.1, 0.5), CF(0, (Y1 + top) / 2, side * zf), GREY)
 	end
-	local top = CF(0, RIM_Y + 1.93, 0)
-	p(m, V(0.34, 0.34, 2 * zr + 0.34), top, STEEL)
-	studs(p(m, V(0.58, 0.58, 1.6), top, RED))
+	p(m, V(0.5, 0.5, 2 * zf + 0.5), CF(0, top, 0), GREY)
+	p(m, V(0.52, 0.08, 2 * zf + 0.42), CF(0, top + 0.26, 0), GREY_L)
 end
 
 -- a crown (VIP), front on like the emoji: a band with a gold rim, five points with a pearl on each
@@ -865,7 +855,7 @@ Icons.FOR = {
 
 -- how an icon is looked at, if not the usual (turn = its yaw, tilt = how far the camera looks down)
 Icons.LOOK = {
-	basket = { turn = -60, tilt = 30 },
+	basket = { turn = -50, tilt = 16 },
 	cash = { turn = -38, tilt = 30 },
 	book = { turn = -28, tilt = 42 },
 	calendar = { turn = -24, tilt = 14 },
@@ -1000,7 +990,7 @@ function Icons.view(parent, key, opts)
 				if d:IsA("BasePart") then
 					d.Color = Color3.new(1, 1, 1)
 					d.Material = Enum.Material.SmoothPlastic
-					d.TopSurface = Enum.SurfaceType.Smooth
+					for _, f in { "TopSurface", "FrontSurface", "BackSurface", "LeftSurface", "RightSurface" } do d[f] = Enum.SurfaceType.Smooth end
 				end
 			end
 			copy.Parent = vp
