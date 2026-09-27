@@ -853,12 +853,30 @@ Icons.FOR = {
 	ServerLuck = "sparkle", ExpressRare = "letter", ExpressEpic = "letterEpic", LockRefresh = "refresh",
 }
 
--- how an icon is looked at, if not the usual (turn = its yaw, tilt = how far the camera looks down)
+-- how each icon stands (tomas, 2026-09-27: "all the models ... are facing the same way but just tilted
+-- ... make them all in the best stance"): each picked by eye from a row of candidates; turn = its yaw,
+-- tilt = how far the camera looks down on it, roll = how far it leans across the screen (+ leans it
+-- right, clockwise), all in degrees. Leans go both ways so a row of them doesn't all tip one way.
+local A = { turn = -35, tilt = 20 } -- three quarters, a little from above
+local R = { turn = -35, tilt = 20, roll = 12 } -- the same, leaning right
+local L = { turn = -35, tilt = 20, roll = -12 } -- the same, leaning left
+local HIGH = { turn = -50, tilt = 28 } -- turned further, from higher: vehicles coming at you
 Icons.LOOK = {
+	-- the four after tomas's reference
 	basket = { turn = -50, tilt = 16 },
 	cash = { turn = -38, tilt = 30 },
 	book = { turn = -28, tilt = 42 },
 	calendar = { turn = -24, tilt = 14 },
+	-- straight up: buildings, people, round things
+	backpack = A, gear = A, gem = A, house = A, moneyMountain = A, people = A, pillar = A,
+	bus = HIGH, truck = HIGH,
+	apple = R, briefcase = R, broom = R, chest = R, letter = R, moon = R, padlock = R, scroll = R,
+	sparkle = R, upArrow = R,
+	clover = L, crown = L, folder = L, gift = L, letterEpic = L, moneybag = L, pencil = L, refresh = L,
+	shield = L, vault = L, wrench = L,
+	-- the hoverboard flying up across, its deck and bolt showing; the sneaker toe first, from above
+	goldboard = { turn = -50, tilt = 40, roll = 20 },
+	sneaker = { turn = -40, tilt = 35, roll = -20 },
 }
 
 -- the panels (by their names) -> icon
@@ -893,7 +911,7 @@ end
 local function orbit(st, t)
 	local a = t and math.sin(t * 1.3 + st.phase) * math.rad(st.sway) or 0
 	local y = t and math.sin(t * 2 + st.phase) * st.bob or 0
-	return CFrame.new(st.center - Vector3.new(0, y, 0)) * CFrame.Angles(0, -a, 0) * CFrame.Angles(st.pitch, 0, 0) * CFrame.new(0, 0, -st.dist) * CFrame.Angles(0, math.pi, 0)
+	return CFrame.new(st.center - Vector3.new(0, y, 0)) * CFrame.Angles(0, -a, 0) * CFrame.Angles(st.pitch, 0, 0) * CFrame.new(0, 0, -st.dist) * CFrame.Angles(0, math.pi, 0) * CFrame.Angles(0, 0, st.roll)
 end
 local acc = 0
 RunService.RenderStepped:Connect(function(dt)
@@ -916,8 +934,8 @@ end)
 local OUTLINE = rgb(22, 18, 32)
 -- the framing: every part's corners as the camera sees them (turned, and looked down on), so one seen
 -- from high up (the basket, the book) fits as snugly as one seen side on. -> its middle, the distance
-local function fit(model, pitch)
-	local rot = CFrame.Angles(pitch, 0, 0) * CFrame.Angles(0, math.pi, 0)
+local function fit(model, pitch, roll)
+	local rot = CFrame.Angles(pitch, 0, 0) * CFrame.Angles(0, math.pi, 0) * CFrame.Angles(0, 0, roll)
 	local lo, hi = Vector3.one * math.huge, -Vector3.one * math.huge
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") then
@@ -952,11 +970,13 @@ function Icons.view(parent, key, opts)
 	local base = CFrame.Angles(0, math.rad(opts.turn or look.turn or -22), 0)
 	model:PivotTo(base)
 	local pitch = math.rad(opts.tilt or look.tilt or 12)
-	local center, dist = fit(model, pitch)
+	local roll = math.rad(opts.roll or look.roll or 0)
+	local center, dist = fit(model, pitch, roll)
 	local st = {
 		center = center,
 		dist = dist,
 		pitch = pitch,
+		roll = roll,
 		phase = math.random() * 6,
 		sway = opts.sway or 18,
 		bob = opts.bob or 0.12,
