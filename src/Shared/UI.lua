@@ -284,6 +284,176 @@ function UI.twinkle(frame, opts)
 	end)
 end
 
+-- a soft shine that sits behind something in the shop (tomas, 2026-09-27: "a second one that just sits
+-- behind things"): a glowing halo breathing in and out, and soft beams of light slowly turning round
+-- it. Made of the blurred halo image (UI.GLOW) stretched thin, so no hard edges (the old frame rays
+-- read as "terrible"). opts: size (px), position, zindex, color, speed (degrees a second)
+local halos = setmetatable({}, { __mode = "k" }) -- holder -> { beams, core, speed, phase }
+function UI.halo(parent, opts)
+	opts = opts or {}
+	local size = opts.size or 150
+	local color = opts.color or Color3.new(1, 1, 1)
+	local z = opts.zindex or parent.ZIndex
+	local holder = Instance.new("Frame")
+	holder.Name = "Halo"
+	holder.BackgroundTransparency = 1
+	holder.AnchorPoint = Vector2.new(0.5, 0.5)
+	holder.Position = opts.position or UDim2.fromScale(0.5, 0.5)
+	holder.Size = UDim2.fromOffset(size, size)
+	holder.ZIndex = z
+	local beams = Instance.new("Frame")
+	beams.Name = "Beams"
+	beams.BackgroundTransparency = 1
+	beams.AnchorPoint = Vector2.new(0.5, 0.5)
+	beams.Position = UDim2.fromScale(0.5, 0.5)
+	beams.Size = UDim2.fromScale(1, 1)
+	beams.ZIndex = z
+	beams.Parent = holder
+	-- (six soft beams through the middle: twelve rays)
+	for k = 0, 5 do
+		local ray = Instance.new("ImageLabel")
+		ray.BackgroundTransparency = 1
+		ray.Image = UI.GLOW
+		ray.ImageColor3 = color
+		ray.ImageTransparency = opts.beamT or 0.45
+		ray.AnchorPoint = Vector2.new(0.5, 0.5)
+		ray.Position = UDim2.fromScale(0.5, 0.5)
+		ray.Size = UDim2.fromScale(1.25, 0.14)
+		ray.Rotation = k * 30
+		ray.ZIndex = z
+		ray.Parent = beams
+	end
+	local core = Instance.new("ImageLabel")
+	core.Name = "Core"
+	core.BackgroundTransparency = 1
+	core.Image = UI.GLOW
+	core.ImageColor3 = color
+	core.ImageTransparency = opts.coreT or 0.25
+	core.AnchorPoint = Vector2.new(0.5, 0.5)
+	core.Position = UDim2.fromScale(0.5, 0.5)
+	core.Size = UDim2.fromScale(0.85, 0.85)
+	core.ZIndex = z
+	core.Parent = holder
+	holder.Parent = parent
+	halos[holder] = { beams = beams, core = core, speed = opts.speed or 14, phase = math.random() * 6 }
+	return holder
+end
+if game:GetService("RunService"):IsClient() then
+	local acc = 0
+	game:GetService("RunService").RenderStepped:Connect(function(dt)
+		acc += dt
+		if acc < 1 / 30 then return end
+		local step = acc
+		acc = 0
+		local t = os.clock()
+		for h, st in halos do
+			if not h.Parent then
+				halos[h] = nil
+			elseif h.AbsoluteSize.X > 0 and onScreen(h) then
+				st.beams.Rotation = (st.beams.Rotation + st.speed * step) % 360
+				local b = 0.85 + 0.12 * math.sin(t * 1.6 + st.phase)
+				st.core.Size = UDim2.fromScale(b, b)
+			end
+		end
+	end)
+end
+
+-- money drifting down behind something, round and round (tomas: "the money falling ... looping behind
+-- the actual money gamepass"): bills and coins falling inside a clipped layer at zindex, only while it's
+-- on screen. They flutter by turning over (squashed across), not spinning: a clipping frame doesn't
+-- clip rotated things. opts: zindex, every (s between pieces, default 0.28), speed (px/s)
+local rains = setmetatable({}, { __mode = "k" }) -- layer -> { pieces }
+local RAIN_GREEN, RAIN_GREEN_L, RAIN_GREEN_D = Color3.fromRGB(95, 195, 100), Color3.fromRGB(165, 235, 150), Color3.fromRGB(40, 120, 55)
+local RAIN_GOLD, RAIN_GOLD_L = Color3.fromRGB(255, 200, 50), Color3.fromRGB(255, 230, 120)
+local function rainPiece(z)
+	local coin = math.random() < 0.3
+	local f = Instance.new("Frame")
+	f.BorderSizePixel = 0
+	f.AnchorPoint = Vector2.new(0.5, 0.5)
+	f.BackgroundColor3 = coin and RAIN_GOLD or RAIN_GREEN
+	f.ZIndex = z
+	local c = Instance.new("UICorner")
+	c.CornerRadius = coin and UDim.new(1, 0) or UDim.new(0, 4)
+	c.Parent = f
+	local inner = Instance.new("Frame")
+	inner.BorderSizePixel = 0
+	inner.AnchorPoint = Vector2.new(0.5, 0.5)
+	inner.Position = UDim2.fromScale(0.5, 0.5)
+	inner.Size = coin and UDim2.fromScale(0.62, 0.62) or UDim2.new(1, -8, 1, -8)
+	inner.BackgroundColor3 = coin and RAIN_GOLD_L or RAIN_GREEN_L
+	inner.ZIndex = z
+	local ic = Instance.new("UICorner")
+	ic.CornerRadius = coin and UDim.new(1, 0) or UDim.new(0, 3)
+	ic.Parent = inner
+	inner.Parent = f
+	if not coin then
+		local mark = Instance.new("Frame")
+		mark.BorderSizePixel = 0
+		mark.AnchorPoint = Vector2.new(0.5, 0.5)
+		mark.Position = UDim2.fromScale(0.5, 0.5)
+		mark.Size = UDim2.fromScale(0.22, 0.55)
+		mark.BackgroundColor3 = RAIN_GREEN_D
+		mark.ZIndex = z
+		Instance.new("UICorner", mark).CornerRadius = UDim.new(1, 0)
+		mark.Parent = f
+	end
+	return f, coin and Vector2.new(30, 30) or Vector2.new(58, 29)
+end
+function UI.moneyRain(frame, opts)
+	opts = opts or {}
+	local z = opts.zindex or frame.ZIndex
+	local layer = Instance.new("Frame")
+	layer.Name = "MoneyRain"
+	layer.BackgroundTransparency = 1
+	layer.Size = UDim2.fromScale(1, 1)
+	layer.ClipsDescendants = true
+	layer.ZIndex = z
+	local c = frame:FindFirstChildOfClass("UICorner")
+	if c then c:Clone().Parent = layer end
+	layer.Parent = frame
+	local st = { pieces = {}, speed = opts.speed or 70, alpha = opts.transparency or 0.25 }
+	rains[layer] = st
+	task.spawn(function()
+		while layer.Parent do
+			task.wait((opts.every or 0.28) * (0.7 + math.random() * 0.6))
+			if onScreen(layer) and #st.pieces < 40 then
+				local f, size = rainPiece(z)
+				local s = 0.7 + math.random() * 0.6
+				f.Size = UDim2.fromOffset(size.X * s, size.Y * s)
+				f.BackgroundTransparency = st.alpha
+				for _, d in f:GetDescendants() do
+					if d:IsA("Frame") then d.BackgroundTransparency = st.alpha end
+				end
+				f.Parent = layer
+				table.insert(st.pieces, { obj = f, base = f.Size, x = math.random(), y = -20, vy = st.speed * (0.7 + math.random() * 0.6), sway = 6 + math.random() * 14, freq = 1 + math.random() * 1.5, flip = 1.5 + math.random() * 2.5, phase = math.random() * 6, t = 0 })
+			end
+		end
+	end)
+	return layer
+end
+if game:GetService("RunService"):IsClient() then
+	game:GetService("RunService").RenderStepped:Connect(function(dt)
+		for layer, st in rains do
+			if not layer.Parent then
+				rains[layer] = nil
+			elseif onScreen(layer) then
+				local h, w = layer.AbsoluteSize.Y, layer.AbsoluteSize.X
+				for i = #st.pieces, 1, -1 do
+					local p = st.pieces[i]
+					p.t += dt
+					p.y += p.vy * dt
+					p.obj.Position = UDim2.fromOffset(p.x * w + math.sin(p.t * p.freq + p.phase) * p.sway, p.y)
+					p.obj.Size = UDim2.fromOffset(p.base.X.Offset * (0.2 + 0.8 * math.abs(math.cos(p.t * p.flip))), p.base.Y.Offset)
+					if p.y > h + 30 then
+						p.obj:Destroy()
+						table.remove(st.pieces, i)
+					end
+				end
+			end
+		end
+	end)
+end
+
 -- a sunburst: bars of light turning slowly behind something (a prize, a 3D icon). size in px
 local bursts = setmetatable({}, { __mode = "k" })
 function UI.burst(parent, color, size, opts)
