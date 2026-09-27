@@ -8,7 +8,7 @@ local RunService = game:GetService("RunService")
 local spinners = {} -- model -> base pivot
 
 local function add(m)
-	if m:IsA("Model") then spinners[m] = m:GetPivot() end
+	if m:IsA("Model") then spinners[m] = false end -- (the base is taken once the model is whole: baseOf)
 end
 for _, m in CollectionService:GetTagged("Spin") do add(m) end
 CollectionService:GetInstanceAddedSignal("Spin"):Connect(add)
@@ -30,10 +30,26 @@ CollectionService:GetInstanceRemovedSignal("Rat"):Connect(function(m) rats[m] = 
 -- riders). "Turn": a model turns steadily about its pivot's Y at SpinSpeed (the merry-go-round).
 local rockers, turners = {}, {}
 local function addRock(m)
-	if m:IsA("Model") then rockers[m] = m:GetPivot() end
+	if m:IsA("Model") then rockers[m] = false end
 end
 local function addTurn(m)
-	if m:IsA("Model") then turners[m] = m:GetPivot() end
+	if m:IsA("Model") then turners[m] = false end
+end
+-- a moving model's resting pivot, taken once its PrimaryPart (the hinge) has streamed in. (Taken
+-- the moment the tag arrived, before the parts, it was the world's origin: every frame the merry-go-
+-- round, and the kid riding it, went to 0, 0, 0, the middle of Recess Row's road.)
+local function baseOf(list, m)
+	local base = list[m]
+	if base then return base end
+	if m.PrimaryPart then
+		base = m:GetPivot()
+	elseif m:FindFirstChildWhichIsA("BasePart", true) and m.WorldPivot.Position.Magnitude > 1 then
+		base = m.WorldPivot -- (a model turned about a pivot set by hand, no PrimaryPart: the school UFO)
+	else
+		return nil
+	end
+	list[m] = base
+	return base
 end
 for _, m in CollectionService:GetTagged("Rock") do addRock(m) end
 CollectionService:GetInstanceAddedSignal("Rock"):Connect(addRock)
@@ -83,29 +99,32 @@ RunService.RenderStepped:Connect(function()
 	end
 	-- (the playground's swings and roundabout only move when you're near enough to see them)
 	local camPos = workspace.CurrentCamera.CFrame.Position
-	for m, base in rockers do
-		if m.Parent then
+	for m in rockers do
+		local base = m.Parent and baseOf(rockers, m)
+		if base then
 			local amp = m:GetAttribute("Amp") or 0
 			if amp ~= 0 and (base.Position - camPos).Magnitude < 220 then
 				local a = math.rad(amp) * math.sin(t * (m:GetAttribute("Rate") or 2) + (m:GetAttribute("Phase") or 0))
 				m:PivotTo(base * (m:GetAttribute("Axis") == "Z" and CFrame.Angles(0, 0, a) or CFrame.Angles(a, 0, 0)))
 			end
-		else
+		elseif not m.Parent then
 			rockers[m] = nil
 		end
 	end
-	for m, base in turners do
-		if m.Parent then
+	for m in turners do
+		local base = m.Parent and baseOf(turners, m)
+		if base then
 			if (base.Position - camPos).Magnitude < 220 then m:PivotTo(base * CFrame.Angles(0, t * (m:GetAttribute("SpinSpeed") or 0.5), 0)) end
-		else
+		elseif not m.Parent then
 			turners[m] = nil
 		end
 	end
-	for m, base in spinners do
-		if m.Parent then
+	for m in spinners do
+		local base = m.Parent and baseOf(spinners, m)
+		if base then
 			local speed = m:GetAttribute("SpinSpeed") or 0.5
 			m:PivotTo(base * CFrame.new(0, math.sin(t * 1.3) * 1.2, 0) * CFrame.Angles(0, t * speed, 0))
-		else
+		elseif not m.Parent then
 			spinners[m] = nil
 		end
 	end
