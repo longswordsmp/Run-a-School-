@@ -193,6 +193,39 @@ local function streetTrees(parent, Kit, spots)
 	end
 end
 
+-- Maple Heights: the houses stand every 90 studs, 64 of lawn between them. Another house (Maple's
+-- own: porch, fence, mailbox, driveway, yard tree) goes on each clear lot halfway along.
+local FAMILIES = {
+	"THE PARKS", "THE MARTINS", "THE BELLS", "THE FOXES", "THE REYESES", "THE KHANS", "THE O'BRIENS",
+	"THE FISHERS", "THE LEES", "THE NOVAKS", "THE HAYESES", "THE OSEIS", "THE CARTERS", "THE MORENOS",
+	"THE BAILEYS", "THE PATELS JR.", "THE BROOKS", "THE SHAHS", "THE WARDS", "THE DUBOISES",
+	"THE HILLS", "THE GRANTS", "THE SANTOSES", "THE TANAKAS", "THE WEBERS", "THE ALIS",
+	"THE COOPERS", "THE RIVERAS", "THE MURPHYS", "THE KOWALSKIS", "THE BERGS", "THE NAKAMURAS",
+}
+local function maple(Kit)
+	local Maple = require(script.Parent.TownMaple)
+	if not Maple.addHouse then return 0 end
+	local rows = { { z = 292, face = "+z" }, { z = 368, face = "-z" }, { z = 412, face = "+z" }, { z = 488, face = "-z" } }
+	local n = 0
+	for r, row in rows do
+		local out = row.face == "+z" and 1 or -1
+		for k, x in { -315, -225, -135, -45, 45, 135, 225, 315 } do
+			-- the lot: from behind the house to the fence, the driveway side included
+			local zBack, zFence = row.z - out * 11, row.z + out * 21.5
+			local center = Vector3.new(x - 1, 0, (zBack + zFence) / 2)
+			local size = Vector3.new(31, 0, math.abs(zFence - zBack))
+			local tall = free(CFrame.new(center + Vector3.new(0, 8, 0)), Vector3.new(size.X, 13, size.Z))
+			local ground = free(CFrame.new(center + Vector3.new(0, 0.35, 0)), Vector3.new(size.X, 0.5, size.Z))
+			if tall and ground and not nearPost(center, size / 2) then
+				local i = 100 + r * 10 + k
+				local ok = pcall(Maple.addHouse, { x = x, z = row.z, face = row.face, name = FAMILIES[(r - 1) * 8 + k] }, i)
+				if ok then n += 1 end
+			end
+		end
+	end
+	return n
+end
+
 function Infill.build(town, Kit)
 	local downtown = town:FindFirstChild("Downtown")
 	if not downtown then return end
@@ -227,7 +260,7 @@ function Infill.build(town, Kit)
 	streetTrees(trees, Kit, spots)
 	local n = 0
 	for _, s in m:GetChildren() do if s.Name == "Shop" then n += 1 end end
-	return n
+	return n, maple(Kit)
 end
 
 return Infill

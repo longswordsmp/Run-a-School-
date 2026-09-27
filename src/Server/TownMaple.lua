@@ -76,7 +76,8 @@ function Maple.build(town, Kit)
 	end
 
 	-- a house: walls, a gable roof, a porch, a walk to the sidewalk, a picket fence, a mailbox
-	local WALLS = { rgb(170, 205, 235), rgb(250, 225, 150), rgb(180, 225, 190), rgb(245, 190, 200), rgb(250, 205, 165), rgb(205, 190, 235), rgb(245, 243, 235), rgb(190, 205, 170) }
+	-- (brighter than first painted: in the game's light the soft pastels washed out to near white)
+	local WALLS = { rgb(125, 185, 245), rgb(255, 212, 105), rgb(135, 215, 160), rgb(250, 155, 180), rgb(255, 175, 125), rgb(180, 155, 245), rgb(245, 243, 235), rgb(165, 205, 130) }
 	local ROOFS = { rgb(150, 70, 60), rgb(90, 94, 104), rgb(50, 90, 70), rgb(50, 60, 100), rgb(120, 80, 55) }
 	local DOORS = { rgb(200, 50, 60), rgb(40, 80, 150), rgb(40, 110, 70), rgb(240, 200, 60), rgb(110, 60, 40) }
 	local function house(h, i)
@@ -161,6 +162,8 @@ function Maple.build(town, Kit)
 		return hm, doorPos
 	end
 	for i, h in HOUSES do house(h, i) end
+	-- (TownInfill builds more of the same on the empty lots between, once the town is in the world)
+	Maple.addHouse = house
 
 	-- Maple Heights Clinic (Nurse Nina) on the north side of Maple Lane
 	local clinic = Kit.building(m, {
