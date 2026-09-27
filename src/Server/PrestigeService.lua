@@ -53,6 +53,7 @@ Actions.register("prestigeInfo", function(player, p)
 end)
 
 Actions.register("prestige", function(player, p)
+	if Data.isMember(player) then return { ok = false, err = "Only " .. Data.hostOf(player).DisplayName .. " can prestige their school" } end
 	local key = Data.hostOf(player)
 	if busy[key] then return { ok = false, err = "The Board is already meeting" } end
 	local n = PrestigeService.next(player, p)

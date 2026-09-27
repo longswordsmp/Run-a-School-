@@ -665,6 +665,18 @@ local function tick(dt)
 				player:SetAttribute("Spotted", spotted)
 			end
 		end
+		-- the carrier: no teleporting out. Checked BEFORE the escape, or a jump straight out of the
+		-- grounds counted as getting away with the mutant (the allowance follows the server's WalkSpeed)
+		local c = carrying[player]
+		if c then
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			local speed = math.max(Config.Heist.carrySpeed * 1.8, (hum and hum.WalkSpeed or 0) * 1.3)
+			local moved = Vector3.new(pos.X - c.lastPos.X, 0, pos.Z - c.lastPos.Z).Magnitude
+			if moved > speed * (t - c.lastT) + 6 then
+				dropCarry(player, "You dropped the mutant!")
+				continue
+			end
+		end
 		if not inside then
 			if carrying[player] then escaped(player) end
 			continue
@@ -693,16 +705,7 @@ local function tick(dt)
 				end
 			end
 		end
-		-- the carrier: no teleporting out
-		local c = carrying[player]
-		if c then
-			local moved = Vector3.new(pos.X - c.lastPos.X, 0, pos.Z - c.lastPos.Z).Magnitude
-			if moved > Config.Heist.carrySpeed * 1.8 * (t - c.lastT) + 6 then
-				dropCarry(player, "You dropped the mutant!")
-				continue
-			end
-			if t - c.lastT >= 0.25 then c.lastPos, c.lastT = pos, t end
-		end
+		if c and t - c.lastT >= 0.25 then c.lastPos, c.lastT = pos, t end
 	end
 	-- empty tubes refill
 	for _, tb in tubes do

@@ -123,6 +123,14 @@ end
 
 Actions.register("secretStart", function(player, p, id)
 	if type(id) ~= "string" then return { ok = false } end
+	-- (only the job Stan is offering, and only standing with him: picking the vial job every time from
+	-- anywhere turned the whole school Mutated in a couple of hours)
+	local offered = Config.SecretMissions[p.secretNext or 1] or Config.SecretMissions[1]
+	if not offered or id ~= offered.id then return { ok = false } end
+	local npcs = workspace:FindFirstChild("StoryNPCs")
+	local stan = npcs and npcs:FindFirstChild("JanitorStan")
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not (stan and stan.PrimaryPart and root) or (root.Position - stan.PrimaryPart.Position).Magnitude > 20 then return { ok = false } end
 	return { ok = SecretService.start(player, id) }
 end)
 

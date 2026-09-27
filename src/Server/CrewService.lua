@@ -226,6 +226,12 @@ function CrewService.join(member, hostId, role)
 	if not crew or not host.Parent then return { ok = false, err = "That school isn't taking co-op players" } end
 	if member == host then return CrewService.create(host, role) end
 	if not crew.open then return { ok = false, err = "That school closed its doors" } end
+	-- (friends only, as the host was told: a stranger in a school can sell or wipe its kids. Studio's
+	-- test players aren't friends, so Studio lets anyone in to test co-op)
+	if not game:GetService("RunService"):IsStudio() then
+		local okF, friends = pcall(member.IsFriendsWith, member, host.UserId)
+		if not okF or not friends then return { ok = false, err = "Only " .. host.DisplayName .. "'s friends can join their school" } end
+	end
 	if 1 + #crew.members >= Config.CrewMax then return { ok = false, err = "That school is full (" .. Config.CrewMax .. "/" .. Config.CrewMax .. ")" } end
 	if Data.isMember(member) then return { ok = false, err = "Leave your co-op school first" } end
 	local own = crews[member]
@@ -267,6 +273,8 @@ local function leave(member, gone)
 	unwatch(member)
 	PlotService.unalias(member)
 	local paid = Data.unalias(member)
+	-- (quitting the game: their own income, not the host's, is what their save keeps for offline pay)
+	if gone then pcall(PlotService.updateIncome, member) end
 	if not gone then
 		restore(member)
 		soloAttrs(member)
@@ -577,9 +585,10 @@ Actions.register("crewOpen", function(player, _, open)
 	push(crew)
 	return { ok = true, state = stateFor(player) }
 end)
-Actions.register("crewKick", function(player, _, userId)
+Actions.register("crewKick", function(player, p, userId)
 	local crew = crews[player]
 	if not crew then return { ok = false, err = "Only the school's owner can do that" } end
+	if p and p.reviewing then return { ok = false, err = "Wait for the School Board to finish" } end
 	for _, m in crew.members do
 		if m.UserId == userId then
 			Remotes.Notify:FireClient(m, player.DisplayName .. " sent you back to your own school.", "info")

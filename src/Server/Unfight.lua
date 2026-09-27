@@ -151,9 +151,10 @@ function Unfight.watch(root)
 	local pending = {}
 	root.DescendantAdded:Connect(function(d)
 		if not d:IsA("BasePart") then return end
-		-- (kids sitting down, goons, anything with a Humanoid: not a rebuild, and they're skipped anyway)
-		local m = d:FindFirstAncestorOfClass("Model")
-		if m and m:FindFirstChildOfClass("Humanoid") then return end
+		-- (kids sitting down, goons, anything with a Humanoid, at any depth: a kid's props sit in a
+		-- "Props" model inside the rig, and each one seated used to rescan the whole school)
+		if isRig(d) then return end
+		if d:FindFirstAncestor("Students") then return end
 		local top = d
 		while top.Parent and top.Parent ~= root do top = top.Parent end
 		if top.Parent ~= root or pending[top] then return end

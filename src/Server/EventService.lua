@@ -139,6 +139,9 @@ function EventService.moneyRain(count)
 	local folder = workspace:FindFirstChild("MoneyRain") or Instance.new("Folder")
 	folder.Name = "MoneyRain"
 	folder.Parent = workspace
+	-- (a share each: nobody teleporting from bill to bill takes the lot)
+	local perPlayer = {}
+	local CAP = 12
 	for _ = 1, count or 60 do
 		local bill = Instance.new("Part")
 		bill.Name = "Bill"
@@ -166,6 +169,8 @@ function EventService.moneyRain(count)
 			if not player then return end
 			local root = char:FindFirstChild("HumanoidRootPart")
 			if not root or (root.Position - bill.Position).Magnitude > 12 then return end
+			if (perPlayer[player] or 0) >= CAP then return end
+			perPlayer[player] = (perPlayer[player] or 0) + 1
 			claimed = true
 			local amount = math.max(50, math.floor((player:GetAttribute("BaseIncome") or 0) * 15))
 			Data.addCash(player, amount)

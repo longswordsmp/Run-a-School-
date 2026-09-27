@@ -186,26 +186,32 @@ MarketplaceService.ProcessReceipt = function(info)
 	if not player or not p then return Enum.ProductPurchaseDecision.NotProcessedYet end
 	-- a Board review resets cash, and an unsaved profile can't remember the receipt: try again later
 	if p.reviewing or p.unsaved then return Enum.ProductPurchaseDecision.NotProcessedYet end
-	p.receipts = p.receipts or {}
-	if p.receipts[info.PurchaseId] then
-		-- granted before but maybe not saved yet: only report success once it is
-		return Data.save(Data.hostOf(player)) and Enum.ProductPurchaseDecision.PurchaseGranted or Enum.ProductPurchaseDecision.NotProcessedYet
-	end
 	local product = productById[info.ProductId]
 	if not product then
 		warn("[Store] unknown product", info.ProductId)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	-- (the Money Boost and area unlocks go to the buyer's OWN save, even while helping a friend's
+	-- school: the receipt goes in the same save as the thing bought, and that's the save we wait for)
+	local ownSave = product.boost or product.area
+	local rp = ownSave and Data.own(player) or p
+	local saver = ownSave and player or Data.hostOf(player)
+	if not rp then return Enum.ProductPurchaseDecision.NotProcessedYet end
+	rp.receipts = rp.receipts or {}
+	if rp.receipts[info.PurchaseId] then
+		-- granted before but maybe not saved yet: only report success once it is
+		return Data.save(saver) and Enum.ProductPurchaseDecision.PurchaseGranted or Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	local ok, err = pcall(MonetizationService.grantProduct, player, product.key)
 	if not ok then
 		warn("[Store] grant failed", product.key, err)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	p.receipts[info.PurchaseId] = os.time()
+	rp.receipts[info.PurchaseId] = os.time()
 	-- saved before we tell Roblox it's done; if the save fails, Roblox retries and the receipt above
-	-- keeps it from being granted twice (co-op: products go to the school being played, so the receipt
-	-- lives in that school's save)
-	if Data.save(Data.hostOf(player)) then return Enum.ProductPurchaseDecision.PurchaseGranted end
+	-- keeps it from being granted twice (co-op: school products go to the school being played, so their
+	-- receipt lives in that school's save; your own things, in yours)
+	if Data.save(saver) then return Enum.ProductPurchaseDecision.PurchaseGranted end
 	return Enum.ProductPurchaseDecision.NotProcessedYet
 end
 

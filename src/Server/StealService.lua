@@ -345,7 +345,11 @@ function StealService.start()
 					local tp = Data.get(thief)
 					local dt = math.max(0.05, os.clock() - (c.lastAt or os.clock()))
 					local role = Crew.perk(thief, "Recruiter") and Config.RolePerks.carry or 1
-					local maxStep = Config.CarrySpeed * (tp and UpgradeService.carrySpeedMult(tp) or 1) * role * dt * 1.3 + 1.5
+					-- (the speed the server itself set: sprinting, an Energy Drink, Super Sneakers or the
+					-- hoverboard were counted as teleports before and dropped honest carriers)
+					local hum = humanoid(thief)
+					local speed = math.max(Config.CarrySpeed * (tp and UpgradeService.carrySpeedMult(tp) or 1) * role, hum and hum.WalkSpeed or 0)
+					local maxStep = speed * dt * 1.3 + 1.5
 					local flat = (root.Position - c.lastPos) * Vector3.new(1, 0, 1)
 					if flat.Magnitude > maxStep then
 						-- two in a row (one can be a replication hiccup); either way this tick is not accepted:

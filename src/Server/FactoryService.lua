@@ -1460,10 +1460,23 @@ local function tick(dt)
 		-- faster than a carrier can run (with some slack for lag) means a teleport: drop the kid
 		local t = now()
 		local moved = Vector3.new(proot.Position.X - hs.lastPos.X, 0, proot.Position.Z - hs.lastPos.Z).Magnitude
-		local allowed = H.carrySpeed * 1.8 * (t - hs.lastT) + 6
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		local allowed = math.max(H.carrySpeed * 1.8, (hum and hum.WalkSpeed or 0) * 1.3) * (t - hs.lastT) + 6
 		if moved > allowed then
 			dropHeist(player, "You dropped them!")
 			continue
+		end
+		-- (and never through a wall: the way out is the front door, not the side of the building)
+		local shellModel = root and root:FindFirstChild("Shell")
+		if shellModel and moved > 0.5 then
+			local params = RaycastParams.new()
+			params.FilterType = Enum.RaycastFilterType.Include
+			params.FilterDescendantsInstances = { shellModel }
+			local from = Vector3.new(hs.lastPos.X, proot.Position.Y, hs.lastPos.Z)
+			if workspace:Raycast(from, proot.Position - from, params) then
+				dropHeist(player, "You dropped them!")
+				continue
+			end
 		end
 		if t - hs.lastT >= 0.25 then hs.lastPos, hs.lastT = proot.Position, t end
 		if not inLot(proot.Position) then

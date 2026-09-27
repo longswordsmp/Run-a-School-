@@ -295,7 +295,17 @@ end)
 
 -- animated gradients: rainbow ones (Secret rarity, Straight A+) cycle their hues; two-colour
 -- shimmers (Prodigy, Alumni) slide back and forth. Sliding a rainbow off its end parked it on red.
-RunService.RenderStepped:Connect(function()
+-- (a kept set, 20 times a second, and only tags near enough to be drawn: GetTagged and a write to
+-- every gradient in the server on every frame grew with every rare kid in every school)
+local rainbowSet = {}
+for _, gr in CollectionService:GetTagged("Rainbow") do rainbowSet[gr] = true end
+CollectionService:GetInstanceAddedSignal("Rainbow"):Connect(function(gr) rainbowSet[gr] = true end)
+CollectionService:GetInstanceRemovedSignal("Rainbow"):Connect(function(gr) rainbowSet[gr] = nil end)
+local rainbowAcc = 0
+RunService.RenderStepped:Connect(function(dt)
+	rainbowAcc += dt
+	if rainbowAcc < 0.05 then return end
+	rainbowAcc = 0
 	local t = os.clock()
 	local keys = {}
 	for i = 0, 5 do
@@ -303,11 +313,17 @@ RunService.RenderStepped:Connect(function()
 	end
 	local rainbowSeq = ColorSequence.new(keys)
 	local shimmer = Vector2.new(math.sin(t * 2) * 0.5, 0)
-	for _, gr in CollectionService:GetTagged("Rainbow") do
-		if gr:GetAttribute("Kind") == "shimmer" then
-			gr.Offset = shimmer
-		else
-			gr.Color = rainbowSeq
+	local camPos = workspace.CurrentCamera and workspace.CurrentCamera.CFrame.Position
+	for gr in rainbowSet do
+		local bb = gr:FindFirstAncestorWhichIsA("BillboardGui")
+		local at = bb and bb.Parent
+		local far = camPos and at and at:IsA("BasePart") and (at.Position - camPos).Magnitude > (bb.MaxDistance > 0 and bb.MaxDistance or 200)
+		if not far then
+			if gr:GetAttribute("Kind") == "shimmer" then
+				gr.Offset = shimmer
+			else
+				gr.Color = rainbowSeq
+			end
 		end
 	end
 end)

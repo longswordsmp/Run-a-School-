@@ -311,7 +311,43 @@ local function makeBus(label, color, textColor)
 			end
 		end
 	end
+	-- one welded body: the bus is about 130 anchored parts, and moving each one every frame sent
+	-- thousands of CFrames a second to everyone at the carpet. Everything but the doors hangs off the
+	-- Body (the doors stay loose to slide: they're moved with it, see move)
+	local body = bus.PrimaryPart
+	if body then
+		local pivot = bus:GetPivot()
+		for _, p in bus:GetDescendants() do
+			if p:IsA("BasePart") and p ~= body then
+				if p.Name == "Door" or p.Name == "DoorGlass" then
+					p:SetAttribute("ClosedRel", pivot:ToObjectSpace(p.CFrame))
+				else
+					local w = Instance.new("WeldConstraint")
+					w.Part0, w.Part1 = body, p
+					w.Parent = p
+					p.Anchored = false
+				end
+			end
+		end
+		body.Anchored = true
+		bus:SetAttribute("Welded", true)
+	end
 	return bus
+end
+
+-- put a model's pivot at cf: a welded bus moves its Body (the rest follows) and its two doors; anything
+-- else is pivoted part by part
+local function move(model, cf)
+	local body = model:GetAttribute("Welded") and model.PrimaryPart
+	if not body then
+		model:PivotTo(cf)
+		return
+	end
+	body.CFrame = cf * model:GetPivot():ToObjectSpace(body.CFrame)
+	for _, p in model:GetChildren() do
+		local rel = p:IsA("BasePart") and (p.Name == "Door" or p.Name == "DoorGlass") and p:GetAttribute("ClosedRel")
+		if rel then p.CFrame = cf * rel end
+	end
 end
 
 -- drive a model's pivot from a to b over t seconds (server side, smooth enough for a bus)
@@ -320,7 +356,7 @@ local function drive(model, from, to, t)
 	while true do
 		local a = math.min(1, (os.clock() - start) / t)
 		local e = a < 0.5 and 2 * a * a or 1 - (-2 * a + 2) ^ 2 / 2
-		model:PivotTo(from:Lerp(to, e))
+		move(model, from:Lerp(to, e))
 		if a >= 1 then break end
 		RunService.Heartbeat:Wait()
 	end

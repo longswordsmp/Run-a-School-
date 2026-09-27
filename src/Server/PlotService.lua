@@ -445,6 +445,11 @@ end
 
 function PlotService.sell(player, plot, slot)
 	if plotOf[player] ~= plot then return end
+	-- (a co-op helper can't sell the host's kids)
+	if Data.isMember(player) then
+		Remotes.Notify:FireClient(player, "Only " .. Data.hostOf(player).DisplayName .. " can sell kids at their school", "bad")
+		return
+	end
 	local p = Data.get(player)
 	local e = p and p.students[slot]
 	if not e or e.arriving or e.carried or e.away or p.reviewing then return end

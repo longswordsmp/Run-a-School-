@@ -68,6 +68,7 @@ end
 
 function AlumniService.graduate(player, plot, slot)
 	if PlotService.getPlot(player) ~= plot then return end
+	if Data.isMember(player) then return end -- (the host's call, at a co-op school)
 	local p = Data.get(player)
 	local e = p and p.students[slot]
 	if not e or e.arriving or e.carried or e.away or p.reviewing then return end

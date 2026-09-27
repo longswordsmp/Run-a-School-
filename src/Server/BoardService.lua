@@ -75,7 +75,8 @@ Actions.register("boardInfo", function(player, p)
 end)
 
 Actions.register("review", function(player, p)
-	-- (co-op: one review per school, whoever in the crew asks)
+	-- (co-op: the host's call; a helper leaving or being kicked mid-review muddled whose school it was)
+	if Data.isMember(player) then return { ok = false, err = "Only " .. Data.hostOf(player).DisplayName .. " can face the Board for their school" } end
 	local key = Data.hostOf(player)
 	if busy[key] then return { ok = false, err = "The Board is already meeting" } end
 	local n = BoardService.next(p)

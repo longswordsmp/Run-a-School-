@@ -355,6 +355,7 @@ local function nearest(list, root)
 	return best
 end
 
+local ghostRows, ghostRowsAt = nil, 0 -- (the see-through desk rows, cached)
 local function worldTarget()
 	if player:GetAttribute("Talking") then return nil end
 	local mt, mguide = missionTarget()
@@ -458,12 +459,21 @@ local function worldTarget()
 		end
 		return best
 	elseif g == "ghostrow" then
-		-- the next row of see-through desks (they carry the "Build 4 desks" prompt)
-		local plot = myPlot()
-		local school = plot and plot:FindFirstChild("School")
+		-- the next row of see-through desks (they carry the "Build 4 desks" prompt). (Looked up at most
+		-- twice a second: walking the whole school every frame cost phones a few ms a frame.)
+		local now = os.clock()
+		if not ghostRows or now - ghostRowsAt > 0.5 then
+			ghostRowsAt = now
+			ghostRows = {}
+			local plot = myPlot()
+			local school = plot and plot:FindFirstChild("School")
+			for _, d in school and school:GetDescendants() or {} do
+				if d.Name == "BuyRowPrompt" and d.Parent then table.insert(ghostRows, d.Parent) end
+			end
+		end
 		local rows = {}
-		for _, d in school and school:GetDescendants() or {} do
-			if d.Name == "BuyRowPrompt" and d.Parent then table.insert(rows, d.Parent) end
+		for _, r in ghostRows do
+			if r.Parent then table.insert(rows, r) end
 		end
 		return nearest(rows, root)
 	elseif g:match("^npc:") then

@@ -707,13 +707,18 @@ local function tick(dt)
 		end
 		local c = carrying[player]
 		if c then
-			if not inside then
-				escaped(player)
+			-- faster than a carrier can go means a teleport: drop the kid. This comes BEFORE the escape
+			-- check, or a jump straight out of the grounds counted as getting away. (The allowance follows
+			-- the server's own WalkSpeed, so sprinting, Super Sneakers and the Hall Pass never trip it.)
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			local speed = math.max(Config.Heist.carrySpeed * 1.8, (hum and hum.WalkSpeed or 0) * 1.3)
+			local moved = Vector3.new(pos.X - c.lastPos.X, 0, pos.Z - c.lastPos.Z).Magnitude
+			if moved > speed * (t - c.lastT) + 6 then
+				dropCarry(player, "You dropped them!")
 				continue
 			end
-			local moved = Vector3.new(pos.X - c.lastPos.X, 0, pos.Z - c.lastPos.Z).Magnitude
-			if moved > Config.Heist.carrySpeed * 1.8 * (t - c.lastT) + 6 then
-				dropCarry(player, "You dropped them!")
+			if not inside then
+				escaped(player)
 				continue
 			end
 			if t - c.lastT >= 0.25 then c.lastPos, c.lastT = pos, t end
