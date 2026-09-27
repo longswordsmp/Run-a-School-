@@ -131,6 +131,7 @@ function HallService.enroll(player, model)
 	if p.cash < price then
 		Remotes.Notify:FireClient(player, "Not enough cash!", "bad")
 		Remotes.Sfx:FireClient(player, "Error")
+		Signals.fire("cashShort", player, price)
 		return
 	end
 	local slot = PlotService.freeSlot(player)

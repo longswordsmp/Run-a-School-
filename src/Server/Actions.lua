@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 
 local Remotes = require(script.Parent.Remotes)
 local Data = require(script.Parent.DataService)
+local Signals = require(script.Parent.Signals)
 
 local Actions = {}
 -- actions that spend or move cash, refused while a School Board review is running
@@ -37,6 +38,10 @@ Remotes.Action.OnServerInvoke = function(player, action, ...)
 	if not ok then
 		warn("[Actions]", action, "failed:", res)
 		return { ok = false, err = "Something went wrong" }
+	end
+	-- short of cash for something they pressed: DealsService may offer a tuition pack
+	if type(res) == "table" and res.ok == false and type(res.err) == "string" and res.err:find("Not enough cash") then
+		Signals.fire("cashShort", player, res.need)
 	end
 	-- co-op President: 10% of what they just spent comes back
 	if SPENDING[action] and type(res) == "table" and res.ok and p.cash < cashBefore and player:GetAttribute("Role") == "President" and (player:GetAttribute("CrewSize") or 1) >= 2 then

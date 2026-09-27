@@ -58,7 +58,7 @@ Actions.register("buySupply", function(player, p, id)
 	if not def then return { ok = false, err = "Unknown supply" } end
 	if p.supplies[id] then return { ok = false, err = "Already stocked" } end
 	if p.tier < def.tier then return { ok = false, err = "Unlocks at " .. Config.Tiers[def.tier].name } end
-	if not pay(player, p, def.price) then return { ok = false, err = "Not enough cash" } end
+	if not pay(player, p, def.price) then return { ok = false, err = "Not enough cash", need = def.price } end
 	p.supplies[id] = true
 	local plot = PlotService.getPlot(player)
 	if plot then SchoolBuilder.decorate(plot, p.supplies) end
@@ -75,7 +75,7 @@ Actions.register("buyBuild", function(player, p, id)
 	if not def then return { ok = false, err = "Unknown item" } end
 	if p.builds[id] then return { ok = false, err = "Already built" } end
 	if p.tier < def.tier then return { ok = false, err = "Unlocks at " .. Config.Tiers[def.tier].name } end
-	if not pay(player, p, def.price) then return { ok = false, err = "Not enough cash" } end
+	if not pay(player, p, def.price) then return { ok = false, err = "Not enough cash", need = def.price } end
 	p.builds[id] = true
 	local plot = PlotService.getPlot(player)
 	if plot then SchoolBuilder.setItems(plot, p.builds, id) end
@@ -121,7 +121,7 @@ Actions.register("hireTeacher", function(player, p, floor, id)
 	if floor < 1 or floor > PlotService.floorsOf(p) then return { ok = false, err = "You don't have that floor yet" } end
 	if p.tier < def.tier then return { ok = false, err = "Unlocks at " .. Config.Tiers[def.tier].name } end
 	if CampusService.teacherMult(p, floor) >= def.mult then return { ok = false, err = "Floor " .. floor .. " already has a better teacher" } end
-	if not pay(player, p, def.price) then return { ok = false, err = "Not enough cash" } end
+	if not pay(player, p, def.price) then return { ok = false, err = "Not enough cash", need = def.price } end
 	p.teachers[floor] = { id = id }
 	TeacherService.refresh(player)
 	PlotService.updateIncome(player)

@@ -2073,3 +2073,64 @@ do
 		panel.open()
 	end)
 end
+
+---------------------------------------------------------------------------
+-- a DEAL (DealsService): a card sliding in bottom right when the server spots a need (short of cash,
+-- the gate cooling down), with the thing's 3D icon, what it does and its Store price; BUY or Not now
+---------------------------------------------------------------------------
+do
+	local HIDDEN = UDim2.new(1, 420, 1, -130)
+	local SHOWN = UDim2.new(1, -16, 1, -130)
+	local card = UI.new("Frame", { Name = "Deal", BackgroundColor3 = Color3.new(1, 1, 1), AnchorPoint = Vector2.new(1, 1), Position = HIDDEN, Size = UDim2.fromOffset(390, 136), ZIndex = 30, Visible = false, Parent = gui })
+	UI.corner(card, 18)
+	UI.stroke(card, 4)
+	UI.gradient(card, Color3.fromRGB(255, 246, 210), Color3.fromRGB(255, 212, 110))
+	UI.studs(card, { zindex = 30, transparency = UI.STUD.card })
+	local glow = UI.glow(card, Color3.fromRGB(255, 220, 120), { alpha = 0, spread = 4 })
+	local ribbon = UI.label(card, { Name = "Ribbon", Text = "DEAL", Font = UI.BIG, BackgroundTransparency = 0, BackgroundColor3 = UI.C.red, Size = UDim2.fromOffset(84, 30), Position = UDim2.fromOffset(-14, -12), Rotation = -12, ZIndex = 34, stroke = 2 })
+	UI.corner(ribbon, 8)
+	local iconHolder = UI.new("Frame", { Name = "IconHolder", BackgroundTransparency = 1, Size = UDim2.fromOffset(112, 108), Position = UDim2.fromOffset(8, 14), ZIndex = 31, Parent = card })
+	local title = UI.label(card, { Name = "Title", Text = "", Font = UI.BIG, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -140, 0, 30), Position = UDim2.fromOffset(124, 10), ZIndex = 32, stroke = 2.5 })
+	local text = UI.label(card, { Name = "Text", Text = "", TextColor3 = UI.C.navy, TextWrapped = true, TextScaled = false, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Size = UDim2.new(1, -136, 0, 44), Position = UDim2.fromOffset(124, 40), ZIndex = 32, stroke = 0 })
+	local buy = UI.button(card, { name = "Buy", text = "", color = UI.C.green, size = UDim2.fromOffset(156, 42), position = UDim2.new(0, 124, 1, -10), anchor = Vector2.new(0, 1), font = UI.BIG })
+	lift(buy.button, 32)
+	local no = UI.button(card, { name = "NotNow", text = "Not now", color = UI.C.grey, size = UDim2.fromOffset(98, 36), position = UDim2.new(1, -10, 1, -13), anchor = Vector2.new(1, 1) })
+	lift(no.button, 32)
+	local current, token = nil, 0
+	local function hide()
+		token += 1
+		local mine = token
+		TweenService:Create(card, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = HIDDEN }):Play()
+		UI.glowTo(glow, 0, 0.2)
+		task.delay(0.3, function() if token == mine then card.Visible = false end end)
+	end
+	local function show(d)
+		current = d
+		token += 1
+		local mine = token
+		title.Text = d.title or "DEAL"
+		text.Text = d.text or ""
+		buy.setText(("GET IT: %d R$"):format(d.robux or 0))
+		for _, c in iconHolder:GetChildren() do c:Destroy() end
+		Icons.view(iconHolder, Icons.FOR[d.key] or "gift", { zindex = 31, sway = 12 })
+		card.Position = HIDDEN
+		card.Visible = true
+		sfx("Ding")
+		TweenService:Create(card, TweenInfo.new(0.45, Enum.EasingStyle.Back), { Position = SHOWN }):Play()
+		UI.glowTo(glow, 1, 0.4)
+		-- (gone by itself after a while)
+		task.delay(14, function() if token == mine then hide() end end)
+	end
+	buy.button.Activated:Connect(function()
+		if not current then return end
+		call("buy", "product", current.key)
+		hide()
+	end)
+	no.button.Activated:Connect(function()
+		if current then task.spawn(call, "dealDismiss", current.kind) end
+		hide()
+	end)
+	Remotes:WaitForChild("Push").OnClientEvent:Connect(function(kind, data)
+		if kind == "deal" and type(data) == "table" then show(data) end
+	end)
+end

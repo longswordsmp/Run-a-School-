@@ -779,7 +779,7 @@ Actions.register("buyGear", function(player, p, id)
 	local price = GearService.price(player, def)
 	if not Data.addCash(player, -price) then
 		Remotes.Sfx:FireClient(player, "Error")
-		return { ok = false, err = "Not enough cash" }
+		return { ok = false, err = "Not enough cash", need = price }
 	end
 	GearService.give(player, id, 1)
 	Remotes.Sfx:FireClient(player, "Buy")

@@ -127,6 +127,7 @@ local function cashFor(player, seconds)
 	-- scales with you, so it can't skip tiers wildly; a small floor for brand-new schools
 	return math.max(1000, math.floor((player:GetAttribute("BaseIncome") or 0) * seconds))
 end
+MonetizationService.cashFor = cashFor
 GRANTS.Cash10m = function(player) Data.addCash(player, cashFor(player, 600)) end
 GRANTS.Cash1h = function(player) Data.addCash(player, cashFor(player, 3600)) end
 GRANTS.Cash4h = function(player) Data.addCash(player, cashFor(player, 14400)) end

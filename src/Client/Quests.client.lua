@@ -668,11 +668,11 @@ RunService.RenderStepped:Connect(function(dt)
 		hideTrail()
 		route, routeGoal, goalFor = nil, nil, nil
 	end
-	-- pulse the side-bar button for menu steps
+	-- the side-bar button for menu steps: its glow breathes (tomas: the size pulse read as bouncing)
 	local btn = gui.Enabled and card.Visible and menuTarget()
 	if btn then
-		local sc = btn:FindFirstChildOfClass("UIScale")
-		if sc then sc.Scale = 1 + math.abs(math.sin(t0 * 4)) * 0.14 end
+		local glow = btn:FindFirstChild("Glow", true)
+		if glow then glow:SetAttribute("GlowAlpha", 0.35 + 0.65 * math.abs(math.sin(t0 * 2.2))) end
 	end
 	go.button.Visible = btn ~= nil
 end)
@@ -682,9 +682,10 @@ end)
 ---------------------------------------------------------------------------
 local function show(s)
 	if not s or s.ok == false then return end
-	-- stop pulsing the old button
+	-- stop the old button's glow
 	local old = menuTarget()
-	if old and old:FindFirstChildOfClass("UIScale") then old:FindFirstChildOfClass("UIScale").Scale = 1 end
+	local oldGlow = old and old:FindFirstChild("Glow", true)
+	if oldGlow then oldGlow:SetAttribute("GlowAlpha", 0) end
 	state = s
 	card.Visible = true
 	if s.kind == "tutorial" then

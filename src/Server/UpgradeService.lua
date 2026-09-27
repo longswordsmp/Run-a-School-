@@ -138,7 +138,7 @@ Actions.register("buyUpgrade", function(player, p, id)
 	if id == "LaserGate" and UpgradeService.gateWorks(p) then return { ok = false, err = "Your laser gate works fine!" } end
 	if lvl >= u.max then return { ok = false, err = "Maxed out" } end
 	local cost = Config.upgradeCost(id, lvl)
-	if not Data.addCash(player, -cost) then return { ok = false, err = "Not enough cash!" } end
+	if not Data.addCash(player, -cost) then return { ok = false, err = "Not enough cash!", need = cost } end
 	p.upgrades[id] = lvl + 1
 	UpgradeService.applyAll(player)
 	Remotes.Sfx:FireClient(player, "Upgrade")
@@ -162,7 +162,7 @@ function UpgradeService.buyRow(player, floor)
 	local costs = Config.DeskRows[floor]
 	if owned >= #costs then return { ok = false, err = "All desks unlocked" } end
 	local cost = costs[owned + 1]
-	if not Data.addCash(player, -cost) then return { ok = false, err = "Not enough cash!" } end
+	if not Data.addCash(player, -cost) then return { ok = false, err = "Not enough cash!", need = cost } end
 	p.rows[floor] = owned + 1
 	PlotService.applyDesks(player)
 	Remotes.Sfx:FireClient(player, "Upgrade")
