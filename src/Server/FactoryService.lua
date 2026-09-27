@@ -259,7 +259,20 @@ local function buildShell(m)
 	end
 end
 
--- a conveyor belt along X with rollers, a housing press in the middle, and homework on it
+-- a conveyor belt along X, from the HOMEWORK PRINTER at its head (-X) to the PACKER at its tail (+X),
+-- with the Homework Press in the middle. Blank sheets come out of the printer's slot, ride the belt,
+-- get a grade stamped on them under the press, and disappear into the packer's slot; the client slides
+-- them along (Raid.client: BeltItem) and the loop back to the start happens inside the two machines,
+-- where nobody can see it. (Before, the sheets popped out of thin air at one end of a bare belt.)
+local SHEET_GAP = 4.3 -- studs between sheets; the run (BeltRun) is a whole number of gaps, so the press
+local SHEET_RUN = 43 -- stamps every sheet as it passes, all the way round
+local function machineBox(m, name, x0, x1, z, y0, h, body, trim)
+	local cx, w = (x0 + x1) / 2, x1 - x0
+	part(m, name, Vector3.new(w, h, 5.6), CFrame.new(cx, y0 + h / 2, z), body, Enum.Material.Metal)
+	part(m, name .. "Trim", Vector3.new(w + 0.3, 0.4, 5.9), CFrame.new(cx, y0 + h + 0.2, z), trim, Enum.Material.Metal)
+	part(m, name .. "Base", Vector3.new(w + 0.3, 0.5, 5.9), CFrame.new(cx, y0 + 0.25, z), DARK, Enum.Material.Metal)
+	return cx, w
+end
 local function buildBelt(m, z)
 	local len, y = 44, 2.4
 	part(m, "BeltFrame", Vector3.new(len, 1.2, 4.2), CFrame.new(0, y - 0.8, z), DARK, Enum.Material.Metal)
@@ -283,14 +296,44 @@ local function buildBelt(m, z)
 	piston:SetAttribute("BaseY", 7)
 	local warn = part(m, "PressLamp", Vector3.new(0.8, 0.8, 0.8), CFrame.new(0, 11.8, z), rgb(255, 60, 60), Enum.Material.Neon)
 	light(warn, 8, 1, rgb(255, 60, 60))
-	-- homework sheets riding the belt (the client slides them along)
-	for i = 0, 9 do
-		local sheet = part(m, "Homework", Vector3.new(1.4, 0.12, 1.9), CFrame.new(-len / 2 + 2 + i * 4.3, y + 0.15, z) * CFrame.Angles(0, math.rad(math.random(-15, 15)), 0), rgb(250, 250, 245), Enum.Material.SmoothPlastic, { CanCollide = false })
+	-- the HOMEWORK PRINTER at the head: a purple box over the belt's end, a tray of blank paper feeding
+	-- in on top, status lamps, and the slot the sheets come out of
+	local px, pw = machineBox(m, "Printer", -24.2, -18, z, 1.1, 6.4, PURPLE, LILAC)
+	part(m, "PrinterSlot", Vector3.new(0.2, 0.9, 3.4), CFrame.new(-17.95, y + 0.35, z), rgb(15, 12, 20), Enum.Material.SmoothPlastic)
+	part(m, "PrinterLip", Vector3.new(0.6, 0.15, 3.8), CFrame.new(-17.7, y - 0.05, z), STEEL, Enum.Material.Metal)
+	part(m, "PaperTray", Vector3.new(4.6, 0.3, 3.4), CFrame.new(px - 0.4, 8.1, z) * CFrame.Angles(0, 0, math.rad(-12)), STEEL, Enum.Material.Metal)
+	for k = 0, 7 do
+		part(m, "BlankPaper", Vector3.new(4.2, 0.1, 3), CFrame.new(px - 0.4, 8.3 + k * 0.11, z) * CFrame.Angles(0, 0, math.rad(-12)) * CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad((k % 3 - 1) * 2), 0), rgb(250, 250, 245), Enum.Material.SmoothPlastic)
+	end
+	for _, s in { -1, 1 } do
+		local plate = part(m, "PrinterSign", Vector3.new(pw - 0.8, 1.6, 0.1), CFrame.new(px, 5.4, z + s * 2.85), rgb(28, 16, 40), Enum.Material.SmoothPlastic)
+		sign(plate, s > 0 and Enum.NormalId.Back or Enum.NormalId.Front, "HOMEWORK PRINTER 3000", LILAC, Enum.Font.Arcade)
+		for k, c in { rgb(80, 255, 120), rgb(255, 200, 60), rgb(255, 70, 70) } do
+			part(m, "StatusLamp", Vector3.new(0.5, 0.5, 0.15), CFrame.new(px - 1.6 + k * 0.8, 3.4, z + s * 2.86), c, Enum.Material.Neon)
+		end
+	end
+	-- the PACKER at the tail: it swallows the graded homework and boxes it up
+	local kx, kw = machineBox(m, "Packer", 18, 24.2, z, 1.1, 5.2, DARK, rgb(245, 200, 40))
+	part(m, "PackerSlot", Vector3.new(0.2, 0.9, 3.4), CFrame.new(17.95, y + 0.35, z), rgb(15, 12, 20), Enum.Material.SmoothPlastic)
+	part(m, "PackerFlap", Vector3.new(0.12, 1.1, 3.4), CFrame.new(17.8, y + 0.55, z) * CFrame.Angles(0, 0, math.rad(-18)), rgb(40, 40, 46), Enum.Material.Rubber)
+	for _, s in { -1, 1 } do
+		local plate = part(m, "PackerSign", Vector3.new(kw - 0.8, 1.4, 0.1), CFrame.new(kx, 4.6, z + s * 2.85), rgb(245, 200, 40), Enum.Material.SmoothPlastic)
+		sign(plate, s > 0 and Enum.NormalId.Back or Enum.NormalId.Front, "PACKING", rgb(30, 20, 20), Enum.Font.Arcade)
+	end
+	-- (a finished crate of homework sitting on top, waiting to go)
+	local done = part(m, "PackedCrate", Vector3.new(3, 2.4, 3), CFrame.new(kx, 7.5, z), rgb(150, 110, 70), Enum.Material.WoodPlanks)
+	sign(done, Enum.NormalId.Front, "HW", rgb(60, 30, 20), Enum.Font.Arcade)
+	-- homework sheets riding the belt, printer to packer (the client slides them along). Blank until
+	-- they pass under the press; then the grade shows (the client switches it on at x > 0).
+	for i = 0, SHEET_RUN / SHEET_GAP - 1 do
+		local sheet = part(m, "Homework", Vector3.new(1.4, 0.12, 1.9), CFrame.new(-SHEET_RUN / 2 + i * SHEET_GAP, y + 0.15, z) * CFrame.Angles(0, math.rad(math.random(-15, 15)), 0), rgb(228, 224, 210), Enum.Material.SmoothPlastic, { CanCollide = false })
 		sheet:SetAttribute("BeltZ", z)
-		sheet:SetAttribute("BeltLen", len - 4)
-		sheet:SetAttribute("Offset", i * 4.3)
+		sheet:SetAttribute("BeltLen", SHEET_RUN)
+		sheet:SetAttribute("Offset", i * SHEET_GAP)
 		CollectionService:AddTag(sheet, "BeltItem")
-		sign(sheet, Enum.NormalId.Top, ({ "F", "D-", "SEE ME", "F", "C-" })[i % 5 + 1], rgb(210, 30, 30), Enum.Font.PermanentMarker)
+		local grade = sign(sheet, Enum.NormalId.Top, ({ "F", "D-", "SEE ME", "F", "C-" })[i % 5 + 1], rgb(210, 30, 30), Enum.Font.PermanentMarker)
+		grade.Parent.Name = "Grade"
+		grade.Parent.Enabled = false
 	end
 end
 
@@ -318,12 +361,15 @@ local function buildInterior(m)
 	end
 	buildBelt(m, 70)
 	buildBelt(m, 92)
-	-- crates of homework stacked by the side walls
-	for _, spec in { { -25, 56 }, { -25, 60 }, { -21.5, 56 }, { 25, 84 }, { 25, 88 }, { 21.5, 84 } } do
+	-- crates of homework either side of the way in: out of the side aisles (the way round the belts)
+	-- and clear of the guards' beats, so they're somewhere to duck behind once you're through the door
+	for _, spec in { { -18.5, 56.4 }, { -21.9, 56.4 }, { -18.5, 59.8 }, { 18.5, 56.4 }, { 21.9, 56.4 }, { 18.5, 59.8 } } do
 		local c = part(m, "Crate", Vector3.new(3.4, 3.4, 3.4), CFrame.new(spec[1], 2.2, spec[2]), rgb(150, 110, 70), Enum.Material.WoodPlanks)
 		sign(c, Enum.NormalId.Front, "HW", rgb(60, 30, 20), Enum.Font.Arcade)
 	end
-	part(m, "Crate", Vector3.new(3.4, 3.4, 3.4), CFrame.new(-23.2, 5.6, 57.6) * CFrame.Angles(0, math.rad(20), 0), rgb(150, 110, 70), Enum.Material.WoodPlanks)
+	for _, sx in { -1, 1 } do
+		part(m, "Crate", Vector3.new(3.4, 3.4, 3.4), CFrame.new(sx * 19.6, 5.6, 57.4) * CFrame.Angles(0, math.rad(sx * 20), 0), rgb(150, 110, 70), Enum.Material.WoodPlanks)
+	end
 	-- the back wall: a giant Vex poster over the pens
 	local poster = part(m, "VexPoster", Vector3.new(30, 7, 0.3), CFrame.new(0, 17.5, B.z1 - 1.7), rgb(40, 20, 55))
 	sign(poster, Enum.NormalId.Front, "HOMEWORK IS THE FUTURE.\n- Dr. V. Vex", LILAC, Enum.Font.LuckiestGuy, rgb(15, 5, 25))
@@ -409,11 +455,11 @@ local function buildDesk(m)
 	local logo = part(model, "DeskLogo", Vector3.new(2.2, 2.2, 0.1), CFrame.new(0, 1.9, z - 1.85), rgb(28, 16, 40), Enum.Material.SmoothPlastic)
 	sign(logo, Enum.NormalId.Front, "V", LILAC, Enum.Font.LuckiestGuy, rgb(10, 5, 20))
 	-- her chair: a tall purple throne of an office chair
-	part(model, "ChairSeat", Vector3.new(2.6, 0.5, 2.4), CFrame.new(0, 2.2, z + 3), rgb(70, 35, 100), Enum.Material.Fabric)
-	part(model, "ChairBack", Vector3.new(2.8, 4.2, 0.5), CFrame.new(0, 4.6, z + 4.1), rgb(70, 35, 100), Enum.Material.Fabric)
-	part(model, "ChairTrim", Vector3.new(2.9, 0.2, 0.55), CFrame.new(0, 6.7, z + 4.1), LILAC, Enum.Material.Neon)
-	cyl(model, "ChairPole", 0.35, 1.6, CFrame.new(0, 1.2, z + 3) * CFrame.Angles(0, 0, math.rad(90)), STEEL, Enum.Material.Metal)
-	part(model, "ChairBase", Vector3.new(2.2, 0.3, 2.2), CFrame.new(0, 0.7, z + 3), DARK, Enum.Material.Metal)
+	part(model, "ChairSeat", Vector3.new(2.6, 0.5, 2.4), CFrame.new(0, 2.2, z + 2.2), rgb(70, 35, 100), Enum.Material.Fabric)
+	part(model, "ChairBack", Vector3.new(2.8, 4.2, 0.5), CFrame.new(0, 4.6, z + 3.1), rgb(70, 35, 100), Enum.Material.Fabric)
+	part(model, "ChairTrim", Vector3.new(2.9, 0.2, 0.55), CFrame.new(0, 6.7, z + 3.1), LILAC, Enum.Material.Neon)
+	cyl(model, "ChairPole", 0.35, 1.6, CFrame.new(0, 1.2, z + 2.2) * CFrame.Angles(0, 0, math.rad(90)), STEEL, Enum.Material.Metal)
+	part(model, "ChairBase", Vector3.new(2.2, 0.3, 2.2), CFrame.new(0, 0.7, z + 2.2), DARK, Enum.Material.Metal)
 	-- a nameplate, a lamp, a mug, homework piles
 	local plate = part(model, "Nameplate", Vector3.new(2.6, 0.6, 0.3), CFrame.new(-2.6, 4.1, z - 1.2) * CFrame.Angles(math.rad(-20), 0, 0), rgb(20, 12, 30), Enum.Material.SmoothPlastic)
 	sign(plate, Enum.NormalId.Front, "DR. V. VEX", LILAC, Enum.Font.FredokaOne)
@@ -460,6 +506,131 @@ local function buildDesk(m)
 	prompt.Parent = hold
 	desk = { model = model, prompt = prompt, kind = "item", mission = "vex_blueprints", roll = roll, glow = glow }
 	_ = top
+end
+
+---------------------------------------------------------------------------
+-- security round Vex's desk (not for the First Morning's rescue: lenient players pass untouched)
+--   the office   glass walls round her desk (x -7..7, z 99..107.5), the door at the front
+--   the lasers   three beams across the door that blink on and off together (Shared/HQLasers maths,
+--                the same clock on both sides): wait for the gap, then walk through
+--   the cameras  two on the side walls sweep the belt floor; being seen by one rings the alarm
+-- Tripping a laser or being seen by a camera sends the nearest guards (H.alerted) after you.
+---------------------------------------------------------------------------
+local HQLasers = require(ReplicatedStorage.Shared.HQLasers)
+-- (the back wall stops 4.5 studs short of the pens, so the corridor behind it is wide enough to walk,
+-- carry a kid through, and for a guard to find his way along)
+local OFFICE = { x0 = -7, x1 = 7, z0 = 99, z1 = 107.5, door = 2.6 }
+local lasers = {} -- { part, base }
+local cameras = {} -- { head, cone, pos, yaw0, sweep, t }
+local CAM_RANGE, CAM_HALF = 34, 17
+local function buildOffice(m)
+	local o = Instance.new("Model")
+	o.Name = "VexOffice"
+	o.Parent = m
+	local GLASS = rgb(190, 170, 230)
+	local h = 7.5
+	local function wall(x0, z0, x1, z1)
+		local along = math.abs(x1 - x0) > math.abs(z1 - z0)
+		local len = along and math.abs(x1 - x0) or math.abs(z1 - z0)
+		local mid = Vector3.new((x0 + x1) / 2, 0, (z0 + z1) / 2)
+		part(o, "OfficeGlass", along and Vector3.new(len, h, 0.25) or Vector3.new(0.25, h, len), CFrame.new(mid + Vector3.new(0, 0.55 + h / 2, 0)), GLASS, Enum.Material.Glass, { Transparency = 0.55 })
+		part(o, "OfficeSill", along and Vector3.new(len, 0.6, 0.5) or Vector3.new(0.5, 0.6, len), CFrame.new(mid + Vector3.new(0, 0.85, 0)), PURPLE, Enum.Material.Metal)
+		part(o, "OfficeHead", along and Vector3.new(len, 0.4, 0.5) or Vector3.new(0.5, 0.4, len), CFrame.new(mid + Vector3.new(0, 0.55 + h, 0)), PURPLE, Enum.Material.Metal)
+	end
+	local o0, o1, z0, z1, dw = OFFICE.x0, OFFICE.x1, OFFICE.z0, OFFICE.z1, OFFICE.door
+	wall(o0, z0, -dw, z0)
+	wall(dw, z0, o1, z0)
+	wall(o0, z0, o0, z1)
+	wall(o1, z0, o1, z1)
+	wall(o0, z1, o1, z1)
+	for _, c in { { o0, z0 }, { o1, z0 }, { o0, z1 }, { o1, z1 }, { -dw, z0 }, { dw, z0 } } do
+		part(o, "OfficePost", Vector3.new(0.6, h + 0.6, 0.6), CFrame.new(c[1], 0.55 + (h + 0.6) / 2, c[2]), PURPLE, Enum.Material.Metal)
+	end
+	-- the purple carpet inside, and a sign over the door
+	part(o, "OfficeCarpet", Vector3.new(o1 - o0 - 0.6, 0.06, z1 - z0 - 0.6), CFrame.new(0, 0.58, (z0 + z1) / 2), rgb(70, 35, 100), Enum.Material.Fabric, { CanCollide = false })
+	local board = part(o, "OfficeSign", Vector3.new(7, 1.4, 0.3), CFrame.new(0, 0.55 + h + 1.1, z0 - 0.1), rgb(28, 16, 40), Enum.Material.SmoothPlastic)
+	sign(board, Enum.NormalId.Front, "OFFICE OF DR. V. VEX", LILAC, Enum.Font.LuckiestGuy)
+	part(o, "SignNeon", Vector3.new(7.3, 0.2, 0.2), CFrame.new(0, 0.55 + h + 0.35, z0 - 0.3), LILAC, Enum.Material.Neon)
+	-- the laser gate: emitter posts either side of the door and three beams across it
+	for _, s in { -1, 1 } do
+		part(o, "LaserPost", Vector3.new(0.5, 5.2, 0.5), CFrame.new(s * (dw - 0.1), 3.15, z0 - 0.3), DARK, Enum.Material.Metal)
+		for _, y in { 1.2, 2.7, 4.2 } do
+			part(o, "Emitter", Vector3.new(0.3, 0.3, 0.3), CFrame.new(s * (dw - 0.35), y, z0 - 0.3), rgb(255, 60, 60), Enum.Material.Neon)
+		end
+	end
+	local lf = Instance.new("Folder")
+	lf.Name = "Lasers"
+	lf.Parent = o
+	for i, y in { 1.2, 2.7, 4.2 } do
+		local beam = part(lf, "Laser", Vector3.new(dw * 2 - 0.7, 0.14, 0.14), CFrame.new(0, y, z0 - 0.3), rgb(255, 40, 40), Enum.Material.Neon, { CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false })
+		beam:SetAttribute("Laser", "blink")
+		beam:SetAttribute("Period", 4.6)
+		beam:SetAttribute("On", 0.62)
+		beam:SetAttribute("Phase", (i - 1) * 0.12)
+		table.insert(lasers, { part = beam, base = beam.CFrame })
+	end
+	-- cover either side of the office front: crates two high and two deep, so from the cameras' corners
+	-- the whole gap between them and the office wall is in shadow (tested: a sneaking player at
+	-- x -9, z 100..104 can't be seen by either camera or the office guard)
+	for _, sx in { -1, 1 } do
+		for _, cz in { 100.3, 103.7 } do
+			for k = 0, 1 do
+				local c = part(o, "CoverCrate", Vector3.new(3.4, 3.4, 3.4), CFrame.new(sx * 12, 2.2 + k * 3.4, cz) * CFrame.Angles(0, math.rad(k * 6 * sx), 0), rgb(150, 110, 70), Enum.Material.WoodPlanks)
+				sign(c, sx < 0 and Enum.NormalId.Left or Enum.NormalId.Right, "HW", rgb(60, 30, 20), Enum.Font.Arcade)
+			end
+		end
+	end
+	local warnPlate = part(o, "LaserWarning", Vector3.new(2.4, 1, 0.1), CFrame.new(-dw - 1.6, 5.6, z0 - 0.2), rgb(255, 205, 40), Enum.Material.SmoothPlastic)
+	sign(warnPlate, Enum.NormalId.Front, "\u{26A0} LASERS", rgb(30, 20, 20), Enum.Font.GothamBlack)
+end
+
+local function buildCamera(m, pos, yaw0, sweep)
+	local cam = Instance.new("Model")
+	cam.Name = "Camera"
+	cam.Parent = m
+	part(cam, "Mount", Vector3.new(1, 1, 1.4), CFrame.new(pos + Vector3.new(0, 0.9, 0)), DARK, Enum.Material.Metal)
+	local head = part(cam, "Head", Vector3.new(1.3, 1.1, 2.4), CFrame.new(pos) * CFrame.Angles(0, math.rad(yaw0), 0), rgb(230, 232, 238), Enum.Material.SmoothPlastic)
+	local lens = part(cam, "Lens", Vector3.new(0.7, 0.7, 0.2), head.CFrame * CFrame.new(0, 0, -1.25), rgb(255, 40, 40), Enum.Material.Neon)
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0, weld.Part1 = head, lens
+	weld.Parent = lens
+	lens.Anchored = false
+	local cone = part(cam, "Cone", Vector3.new(0.2, 1, 1), CFrame.new(), rgb(255, 250, 200), Enum.Material.Neon, { Transparency = 0.82, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false })
+	table.insert(cameras, { head = head, cone = cone, pos = pos, yaw0 = yaw0, sweep = sweep, t = 0 })
+end
+-- (an 8.4 s sweep: well off the office guard's 12 s beat, so a gap in one keeps coming round to a gap
+-- in the other instead of the two staying in step for minutes)
+local function cameraYaw(c) return c.yaw0 + math.sin(c.t * 0.75) * c.sweep end
+local function updateCamera(c, dt)
+	c.t += dt
+	local look = CFrame.Angles(0, math.rad(cameraYaw(c)), 0).LookVector
+	c.head.CFrame = CFrame.lookAt(c.pos, c.pos + look * 10 + Vector3.new(0, -6, 0))
+	local len = CAM_RANGE * 0.8
+	local mid = Vector3.new(c.pos.X, 0.62, c.pos.Z) + look * (len / 2 + 2)
+	c.cone.Size = Vector3.new(2 * math.tan(math.rad(CAM_HALF)) * len, 0.05, len)
+	c.cone.CFrame = CFrame.lookAt(mid, mid + look)
+	c.cone.Color = root and root:GetAttribute("Alarm") and rgb(255, 60, 60) or rgb(255, 250, 200)
+end
+local function cameraSees(c, char)
+	local proot = char and char:FindFirstChild("HumanoidRootPart")
+	if not proot then return false end
+	local who = Players:GetPlayerFromCharacter(char)
+	if who and (who:GetAttribute("SmokeUntil") or 0) > workspace:GetServerTimeNow() then return false end
+	if who and who:GetAttribute("Boxed") then
+		local v = proot.AssemblyLinearVelocity
+		if Vector3.new(v.X, 0, v.Z).Magnitude < 1.5 then return false end
+	end
+	local d = proot.Position - c.pos
+	local flat = Vector3.new(d.X, 0, d.Z)
+	-- (it looks out and down across the floor: the floor right under its wall mount is out of view,
+	-- or the side aisle beneath it would catch people at random)
+	if flat.Magnitude > CAM_RANGE or flat.Magnitude < 7 then return false end
+	local look = CFrame.Angles(0, math.rad(cameraYaw(c)), 0).LookVector
+	if flat.Unit:Dot(look) < math.cos(math.rad(CAM_HALF)) then return false end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { char, c.head.Parent, guardsFolder }
+	return workspace:Raycast(c.pos, proot.Position - c.pos, params) == nil
 end
 
 ---------------------------------------------------------------------------
@@ -620,11 +791,20 @@ end
 -- guards
 ---------------------------------------------------------------------------
 local GUARD = { id = "VexGuard", name = "Security", title = "VexCorp Security", mult = 1, outfit = "guard" }
+-- The heist in layers, one guard each: the door guard (slip in behind him), the belt guard (a U round
+-- the east side of the first belt: the west aisle is the sneaky way up, and between the belts there is
+-- a spot nobody can see), the office guard pacing the east half of the office front (wait behind the
+-- west crates, out of his sight), then the cameras, the lasers and his back (time the dash through
+-- the door). The fourth
+-- walks the pens behind the office. A guard sweeps his eyes round as he turns at the end of his beat,
+-- so every end is at least 13 studs from anywhere you'd wait.
 local ROUTES = {
-	{ Vector3.new(-26, 0, 63), Vector3.new(26, 0, 63), Vector3.new(26, 0, 79), Vector3.new(-26, 0, 79) },
-	{ Vector3.new(26, 0, 85), Vector3.new(-26, 0, 85), Vector3.new(-26, 0, 101), Vector3.new(26, 0, 101) },
-	{ Vector3.new(-26, 0, 107), Vector3.new(26, 0, 107) },
-	{ Vector3.new(-18, 0, 53), Vector3.new(18, 0, 53) },
+	{ Vector3.new(-14, 0, 63), Vector3.new(26, 0, 63), Vector3.new(26, 0, 79), Vector3.new(-14, 0, 79), Vector3.new(26, 0, 79), Vector3.new(26, 0, 63) },
+	{ Vector3.new(3, 0, 96), Vector3.new(21, 0, 96) },
+	{ Vector3.new(-26, 0, 110.6), Vector3.new(26, 0, 110.6) },
+	-- (the door guard: his beat stops short of the side aisles, so a sneaking player can slip round
+	-- the corner while his back is turned)
+	{ Vector3.new(-12, 0, 53), Vector3.new(12, 0, 53) },
 }
 
 local function inBuilding(pos)
@@ -678,6 +858,43 @@ end
 -- (one clip at a time, paced to his speed: the same helper the other squads use)
 local anim = require(script.Parent.Guards).anim
 
+-- a walking route round the belts, crates and Vex's glass office (guards used to cut straight through
+-- them): nil when there's no path, or the waypoints after the start
+local PathfindingService = game:GetService("PathfindingService")
+local function pathPoints(from, to)
+	local path = PathfindingService:CreatePath({ AgentRadius = 1.6, AgentHeight = 5.5, AgentCanJump = false, WaypointSpacing = 3 })
+	local ok = pcall(function()
+		path:ComputeAsync(Vector3.new(from.X, 3, from.Z), Vector3.new(to.X, 3, to.Z))
+	end)
+	if not ok or path.Status ~= Enum.PathStatus.Success then return nil end
+	local out = {}
+	for i, w in path:GetWaypoints() do
+		if i > 1 then table.insert(out, w.Position) end
+	end
+	return out
+end
+-- a chasing guard's route to his target, refreshed in the background (at most twice a second, or when
+-- the target has moved on)
+local function repath(g, goal)
+	if g.pathBusy then return end
+	g.pathBusy = true
+	task.spawn(function()
+		local root = g.model.PrimaryPart
+		g.path = root and pathPoints(root.Position, goal) or nil
+		-- (no way to the exact spot, e.g. you're pressed against a belt: aim a step short of you)
+		if root and not g.path then
+			local back = Vector3.new(root.Position.X - goal.X, 0, root.Position.Z - goal.Z)
+			if back.Magnitude > 3 then g.path = pathPoints(root.Position, goal + back.Unit * 2.5) end
+		end
+		if RunService:IsStudio() then
+			g.model:SetAttribute(g.path and "PathOK" or "PathFail", (g.model:GetAttribute(g.path and "PathOK" or "PathFail") or 0) + 1)
+		end
+		g.pathAt = now()
+		g.pathGoal = goal
+		g.pathBusy = false
+	end)
+end
+
 local function patrol(g)
 	g.state = "patrol"
 	g.target = nil
@@ -697,7 +914,17 @@ local function patrol(g)
 		if d < bestD then best, bestD = i, d end
 	end
 	g.leg = best
-	Walkers.walk(g.model, { g.route[best] }, H.patrolSpeed, nextLeg, { flat = true })
+	-- (back to his beat round the obstacles, not through them)
+	local token = {}
+	g.patrolToken = token
+	task.spawn(function()
+		local pts = pathPoints(root.Position, g.route[best])
+		if g.patrolToken ~= token or g.state ~= "patrol" or not g.model.Parent then return end
+		local legs = {}
+		for _, p in pts or {} do table.insert(legs, Vector3.new(p.X, g.route[best].Y, p.Z)) end
+		if #legs == 0 then legs = { g.route[best] } else legs[#legs] = g.route[best] end
+		Walkers.walk(g.model, legs, H.patrolSpeed, nextLeg, { flat = true })
+	end)
 end
 
 -- a guard who spots you (or hears the alarm) shows a "!" and takes a moment before he runs
@@ -708,6 +935,7 @@ local function chase(g, player, reaction)
 	g.target = player
 	g.slow = nil
 	g.seenAt = now()
+	g.grabAt = nil
 	g.reactUntil = now() + (reaction or H.reaction)
 	guardTag(g, "!", rgb(255, 70, 70))
 	anim(g, "idle")
@@ -790,7 +1018,9 @@ local function thrownOut(player)
 	local char = player.Character
 	local proot = char and char:FindFirstChild("HumanoidRootPart")
 	if not proot then return end
-	dropHeist(player, "Security caught you and threw you out!")
+	-- (caught empty-handed too: say so, or you'd just find yourself outside with no idea why)
+	local why = "Security caught you and threw you out!"
+	if heists[player] then dropHeist(player, why) else Remotes.Notify:FireClient(player, "\u{1F6A8} " .. why, "bad") end
 	Signals.fire("factoryCaught", player)
 	char:PivotTo(CFrame.lookAt(Vector3.new(math.random(-5, 5), 3.5, LOT.z0 - 6), Vector3.new(0, 3.5, 0)))
 	stunUntil[player] = now() + H.caughtStun
@@ -878,14 +1108,14 @@ end
 
 -- the alarm: the nearest guards (Config.Heist.alerted) come running; the others keep to their rounds
 -- and join in if they spot you
-local function alertNearest(player, proot)
+local function alertNearest(player, proot, count)
 	local list = {}
 	for _, g in guards do
 		local r = g.model.PrimaryPart
 		if r and now() >= g.stunUntil then table.insert(list, { g = g, d = (r.Position - proot.Position).Magnitude }) end
 	end
 	table.sort(list, function(a, b) return a.d < b.d end)
-	for i = 1, math.min(H.alerted or #list, #list) do chase(list[i].g, player) end
+	for i = 1, math.min(count or H.alerted or #list, #list) do chase(list[i].g, player) end
 end
 
 local function takeKid(player, i)
@@ -986,7 +1216,7 @@ local function takePlans(player)
 	setCarrySpeed(player, true)
 	alarm(true)
 	Remotes.Push:FireClient(player, "heist", { state = "carrying", name = itemName })
-	alertNearest(player, proot)
+	alertNearest(player, proot, H.alertedDesk)
 end
 
 -- the Ruler stuns a guard and knocks him back
@@ -998,24 +1228,35 @@ local function onSwing(player, proot)
 		if root and now() >= g.stunUntil then
 			local d = root.Position - proot.Position
 			local flat = Vector3.new(d.X, 0, d.Z)
-			-- (forgiving: he's running at you, and the server sees you a moment late)
-			if flat.Magnitude < 9 and (flat.Magnitude < 5.5 or flat.Unit:Dot(look) > 0.1) then
+			-- (forgiving: he's running at you, and the server sees you a moment late; one charging at
+			-- you is caught a little further out)
+			local reach = g.state == "chase" and 10.5 or 9
+			if flat.Magnitude < reach and (flat.Magnitude < 5.5 or flat.Unit:Dot(look) > 0.1) then
 				g.stunUntil = now() + H.guardStun
+				g.grabAt = nil
 				Walkers.stop(g.model)
 				g.state = "stunned"
 				guardTag(g, "@#!", rgb(255, 230, 90))
 				anim(g, "fall")
 				Remotes.Sfx:FireClient(player, "Bonk")
 				Remotes.Push:FireClient(player, "hit", { pos = root.Position + Vector3.new(0, 2, 0) })
-				-- knocked back along the swing, a little hop
+				-- knocked back along the swing, a little hop (short of any wall, belt or crate behind him)
 				local start = root.CFrame
 				local dir = flat.Magnitude > 1e-3 and flat.Unit or look
+				local push = 7
+				do
+					local params = RaycastParams.new()
+					params.FilterType = Enum.RaycastFilterType.Exclude
+					params.FilterDescendantsInstances = { guardsFolder, proot.Parent }
+					local hit = workspace:Raycast(root.Position, dir * 8.6, params)
+					if hit then push = math.max(0, hit.Distance - 1.6) end
+				end
 				local t0 = now()
 				local conn
 				conn = RunService.Heartbeat:Connect(function()
 					local a = math.min(1, (now() - t0) / 0.35)
 					if not root.Parent then conn:Disconnect() return end
-					local pos = start.Position + dir * 7 * a + Vector3.new(0, math.sin(a * math.pi) * 2.2, 0)
+					local pos = start.Position + dir * push * a + Vector3.new(0, math.sin(a * math.pi) * 2.2, 0)
 					if not inBuilding(pos) then pos = Vector3.new(math.clamp(pos.X, B.x0 + 2, B.x1 - 2), pos.Y, math.clamp(pos.Z, B.z0 + 2, B.z1 - 2)) end
 					root.CFrame = CFrame.new(pos) * (start - start.Position)
 					if a >= 1 then
@@ -1034,7 +1275,47 @@ end
 -- the loop: guards look, chase, catch; carriers escape
 ---------------------------------------------------------------------------
 local factorySpotted = {}
+local tripped = {} -- [player] = os.clock() of the last laser / camera alarm (one every few seconds)
+local function securityAlarm(player, proot, why)
+	if tripped[player] and now() - tripped[player] < 4 then return end
+	tripped[player] = now()
+	for _, g in guards do
+		if g.state == "chase" and g.target == player then return end
+	end
+	alarm(true)
+	task.delay(4, function() if not anyHeist() then alarm(false) end end)
+	Remotes.Sfx:FireClient(player, "Bell")
+	Remotes.Notify:FireClient(player, "\u{1F6A8} " .. why .. " Security's coming!", "bad")
+	alertNearest(player, proot)
+end
 local function tick(dt)
+	-- the cameras turn; the lasers and cameras catch anyone in the building (not a First Morning rescue)
+	for _, c in cameras do updateCamera(c, dt) end
+	local t = workspace:GetServerTimeNow()
+	for _, player in Players:GetPlayers() do
+		local char = player.Character
+		local proot = char and char:FindFirstChild("HumanoidRootPart")
+		if proot and inBuilding(proot.Position) and not lenient(player) and (stunUntil[player] or 0) <= now() then
+			local pos = proot.Position
+			local feet = pos.Y - 3
+			for _, l in lasers do
+				if HQLasers.hits(l.part, l.base, t, pos, feet, feet + 5, 0.9) then
+					securityAlarm(player, proot, "You tripped Vex's laser!")
+					break
+				end
+			end
+			for i, c in cameras do
+				if cameraSees(c, char) then
+					-- (Studio: which camera, where it was pointing and where you were, for tests)
+					if RunService:IsStudio() then
+						player:SetAttribute("DbgCamera", ("cam %d of %d yaw %.0f saw you at %.1f, %.1f"):format(i, #cameras, cameraYaw(c), pos.X, pos.Z))
+					end
+					securityAlarm(player, proot, "A camera saw you!")
+					break
+				end
+			end
+		end
+	end
 	-- who's being chased (the client shows SPOTTED / HIDDEN)
 	local chased = {}
 	for _, g in guards do
@@ -1101,7 +1382,24 @@ local function tick(dt)
 				continue
 			end
 			g.reactUntil = nil
+			-- (a hand on your collar: close, and nothing between you, not through the office glass)
+			local clear = true
 			if flat.Magnitude < H.catchRange then
+				local params = RaycastParams.new()
+				params.FilterType = Enum.RaycastFilterType.Exclude
+				params.FilterDescendantsInstances = { char, guardsFolder }
+				local from = root.Position + Vector3.new(0, 1, 0)
+				clear = workspace:Raycast(from, (proot.Position + Vector3.new(0, 1, 0)) - from, params) == nil
+			end
+			-- (he has to hold on for a moment: close for 0.3 s before he's got you, so there's time to
+			-- bonk him or pull away, and a catch is never down to lag)
+			if flat.Magnitude < H.catchRange and clear then
+				g.grabAt = g.grabAt or now()
+			else
+				g.grabAt = nil
+			end
+			if g.grabAt and now() - g.grabAt >= 0.3 then
+				g.grabAt = nil
 				thrownOut(player)
 				patrol(g)
 				continue
@@ -1114,6 +1412,28 @@ local function tick(dt)
 			local pos = root.Position
 			local goal = Vector3.new(math.clamp(proot.Position.X, B.x0 + 2, B.x1 - 2), y, math.clamp(proot.Position.Z, B.z0 + 2, B.z1 - 2))
 			local to = Vector3.new(goal.X - pos.X, 0, goal.Z - pos.Z)
+			-- round the belts and the office, not through them: follow the path's next waypoint
+			if not g.pathAt or now() - g.pathAt > 0.5 or (g.pathGoal and (g.pathGoal - goal).Magnitude > 4) then repath(g, goal) end
+			if g.path and to.Magnitude > 2 then
+				while g.path[1] and Vector3.new(g.path[1].X - pos.X, 0, g.path[1].Z - pos.Z).Magnitude < 1.4 do
+					table.remove(g.path, 1)
+				end
+				local w = g.path[1]
+				if w then to = Vector3.new(w.X - pos.X, 0, w.Z - pos.Z) end
+			elseif to.Magnitude > 2 then
+				-- no route yet: only step straight at them if nothing's in the way (knee high, so belts
+				-- count); otherwise face them and wait for the next route
+				local params = RaycastParams.new()
+				params.FilterType = Enum.RaycastFilterType.Exclude
+				params.FilterDescendantsInstances = { guardsFolder, char }
+				if workspace:Raycast(Vector3.new(pos.X, 1.5, pos.Z), to.Unit * math.min(to.Magnitude, 3), params) then
+					anim(g, "idle")
+					local lv = root.CFrame.LookVector
+					local face = Walkers.turn(Vector3.new(lv.X, 0, lv.Z).Unit, flat.Unit, 9 * dt)
+					root.CFrame = CFrame.lookAt(pos, pos + face)
+					continue
+				end
+			end
 			if to.Magnitude < (g.anim == "idle" and 1.5 or 0.5) then
 				anim(g, "idle")
 				local lv = root.CFrame.LookVector
@@ -1171,6 +1491,15 @@ function FactoryService.start()
 	pensModel.Parent = root
 	for i = 1, #PEN_XS do buildPen(pensModel, i) end
 	buildDesk(inside)
+	buildOffice(inside)
+	local camsModel = Instance.new("Model")
+	camsModel.Name = "Cameras"
+	camsModel.Parent = inside
+	-- (high on the side walls, sweeping the floor between the belts and the office)
+	-- (aimed at the floor in front of Vex's office, not the way in; they sweep in step, so both turn
+	-- away from the office door at the same moment: watch the cones on the floor, then go)
+	buildCamera(camsModel, Vector3.new(B.x0 + 2.4, 14, 82), -110, 30)
+	buildCamera(camsModel, Vector3.new(B.x1 - 2.4, 14, 82), 110, -30)
 	guardsFolder = Instance.new("Folder")
 	guardsFolder.Name = "Guards"
 	guardsFolder.Parent = root

@@ -210,25 +210,60 @@ CollectionService:GetInstanceAddedSignal("BeltItem"):Connect(addSheet)
 CollectionService:GetInstanceAddedSignal("Piston"):Connect(addPiston)
 CollectionService:GetInstanceRemovedSignal("BeltItem"):Connect(function(p) sheets[p] = nil end)
 CollectionService:GetInstanceRemovedSignal("Piston"):Connect(function(p) pistons[p] = nil end)
+-- (sheets come out of the printer's slot at -BeltLen/2 and go into the packer's at +BeltLen/2, so the
+-- jump back to the start is inside the machines. The press stamps each one as it passes under it: the
+-- sheets are one gap apart and the run is a whole number of gaps, so a sheet is under the press every
+-- gap / speed seconds, and that's the press's beat.)
 local BELT_SPEED = 3
+local GAP = 4.3
+local BEAT = GAP / BELT_SPEED
+-- Vex's office laser gate: lit while on (Shared/HQLasers, the server's clock and maths), a flicker
+-- just before it comes on
+local HQLasers = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("HQLasers"))
+local officeLasers
+local function findLasers()
+	local f = workspace:FindFirstChild("VexFactory")
+	f = f and f:FindFirstChild("Inside")
+	f = f and f:FindFirstChild("VexOffice")
+	f = f and f:FindFirstChild("Lasers")
+	if not f then return nil end
+	local list = {}
+	for _, p in f:GetChildren() do
+		if p:IsA("BasePart") then table.insert(list, p) end
+	end
+	return #list > 0 and list or nil
+end
 RunService.RenderStepped:Connect(function()
 	local t = os.clock()
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	-- only animate when you're near enough to see it
 	if root and (root.Position - Vector3.new(0, 0, 86)).Magnitude > 160 then return end
+	officeLasers = officeLasers or findLasers()
+	if officeLasers then
+		local st = workspace:GetServerTimeNow()
+		for _, p in officeLasers do
+			if not p.Parent then officeLasers = nil break end
+			local on = HQLasers.isOn(p, st)
+			local soon = not on and HQLasers.isOn(p, st + 0.5)
+			p.Transparency = on and 0 or (soon and ((math.floor(st * 12) % 2 == 0) and 0.3 or 0.9) or 0.93)
+		end
+	end
 	for p, s in sheets do
 		if p.Parent then
-			local len = p:GetAttribute("BeltLen") or 40
+			local len = p:GetAttribute("BeltLen") or 43
 			local x = -len / 2 + ((p:GetAttribute("Offset") or 0) + t * BELT_SPEED) % len
 			p.CFrame = CFrame.new(x, s.y, p:GetAttribute("BeltZ") or p.Position.Z) * s.rot
+			-- graded once it's been under the press
+			if not s.grade then s.grade = p:FindFirstChild("Grade") or false end
+			if s.grade then s.grade.Enabled = x > 0.3 end
 		else
 			sheets[p] = nil
 		end
 	end
 	for p, s in pistons do
 		if p.Parent then
-			-- a quick stamp every 2.2 s
-			local k = ((t + s.phase) % 2.2) / 2.2
+			-- down on each sheet as it reaches the middle (the bottom of the stroke at k = 0.2)
+			local k = ((t + BEAT * 0.2) % BEAT) / BEAT
 			local drop = k < 0.12 and (k / 0.12) or (k < 0.3 and 1 or math.max(0, 1 - (k - 0.3) / 0.4))
 			p.CFrame = s.base * CFrame.new(0, -3.4 * drop, 0)
 		else

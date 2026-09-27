@@ -864,6 +864,7 @@ Config.Heist = {
 	chaseSpeed = 15,
 	chaseSpeedCarry = 13.5,
 	alerted = 2, -- guards who come running when you grab something (the rest join if they see you)
+	alertedDesk = 1, -- ...when it's Vex's papers off her desk: getting into her office is the hard part
 	carrySpeed = 12,
 	sightRange = 26,
 	sightAngle = 100,
@@ -993,7 +994,7 @@ Config.Files = {
 		text = "Mutants keep escaping. Someone keeps breaking the tubes and RUNNING.\n\nInstalled lasers. Installed cameras. Hired guards in yellow suits.\n\nAlso, a cardboard box went missing from the store room. Probably unrelated." },
 	{ id = "Hazmat", title = "Hazmat Safety Card", by = "VexCorp Mutation Lab", pos = Vector3.new(-384, 1.8, 132),
 		text = "1. Do NOT drink the Mutagen.\n2. Do NOT pet the mutants.\n3. If you smell smoke, it's a smoke bomb. Run the other way.\n4. Do NOT tell Dr. Vex about rule 3." },
-	{ id = "Machine", title = "The Homework Machine", by = "Dr. Veronica Vex", pos = Vector3.new(4, 1.6, 108),
+	{ id = "Machine", title = "The Homework Machine", by = "Dr. Veronica Vex", pos = Vector3.new(4, 1.6, 106.4),
 		text = "Power source: Mutagen X, and one (1) Tiny Professor's brain.\nOutput: INFINITE homework.\nSide effect: recess ends. Forever. For everyone.\n\nPerfect." },
 	{ id = "Otis", title = "A Letter from Otis", by = "Otis, bus driver", pos = Vector3.new(-340, 1.6, 16),
 		text = "Wobblesworth,\n\nI drove Veronica to school every day for six years. She never once looked out the window.\n\nKeep the kids looking out the window.\n\n- Otis" },

@@ -45,9 +45,10 @@ The same way, the checks from tomas's earlier asks:
 0. **Preflight.**
    - `list_roblox_studios`. If the studio id changed or Studio restarted, recover:
      - HttpService.HttpEnabled on;
-     - redefine `_G.push` (tools/push.lua);
-     - checksum every script against `python tools/checksum.py`, and push back any that differ.
-   - The file server on 8765 is running.
+     - redefine `_G.push` (tools/push.lua).
+   - The file server on 8765 is running (`python -m http.server 8765 --bind 127.0.0.1` in the repo).
+   - Studio matches git: `python tools/checksum.py > .loop/sums.txt`, then run tools/synccheck.lua in
+     Edit, which should say "0 off". Push whatever differs.
    - If tomas is playing (any input in the last 5 s), don't start or stop Play: schedule the next
      wake-up in 30 min.
 1. **Where are we.** Read STATUS.md. The current chapter is the first one not SHIPPED. tomas's
