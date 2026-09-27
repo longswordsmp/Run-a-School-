@@ -28,6 +28,50 @@ local TownQuestService = {}
 local MAX_TOWN = 3
 local PICKUP_RANGE = 9
 
+-- where a collectible actually goes: a place's point is often a landmark with something standing on
+-- it (the Town Square's clock tower, a lamp post, a tree, a bush), and an item there is buried where
+-- nobody can see it. So look outward, ring by ring, for the nearest spot with room for the item and
+-- a kid to stand, and floor under it. The same spot is used for the item, the pickup and the arrow.
+local itemSpots = {} -- [place name] = Vector3
+local function blocking(part)
+	if part.Transparency >= 0.9 then return false end
+	local m = part:FindFirstAncestorOfClass("Model")
+	-- (people walk about: never count them)
+	if m and m:FindFirstChildOfClass("Humanoid") then return false end
+	return true
+end
+local function clearAt(c)
+	local params = OverlapParams.new()
+	for _, part in workspace:GetPartBoundsInBox(CFrame.new(c + Vector3.new(0, 3, 0)), Vector3.new(2.2, 4.6, 2.2), params) do
+		if blocking(part) then return false end
+	end
+	-- floor within reach under it
+	local rp = RaycastParams.new()
+	local hit = workspace:Raycast(c + Vector3.new(0, 2, 0), Vector3.new(0, -4, 0), rp)
+	return hit ~= nil
+end
+local function itemSpot(name)
+	if itemSpots[name] then return itemSpots[name] end
+	local place = Places.get(name)
+	if not place then return nil end
+	local base = place.pos
+	local found = base
+	if not clearAt(base) then
+		found = nil
+		for r = 3, 15, 3 do
+			for k = 0, 11 do
+				local a = math.rad(k * 30)
+				local c = base + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+				if clearAt(c) then found = c break end
+			end
+			if found then break end
+		end
+		found = found or base
+	end
+	itemSpots[name] = found
+	return found
+end
+
 -- the step-kind handlers some other service provides (goons, chase): kind -> fn(player, quest, step, state)
 TownQuestService.starters = {}
 -- where a signal step points the beam (HQService: hqFloor): signal -> fn(player, step) -> Vector3?
@@ -125,10 +169,10 @@ local function targetOf(player, q, st)
 		local best, bestD
 		for i, name in s.spots do
 			if not (st.got and st.got[i]) then
-				local p = Places.get(name)
-				if p then
-					local d = root and (root.Position - p.pos).Magnitude or 0
-					if not best or d < bestD then best, bestD = p.pos, d end
+				local pos = itemSpot(name)
+				if pos then
+					local d = root and (root.Position - pos).Magnitude or 0
+					if not best or d < bestD then best, bestD = pos, d end
 				end
 			end
 		end
@@ -201,7 +245,7 @@ local function sendItems(player, q, st)
 	local s = stepOf(q, st)
 	if not s or s.kind ~= "collect" then return end
 	local spots = {}
-	for i, name in s.spots do spots[i] = Places.get(name).pos end
+	for i, name in s.spots do spots[i] = itemSpot(name) end
 	Remotes.Push:FireClient(player, "tqItems", { id = q.id, step = st.step, item = s.item, spots = spots, got = st.got or {} })
 end
 
@@ -492,9 +536,9 @@ Actions.register("tqCollect", function(player, _, id, index)
 	local s = q and stepOf(q, st)
 	if not s or s.kind ~= "collect" or type(index) ~= "number" then return { ok = false } end
 	local name = s.spots[index]
-	local place = name and Places.get(name)
+	local at = name and itemSpot(name)
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-	if not place or not root or (root.Position - place.pos).Magnitude > PICKUP_RANGE + 4 then return { ok = false } end
+	if not at or not root or (root.Position - at).Magnitude > PICKUP_RANGE + 4 then return { ok = false } end
 	st.got = st.got or {}
 	if st.got[index] then return { ok = true } end
 	st.got[index] = true
