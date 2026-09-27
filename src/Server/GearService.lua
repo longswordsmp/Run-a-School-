@@ -497,6 +497,14 @@ local function rideEffects(board)
 	trail.LightEmission = 1
 	trail.LightInfluence = 0
 	trail.Color = ColorSequence.new(GLOW, BOARD)
+	if board:GetAttribute("Secret") then
+		trail.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, rgb(255, 80, 80)), ColorSequenceKeypoint.new(0.2, rgb(255, 180, 60)),
+			ColorSequenceKeypoint.new(0.4, rgb(255, 240, 80)), ColorSequenceKeypoint.new(0.6, rgb(90, 230, 120)),
+			ColorSequenceKeypoint.new(0.8, rgb(80, 160, 255)), ColorSequenceKeypoint.new(1, rgb(190, 110, 255)),
+		})
+		trail.Lifetime = 0.9
+	end
 	trail.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.05), NumberSequenceKeypoint.new(1, 1) })
 	trail.WidthScale = NumberSequence.new(1, 0.2)
 	trail.FaceCamera = true
@@ -530,7 +538,10 @@ local function ride(player, on)
 	if old then old:Destroy() end
 	if on and not player:GetAttribute("Hover") then
 		hum.HipHeight += LIFT
-		local board = buildBoard(player:GetAttribute("Pass_GoldenBoard") == true)
+		local secret = player:GetAttribute("CodeGoldBoard") == true
+		local board = buildBoard(player:GetAttribute("Pass_GoldenBoard") == true or secret)
+		-- (the Secret Gold Hoverboard: gold, with a rainbow trail behind it)
+		if secret then board:SetAttribute("Secret", true) end
 		rideEffects(board)
 		-- (under the feet, which are now LIFT off the ground, pointing the way you face)
 		local feet = root.Size.Y / 2 + hum.HipHeight

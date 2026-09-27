@@ -1085,7 +1085,7 @@ Config.CrewJobReward = { incomeSecs = 150, min = 600, boost = 0.3, boostSecs = 1
 Config.Areas = {
 	{ id = "Downtown", name = "Downtown", icon = "\u{1F3EA}", color = rgb(230, 96, 64),
 		box = { x0 = -540, x1 = 540, z0 = -560, z1 = -240 }, gate = { x = 0, z = -240, w = 26, alongX = true },
-		needs = { tutorial = true }, hint = "Finish your first day at school", product = "UnlockDowntown" },
+		needs = { tutorial = true }, hint = "Finish Chapter 1", product = "UnlockDowntown" },
 	{ id = "Lab", name = "the Mutation Lab", icon = "\u{1F9EA}", color = rgb(120, 220, 60),
 		box = { x0 = -474, x1 = -366, z0 = 42, z1 = 150 }, gate = { x = -420, z = 42, w = 12, alongX = true },
 		needs = { chapter = 1 }, hint = "Reach Chapter 2", product = "UnlockLab" },
@@ -1097,7 +1097,9 @@ Config.Areas = {
 		needs = { chapter = 3 }, hint = "Reach Chapter 4", product = "UnlockPinePark" },
 	{ id = "VexPrep", name = "Vex Prep Academy", icon = "\u{1F3EB}", color = rgb(130, 60, 200),
 		box = { x0 = 372, x1 = 482, z0 = -170, z1 = -45 }, gate = { x = 427, z = -45, w = 14, alongX = true },
-		needs = { chapter = 5 }, hint = "Reach Chapter 6", product = "UnlockVexPrep" },
+		needs = { chapter = 5 }, hint = "Reach Chapter 6", product = "UnlockVexPrep",
+		-- (you're inside it in Chapter 1, through the sewer: the sign is Vex's, and tells the truth)
+		signTitle = "VEX PREP ACADEMY", signText = "PRIVATE SCHOOL. NO VISITORS!", signNote = "Front gate opens in Chapter 6" },
 	{ id = "Industrial", name = "VexCorp Industrial", icon = "\u{1F3ED}", color = rgb(110, 50, 160),
 		box = { x0 = 540, x1 = 800, z0 = -560, z1 = 560 }, gate = { x = 540, z = 0, w = 26 },
 		needs = { chapter = 7 }, hint = "Reach Chapter 8", product = "UnlockIndustrial" },

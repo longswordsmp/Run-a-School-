@@ -16,8 +16,10 @@ Sounds.MainTheme = { id = id(1848354536), name = "Relaxed Scene", volume = 0.4 }
 Sounds.Sfx = {
 	Enroll = { id = id(7527328153), volume = 0.32, max = 1.2, gap = 0.3 },
 	Collect = { id = id(101396758527961), volume = 0.22, max = 0.8, gap = 0.35 },
-	Buy = { id = id(120891770644830), volume = 0.3, max = 1.2, gap = 0.3 },
-	Upgrade = { id = id(3406813517), volume = 0.3, max = 1.5, gap = 0.5 },
+	-- (buying and upgrading: a soft cartoon bubble pop, the upgrade a touch lower. tomas found the
+	-- old buy jingle and upgrade fanfare annoying, 2026-09-27; speed = PlaybackSpeed)
+	Buy = { id = id(109359226723492), volume = 0.22, max = 0.6, gap = 0.25 },
+	Upgrade = { id = id(109359226723492), volume = 0.24, max = 0.7, gap = 0.4, speed = 0.82 },
 	Lock = { id = id(9119717529), volume = 0.35, max = 0.8, gap = 0.5 },
 	Bonk = { id = id(3765689841), volume = 0.4, max = 0.8, gap = 0.2 },
 	Error = { id = id(16903690359), volume = 0.2, max = 0.5, gap = 0.5 },

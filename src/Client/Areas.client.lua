@@ -50,11 +50,12 @@ local function makeBarrier(area)
 	top.CFrame = CFrame.new(g.x, 36, g.z)
 	top.Transparency = 1
 	top.Parent = m
-	-- the sign: a board on a post in front of the gate, facing out of the area
+	-- the sign: a board on posts beside the gate (not in the way), facing out of the area
 	local b = area.box
 	local cx, cz = (b.x0 + b.x1) / 2, (b.z0 + b.z1) / 2
 	local out = g.alongX and Vector3.new(0, 0, (g.z > cz) and 1 or -1) or Vector3.new((g.x > cx) and 1 or -1, 0, 0)
-	local at = Vector3.new(g.x, 0, g.z) + out * 5
+	local side = g.alongX and Vector3.new(1, 0, 0) or Vector3.new(0, 0, 1)
+	local at = Vector3.new(g.x, 0, g.z) + out * 3 + side * (g.w / 2 + 7)
 	local board = Instance.new("Part")
 	board.Name = "LockSign"
 	board.Anchored = true
@@ -84,8 +85,13 @@ local function makeBarrier(area)
 		t.Parent = gui
 		return t
 	end
-	line("\u{1F512} " .. area.name:upper(), 0.42, Color3.new(1, 1, 1))
-	line(area.hint .. " to open it", 0.28, Color3.fromRGB(255, 220, 140), Enum.Font.FredokaOne)
+	line("\u{1F512} " .. (area.signTitle or area.name:upper()), 0.42, Color3.new(1, 1, 1))
+	if area.signText then
+		line(area.signText, 0.24, Color3.fromRGB(255, 140, 140), Enum.Font.FredokaOne)
+		line(area.signNote or "", 0.18, Color3.fromRGB(255, 220, 140), Enum.Font.FredokaOne)
+	else
+		line(area.hint .. " to open it", 0.28, Color3.fromRGB(255, 220, 140), Enum.Font.FredokaOne)
+	end
 	-- (the Robux shortcut only once its product exists: an id of 0 isn't set up yet, and a sign
 	-- promising something that says "coming soon" when you try it reads as unfinished)
 	local product = productOf[area.id]

@@ -911,7 +911,7 @@ end
 -- Settings
 ---------------------------------------------------------------------------
 do
-	local panel = UI.panel(gui, { name = "Settings", title = "SETTINGS", color = UI.C.navy, size = UDim2.fromOffset(460, 400) })
+	local panel = UI.panel(gui, { name = "Settings", title = "SETTINGS", color = UI.C.navy, size = UDim2.fromOffset(460, 520) })
 	panels.Settings = panel
 	local list = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 11, Parent = panel.body })
 	UI.new("UIListLayout", { Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder, Parent = list })
@@ -940,6 +940,42 @@ do
 	toggle(2, "\u{1F50A} Sound effects", "SfxOn", "sfx")
 	toggle(3, "\u{1F9ED} Guide arrow & trail", "GuideOn", "guide")
 	UI.label(list, { Text = "Press H (or the eye, bottom right) to hide everything", TextColor3 = UI.C.navy, Size = UDim2.new(1, 0, 0, 24), LayoutOrder = 4, ZIndex = 12, stroke = 0 })
+	-- codes (EasterEggService): a secret one is hidden round town on scraps of paper
+	local codeRow = UI.new("Frame", { Name = "Codes", BackgroundColor3 = Color3.fromRGB(255, 236, 206), Size = UDim2.new(1, 0, 0, 70), LayoutOrder = 5, ZIndex = 12, Parent = list })
+	UI.corner(codeRow, 14)
+	UI.stroke(codeRow, 3)
+	local codeBox = UI.new("TextBox", {
+		Name = "CodeInput", Text = "", PlaceholderText = "\u{1F511} Got a code?", Font = UI.FONT, TextScaled = true,
+		TextColor3 = UI.C.ink, PlaceholderColor3 = UI.C.grey, BackgroundColor3 = UI.C.white, ClearTextOnFocus = false,
+		Size = UDim2.new(1, -170, 0, 46), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = 13, Parent = codeRow,
+	})
+	UI.corner(codeBox, 10)
+	UI.stroke(codeBox, 2).ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	UI.padding(codeBox, 8)
+	local codeErr = UI.label(list, { Text = "", TextColor3 = UI.C.red, Size = UDim2.new(1, 0, 0, 22), LayoutOrder = 6, ZIndex = 12, stroke = 0 })
+	local redeem = UI.button(codeRow, { text = "REDEEM", color = UI.C.purple, size = UDim2.fromOffset(130, 50), position = UDim2.new(1, -12, 0.5, 0), anchor = Vector2.new(1, 0.5) })
+	lift(redeem.button, 13)
+	local busy = false
+	local function tryCode()
+		if busy or codeBox.Text == "" then return end
+		busy = true
+		codeErr.Text = ""
+		local res = call("redeemCode", codeBox.Text)
+		if res and res.ok then
+			codeBox.Text = ""
+			codeErr.TextColor3 = UI.C.green
+			codeErr.Text = res.text or "Code redeemed!"
+		else
+			UI.punch(codeRow, 1.04)
+			codeErr.TextColor3 = UI.C.red
+			codeErr.Text = (res and res.err) or "That code doesn't work."
+		end
+		busy = false
+	end
+	redeem.button.Activated:Connect(tryCode)
+	codeBox.FocusLost:Connect(function(enter)
+		if enter then tryCode() end
+	end)
 end
 
 ---------------------------------------------------------------------------

@@ -60,7 +60,7 @@ local function playSfx(name, pos)
 	local s = Instance.new("Sound")
 	s.SoundId = def.id
 	s.Volume = def.volume or 0.3
-	s.PlaybackSpeed = name == "Collect" and (0.96 + math.random() * 0.08) or 1
+	s.PlaybackSpeed = name == "Collect" and (0.96 + math.random() * 0.08) or (def.speed or 1)
 	s.SoundGroup = sfxGroup
 	s.Parent = SoundService
 	s:Play()
