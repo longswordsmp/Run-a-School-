@@ -306,10 +306,20 @@ end
 B.Trumpet = function(model, head, hs)
 	local hand = model:FindFirstChild("RightHand")
 	local gold = Color3.fromRGB(240, 190, 60)
-	cylZ(model, hand, 0.14, 1.6, CFrame.new(0, 0, -0.7), gold, Enum.Material.Metal)
-	cylZ(model, hand, 0.55, 0.3, CFrame.new(0, 0, -1.55), gold, Enum.Material.Metal)
+	-- held at the valves down by his side, bell forward and a little down (it stuck straight out of the
+	-- fist from the mouthpiece and, from the front, was just a gold blob). g: the valves; the trumpet
+	-- runs along its Z, bell at -Z.
+	local g = CFrame.new(0.05, 0.05, 0) * CFrame.Angles(math.rad(-18), 0, 0)
+	cylZ(model, hand, 0.14, 1.5, g * CFrame.new(0, 0.05, -0.05), gold, Enum.Material.Metal)
+	cylZ(model, hand, 0.55, 0.3, g * CFrame.new(0, 0.05, -0.95), gold, Enum.Material.Metal)
+	cylZ(model, hand, 0.4, 0.14, g * CFrame.new(0, 0.05, -0.8), gold, Enum.Material.Metal)
+	-- the lower tube and its bend, and the mouthpiece
+	cylZ(model, hand, 0.11, 0.75, g * CFrame.new(0, -0.2, -0.02), gold, Enum.Material.Metal)
+	cylY(model, hand, 0.11, 0.3, g * CFrame.new(0, -0.08, 0.36), gold, Enum.Material.Metal)
+	cylZ(model, hand, 0.1, 0.2, g * CFrame.new(0, 0.05, 0.78), Color3.fromRGB(200, 200, 205), Enum.Material.Metal)
 	for i = -1, 1 do
-		cylY(model, hand, 0.1, 0.35, CFrame.new(0, 0.2, -0.6 + i * 0.16), gold, Enum.Material.Metal)
+		cylY(model, hand, 0.1, 0.35, g * CFrame.new(0, 0.25, i * 0.16), gold, Enum.Material.Metal)
+		cylY(model, hand, 0.14, 0.05, g * CFrame.new(0, 0.44, i * 0.16), Color3.fromRGB(240, 240, 245), Enum.Material.Metal)
 	end
 	-- marching-band hat with plume
 	cylY(model, head, hs.X * 0.95, hs.Y * 0.6, CFrame.new(0, hs.Y * 0.62, 0), Color3.fromRGB(150, 30, 40))
@@ -1014,7 +1024,9 @@ end
 -- Uncommon --------------------------------------------------------------
 B.FidgetSpinner = function(model, head, hs)
 	local hand = part(model, "RightHand")
-	local hub = pivot(model, hand, CFrame.new(0, 0.25, -0.5), 720)
+	-- (pinched in front of the fingers and stood on edge, so it faces forward and you see it spin; flat
+	-- in the palm it was edge-on to everyone and read as a thin blue line)
+	local hub = pivot(model, hand, CFrame.new(0, 0.05, -0.42) * CFrame.Angles(math.rad(90), 0, 0), 720)
 	cylY(model, hub, 0.3, 0.12, CFrame.new(), rgb(40, 40, 50))
 	for i = 0, 2 do
 		local a = math.rad(i * 120)
@@ -1132,12 +1144,15 @@ end
 B.ChessKing = function(model, head, hs)
 	local hand = part(model, "RightHand")
 	local black = rgb(25, 25, 30)
-	cylY(model, hand, 0.7, 0.2, CFrame.new(0, -0.45, -0.8), black)
-	cylY(model, hand, 0.45, 0.9, CFrame.new(0, 0.1, -0.8), black)
-	cylY(model, hand, 0.6, 0.12, CFrame.new(0, 0.6, -0.8), black)
-	blob(model, hand, Vector3.new(0.5, 0.35, 0.5), CFrame.new(0, 0.8, -0.8), black)
-	block(model, hand, Vector3.new(0.1, 0.4, 0.1), CFrame.new(0, 1.15, -0.8), black)
-	block(model, hand, Vector3.new(0.3, 0.1, 0.1), CFrame.new(0, 1.2, -0.8), black)
+	-- the king gripped round its waist and tipped forward (upright, the arm was in the way and it ended
+	-- up standing beside the hand, not in it). g: the grip; the piece is built up its own Y from there.
+	local g = CFrame.new(0, -0.1, -0.3) * CFrame.Angles(math.rad(-35), 0, 0)
+	cylY(model, hand, 0.7, 0.2, g * CFrame.new(0, -0.55, 0), black)
+	cylY(model, hand, 0.45, 0.9, g, black)
+	cylY(model, hand, 0.6, 0.12, g * CFrame.new(0, 0.5, 0), black)
+	blob(model, hand, Vector3.new(0.5, 0.35, 0.5), g * CFrame.new(0, 0.7, 0), black)
+	block(model, hand, Vector3.new(0.1, 0.4, 0.1), g * CFrame.new(0, 1.05, 0), black)
+	block(model, hand, Vector3.new(0.3, 0.1, 0.1), g * CFrame.new(0, 1.1, 0), black)
 	-- medal
 	local torso = part(model, "UpperTorso")
 	local ts = torso.Size
@@ -2087,9 +2102,16 @@ T.loretta = function(model, head, hs, torso, ts)
 		local hand = part(model, h)
 		if hand then blob(model, hand, Vector3.new(0.7, 0.7, 0.7), CFrame.new(), rgb(230, 60, 60)) end
 	end
+	-- the giant ladle raised in her fist, bowl up and tipped forward, ready to serve (it hung down to
+	-- the floor, the bowl resting on the ground like a lamp stand). g: the grip, the ladle up its Y.
 	local hand = part(model, "RightHand")
-	cylY(model, hand, 0.14, 1.9, CFrame.new(0, -0.9, -0.45), rgb(200, 200, 210), Enum.Material.Metal)
-	ball(model, hand, 0.9, CFrame.new(0, -1.95, -0.6), rgb(200, 200, 210), Enum.Material.Metal)
+	local steel = rgb(200, 200, 210)
+	local g = CFrame.new(0, 0.1, -0.4) * CFrame.Angles(math.rad(-38), 0, 0)
+	cylY(model, hand, 0.14, 1.5, g * CFrame.new(0, 0.45, 0), steel, Enum.Material.Metal)
+	-- the bowl: a deep cup facing up and forward, and the hook at the end of the handle
+	blob(model, hand, Vector3.new(0.85, 0.5, 0.85), g * CFrame.new(0, 1.3, -0.1), steel, Enum.Material.Metal)
+	cylY(model, hand, 0.7, 0.06, g * CFrame.new(0, 1.52, -0.1), rgb(235, 190, 90))
+	block(model, hand, Vector3.new(0.1, 0.1, 0.3), g * CFrame.new(0, -0.3, 0.1), steel, Enum.Material.Metal)
 end
 
 -- the Sugar Baron: trench coat, a top hat made of cake, glowing pink eyes, face in shadow
@@ -2350,14 +2372,21 @@ T.butler = function(model, head, hs, torso, ts)
 	end
 	-- a very thin moustache
 	block(model, head, Vector3.new(hs.X * 0.4, hs.Y * 0.04, 0.05), CFrame.new(0, -hs.Y * 0.14, -hs.Z * 0.51), rgb(25, 22, 20))
-	-- the silver tray, held out clear of his hip (the left hand's -X is outward)
+	-- the silver tray, carried upright by its rim down at his side, face out, the way a butler holds it
+	-- between rounds (flat at hip height it read as a plate stuck to his leg). The left hand's -X is out.
 	local left = part(model, "LeftHand")
-	cylY(model, left, 1.6, 0.08, CFrame.new(-0.45, 0.1, -0.5), rgb(200, 205, 215), Enum.Material.Metal)
-	-- the feather duster, sticking out of the front of his fist
+	local silver = rgb(200, 205, 215)
+	local tray = CFrame.new(-0.42, -0.55, -0.1) * CFrame.Angles(0, 0, math.rad(-8))
+	cylY(model, left, 1.6, 0.08, tray * CFrame.Angles(0, 0, math.rad(90)), silver, Enum.Material.Metal)
+	cylY(model, left, 1.35, 0.1, tray * CFrame.new(-0.02, 0, 0) * CFrame.Angles(0, 0, math.rad(90)), rgb(225, 230, 240), Enum.Material.Metal)
+	-- the feather duster, raised and tipped forward, feathers up (it poked straight out of his fist
+	-- like a stick). g: the grip, the duster up its Y.
 	local right = part(model, "RightHand")
-	cylZ(model, right, 0.1, 1.3, CFrame.new(0, -0.1, -1.05), rgb(120, 80, 40), Enum.Material.Wood)
-	for i = 0, 4 do
-		blob(model, right, Vector3.new(0.25, 0.12, 0.8), CFrame.new(0, -0.1, -1.95) * CFrame.Angles(0, 0, math.rad(i * 72)) * CFrame.Angles(math.rad(20), 0, 0), ({ rgb(255, 120, 180), rgb(255, 200, 80), rgb(120, 200, 255) })[i % 3 + 1])
+	local g = CFrame.new(0, 0.05, -0.35) * CFrame.Angles(math.rad(-42), 0, 0)
+	cylY(model, right, 0.1, 1.0, g * CFrame.new(0, 0.3, 0), rgb(120, 80, 40), Enum.Material.Wood)
+	for i = 0, 5 do
+		local tilt = CFrame.Angles(0, math.rad(i * 60), 0) * CFrame.Angles(math.rad(28), 0, 0)
+		blob(model, right, Vector3.new(0.26, 0.9, 0.14), g * CFrame.new(0, 1.05, 0) * tilt * CFrame.new(0, 0.3, 0), ({ rgb(255, 120, 180), rgb(255, 200, 80), rgb(120, 200, 255) })[i % 3 + 1])
 	end
 end
 

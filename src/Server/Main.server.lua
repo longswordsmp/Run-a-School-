@@ -275,6 +275,23 @@ require(Server.DebugBridge).start({
 		end
 		return n
 	end,
+	-- named students in a row along +X from (x, z), facing -Z (ids: comma-separated): a photo booth
+	booth = function(player, ids, x, z, spacing)
+		local n = 0
+		for id in string.gmatch(ids, "[^,]+") do
+			if Config.StudentById[id] then
+				local model = HallService.spawnOne(nil, id)
+				Walkers.stop(model)
+				model:SetAttribute("State", "Lineup")
+				local y = model.PrimaryPart.Position.Y
+				local at = Vector3.new(x + n * (spacing or 4), y, z)
+				model.PrimaryPart.CFrame = CFrame.lookAt(at, at - Vector3.zAxis)
+				Factory.play(model, "idle")
+				n += 1
+			end
+		end
+		return n
+	end,
 	clearHall = function()
 		for _, m in workspace.Hall:GetChildren() do m:Destroy() end
 		return true

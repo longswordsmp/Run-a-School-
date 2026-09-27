@@ -41,16 +41,18 @@ local MOVES = {
 		local gulp = math.sin(t * 11) * 4 * seg(t, 0.35, 0.45) * (1 - seg(t, 0.75, 0.85))
 		return 128, -14, 108 + gulp, 24 + gulp * 0.5, 0, 0, w
 	end,
+	-- (the arm starts from the tool-holding pose, forward at about 85 degrees: starting from 0, it
+	-- dipped before the wind-up)
 	throw = function(t)
 		local wind, fling = seg(t, 0, 0.2), seg(t, 0.2, 0.34)
 		local w = seg(t, 0, 0.06) * (1 - seg(t, 0.4, 0.6))
 		-- up and back over the shoulder, then over the top and down in front
-		return 165 * wind - 115 * fling, -10, 75 * wind - 75 * fling, 0, -28 * wind + 50 * fling, 0, w
+		return 85 + 80 * wind - 115 * fling, -10, 75 * wind - 75 * fling, 0, -28 * wind + 50 * fling, 0, w
 	end,
 	slam = function(t)
 		local up, down = seg(t, 0, 0.18), seg(t, 0.18, 0.27)
 		local w = seg(t, 0, 0.06) * (1 - seg(t, 0.35, 0.55))
-		return 150 * up - 175 * down, -8, 35 * up * (1 - down), -14 * down, 0, down, w
+		return 85 + 65 * up - 175 * down, -8, 35 * up * (1 - down), -14 * down, 0, down, w
 	end,
 }
 
