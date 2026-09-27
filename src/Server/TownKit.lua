@@ -80,17 +80,33 @@ function Kit.ball(parent, name, d, pos, color, material)
 end
 
 -- text on a face of a part
+-- pixels per stud for a sign on `face` of `p`: 16 on big boards, more on small plates so the short side
+-- keeps about 40 px (at a flat 16 a 0.6-stud name plate had no room left for its text)
+function Kit.signPPS(p, face)
+	local s = p.Size
+	local a, b
+	if face == Enum.NormalId.Front or face == Enum.NormalId.Back then
+		a, b = s.X, s.Y
+	elseif face == Enum.NormalId.Left or face == Enum.NormalId.Right then
+		a, b = s.Z, s.Y
+	else
+		a, b = s.X, s.Z
+	end
+	return math.clamp(math.ceil(40 / math.max(math.min(a, b), 0.05)), 16, 80)
+end
 function Kit.sign(p, face, text, color, bg, font, stroke)
 	local g = Instance.new("SurfaceGui")
 	g.Face = face
 	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	g.PixelsPerStud = 16 -- (the town has ~650 signs: at 40 they came to 43 Mpx of sign textures, over the budget, and signs went blank)
+	-- (the town has ~650 signs: all at 40 px a stud they came to 43 Mpx of sign textures, over the
+	-- budget, and signs went blank; big boards are 16 now, small plates more: Kit.signPPS)
+	g.PixelsPerStud = Kit.signPPS(p, face)
 	g.LightInfluence = 0.15
 	g.Parent = p
 	local t = Instance.new("TextLabel")
 	t.Name = "Label"
-	t.Size = UDim2.new(1, -10, 1, -10)
-	t.Position = UDim2.fromOffset(5, 5)
+	t.Size = UDim2.fromScale(0.92, 0.84)
+	t.Position = UDim2.fromScale(0.04, 0.08)
 	t.BackgroundColor3 = bg or Color3.new(1, 1, 1)
 	t.BackgroundTransparency = bg and 0 or 1
 	t.Text = text
@@ -227,7 +243,9 @@ end
 function Kit.wall(parent, x0, z0, x1, z1)
 	local along = math.abs(x1 - x0) > math.abs(z1 - z0)
 	local len = along and math.abs(x1 - x0) or math.abs(z1 - z0)
-	return part(parent, "WorldEdge", along and Vector3.new(len, 120, 2) or Vector3.new(2, 120, len), CFrame.new((x0 + x1) / 2, 60, (z0 + z1) / 2), rgb(0, 0, 0), nil, { Transparency = 1 })
+	-- (from y -20: at Sunny Shores the edge crosses the sea, and a swimmer could dive under a wall
+	-- that started at the ground)
+	return part(parent, "WorldEdge", along and Vector3.new(len, 140, 2) or Vector3.new(2, 140, len), CFrame.new((x0 + x1) / 2, 50, (z0 + z1) / 2), rgb(0, 0, 0), nil, { Transparency = 1 })
 end
 
 ---------------------------------------------------------------------------

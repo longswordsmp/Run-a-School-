@@ -385,6 +385,103 @@ local function buildInterior(m)
 	end
 end
 
+-- the catwalks: a steel walk along each side wall and one across the middle between the belts, at
+-- y 13, hung on rods from the roof trusses (nothing stands on the floor, where the guards walk). No
+-- stairs come down: they're for the look (and for Vex's inspections). CanQuery off, so the cameras'
+-- and the guards' sight lines pass straight through them as before.
+local CATWALK_Y = 13
+local function buildCatwalks(m)
+	local cw = Instance.new("Folder")
+	cw.Name = "Catwalks"
+	cw.Parent = m
+	local noQuery = { CanQuery = false, CanTouch = false }
+	local GRATE = rgb(95, 98, 108)
+	local RAILC = rgb(250, 200, 50)
+	local function deck(size, cf) part(cw, "Grate", size, cf, GRATE, Enum.Material.DiamondPlate, noQuery) end
+	local function rail(size, cf) part(cw, "Railing", size, cf, RAILC, Enum.Material.Metal, noQuery) end
+	local function rod(x, z, top)
+		part(cw, "Hanger", Vector3.new(0.25, top - CATWALK_Y, 0.25), CFrame.new(x, (top + CATWALK_Y) / 2, z), STEEL, Enum.Material.Metal, noQuery)
+	end
+	local Z0, Z1 = 52, 121
+	for _, s in { -1, 1 } do
+		local xw = s * (B.x1 - 3.8) -- (3.8 in from the wall: 4 wide)
+		deck(Vector3.new(4, 0.4, Z1 - Z0), CFrame.new(xw, CATWALK_Y, (Z0 + Z1) / 2))
+		-- the rail on the open side, posts every 4
+		local xr = xw - s * 2
+		rail(Vector3.new(0.25, 0.25, Z1 - Z0), CFrame.new(xr, CATWALK_Y + 3.2, (Z0 + Z1) / 2))
+		rail(Vector3.new(0.25, 0.25, Z1 - Z0), CFrame.new(xr, CATWALK_Y + 1.7, (Z0 + Z1) / 2))
+		for z = Z0, Z1, 4 do
+			if math.abs(z - 81) > 3 then rail(Vector3.new(0.3, 3.4, 0.3), CFrame.new(xr, CATWALK_Y + 1.7, z)) end
+		end
+		for _, z in { 56, 70, 98, 112 } do
+			rod(xw - s * 1.6, z, B.h - 2)
+			rod(xw + s * 1.6, z, B.h - 2)
+		end
+		-- a toe board along the open edge
+		part(cw, "ToeBoard", Vector3.new(0.2, 0.5, Z1 - Z0), CFrame.new(xr, CATWALK_Y + 0.45, (Z0 + Z1) / 2), RAILC, Enum.Material.Metal, noQuery)
+	end
+	-- the bridge across the middle (z 81, between the two belts), rails both sides
+	local x0, x1 = B.x0 + 5.8, B.x1 - 5.8
+	deck(Vector3.new(x1 - x0, 0.4, 4), CFrame.new(0, CATWALK_Y, 81))
+	for _, dz in { -2, 2 } do
+		rail(Vector3.new(x1 - x0, 0.25, 0.25), CFrame.new(0, CATWALK_Y + 3.2, 81 + dz))
+		rail(Vector3.new(x1 - x0, 0.25, 0.25), CFrame.new(0, CATWALK_Y + 1.7, 81 + dz))
+		for x = x0 + 2, x1 - 2, 4 do rail(Vector3.new(0.3, 3.4, 0.3), CFrame.new(x, CATWALK_Y + 1.7, 81 + dz)) end
+	end
+	for _, x in { -12, 0, 12 } do
+		rod(x, 79.4, B.h - 2)
+		rod(x, 82.6, B.h - 2)
+	end
+	-- a "VEXCORP STAFF ONLY" plate at each end of the bridge
+	for _, s in { -1, 1 } do
+		local plate = part(cw, "StaffOnly", Vector3.new(0.2, 1.2, 3.4), CFrame.new(s * (x1 - 0.2), CATWALK_Y + 2.6, 81), rgb(40, 20, 55), Enum.Material.SmoothPlastic, noQuery)
+		sign(plate, s < 0 and Enum.NormalId.Right or Enum.NormalId.Left, "STAFF ONLY", LILAC, Enum.Font.LuckiestGuy)
+	end
+end
+
+-- the quota board: a big panel high on the west wall between two windows. The live line shows how many
+-- kids are in the pens right now (FactoryService.refresh keeps it up to date).
+local quotaKids -- the TextLabel with the live count
+local function buildQuotaBoard(m)
+	local x = B.x0 + 1.9
+	local board = part(m, "QuotaBoard", Vector3.new(0.4, 6, 10), CFrame.new(x, 19, 84), rgb(25, 22, 34), Enum.Material.SmoothPlastic, { CanQuery = false })
+	part(m, "QuotaFrame", Vector3.new(0.3, 6.6, 10.6), CFrame.new(x - 0.15, 19, 84), PURPLE, Enum.Material.Metal, { CanQuery = false })
+	local g = Instance.new("SurfaceGui")
+	g.Face = Enum.NormalId.Right
+	g.LightInfluence = 0
+	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	g.PixelsPerStud = 24
+	g.Parent = board
+	local function label(text, y, h, color, font)
+		local t = Instance.new("TextLabel")
+		t.BackgroundTransparency = 1
+		t.Size = UDim2.new(0.92, 0, h, 0)
+		t.Position = UDim2.new(0.04, 0, y, 0)
+		t.TextScaled = true
+		t.Font = font or Enum.Font.LuckiestGuy
+		t.TextColor3 = color
+		t.Text = text
+		t.Parent = g
+		return t
+	end
+	label("\u{1F4CB} HOMEWORK QUOTA", 0.04, 0.17, LILAC)
+	label("9,874 / 10,000 PAGES", 0.23, 0.2, rgb(255, 255, 255))
+	-- the progress bar, nearly full
+	local barBg = Instance.new("Frame")
+	barBg.BackgroundColor3 = rgb(60, 55, 75)
+	barBg.BorderSizePixel = 0
+	barBg.Size = UDim2.new(0.86, 0, 0.1, 0)
+	barBg.Position = UDim2.new(0.07, 0, 0.46, 0)
+	barBg.Parent = g
+	local fill = Instance.new("Frame")
+	fill.BackgroundColor3 = rgb(170, 90, 255)
+	fill.BorderSizePixel = 0
+	fill.Size = UDim2.fromScale(0.987, 1)
+	fill.Parent = barBg
+	quotaKids = label("KIDS IN THE PENS: 0", 0.6, 0.15, rgb(255, 120, 120))
+	label("\u{23F0} DAYS WITHOUT RECESS: 1,337", 0.8, 0.13, rgb(255, 214, 90), Enum.Font.GothamBlack)
+end
+
 -- a holding pen: floor plate, bars on three sides and a door, a nameplate, a spotlight, a prompt
 local function buildPen(m, i)
 	local x = PEN_XS[i]
@@ -784,6 +881,12 @@ function FactoryService.refresh()
 				pen.model:SetAttribute("OwnerId", nil)
 			end
 		end
+	end
+	-- the quota board's live line
+	if quotaKids then
+		local n = 0
+		for _, pen in pens do if pen.kind then n += 1 end end
+		quotaKids.Text = ("KIDS IN THE PENS: %d"):format(n)
 	end
 end
 
@@ -1499,6 +1602,8 @@ function FactoryService.start()
 	inside.Name = "Inside"
 	inside.Parent = root
 	buildInterior(inside)
+	buildCatwalks(inside)
+	buildQuotaBoard(inside)
 	local pensModel = Instance.new("Model")
 	pensModel.Name = "Pens"
 	pensModel.Parent = root

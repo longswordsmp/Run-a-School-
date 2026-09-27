@@ -954,7 +954,7 @@ local function rival(data)
 	cut()
 	local plotName = player:GetAttribute("Plot")
 	local plot = plotName and workspace:FindFirstChild("Plots") and workspace.Plots:FindFirstChild(plotName)
-	local mine = plot and plot:FindFirstChild("Bounds") and plot.Bounds.Position or Vector3.new(CX, 0, 100)
+	local mine = plot and plot:FindFirstChild("Origin") and plot.Origin.Position or Vector3.new(CX, 0, 100)
 	-- (out on her drive, past the gate, so neither the gate nor its sign is in the shot)
 	local stand = Vector3.new(CX + 3, 0.65, -35)
 	local toSchool = (Vector3.new(mine.X, 0, mine.Z) - Vector3.new(stand.X, 0, stand.Z)).Unit

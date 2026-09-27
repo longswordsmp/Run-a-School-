@@ -33,7 +33,8 @@ function Shores.build(town, Kit)
 	---------------------------------------------------------------------------
 	-- the land behind the beach, the roads, the gate
 	---------------------------------------------------------------------------
-	Kit.ground(m, -800, 800, -612, -560)
+	-- (on under the boardwalk to the sand: past the boardwalk's ends there was nothing to stand on)
+	Kit.ground(m, -800, 800, -642, -560)
 	local streets = Kit.folder(m, "Streets")
 	Kit.road(streets, -700, SHORE_Z, 700, SHORE_Z, 24, { sidewalk = 6 })
 	Kit.road(streets, 400, -410, 400, SHORE_Z + 12, 20, { sidewalk = 6 })

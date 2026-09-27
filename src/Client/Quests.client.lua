@@ -467,7 +467,8 @@ local function worldTarget()
 			ghostRows = {}
 			local plot = myPlot()
 			local school = plot and plot:FindFirstChild("School")
-			for _, d in school and school:GetDescendants() or {} do
+			local floors = school and school:FindFirstChild("Floors")
+			for _, d in floors and floors:GetDescendants() or {} do
 				if d.Name == "BuyRowPrompt" and d.Parent then table.insert(ghostRows, d.Parent) end
 			end
 		end

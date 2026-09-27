@@ -75,16 +75,30 @@ local function cyl(parent, name, d, h, pos, color, material, props)
 	for k, v in props or {} do t[k] = v end
 	return part(parent, name, Vector3.new(h, d, d), CFrame.new(pos) * CFrame.Angles(0, 0, math.rad(90)), color, material, t)
 end
+-- pixels per stud for a sign on `face` of `p`: 16 on big boards, more on small plates so the short side
+-- keeps about 40 px (at a flat 16 a 0.6-stud name plate had no room left for its text)
+local function signPPS(p, face)
+	local s = p.Size
+	local a, b
+	if face == Enum.NormalId.Front or face == Enum.NormalId.Back then
+		a, b = s.X, s.Y
+	elseif face == Enum.NormalId.Left or face == Enum.NormalId.Right then
+		a, b = s.Z, s.Y
+	else
+		a, b = s.X, s.Z
+	end
+	return math.clamp(math.ceil(40 / math.max(math.min(a, b), 0.05)), 16, 80)
+end
 local function sign(p, face, text, color, font, stroke)
 	local g = Instance.new("SurfaceGui")
 	g.Face = face
 	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	g.PixelsPerStud = 16
+	g.PixelsPerStud = signPPS(p, face)
 	g.LightInfluence = 0
 	g.Parent = p
 	local t = Instance.new("TextLabel")
-	t.Size = UDim2.new(1, -12, 1, -12)
-	t.Position = UDim2.fromOffset(6, 6)
+	t.Size = UDim2.fromScale(0.9, 0.84)
+	t.Position = UDim2.fromScale(0.05, 0.08)
 	t.BackgroundTransparency = 1
 	t.TextScaled = true
 	t.Font = font or Enum.Font.LuckiestGuy

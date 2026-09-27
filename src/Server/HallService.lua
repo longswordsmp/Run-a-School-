@@ -345,6 +345,7 @@ local function makeBus(label, color, textColor)
 		end
 		body.Anchored = true
 		bus:SetAttribute("Welded", true)
+		bus:SetAttribute("DoorAngle", 0) -- (its doors are shut, whatever the regular bus's were doing)
 	end
 	return bus
 end
@@ -402,15 +403,27 @@ local function setDoor(bus, open)
 	if not doorRel then return end
 	-- (the hinge: the door's front edge, in the bus's own space; the bus's front is +X, its inside +Z)
 	local hinge = CFrame.new(doorRel.X + door.Size.X / 2, 0, doorRel.Z)
-	local swing = hinge * CFrame.Angles(0, DOOR_SWING, 0) * hinge:Inverse()
+	local leaves = {}
 	for _, p in bus:GetChildren() do
 		local rel = p:IsA("BasePart") and (p.Name == "Door" or p.Name == "DoorGlass") and p:GetAttribute("ClosedRel")
-		if rel then
-			local target = pivot * (open and swing * rel or rel)
-			TweenService:Create(p, TweenInfo.new(0.35, Enum.EasingStyle.Quad), { CFrame = target }):Play()
-		end
+		if rel then leaves[p] = rel end
 	end
+	-- (the angle is tweened, and every leaf turned about the hinge by it: tweening the CFrames straight
+	-- from shut to open slid the door along a line while it turned, the hinge edge wandering)
+	local function at(angle)
+		local turn = hinge * CFrame.Angles(0, angle, 0) * hinge:Inverse()
+		for p, rel in leaves do p.CFrame = pivot * turn * rel end
+	end
+	local from = bus:GetAttribute("DoorAngle") or 0
+	local to = open and DOOR_SWING or 0
+	local v = Instance.new("NumberValue")
+	v.Value = from
+	v.Changed:Connect(at)
+	TweenService:Create(v, TweenInfo.new(0.35, Enum.EasingStyle.Quad), { Value = to }):Play()
 	task.wait(0.4)
+	at(to)
+	v:Destroy()
+	bus:SetAttribute("DoorAngle", to)
 end
 
 -- the counter over the regular bus: how many kids are still on board

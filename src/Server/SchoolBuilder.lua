@@ -4,7 +4,8 @@
 -- default yard, and the School Builder items the owner has bought.
 --
 -- Plot-local frame: origin at the plot centre on the ground, +Z faces the street.
---   lot: x -60..60, z -75..75       yard: z 16..75       building: x -40..40, z -66..16
+--   lot: x -60..60, z -100..75      yard: z 16..75       building: x -40..40, z -66..16
+--   campus: x -60..60, z -66.75..-100 behind the building (SchoolAnnex: cafeteria, gym, auditorium, library)
 -- Floors: floor f's walking surface is at floorTop(f) = 2 + 16 * (f - 1).
 -- Slots: floor f holds desks (f-1)*16+1 .. f*16 in four rows of four; row 1 nearest the lobby.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -321,7 +322,12 @@ local function buildFloor(school, L, f, floors, look, isRoof)
 		front = windowsAt({ -30, -18, 0, 18, 30 }, 7, sill, top)
 	end
 	wallX(walls, L, ZF, -BX, BX, y0, y1, front, wall, trim)
-	wallX(walls, L, ZB, -BX, BX, y0, y1, windowsAt({ -24, 24 }, 7, sill, top), wall, trim)
+	-- (floor 1's two back windows are doorways into the campus behind: SchoolAnnex)
+	local back = f == 1 and {
+		{ a = -27, b = -21, bottom = ft, top = ft + 9, kind = "door" },
+		{ a = 21, b = 27, bottom = ft, top = ft + 9, kind = "door" },
+	} or windowsAt({ -24, 24 }, 7, sill, top)
+	wallX(walls, L, ZB, -BX, BX, y0, y1, back, wall, trim)
 	wallZ(walls, L, -BX, ZB + WT / 2, ZF - WT / 2, y0, y1, windowsAt({ -55, -41, -27, 8 }, 8, sill, top), wall, trim)
 	wallZ(walls, L, BX, ZB + WT / 2, ZF - WT / 2, y0, y1, windowsAt({ -55, -41, -27, 8 }, 8, sill, top), wall, trim)
 	-- inside skin: pale plaster above a wainscot band, cut around the same openings
@@ -343,7 +349,7 @@ local function buildFloor(school, L, f, floors, look, isRoof)
 		local S, off = 0.15, WT / 2 + 0.075
 		local sides = {
 			{ "x", ZF - off, -BX + WT / 2, BX - WT / 2, front },
-			{ "x", ZB + off, -BX + WT / 2, BX - WT / 2, windowsAt({ -24, 24 }, 7, sill, top) },
+			{ "x", ZB + off, -BX + WT / 2, BX - WT / 2, back },
 			{ "z", -BX + off, ZB + WT / 2, ZF - WT / 2, windowsAt({ -55, -41, -27, 8 }, 8, sill, top) },
 			{ "z", BX - off, ZB + WT / 2, ZF - WT / 2, windowsAt({ -55, -41, -27, 8 }, 8, sill, top) },
 		}
@@ -358,7 +364,9 @@ local function buildFloor(school, L, f, floors, look, isRoof)
 	band.Name = "Caps"
 	band.Parent = fm
 	part(band, "Band", Vector3.new(BX * 2 + 1.2, 0.8, 0.6), L(0, y1 + 0.2, ZF + WT / 2 + 0.3), trim)
-	part(band, "Band", Vector3.new(BX * 2 + 1.2, 0.8, 0.6), L(0, y1 + 0.2, ZB - WT / 2 - 0.3), trim)
+	if f > 1 then -- (floor 1's back is inside the campus behind the school)
+		part(band, "Band", Vector3.new(BX * 2 + 1.2, 0.8, 0.6), L(0, y1 + 0.2, ZB - WT / 2 - 0.3), trim)
+	end
 	part(band, "Band", Vector3.new(0.6, 0.8, ZF - ZB + 1.2), L(-BX - WT / 2 - 0.3, y1 + 0.2, (ZF + ZB) / 2), trim)
 	part(band, "Band", Vector3.new(0.6, 0.8, ZF - ZB + 1.2), L(BX + WT / 2 + 0.3, y1 + 0.2, (ZF + ZB) / 2), trim)
 
@@ -798,11 +806,15 @@ local function buildFacade(school, L, floors, look, tierIndex, name)
 	for _, span in { { -BX - 1, -7.6 }, { 7.6, BX + 1 } } do
 		part(det, "BaseCourse", Vector3.new(span[2] - span[1], 2, 0.5), L((span[1] + span[2]) / 2, 1.4, FO + 0.2), base)
 	end
-	part(det, "BaseCourse", Vector3.new(BX * 2 + 2, 2, 0.5), L(0, 1.4, BO - 0.2), base)
+	-- (no base course across the back: the campus behind covers it, and it made a lip across the
+	-- doorways into the gym and the auditorium)
 	for _, s in { -1, 1 } do
 		part(det, "BaseCourse", Vector3.new(0.5, 2, ZF - ZB + 2), L(s * (SO + 0.2), 1.4, (ZF + ZB) / 2), base)
-		for _, z in { FO, BO } do
-			part(det, "Pilaster", Vector3.new(2.2, roofY, 2.2), L(s * (SO - 0.3), roofY / 2, z + (z > 0 and -0.3 or 0.3)), trim)
+		part(det, "Pilaster", Vector3.new(2.2, roofY, 2.2), L(s * (SO - 0.3), roofY / 2, FO - 0.3), trim)
+		-- (at the back, from the campus roof up: below it they stood in the cafeteria and the library)
+		local annexTop = math.min(20, roofY) + 1
+		if roofY - annexTop > 1 then
+			part(det, "Pilaster", Vector3.new(2.2, roofY - annexTop, 2.2), L(s * (SO - 0.3), (roofY + annexTop) / 2, BO + 0.3), trim)
 		end
 		-- a downpipe down each front corner
 		part(det, "Downpipe", Vector3.new(0.5, roofY, 0.5), L(s * (BX - 2.2), roofY / 2, FO + 0.3), rgb(150, 152, 160), Enum.Material.Metal)
@@ -944,9 +956,9 @@ local function fence(parent, L, style, look)
 	end
 	run(-59, 74, -11, 74)
 	run(11, 74, 59, 74)
-	run(-59, 74, -59, -74)
-	run(59, 74, 59, -74)
-	run(-59, -74, 59, -74)
+	-- (the sides stop at the campus behind the school: its walls close the lot at the back now)
+	run(-59, 74, -59, -66.5)
+	run(59, 74, 59, -66.5)
 end
 
 
@@ -1004,9 +1016,9 @@ Items.LowBrickWall = function(parent, L, look)
 	end
 	run(-59, 74, -11, 74)
 	run(11, 74, 59, 74)
-	run(-59, 74, -59, -74)
-	run(59, 74, 59, -74)
-	run(-59, -74, 59, -74)
+	-- (the sides stop at the campus behind the school, as fence() does; its walls close the lot)
+	run(-59, 74, -59, -66.5)
+	run(59, 74, 59, -66.5)
 	for _, x in { -11.5, 11.5 } do
 		part(parent, "LanternPost", Vector3.new(0.4, 1.4, 0.4), L(x, 4.5, 74), rgb(40, 40, 45), Enum.Material.Metal)
 		local lamp = part(parent, "Lantern", Vector3.new(1, 1.2, 1), L(x, 5.6, 74), rgb(255, 230, 160), Enum.Material.Neon)
@@ -1470,7 +1482,7 @@ function SchoolBuilder.decorate(plot, owned)
 		end
 		if owned.QuantumPCs then
 			-- the golden "chandelier" quantum computer, hanging over the back corner
-			local qx, qz = 24, -58
+			local qx, qz = 31, -58 -- (clear of floor 1's doorway at x 24 into the auditorium)
 			local function Lq(y) return base * CFrame.new(qx, ft + y, qz) end
 			part(folder, "QuantumRod", Vector3.new(0.3, 3, 0.3), Lq(13.3), rgb(230, 190, 90), Enum.Material.Metal)
 			for i, y in { 11.6, 10.2, 8.8, 7.4 } do
@@ -1578,7 +1590,7 @@ local function dome(parent, L, x, y, z, w, look)
 end
 
 local function buildWings(school, L, look, g, storeys, name)
-	if not (g.gym or g.library) then return end
+	if not (g.gym or g.library or g.ivy) then return end
 	local wings = Instance.new("Folder")
 	wings.Name = "Wings"
 	wings.Parent = school
@@ -1665,10 +1677,12 @@ local function buildWings(school, L, look, g, storeys, name)
 				patch(L(x, hgt / 2, ZF + WT / 2 + 0.2), rng:NextNumber(3, 6), hgt)
 			end
 		end
-		for _, s in { -1, 1 } do
-			for k = 0, 4 do
-				local hgt = rng:NextNumber(8, 24)
-				patch(L(s * (OUT + 0.2), hgt / 2, rng:NextNumber(Z0 + 4, Z1 - 4)) * CFrame.Angles(0, math.rad(90), 0), rng:NextNumber(4, 8), hgt)
+		if g.gym or g.library then
+			for _, s in { -1, 1 } do
+				for k = 0, 4 do
+					local hgt = rng:NextNumber(8, 24)
+					patch(L(s * (OUT + 0.2), hgt / 2, rng:NextNumber(Z0 + 4, Z1 - 4)) * CFrame.Angles(0, math.rad(90), 0), rng:NextNumber(4, 8), hgt)
+				end
 			end
 		end
 	end
@@ -1762,12 +1776,15 @@ local function applyFinish(school, L, look, finishId, roofY)
 	for _, name in { "Exterior", "Roof", "Caps", "Wings", "Upper" } do
 		walk(school:FindFirstChild(name), true)
 	end
+	local annex = school:FindFirstChild("Annex")
+	walk(annex and annex:FindFirstChild("Shell"), true)
 	-- sparkles along the roof line and the corners
 	local fx = Instance.new("Folder")
 	fx.Name = "Finish"
 	fx.Parent = school
-	for _, p in { { -BX, ZF }, { BX, ZF }, { -BX, ZB }, { BX, ZB }, { 0, ZF }, { 0, (ZF + ZB) / 2 } } do
-		local e = part(fx, "Sparkles", Vector3.new(1, 1, 1), L(p[1], roofY + 2, p[2]), f.sparkle, nil, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
+	local annexY = math.min(20, roofY) + 2
+	for _, p in { { -BX, ZF }, { BX, ZF }, { -BX, ZB }, { BX, ZB }, { 0, ZF }, { 0, (ZF + ZB) / 2 }, { -60, -100, annexY }, { 60, -100, annexY } } do
+		local e = part(fx, "Sparkles", Vector3.new(1, 1, 1), L(p[1], p[3] or (roofY + 2), p[2]), f.sparkle, nil, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false })
 		local pe = Instance.new("ParticleEmitter")
 		pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
 		pe.Color = ColorSequence.new(f.sparkle)
@@ -1806,7 +1823,32 @@ function SchoolBuilder.build(plot, opts)
 	local storeys = opts.floors + (g.extra or 0)
 	if (g.extra or 0) > 0 then buildUpper(school, L, opts.floors, g.extra, look) end
 	local roofY = buildFacade(school, L, storeys, look, opts.tier, opts.name or "Empty School")
-	buildWings(school, L, look, g, storeys, opts.name)
+	-- (the gym and the library are walk-in rooms in the campus behind now, not solid wings; the
+	-- library's dome goes on its roof there)
+	local wingG = table.clone(g)
+	wingG.gym, wingG.library = nil, nil
+	buildWings(school, L, look, wingG, storeys, opts.name)
+	local Annex = require(script.Parent.SchoolAnnex)
+	Annex.build(school, L, look, opts.tier or 1, g, {
+		part = part, cyl = cyl, ball = ball, wedge = wedge, text = surfaceText, light = light,
+		wallX = wallX, wallZ = wallZ, windowsAt = windowsAt, dome = dome,
+	}, roofY)
+	-- anyone standing in a room that's shut now (a rebuild at a lower tier: prestige, a released
+	-- plot) is put back in the classroom instead of being sealed in
+	for _, pl in game:GetService("Players"):GetPlayers() do
+		local r = pl.Character and pl.Character:FindFirstChild("HumanoidRootPart")
+		if r then
+			local lp = base:PointToObjectSpace(r.Position)
+			if lp.Z < Annex.Z0 and lp.Z > Annex.Z1 - 1 and math.abs(lp.X) <= Annex.X and lp.Y < 40 then
+				for _, room in Annex.ROOMS do
+					if lp.X >= room.x0 and lp.X <= room.x1 and not Annex.isOpen(opts.tier or 1, room.id) then
+						pl.Character:PivotTo(base * CFrame.new(0, 5, -52))
+						break
+					end
+				end
+			end
+		end
+	end
 	buildYard(school, L, look)
 	if opts.finish then applyFinish(school, L, look, opts.finish, roofY) end
 	school:SetAttribute("Floors", opts.floors)

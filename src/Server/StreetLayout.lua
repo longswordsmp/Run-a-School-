@@ -126,10 +126,20 @@ function StreetLayout.build()
 			end
 		end
 		local door
+		-- (open, swung in on its front hinge as HallService opens the buses' doors; slid back it sat over
+		-- the side window)
+		local hpv = home:GetPivot()
+		local dp = home:FindFirstChild("Door")
+		local swing
+		if dp then
+			door = dp.Position
+			local dRel = hpv:ToObjectSpace(dp.CFrame)
+			local hinge = CFrame.new(dRel.X + dp.Size.X / 2, 0, dRel.Z)
+			swing = hinge * CFrame.Angles(0, math.rad(82), 0) * hinge:Inverse()
+		end
 		for _, p in home:GetChildren() do
-			if p:IsA("BasePart") and (p.Name == "Door" or p.Name == "DoorGlass") then
-				if p.Name == "Door" then door = door or p.Position end
-				p.CFrame += Vector3.new(-3.3, 0, -0.35) -- (slid open, as HallService opens them)
+			if swing and p:IsA("BasePart") and (p.Name == "Door" or p.Name == "DoorGlass") then
+				p.CFrame = hpv * swing * hpv:ToObjectSpace(p.CFrame)
 			end
 		end
 		home.Parent = map

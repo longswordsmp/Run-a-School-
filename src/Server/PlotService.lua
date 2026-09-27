@@ -642,8 +642,42 @@ function PlotService.inside(plot, pos)
 	return math.abs(lp.X) <= h.X and math.abs(lp.Y) <= h.Y and math.abs(lp.Z) <= h.Z
 end
 
+-- the lot runs back to z -100 now, over the campus behind the school (SchoolAnnex). The place's Lot
+-- lawn, its curbs and the Bounds box were baked 150 deep (z -75..75) by tools/build_map; they're
+-- stretched here, once, keeping the front where it was. (Bounds is what PlotService.inside reads: the
+-- gate lock, the Jawbreaker Trap, co-op perks... with it short, most of the gym counted as off the lot.)
+local LOT_BACK = 100
+local function extendLot(plot)
+	local o = plot.Origin.CFrame
+	local depth = 75 + LOT_BACK
+	local mid = (75 - LOT_BACK) / 2
+	local bounds, lot = plot:FindFirstChild("Bounds"), plot:FindFirstChild("Lot")
+	if bounds and bounds.Size.Z < depth - 1 then
+		bounds.Size = Vector3.new(bounds.Size.X, bounds.Size.Y, depth)
+		bounds.CFrame = o * CFrame.new(0, bounds.Size.Y / 2, mid)
+	end
+	if lot and lot.Size.Z < depth - 1 then
+		local y = o:PointToObjectSpace(lot.Position).Y
+		lot.Size = Vector3.new(lot.Size.X, lot.Size.Y, depth)
+		lot.CFrame = o * CFrame.new(0, y, mid)
+	end
+	for _, c in plot:GetChildren() do
+		if c.Name == "Curb" and c:IsA("BasePart") then
+			local lp = o:PointToObjectSpace(c.Position)
+			if math.abs(c.Size.Z - 150) < 0.5 then
+				c.Size = Vector3.new(c.Size.X, c.Size.Y, depth) -- (a side curb)
+				c.CFrame = o * CFrame.new(lp.X, lp.Y, mid)
+			elseif c.Size.X > 100 and lp.Z < -70 and lp.Z > -80 then
+				c.CFrame = o * CFrame.new(lp.X, lp.Y, -LOT_BACK + 0.5) -- (the back curb)
+			end
+		end
+	end
+end
+PlotService.LOT_BACK = LOT_BACK
+
 function PlotService.start()
 	for _, plot in plotsFolder:GetChildren() do
+		pcall(extendLot, plot)
 		-- with streaming on, keep each owner's own school loaded for them wherever they are
 		pcall(function() plot.ModelStreamingMode = Enum.ModelStreamingMode.PersistentPerPlayer end)
 		plot:SetAttribute("OriginCF", plot.Origin.CFrame)

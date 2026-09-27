@@ -188,7 +188,9 @@ local function streetTrees(parent, Kit, spots)
 		if free(c, Vector3.new(4.6, 4, 4.6)) then
 			Kit.cylY(parent, "Planter", 4.4, 1.2, pos + Vector3.new(0, 0.6, 0), Kit.C.stone, Enum.Material.Concrete)
 			Kit.cylY(parent, "PlanterSoil", 3.8, 0.2, pos + Vector3.new(0, 1.2, 0), Kit.C.dirt, Enum.Material.Ground)
-			Kit.tree(parent, pos.X, pos.Z, 0.72)
+			local tree = Kit.tree(parent, pos.X, pos.Z, 0.72)
+			-- (Kit.tree plants at the ground; on a raised sidewalk lift it onto the planter)
+			if tree and pos.Y > 0.05 then tree:PivotTo(tree:GetPivot() + Vector3.new(0, pos.Y, 0)) end
 		end
 	end
 end
@@ -226,6 +228,23 @@ local function maple(Kit)
 	return n
 end
 
+-- Recess Row: its lamps stand every 50 along both sidewalks (|z| 22) and there wasn't a tree on
+-- the street. A tree in a planter halfway between each pair, out by the lots (|z| 25.5: the kids walk
+-- at 14.8..19.2), none at a crossing or a school gate (StreetLayout.CROSSINGS)
+local function recessRow(town, Kit)
+	local Street = require(script.Parent.StreetLayout)
+	local spots = {}
+	for x = -275, 275, 50 do
+		local near = false
+		for _, c in Street.CROSSINGS do if math.abs(x - c) < 14 then near = true end end
+		if not near then
+			table.insert(spots, Vector3.new(x, Street.WALK_TOP, -25.5))
+			table.insert(spots, Vector3.new(x, Street.WALK_TOP, 25.5))
+		end
+	end
+	streetTrees(Kit.folder(town, "RecessRowTrees"), Kit, spots)
+end
+
 function Infill.build(town, Kit)
 	local downtown = town:FindFirstChild("Downtown")
 	if not downtown then return end
@@ -254,10 +273,12 @@ function Infill.build(town, Kit)
 	for x = -375, 375, 50 do
 		if math.abs(x) > 30 then
 			table.insert(spots, Vector3.new(x, 0, -390 - 14.5))
-			table.insert(spots, Vector3.new(x, 0, -390 + 14.5))
+			-- (not in Mo the mail carrier's way: from his post at the Post Office he cuts across there)
+			if x ~= 325 then table.insert(spots, Vector3.new(x, 0, -390 + 14.5)) end
 		end
 	end
 	streetTrees(trees, Kit, spots)
+	recessRow(town, Kit)
 	local n = 0
 	for _, s in m:GetChildren() do if s.Name == "Shop" then n += 1 end end
 	return n, maple(Kit)

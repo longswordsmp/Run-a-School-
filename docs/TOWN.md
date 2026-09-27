@@ -41,7 +41,10 @@ the story quests and cutscenes are layered on top):
                         │                                 VexPrep(SE)  │           underneath)
                  z -234 ├──────────────  ring road  ──────────────────┤
                         │         DOWNTOWN (grocery, town hall...)     │
-                 z -560 └──────────────────────────────────────────────┘
+                 z -560 ├──────────────  (picket fence)  ─────────────┤
+                        │   SUNNY SHORES: beach, boardwalk, pier, wheel  │
+                        │   (the map's edge beyond Downtown)             │
+                 z -960 ~~~~~~~~~~~~~~~~~~~ the sea ~~~~~~~~~~~~~~~~~~~~~
                      x -800                                         x +800
 ```
 
@@ -61,6 +64,17 @@ the story quests and cutscenes are layered on top):
   container yard, the loading dock, security booths. **The Top Secret Lair** is under the Tower,
   reached by the executive elevator (a cavern built underground at y -160).
 - **Vex Prep** (x 372..482, z -170..-45) opens with Act 3.
+- **Sunny Shores** (z -560..-960, 2026-09-27): through the SUNNY SHORES gate on Beach Road (x = 400, off
+  Market Street) or the footpath behind Town Hall. Shore Drive, a plank boardwalk with six snack kiosks,
+  the beach (umbrellas, sandcastles, a lifeguard tower, a volleyball net), swimmable Terrain water out
+  past the edge, the pier with the Ferris wheel, the lighthouse. Inside Downtown's zone box, so it opens
+  with Downtown. (TownShores.lua)
+- **Shops and houses** (TownInfill.lua, once the town is built): 42 shopfronts fill Downtown's empty
+  frontage and 36 street trees line it; 30 more Maple houses on the empty lots; street trees on Recess
+  Row. Nothing is built on paving, over anything standing, or near a Places post.
+- **The campus behind each school** (SchoolAnnex.lua): cafeteria (Elementary), library (Middle School),
+  gym (High School), auditorium with a stage (Prep School), through floor 1's back doorways; the lot runs
+  to z -100 behind the building.
 
 ### Locks
 Each district has an arch gate on the ring road with a sign; while locked, the player's own client

@@ -31,7 +31,7 @@ function Downtown.build(town, Kit)
 	for x = -400, 400, 50 do
 		if math.abs(x) > 30 then
 			Kit.lamp(streets, x, -373)
-			Kit.lamp(streets, x, -407)
+			if x ~= 400 then Kit.lamp(streets, x, -407) end -- (Beach Road leaves Market Street there)
 		end
 	end
 
@@ -329,7 +329,9 @@ function Downtown.build(town, Kit)
 	for x = -400, 400, 40 do
 		if math.abs(x) > 40 then
 			Kit.tree(m, x, -262, 1)
-			Kit.tree(m, x, -548, 1.1)
+			local t = Kit.tree(m, x, -548, 1.1)
+			-- (Beach Road to Sunny Shores runs up x = 400: that one goes, the others keep their places)
+			if x == 400 and t then t:Destroy() end
 		end
 	end
 	return m

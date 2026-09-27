@@ -143,7 +143,7 @@ local function startDefend(player, m)
 		local plot = PlotService.getPlot(player)
 		while active[player] == m do
 			local r = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-			if not plot or (r and (r.Position - plot.Entry.Position).Magnitude < 70) then break end
+			if not plot or (r and (PlotService.inside(plot, r.Position) or (r.Position - plot.Entry.Position).Magnitude < 70)) then break end
 			task.wait(0.3)
 		end
 		if active[player] ~= m then return end

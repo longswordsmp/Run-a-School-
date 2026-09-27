@@ -386,7 +386,7 @@ Config.Builds = {
 	{ id = "Marquee", name = "Marquee Letter Board", icon = "\u{1FAA7}", rep = 1, tier = 2, price = 120e3 },
 	{ id = "LowBrickWall", name = "Low Brick Wall", icon = "\u{1F9F1}", rep = 2, tier = 3, price = 3e6, replaces = "PicketFence" },
 	{ id = "MascotLockers", name = "Mascot Lockers", icon = "\u{1F510}", rep = 1, tier = 3, price = 4e6 },
-	{ id = "Cafeteria", name = "Cafeteria Corner", icon = "\u{1F37D}\u{FE0F}", rep = 2, tier = 3, price = 7e6 },
+	{ id = "Cafeteria", name = "Lobby Lunch Tables", icon = "\u{1F37D}\u{FE0F}", rep = 2, tier = 3, price = 7e6 },
 	{ id = "ArchedWindows", name = "Arched Windows & Shutters", icon = "\u{1F3DB}\u{FE0F}", rep = 2, tier = 5, price = 3e9, replaces = "WindowBoxes" },
 	{ id = "StainedGlass", name = "Stained-Glass Windows", icon = "\u{1F308}", rep = 2, tier = 8, price = 300e9, replaces = "ArchedWindows" },
 	{ id = "PathLights", name = "Path Lights", icon = "\u{1F4A1}", rep = 2, tier = 2, price = 50e3 },
@@ -1084,7 +1084,8 @@ Config.CrewJobReward = { incomeSecs = 150, min = 600, boost = 0.3, boostSecs = 1
 -- Log exists); product: the Robux shortcut (Config.Products key).
 Config.Areas = {
 	{ id = "Downtown", name = "Downtown", icon = "\u{1F3EA}", color = rgb(230, 96, 64),
-		box = { x0 = -540, x1 = 540, z0 = -560, z1 = -240 }, gate = { x = 0, z = -240, w = 26, alongX = true },
+		-- (the box runs on over Sunny Shores, z -560..-960: the beach is reached through Downtown)
+		box = { x0 = -540, x1 = 540, z0 = -960, z1 = -240 }, gate = { x = 0, z = -240, w = 26, alongX = true },
 		needs = { tutorial = true }, hint = "Finish Chapter 1", product = "UnlockDowntown" },
 	{ id = "Lab", name = "the Mutation Lab", icon = "\u{1F9EA}", color = rgb(120, 220, 60),
 		box = { x0 = -474, x1 = -366, z0 = 42, z1 = 150 }, gate = { x = -420, z = 42, w = 12, alongX = true },

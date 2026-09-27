@@ -48,11 +48,28 @@ end
 ---------------------------------------------------------------------------
 -- big centre announcements
 ---------------------------------------------------------------------------
-local liveAnnounce = {}
+local liveAnnounce = {} -- { label, text, count, expires }, oldest first
+local MAX_ANNOUNCE = 3
 local function announce(text, color)
+	-- the same line again while it's still up: it pops and counts (x2, x3...) instead of stacking.
+	-- (Secret students spawned in a row stacked six copies up the middle of the screen.)
+	for _, a in liveAnnounce do
+		if a.text == text and a.label.Parent then
+			a.count += 1
+			a.label.Text = ("%s  x%d"):format(text, a.count)
+			a.expires = os.clock() + 2.2
+			UI.pop(a.label, 0.2)
+			return
+		end
+	end
+	-- at most three different ones at once: the oldest goes
+	while #liveAnnounce >= MAX_ANNOUNCE do
+		local oldest = table.remove(liveAnnounce, 1)
+		oldest.label:Destroy()
+	end
 	-- ones still on screen slide up to make room instead of drawing over each other
-	for _, old in liveAnnounce do
-		TweenService:Create(old, TweenInfo.new(0.2), { Position = old.Position - UDim2.fromOffset(0, 76) }):Play()
+	for _, a in liveAnnounce do
+		TweenService:Create(a.label, TweenInfo.new(0.2), { Position = a.label.Position - UDim2.fromOffset(0, 76) }):Play()
 	end
 	local t = UI.label(gui, {
 		Name = "Announce",
@@ -67,12 +84,17 @@ local function announce(text, color)
 	})
 	UI.new("UISizeConstraint", { MaxSize = Vector2.new(900, 70), Parent = t })
 	UI.pop(t, 0.2)
-	table.insert(liveAnnounce, t)
-	task.delay(2.2, function()
+	local entry = { label = t, text = text, count = 1, expires = os.clock() + 2.2 }
+	table.insert(liveAnnounce, entry)
+	task.spawn(function()
+		while t.Parent and os.clock() < entry.expires do task.wait(entry.expires - os.clock()) end
+		if not t.Parent then return end
 		TweenService:Create(t, TweenInfo.new(0.4), { TextTransparency = 1, Position = t.Position - UDim2.fromScale(0, 0.06) }):Play()
-		TweenService:Create(t.UIStroke, TweenInfo.new(0.4), { Transparency = 1 }):Play()
+		local stroke = t:FindFirstChildOfClass("UIStroke")
+		if stroke then TweenService:Create(stroke, TweenInfo.new(0.4), { Transparency = 1 }):Play() end
 		task.wait(0.45)
-		table.remove(liveAnnounce, table.find(liveAnnounce, t))
+		local i = table.find(liveAnnounce, entry)
+		if i then table.remove(liveAnnounce, i) end
 		t:Destroy()
 	end)
 end
