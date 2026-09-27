@@ -1161,8 +1161,8 @@ Config.Products = {
 }
 
 -- the MONEY BOOST ladder: your tuition multiplier after n purchases is x(n + 1), up to x100. The level
--- you'd buy next decides the band, so the price climbs as you go (49 R$ each up to x5, then 99, 199,
--- 399, 799 R$).
+-- you'd buy next decides the band, so the price climbs as you go (9 R$ each up to x5, then 19, 39,
+-- 79, 149 R$; the whole ladder is 10,141 R$).
 Config.MoneyBoost = {
 	max = 100,
 	bands = {
