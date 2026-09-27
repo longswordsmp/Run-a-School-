@@ -1627,6 +1627,59 @@ function B.moneycloud(m)
 	for _, c in { { 0.9, -1.9 }, { -1.6, -1.7 }, { 1.8, -1.5 } } do disc(m, 0.6, 0.14, CF(c[1], c[2], -0.4), rgb(255, 205, 60)) end
 end
 
+-- the Bus Depot's buses (tomas, 2026-09-27: "a model of a bus with a speed trail behind it"): the
+-- bonnet at -X (the right of the screen: it's driving right), the windows facing the camera, streaks
+-- of light trailing off behind
+local function busBody(m, c)
+	p(m, V(5, 2.3, 2), CF(0.3, 0.25, 0), c.body)
+	p(m, V(1.3, 1.25, 2), CF(-2.85, -0.28, 0), c.body)
+	p(m, V(0.1, 0.9, 1.5), CF(-2.24, 0.78, 0) * CFrame.Angles(0, 0, math.rad(-12)), c.glass)
+	for k = 0, 3 do p(m, V(0.82, 0.72, 0.1), CF(2.0 - k * 1.05, 0.66, -1.01), c.glass) end
+	p(m, V(0.8, 1.5, 0.1), CF(-1.75, 0.15, -1.01), c.door)
+	p(m, V(5.02, 0.28, 0.1), CF(0.3, -0.32, -1.01), c.trim)
+	p(m, V(5.1, 0.3, 2.05), CF(0.3, 1.45, 0), c.roof)
+	p(m, V(0.3, 0.5, 2.05), CF(-3.45, -0.55, 0), c.trim)
+	for _, x in { -2.3, 1.9 } do
+		cyl(m, 1.15, 0.42, V(x, -0.95, -0.9), INK, "z")
+		cyl(m, 0.52, 0.44, V(x, -0.95, -0.92), c.hub or rgb(200, 205, 215), "z")
+	end
+	ball(m, 0.42, V(-3.55, -0.1, -0.7), rgb(255, 250, 220), Enum.Material.Neon)
+end
+local function speedTrail(m, colors)
+	for i, y in { 1.05, 0.25, -0.55 } do
+		for k = 0, 3 do
+			local s = p(m, V(1.25 - k * 0.18, 0.2 - k * 0.02, 0.2), CF(3.55 + k * 1.2 + (i % 2) * 0.35, y, -0.35), colors[(i + k) % #colors + 1], nil, Enum.Material.Neon)
+			s.Transparency = 0.05 + k * 0.22
+		end
+	end
+end
+function B.schoolbus(m)
+	busBody(m, { body = rgb(255, 200, 40), glass = rgb(150, 210, 255), door = rgb(120, 180, 240), trim = INK, roof = rgb(250, 250, 245) })
+	speedTrail(m, { rgb(90, 200, 255), rgb(255, 120, 60), rgb(255, 255, 255) })
+end
+function B.magicbus(m)
+	local PURPLE, GOLDL = rgb(150, 80, 235), rgb(255, 205, 70)
+	busBody(m, { body = PURPLE, glass = rgb(200, 170, 255), door = rgb(110, 60, 190), trim = GOLDL, roof = rgb(70, 40, 140), hub = GOLDL })
+	-- a wizard's hat on the roof, gold stars down the side
+	cylc(m, 2.2, 0.16, CF(0.6, 1.66, 0), rgb(60, 30, 120))
+	cone(m, CF(0.6, 1.7, 0), 1.3, 0.1, 1.9, 6, rgb(60, 30, 120))
+	for _, x in { 1.4, -0.3 } do star5(m, CF(x, -0.0, -1.08), 0.16, GOLDL, 0.06) end
+	speedTrail(m, { rgb(255, 150, 255), rgb(200, 150, 255), rgb(255, 230, 140) })
+end
+function B.galaxybus(m)
+	local NAVY, CYAN = rgb(35, 45, 120), rgb(90, 230, 255)
+	busBody(m, { body = NAVY, glass = rgb(120, 210, 255), door = rgb(60, 80, 170), trim = CYAN, roof = rgb(20, 25, 70), hub = CYAN })
+	-- a glass dome and a little antenna on the roof, fins and a rocket flame at the back, stars
+	local dome = ball(m, 1.3, V(0.7, 1.7, 0), rgb(170, 230, 255), Enum.Material.Glass)
+	dome.Transparency = 0.35
+	cylc(m, 0.1, 0.8, CF(-1.3, 2.0, 0), rgb(200, 205, 215))
+	ball(m, 0.3, V(-1.3, 2.45, 0), rgb(255, 90, 120), Enum.Material.Neon)
+	for _, s in { -1, 1 } do wedge(m, V(0.2, 1.0, 1.2), CF(2.75, 1.85, s * 0.7) * CFrame.Angles(0, math.rad(90), 0), CYAN) end
+	cylc(m, 1.0, 0.4, CF(2.95, 0.25, 0) * CFrame.Angles(0, 0, math.rad(90)), rgb(90, 95, 120))
+	for _, st in { { 1.6, 0.9 }, { 0.5, -0.1 }, { -0.7, 0.95 } } do ball(m, 0.18, V(st[1], st[2], -1.07), rgb(255, 255, 255), Enum.Material.Neon) end
+	speedTrail(m, { CYAN, rgb(180, 120, 255), rgb(255, 255, 255) })
+end
+
 -- the keys the store uses for its passes and products (Config keys -> icon)
 Icons.FOR = {
 	StarterPack = "gift", VIP = "crown", SuperSpeed = "sneaker", GoldenBoard = "goldboard", DiamondBoard = "gem",
@@ -1634,6 +1687,7 @@ Icons.FOR = {
 	MoneyBoost = "cash", Cash10m = "cash", Cash1h = "moneybag", Cash4h = "vault", LuckyBus = "bus",
 	Cash8h = "briefcase", Cash16h = "chest", Cash24h = "truck", Cash1w = "moneyMountain",
 	ServerLuck = "sparkle", ExpressRare = "letter", ExpressEpic = "letterEpic", LockRefresh = "refresh",
+	BusLuck = "clover", TripleBus = "schoolbus", AutoBus = "refresh",
 	FastLetters = "fastletters", DoubleTickets = "ticket", ExpressLegendary = "letterLegendary", SchoolShield = "shield",
 	MoneyRain = "moneycloud", CandyBag = "candy", CandyJar = "candyjar",
 }
@@ -1702,6 +1756,7 @@ for k, v in {
 	runningshoes = { turn = -40, tilt = 30, roll = -12 }, lockpick = HIGH, hoverboard = { turn = -50, tilt = 40, roll = 20 },
 	megaphone = L, janitorcart = A, bank = A, laser = A, stopwatch = R, hallpass = R, alarm = A, trophy = A,
 	letterLegendary = R, fastletters = R, ticket = L, candyjar = A, moneycloud = A,
+	schoolbus = { turn = -24, tilt = 14 }, magicbus = { turn = -24, tilt = 14 }, galaxybus = { turn = -24, tilt = 14 },
 } do Icons.LOOK[k] = v end
 
 -- the panels (by their names) -> icon

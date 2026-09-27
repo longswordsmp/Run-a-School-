@@ -148,6 +148,8 @@ local function toMotors(model)
 end
 Factory.toMotors = toMotors
 
+-- where the twin stands: at the kid's side, shoulder to shoulder
+local TWIN_OFFSET = CFrame.new(1.7, 0, 0.15)
 local function makeTemplate(def)
 	local look = def.look
 	local av = KidAvatars.Kids[def.id]
@@ -201,6 +203,24 @@ local function makeTemplate(def)
 		-- the floating tag clears a tall hat
 		if av.hat then model:SetAttribute("TagLift", 0.9) end
 	end
+	-- the ??? from a bus is a pair of twins (Config.BusStudents): a second, identical kid welded at
+	-- this one's side, so they walk, sit and ride together; Factory.play/emote/pace drive both
+	if def.twins then
+		local twin = model:Clone()
+		twin.Name = "Twin"
+		local troot = twin.PrimaryPart
+		troot.Anchored = false
+		local thum = twin:FindFirstChildOfClass("Humanoid")
+		thum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+		twin.Parent = model
+		troot.CFrame = model.PrimaryPart.CFrame * TWIN_OFFSET
+		local w = Instance.new("Weld")
+		w.Part0 = model.PrimaryPart
+		w.Part1 = troot
+		w.C0 = TWIN_OFFSET
+		w.Parent = troot
+		model:SetAttribute("Twins", true)
+	end
 	model.Parent = templates
 	return model
 end
@@ -225,6 +245,7 @@ end
 function Factory.preload()
 	-- (six at a time: an avatar kid waits on its catalog assets loading)
 	local queue = table.clone(Config.Students)
+	for _, s in Config.BusStudents do table.insert(queue, s) end
 	local running = 0
 	while #queue > 0 or running > 0 do
 		while running < 6 and #queue > 0 do
@@ -386,6 +407,9 @@ function Factory.pace(model, speed)
 	if not (c and speed and c.track.IsPlaying) then return end
 	local nat = natural(model, c.which)
 	if nat then c.track:AdjustSpeed(math.clamp(speed / nat, 0.3, 2.2)) end
+	local twin = model:FindFirstChild("Twin")
+	local tc = twin and current[twin]
+	if nat and tc and tc.track.IsPlaying then tc.track:AdjustSpeed(math.clamp(speed / nat, 0.3, 2.2)) end
 end
 
 -- which: a Factory.Anims name. speed (optional): the studs a second the rig is moving; a walk that
@@ -407,6 +431,17 @@ function Factory.play(model, which, speed)
 	track.Priority = which == "sit" and Enum.AnimationPriority.Action or Enum.AnimationPriority.Movement
 	track:Play(0.15)
 	current[model] = { track = track, which = which }
+	-- (the twin does the same, in step)
+	local twin = model:FindFirstChild("Twin")
+	local tan = twin and twin:FindFirstChildOfClass("Humanoid") and twin:FindFirstChildOfClass("Humanoid"):FindFirstChildOfClass("Animator")
+	if tan then
+		for _, tr in tan:GetPlayingAnimationTracks() do tr:Stop(0.15) end
+		local tt = tan:LoadAnimation(a)
+		tt.Looped = true
+		tt.Priority = track.Priority
+		tt:Play(0.15)
+		current[twin] = { track = tt, which = which }
+	end
 	if speed then Factory.pace(model, speed) end
 	return track
 end

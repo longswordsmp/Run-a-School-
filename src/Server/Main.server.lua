@@ -132,6 +132,8 @@ require(Server.QuestGoons).start(TownQuestService)
 timed("PlacesService.start", require(Server.PlacesService).start)
 -- (Robux offers when a player needs one: short of cash, gate cooling down)
 timed("DealsService.start", require(Server.DealsService).start)
+-- (the Bus Depot: buy buses for cash, a kid from each)
+timed("BusDepotService.start", require(Server.BusDepotService).start)
 
 if BOOT_LOG then print(("[Boot] services up at %.1f s"):format(os.clock() - BOOT_T0)) end
 

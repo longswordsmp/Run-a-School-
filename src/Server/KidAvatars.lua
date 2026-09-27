@@ -22,6 +22,7 @@ KidAvatars.Skin = {
 	tan = Color3.fromRGB(214, 160, 118),
 	brown = Color3.fromRGB(160, 106, 70),
 	dark = Color3.fromRGB(100, 64, 44),
+	alien = Color3.fromRGB(130, 220, 110), -- (the Galaxy Bus's Zib)
 }
 -- faces (dynamic heads, from the catalog's face bundles)
 local F = {
@@ -122,6 +123,28 @@ KidAvatars.Kids = {
 	HeadPrefect = { body = "boy", head = F.smile, hair = "132484883569768", shirt = 10703031658, pants = 7322526269, prop = "hands" },
 	TheFounder = { body = "boy", head = F.smile, hat = "70438438241040", face = "103970674901498", shirt = 91853454, pants = 6258511193 },
 	TinyPrincipal = { body = "boy", head = F.smile, face = "78989566349825,139884917225611", shirt = 10244256843, pants = 9207102956, prop = "hands" },
+	-- the Bus Depot's kids (Config.BusStudents): outfits from the kids above, their bus props on top
+	BusBuddyBenny = { body = "boy", head = F.grin, hair = "12652803319", shirt = 8128877497, pants = 382537806 },
+	WindowSeatWendy = { body = "girl", head = F.anime, hair = "13865457865", shirt = 6054563541, pants = 8895550239 },
+	BackRowBobby = { body = "boy", head = F.silly, hair = "15713643377", shirt = 1144081700, pants = 7322526269 },
+	BusMonitorMona = { body = "girl", head = F.endearing, hair = "13294832403", shirt = 8468223457, pants = 7375574053 },
+	DriversKidDex = { body = "boy", head = F.grin, shirt = 9432710249, pants = 15861408581 },
+	GoldenTicketGwen = { body = "girl", head = F.excited, hair = "128343067484017", shirt = 6266326685, pants = 6212699685 },
+	TweedleTwins = { body = "boy", head = F.happy, shirt = 10725107524, pants = 10725108119 },
+	WandWaverWill = { body = "boy", head = F.smile, hair = "100565153355098", shirt = 12947706023, pants = 11449940512 },
+	PotionPolly = { body = "girl", head = F.lashes, hair = "7154637981", shirt = 6176966134, pants = 6958133488 },
+	BroomstickBea = { body = "girl", head = F.sweet, hair = "109068013557163", shirt = 5909737521, pants = 2385359101 },
+	CrystalBallCass = { body = "girl", head = F.blush, hair = "15858476919", shirt = 5130315808, pants = 6121139535 },
+	DragonRiderDrake = { body = "boy", head = F.excited, hair = "15815125864", shirt = 7521968242, pants = 6092090926 },
+	ArchmageAria = { body = "girl", head = F.anime, hair = "138769057765455", shirt = 11983986409, pants = 14597528293 },
+	MirrorTwins = { body = "girl", head = F.happy, hair = "96281513956407", shirt = 1383572886, pants = 7467330095 },
+	AstroAndy = { body = "boy", head = F.excited, shirt = 18124796548, pants = 10725037192 },
+	MoonwalkerMia = { body = "girl", head = F.happy, shirt = 13664558957, pants = 7467330095 },
+	CometKai = { body = "boy", head = F.grin, hair = "140529327476591", shirt = 7521968242, pants = 6092090926 },
+	StarPilotSol = { body = "boy", head = F.grin, hair = "110659518395165", shirt = 18124796548, pants = 10725037192 },
+	AlienZib = { body = "boy", head = F.silly, skin = "alien", shirt = 6778436319, pants = 76760828751391 },
+	CosmicNova = { body = "girl", head = F.anime, hair = "132932997731038", shirt = 250538929, pants = 72395991071341 },
+	GeminiTwins = { body = "girl", head = F.sweet, hair = "93870350885383", shirt = 144679886, pants = 76760828751391 },
 }
 
 return KidAvatars

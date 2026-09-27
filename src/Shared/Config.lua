@@ -139,6 +139,65 @@ for i, s in Config.Students do
 end
 
 ---------------------------------------------------------------------------
+-- the BUS DEPOT (tomas, 2026-09-27: "student rng where you purchase a bus type ... 1 bus, 10 bus,
+-- 100 bus ... a bus animation will show up and grant you a student ... 7 things you can get from a
+-- bus and the rarer the better and the super secret ??? is a special student ... twins ... they sit
+-- together ... three different bus types: bus, magic bus and galaxy bus", like Pet Simulator X's eggs;
+-- paid in cash, Robux only for the extras). Each bus has seven kids of its own, only from that bus
+-- (never at the bus stop, in letters or rewards: they're in Config.BusStudents, not Config.Students).
+-- A bus pays back about 1.4x its price on average: most opens a small win, the rare ones huge.
+-- The ??? is a pair of twins: two kids at one desk, earning as one.
+---------------------------------------------------------------------------
+-- (chances in %, the same for every bus: 1 in 10,000 for the ???)
+Config.BusOdds = { 50, 28, 13, 6, 2.49, 0.5, 0.01 }
+Config.BusRarities = { "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Prodigy", "Secret" }
+Config.Buses = {
+	{ id = "Bus", name = "Bus", price = 5000, color = rgb(255, 200, 40), icon = "schoolbus",
+		kids = { "BusBuddyBenny", "WindowSeatWendy", "BackRowBobby", "BusMonitorMona", "DriversKidDex", "GoldenTicketGwen", "TweedleTwins" } },
+	{ id = "MagicBus", name = "Magic Bus", price = 5e6, color = rgb(170, 90, 255), icon = "magicbus",
+		kids = { "WandWaverWill", "PotionPolly", "BroomstickBea", "CrystalBallCass", "DragonRiderDrake", "ArchmageAria", "MirrorTwins" } },
+	{ id = "GalaxyBus", name = "Galaxy Bus", price = 5e9, color = rgb(70, 120, 255), icon = "galaxybus",
+		kids = { "AstroAndy", "MoonwalkerMia", "CometKai", "StarPilotSol", "AlienZib", "CosmicNova", "GeminiTwins" } },
+}
+Config.BusById = {}
+for _, b in Config.Buses do Config.BusById[b.id] = b end
+Config.BusCounts = { 1, 10, 100 }
+Config.BusStudents = {
+	-- the Bus
+	S("BusBuddyBenny", "Bus Buddy Benny", "Uncommon", 1250, 21, "Gym", "BusTicket", "light", rgb(255, 200, 40), rgb(50, 70, 140)),
+	S("WindowSeatWendy", "Window Seat Wendy", "Rare", 3000, 38, "Science", "Binoculars", "tan", rgb(120, 200, 255), rgb(70, 60, 120)),
+	S("BackRowBobby", "Back Row Bobby", "Epic", 7500, 75, "Music", "Boombox", "brown", rgb(240, 90, 60), rgb(40, 40, 50)),
+	S("BusMonitorMona", "Bus Monitor Mona", "Legendary", 20000, 133, "English", "StopSign", "light", rgb(255, 150, 40), rgb(60, 60, 80)),
+	S("DriversKidDex", "Driver's Kid Dex", "Mythic", 60000, 300, "Tech", "DriverCap", "dark", rgb(40, 80, 170), rgb(40, 50, 90)),
+	S("GoldenTicketGwen", "Golden Ticket Gwen", "Prodigy", 300000, 1000, "Art", "GoldenTicket", "light", rgb(255, 215, 80), rgb(200, 150, 40)),
+	S("TweedleTwins", "The Tweedle Twins", "Secret", 5000000, 8300, "Drama", "TwinBeanies", "light", rgb(230, 60, 70), rgb(40, 60, 140), { twins = true }),
+	-- the Magic Bus
+	S("WandWaverWill", "Wand Waver Will", "Uncommon", 1.25e6, 12500, "Science", "Wand", "light", rgb(90, 60, 170), rgb(40, 30, 70)),
+	S("PotionPolly", "Potion Polly", "Rare", 3e6, 23000, "Science", "Potion", "tan", rgb(110, 200, 120), rgb(60, 40, 90)),
+	S("BroomstickBea", "Broomstick Bea", "Epic", 7.5e6, 47000, "Gym", "Broomstick", "light", rgb(40, 40, 50), rgb(90, 40, 120)),
+	S("CrystalBallCass", "Crystal Ball Cass", "Legendary", 2e7, 91000, "History", "CrystalBall", "brown", rgb(200, 90, 220), rgb(60, 30, 90)),
+	S("DragonRiderDrake", "Dragon Rider Drake", "Mythic", 6e7, 200000, "Gym", "DragonWings", "light", rgb(60, 150, 80), rgb(60, 50, 40)),
+	S("ArchmageAria", "Archmage Aria", "Prodigy", 3e8, 667000, "English", "Archmage", "tan", rgb(60, 80, 200), rgb(40, 40, 110)),
+	S("MirrorTwins", "The Mirror Twins", "Secret", 5e9, 5.6e6, "Art", "MirrorTwins", "light", rgb(220, 220, 240), rgb(140, 120, 200), { twins = true }),
+	-- the Galaxy Bus
+	S("AstroAndy", "Astro Andy", "Uncommon", 1.25e9, 8.3e6, "Science", "SpaceHelmet", "light", rgb(240, 240, 245), rgb(200, 200, 210)),
+	S("MoonwalkerMia", "Moonwalker Mia", "Rare", 3e9, 1.5e7, "Science", "Moonwalker", "tan", rgb(220, 220, 235), rgb(90, 100, 140)),
+	S("CometKai", "Comet Kai", "Epic", 7.5e9, 3e7, "Gym", "Comet", "brown", rgb(40, 60, 150), rgb(30, 30, 60)),
+	S("StarPilotSol", "Star Pilot Sol", "Legendary", 2e10, 6e7, "Tech", "StarPilot", "light", rgb(230, 110, 40), rgb(60, 60, 70)),
+	S("AlienZib", "Alien Exchange Zib", "Mythic", 6e10, 1.33e8, "Science", "AlienAntenna", "light", rgb(120, 230, 110), rgb(60, 40, 110)),
+	S("CosmicNova", "Cosmic Nova", "Prodigy", 3e11, 4.6e8, "Science", "CosmicNova", "tan", rgb(40, 20, 80), rgb(30, 20, 60)),
+	S("GeminiTwins", "The Gemini Twins", "Secret", 5e12, 4.2e9, "Music", "GeminiTwins", "light", rgb(30, 40, 90), rgb(20, 20, 40), { twins = true }),
+}
+for i, s in Config.BusStudents do
+	s.order = #Config.Students + i
+	s.twins = s.look.twins
+	Config.StudentById[s.id] = s
+end
+for _, b in Config.Buses do
+	for _, id in b.kids do Config.StudentById[id].bus = b.id end
+end
+
+---------------------------------------------------------------------------
 -- grades (mutations), rolled on the bus; event grades have weight 0 outside their event
 ---------------------------------------------------------------------------
 Config.Grades = {
@@ -1146,6 +1205,9 @@ Config.Passes = {
 	-- leave (Menus): a real second pass, so "199 -> 49" is true. same: the pass it counts as; hidden:
 	-- not in the Store
 	{ key = "OfflinePlusDeal", id = 0, name = "Offline Tuition+", robux = 49, icon = "\u{1F319}", desc = "Earn 50% for up to 12h while offline (was 25% for 2h)", same = "OfflinePlus", hidden = true },
+	{ key = "BusLuck", id = 0, name = "Bus Luck", robux = 99, icon = "\u{1F68C}", desc = "x2 chance of the three rarest kids from every bus" },
+	{ key = "TripleBus", id = 0, name = "Triple Bus", robux = 199, icon = "\u{1F68C}", desc = "OPEN 1 opens three buses at once (you pay for three)" },
+	{ key = "AutoBus", id = 0, name = "Auto Bus", robux = 149, icon = "\u{1F68C}", desc = "Keep opening a bus by itself while you have the cash" },
 	{ key = "FastLetters", id = 0, name = "Fast Admissions", robux = 149, icon = "\u{1F4E8}", desc = "Admissions letters fill twice as fast, forever" },
 	{ key = "DoubleTickets", id = 0, name = "2x Event Tickets", robux = 79, icon = "\u{1F39F}\u{FE0F}", desc = "Every event ticket you earn counts double" },
 }

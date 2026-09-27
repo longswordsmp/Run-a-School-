@@ -2490,6 +2490,270 @@ local function inHand(model, which, fn)
 	if hand then fn(hand) end
 end
 
+---------------------------------------------------------------------------
+-- the Bus Depot's kids (Config.BusStudents)
+---------------------------------------------------------------------------
+local function propeller(model, head, hs, a, b)
+	blob(model, head, Vector3.new(hs.X * 1.08, hs.Y * 0.6, hs.Z * 1.08), CFrame.new(0, hs.Y * 0.32, 0), a)
+	cylY(model, head, hs.X * 1.1, 0.1, CFrame.new(0, hs.Y * 0.2, 0), b)
+	cylY(model, head, 0.1, 0.4, CFrame.new(0, hs.Y * 0.72, 0), rgb(200, 205, 215))
+	block(model, head, Vector3.new(hs.X * 1.1, 0.06, 0.26), CFrame.new(0, hs.Y * 0.92, 0) * CFrame.Angles(0, math.rad(25), math.rad(8)), b)
+	ball(model, head, 0.2, CFrame.new(0, hs.Y * 0.92, 0), a)
+end
+local function wizardHat(model, head, hs, c, band)
+	cylY(model, head, hs.X * 1.7, 0.12, CFrame.new(0, hs.Y * 0.42, 0), c)
+	for i = 0, 5 do
+		local d = hs.X * (1.05 - i * 0.17)
+		cylY(model, head, d, 0.34, CFrame.new(hs.X * 0.02 * i, hs.Y * (0.62 + i * 0.3), hs.Z * 0.03 * i), c)
+	end
+	if band then cylY(model, head, hs.X * 1.08, 0.14, CFrame.new(0, hs.Y * 0.56, 0), band) end
+end
+local function spaceHelmet(model, head, hs)
+	local h = ball(model, head, hs.X * 1.6, CFrame.new(0, hs.Y * 0.08, 0), rgb(200, 230, 255), Enum.Material.Glass)
+	h.Transparency = 0.72
+	cylY(model, head, hs.X * 1.3, 0.2, CFrame.new(0, -hs.Y * 0.62, 0), rgb(240, 240, 245))
+end
+B.BusTicket = function(model, head, hs)
+	inHand(model, "RightHand", function(h)
+		block(model, h, Vector3.new(0.8, 0.5, 0.05), CFrame.new(0, -0.15, -0.35) * CFrame.Angles(math.rad(-20), 0, 0), rgb(255, 205, 50))
+		block(model, h, Vector3.new(0.8, 0.1, 0.06), CFrame.new(0, -0.08, -0.36) * CFrame.Angles(math.rad(-20), 0, 0), rgb(230, 60, 60))
+	end)
+	-- a little yellow cap
+	blob(model, head, Vector3.new(hs.X * 1.05, hs.Y * 0.45, hs.Z * 1.05), CFrame.new(0, hs.Y * 0.38, 0), rgb(255, 200, 40))
+	block(model, head, Vector3.new(hs.X * 0.9, 0.1, hs.Z * 0.55), CFrame.new(0, hs.Y * 0.25, -hs.Z * 0.6), rgb(255, 200, 40))
+end
+B.Binoculars = function(model, head, hs)
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	for _, x in { -0.18, 0.18 } do
+		cylZ(model, torso, 0.36, 0.5, CFrame.new(ts.X * x, ts.Y * 0.15, -ts.Z * 0.75), rgb(40, 40, 50))
+		cylZ(model, torso, 0.3, 0.06, CFrame.new(ts.X * x, ts.Y * 0.15, -ts.Z * 1.02), rgb(150, 210, 255), Enum.Material.Glass)
+	end
+	for _, x in { -1, 1 } do block(model, torso, Vector3.new(0.06, ts.Y * 0.5, 0.05), CFrame.new(x * ts.X * 0.2, ts.Y * 0.38, -ts.Z * 0.53), rgb(90, 60, 40)) end
+end
+B.Boombox = function(model, head, hs)
+	inHand(model, "RightHand", function(h)
+		local box = block(model, h, Vector3.new(1.3, 0.75, 0.45), CFrame.new(0, 0.55, -0.1), rgb(60, 64, 78))
+		_ = box
+		for _, x in { -0.36, 0.36 } do
+			cylZ(model, h, 0.52, 0.06, CFrame.new(x, 0.55, -0.36), rgb(30, 30, 38))
+			cylZ(model, h, 0.22, 0.08, CFrame.new(x, 0.55, -0.38), rgb(120, 125, 140))
+		end
+		block(model, h, Vector3.new(1.1, 0.1, 0.1), CFrame.new(0, 1.0, -0.1), rgb(160, 165, 180))
+	end)
+	-- a backwards cap
+	blob(model, head, Vector3.new(hs.X * 1.05, hs.Y * 0.45, hs.Z * 1.05), CFrame.new(0, hs.Y * 0.38, 0), rgb(230, 60, 60))
+	block(model, head, Vector3.new(hs.X * 0.8, 0.1, hs.Z * 0.5), CFrame.new(0, hs.Y * 0.25, hs.Z * 0.62), rgb(230, 60, 60))
+end
+B.StopSign = function(model, head, hs)
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	-- the safety vest
+	for _, x in { -1, 1 } do block(model, torso, Vector3.new(ts.X * 0.3, ts.Y * 0.95, 0.08), CFrame.new(x * ts.X * 0.28, 0, -ts.Z * 0.53), rgb(255, 140, 30)) end
+	block(model, torso, Vector3.new(ts.X * 1.02, 0.12, ts.Z * 1.06), CFrame.new(0, -ts.Y * 0.15, 0), rgb(230, 230, 220))
+	inHand(model, "RightHand", function(h)
+		cylY(model, h, 0.12, 2.2, CFrame.new(0, 0.9, -0.2), rgb(200, 205, 215))
+		cylZ(model, h, 1.1, 0.08, CFrame.new(0, 2.1, -0.2), rgb(220, 40, 45))
+		block(model, h, Vector3.new(0.7, 0.16, 0.1), CFrame.new(0, 2.1, -0.26), rgb(255, 255, 255))
+	end)
+end
+B.DriverCap = function(model, head, hs)
+	blob(model, head, Vector3.new(hs.X * 1.12, hs.Y * 0.4, hs.Z * 1.12), CFrame.new(0, hs.Y * 0.4, 0), rgb(30, 50, 110))
+	block(model, head, Vector3.new(hs.X * 0.95, 0.1, hs.Z * 0.5), CFrame.new(0, hs.Y * 0.28, -hs.Z * 0.62), rgb(20, 20, 26))
+	block(model, head, Vector3.new(0.3, 0.22, 0.06), CFrame.new(0, hs.Y * 0.44, -hs.Z * 0.57), rgb(255, 205, 60), Enum.Material.Metal)
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	-- the steering wheel, held out in front
+	local at = CFrame.new(0, 0, -ts.Z * 1.2) * CFrame.Angles(math.rad(-20), 0, 0)
+	for k = 0, 11 do
+		local a = k / 12 * math.pi * 2
+		ball(model, torso, 0.2, at * CFrame.new(math.cos(a) * 0.62, math.sin(a) * 0.62, 0), rgb(30, 30, 36))
+	end
+	cylZ(model, torso, 0.36, 0.14, at, rgb(200, 205, 215))
+	block(model, torso, Vector3.new(1.2, 0.1, 0.08), at, rgb(30, 30, 36))
+end
+B.GoldenTicket = function(model, head, hs)
+	inHand(model, "RightHand", function(h)
+		local t = block(model, h, Vector3.new(1.4, 0.8, 0.06), CFrame.new(0, 0.35, -0.3) * CFrame.Angles(math.rad(-10), 0, math.rad(12)), rgb(255, 210, 60), Enum.Material.Metal)
+		block(model, h, Vector3.new(1.2, 0.08, 0.07), CFrame.new(0, 0.5, -0.31) * CFrame.Angles(math.rad(-10), 0, math.rad(12)), rgb(255, 245, 190), Enum.Material.Neon)
+		sparkles(t, rgb(255, 230, 120), 6)
+	end)
+	-- a gold top hat
+	cylY(model, head, hs.X * 1.5, 0.1, CFrame.new(0, hs.Y * 0.45, 0), rgb(40, 30, 20))
+	cylY(model, head, hs.X * 0.95, hs.Y * 0.75, CFrame.new(0, hs.Y * 0.85, 0), rgb(40, 30, 20))
+	cylY(model, head, hs.X * 0.97, 0.16, CFrame.new(0, hs.Y * 0.6, 0), rgb(255, 205, 60), Enum.Material.Metal)
+end
+B.TwinBeanies = function(model, head, hs)
+	propeller(model, head, hs, rgb(230, 60, 70), rgb(40, 110, 230))
+	sparkles(part(model, "HumanoidRootPart"), rgb(255, 255, 255), 3)
+end
+B.Wand = function(model, head, hs)
+	wizardHat(model, head, hs, rgb(70, 50, 150), rgb(255, 205, 60))
+	inHand(model, "RightHand", function(h)
+		cylY(model, h, 0.1, 1.4, CFrame.new(0, 0.5, -0.25) * CFrame.Angles(math.rad(-30), 0, 0), rgb(90, 55, 30))
+		local tip = ball(model, h, 0.3, CFrame.new(0, 1.15, -0.65), rgb(255, 240, 150), Enum.Material.Neon)
+		sparkles(tip, rgb(255, 230, 150), 8)
+	end)
+end
+B.Potion = function(model, head, hs)
+	inHand(model, "RightHand", function(h)
+		local glass = ball(model, h, 0.75, CFrame.new(0, 0.35, -0.3), rgb(220, 240, 255), Enum.Material.Glass)
+		glass.Transparency = 0.5
+		local brew = ball(model, h, 0.6, CFrame.new(0, 0.3, -0.3), rgb(120, 255, 120), Enum.Material.Neon)
+		cylY(model, h, 0.26, 0.4, CFrame.new(0, 0.8, -0.3), rgb(220, 240, 255), Enum.Material.Glass)
+		cylY(model, h, 0.3, 0.14, CFrame.new(0, 1.02, -0.3), rgb(150, 100, 60))
+		local b = Instance.new("ParticleEmitter")
+		b.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		b.Color = ColorSequence.new(rgb(150, 255, 150))
+		b.Size = NumberSequence.new(0.2, 0)
+		b.Rate = 6
+		b.Lifetime = NumberRange.new(0.6, 1)
+		b.Speed = NumberRange.new(1, 2)
+		b.SpreadAngle = Vector2.new(20, 20)
+		b.EmissionDirection = Enum.NormalId.Top
+		b.Parent = brew
+	end)
+	-- goggles pushed up on the head
+	for _, x in { -0.22, 0.22 } do cylZ(model, head, 0.34, 0.12, CFrame.new(hs.X * x, hs.Y * 0.36, -hs.Z * 0.46), rgb(90, 200, 120), Enum.Material.Glass) end
+end
+B.Broomstick = function(model, head, hs)
+	-- a pointy black witch hat
+	wizardHat(model, head, hs, rgb(30, 30, 38), rgb(150, 70, 200))
+	inHand(model, "RightHand", function(h)
+		cylY(model, h, 0.14, 3.6, CFrame.new(0, 0.9, -0.15), rgb(120, 80, 40))
+		for k = 0, 2 do cylY(model, h, 0.75 - k * 0.12, 0.34, CFrame.new(0, -1.05 - k * 0.3, -0.15), rgb(220, 180, 90)) end
+		cylY(model, h, 0.34, 0.14, CFrame.new(0, -0.8, -0.15), rgb(120, 60, 160))
+	end)
+end
+B.CrystalBall = function(model, head, hs)
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	local orb = ball(model, torso, 1.0, CFrame.new(0, -ts.Y * 0.05, -ts.Z * 1.25), rgb(200, 150, 255), Enum.Material.Neon)
+	orb.Transparency = 0.15
+	cylY(model, torso, 0.7, 0.2, CFrame.new(0, -ts.Y * 0.4, -ts.Z * 1.25), rgb(200, 170, 80), Enum.Material.Metal)
+	sparkles(orb, rgb(230, 190, 255), 6)
+	-- a shawl and a headscarf
+	block(model, torso, Vector3.new(ts.X * 1.1, ts.Y * 0.35, ts.Z * 1.1), CFrame.new(0, ts.Y * 0.35, 0), rgb(140, 60, 170))
+	blob(model, head, Vector3.new(hs.X * 1.12, hs.Y * 0.5, hs.Z * 1.12), CFrame.new(0, hs.Y * 0.36, 0), rgb(140, 60, 170))
+	ball(model, head, 0.22, CFrame.new(0, hs.Y * 0.3, -hs.Z * 0.56), rgb(255, 205, 60), Enum.Material.Neon)
+end
+B.DragonWings = function(model, head, hs)
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	local GREEN, LIGHT = rgb(60, 170, 80), rgb(150, 230, 120)
+	for _, s in { -1, 1 } do
+		local wing = CFrame.new(s * ts.X * 0.45, ts.Y * 0.3, ts.Z * 0.6) * CFrame.Angles(0, s * math.rad(25), s * math.rad(-30))
+		block(model, torso, Vector3.new(0.14, 0.14, 0.14), wing, GREEN)
+		for k = 0, 2 do
+			block(model, torso, Vector3.new(1.4 - k * 0.3, 0.08, 0.5), wing * CFrame.new(s * (0.7 - k * 0.1), 0.3 - k * 0.35, 0) * CFrame.Angles(0, 0, s * math.rad(15 - k * 15)), k == 1 and LIGHT or GREEN)
+		end
+		-- the horns
+		cylY(model, head, 0.2, 0.5, CFrame.new(s * hs.X * 0.3, hs.Y * 0.6, 0) * CFrame.Angles(0, 0, s * math.rad(-25)), rgb(240, 230, 210))
+	end
+	-- a little dragon tail
+	local lower = part(model, "LowerTorso")
+	if lower then
+		for k = 0, 3 do ball(model, lower, 0.5 - k * 0.08, CFrame.new(0, -0.2 - k * 0.2, lower.Size.Z * 0.6 + k * 0.35), GREEN) end
+	end
+end
+B.Archmage = function(model, head, hs)
+	wizardHat(model, head, hs, rgb(40, 60, 170), rgb(255, 205, 60))
+	for k = 0, 2 do ball(model, head, 0.2, CFrame.new(hs.X * (0.25 - k * 0.2), hs.Y * (0.9 + k * 0.35), -hs.Z * (0.5 - k * 0.1)), rgb(255, 240, 150), Enum.Material.Neon) end
+	inHand(model, "RightHand", function(h)
+		cylY(model, h, 0.16, 3.6, CFrame.new(0, 0.9, -0.2), rgb(110, 70, 40))
+		local orb = ball(model, h, 0.6, CFrame.new(0, 2.8, -0.2), rgb(120, 200, 255), Enum.Material.Neon)
+		sparkles(orb, rgb(170, 220, 255), 10)
+	end)
+	sparkles(part(model, "HumanoidRootPart"), rgb(200, 180, 255), 4)
+end
+B.MirrorTwins = function(model, head, hs)
+	-- a silver halo over the head, and a shimmer
+	for k = 0, 9 do
+		local a = k / 10 * math.pi * 2
+		ball(model, head, 0.18, CFrame.new(math.cos(a) * hs.X * 0.55, hs.Y * 0.95, math.sin(a) * hs.Z * 0.55), rgb(230, 235, 255), Enum.Material.Neon)
+	end
+	sparkles(part(model, "HumanoidRootPart"), rgb(220, 220, 255), 5)
+end
+B.SpaceHelmet = function(model, head, hs)
+	spaceHelmet(model, head, hs)
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	block(model, torso, Vector3.new(ts.X * 0.8, ts.Y * 0.8, ts.Z * 0.6), CFrame.new(0, 0, ts.Z * 0.75), rgb(240, 240, 245))
+	block(model, torso, Vector3.new(ts.X * 0.4, ts.Y * 0.3, 0.06), CFrame.new(0, ts.Y * 0.15, -ts.Z * 0.54), rgb(60, 130, 240))
+end
+B.Moonwalker = function(model, head, hs)
+	spaceHelmet(model, head, hs)
+	inHand(model, "RightHand", function(h)
+		cylY(model, h, 0.08, 1.8, CFrame.new(0, 0.6, -0.2), rgb(200, 205, 215))
+		block(model, h, Vector3.new(0.8, 0.5, 0.04), CFrame.new(0.42, 1.3, -0.2), rgb(255, 255, 255))
+		block(model, h, Vector3.new(0.3, 0.25, 0.05), CFrame.new(0.2, 1.42, -0.2), rgb(60, 90, 200))
+	end)
+	inHand(model, "LeftHand", function(h) ball(model, h, 0.55, CFrame.new(0, -0.1, -0.3), rgb(170, 170, 180)) end)
+end
+B.Comet = function(model, head, hs)
+	local root = part(model, "HumanoidRootPart")
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	-- a trail of fire streaming out behind
+	for k = 0, 7 do
+		local b = ball(model, torso, 1.5 - k * 0.15, CFrame.new(ts.X * 0.3, ts.Y * (0.5 + k * 0.28), ts.Z * (0.7 + k * 0.45)), k < 2 and rgb(255, 240, 160) or (k < 5 and rgb(255, 170, 50) or rgb(255, 90, 40)), Enum.Material.Neon)
+		b.Transparency = 0.1 + k * 0.09
+	end
+	-- a star-shaped helmet light
+	ball(model, head, 0.5, CFrame.new(0, hs.Y * 0.5, -hs.Z * 0.45), rgb(255, 240, 160), Enum.Material.Neon)
+	local fire = Instance.new("Fire")
+	fire.Size = 3
+	fire.Heat = 6
+	fire.Color = rgb(255, 170, 60)
+	fire.SecondaryColor = rgb(255, 80, 30)
+	fire.Parent = root
+	-- a star on the chest
+	ball(model, torso, 0.4, CFrame.new(0, ts.Y * 0.1, -ts.Z * 0.55), rgb(255, 230, 120), Enum.Material.Neon)
+end
+B.StarPilot = function(model, head, hs)
+	-- goggles on the forehead, a scarf, a star badge, little jet wings
+	blob(model, head, Vector3.new(hs.X * 1.25, hs.Y * 0.95, hs.Z * 1.25), CFrame.new(0, hs.Y * 0.28, 0.02), rgb(240, 110, 40))
+	blob(model, head, Vector3.new(hs.X * 1.0, hs.Y * 0.4, 0.3), CFrame.new(0, hs.Y * 0.18, -hs.Z * 0.55), rgb(40, 60, 110), Enum.Material.Glass)
+	block(model, head, Vector3.new(0.14, hs.Y * 0.5, hs.Z * 1.1), CFrame.new(0, hs.Y * 0.7, 0), rgb(255, 255, 255))
+	local torso = part(model, "UpperTorso")
+	local ts = torso.Size
+	block(model, torso, Vector3.new(ts.X * 0.9, 0.3, ts.Z * 1.1), CFrame.new(0, ts.Y * 0.45, 0), rgb(255, 255, 255))
+	block(model, torso, Vector3.new(0.3, ts.Y * 0.6, 0.1), CFrame.new(ts.X * 0.25, ts.Y * 0.05, ts.Z * 0.6), rgb(255, 255, 255))
+	ball(model, torso, 0.36, CFrame.new(-ts.X * 0.25, ts.Y * 0.15, -ts.Z * 0.55), rgb(255, 205, 60), Enum.Material.Neon)
+	for _, s in { -1, 1 } do
+		block(model, torso, Vector3.new(1.2, 0.1, 0.5), CFrame.new(s * ts.X * 0.75, 0, ts.Z * 0.6) * CFrame.Angles(0, 0, s * math.rad(-15)), rgb(200, 205, 215), Enum.Material.Metal)
+	end
+end
+B.AlienAntenna = function(model, head, hs)
+	for _, s in { -1, 1 } do
+		cylY(model, head, 0.1, 1.0, CFrame.new(s * hs.X * 0.28, hs.Y * 0.85, 0) * CFrame.Angles(0, 0, s * math.rad(-22)), rgb(90, 200, 90))
+		ball(model, head, 0.42, CFrame.new(s * hs.X * 0.5, hs.Y * 1.3, 0), rgb(170, 255, 140), Enum.Material.Neon)
+	end
+	ball(model, head, 0.3, CFrame.new(0, hs.Y * 0.3, -hs.Z * 0.5), rgb(255, 255, 255))
+	ball(model, head, 0.16, CFrame.new(0, hs.Y * 0.3, -hs.Z * 0.62), rgb(40, 40, 50))
+	sparkles(part(model, "HumanoidRootPart"), rgb(150, 255, 120), 3)
+end
+B.CosmicNova = function(model, head, hs)
+	-- three little planets round her head and a ring of stars
+	for k, c in { rgb(255, 150, 60), rgb(90, 180, 255), rgb(200, 120, 255) } do
+		local a = k / 3 * math.pi * 2
+		ball(model, head, 0.62, CFrame.new(math.cos(a) * hs.X * 1.15, hs.Y * (0.55 + k * 0.12), math.sin(a) * hs.Z * 1.15), c, Enum.Material.Neon)
+	end
+	for k = 0, 11 do
+		local a = k / 12 * math.pi * 2
+		ball(model, head, 0.12, CFrame.new(math.cos(a) * hs.X * 1.25, hs.Y * 0.55, math.sin(a) * hs.Z * 1.25), rgb(255, 255, 255), Enum.Material.Neon)
+	end
+	sparkles(part(model, "HumanoidRootPart"), rgb(200, 170, 255), 8)
+end
+B.GeminiTwins = function(model, head, hs)
+	-- a crown of stars
+	for k = -2, 2 do
+		ball(model, head, k == 0 and 0.34 or 0.22, CFrame.new(hs.X * 0.2 * k, hs.Y * (0.72 - math.abs(k) * 0.06), -hs.Z * 0.35), rgb(255, 235, 140), Enum.Material.Neon)
+	end
+	cylY(model, head, hs.X * 1.02, 0.1, CFrame.new(0, hs.Y * 0.55, 0), rgb(200, 205, 230), Enum.Material.Metal)
+	sparkles(part(model, "HumanoidRootPart"), rgb(255, 240, 180), 6)
+end
+
 Props.TeacherLooks.mayor = { skin = "brown", shirt = rgb(40, 50, 100), pants = rgb(40, 50, 100) }
 T.mayor = function(model, head, hs, torso, ts)
 	hairCap(model, head, hs, rgb(200, 200, 205))
