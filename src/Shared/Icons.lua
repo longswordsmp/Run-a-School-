@@ -585,6 +585,30 @@ function B.moneyMountain(m)
 	star(m, CF(-2.3, 1.2, -0.6), 0.35, rgb(255, 255, 255))
 end
 
+-- the Co-op roles' own: the Hall Monitor's shield (silver rim, red face, a gold star) and the
+-- Recruiter's backpack (rounded top, a front pocket with its zip, a carry loop, a star patch)
+function B.shield(m)
+	local RIM, FACE, GOLDL = rgb(205, 210, 222), rgb(230, 70, 70), rgb(255, 205, 70)
+	p(m, V(3.4, 2.0, 0.8), CF(0, 0.8, 0), RIM)
+	tri(m, 3.4, 2.4, 0.8, CF(0, -1.4, 0) * CFrame.Angles(0, 0, math.pi), RIM)
+	p(m, V(2.9, 1.8, 0.1), CF(0, 0.85, -0.42), FACE)
+	tri(m, 2.9, 2.05, 0.1, CF(0, -1.2, -0.42) * CFrame.Angles(0, 0, math.pi), FACE)
+	star5(m, CF(0, 0.3, -0.52), 0.55, GOLDL, 0.12)
+end
+function B.backpack(m)
+	local BAG, BAGD, POCKET = rgb(240, 120, 50), rgb(190, 85, 30), rgb(255, 165, 90)
+	p(m, V(3.0, 3.0, 1.6), CF(0, -0.5, 0), BAG)
+	disc(m, 3.0, 1.6, CF(0, 1.0, 0), BAG)
+	p(m, V(2.3, 1.4, 0.45), CF(0, -1.05, -0.95), POCKET)
+	p(m, V(2.3, 0.1, 0.47), CF(0, -0.42, -0.97), BAGD)
+	ball(m, 0.28, V(0.85, -0.42, -1.2), rgb(230, 230, 235))
+	for k = 0, 8 do
+		local b = math.pi * k / 8
+		p(m, V(0.26, 0.26, 0.3), CF(-math.cos(b) * 0.5, 2.45 + math.sin(b) * 0.45, 0), BAGD)
+	end
+	star5(m, CF(0, 0.95, -0.84), 0.34, rgb(255, 225, 90), 0.08)
+end
+
 -- the panels' own icons (hanging off their title bars)
 function B.apple(m)
 	ball(m, 3, V(0, -0.2, 0), rgb(235, 50, 60))

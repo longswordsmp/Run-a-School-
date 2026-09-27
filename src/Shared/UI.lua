@@ -113,45 +113,34 @@ end
 
 ---------------------------------------------------------------------------
 -- LIFE: glows, shines and bounces for the whole UI (tomas, 2026-09-27: "our original style is good,
--- but with animations and glow effects it could be SO much better"). Drawn from frames, no images.
+-- but with animations and glow effects it could be SO much better").
 ---------------------------------------------------------------------------
--- a soft glow round a frame: rings of its colour growing out behind it, fading away. The glow is a child
--- drawn under its parent (the menus use Global ZIndex). Returns the holder; UI.glowTo(holder, alpha)
--- fades it (0 = off, 1 = full).
+-- a soft glow round a frame: a blurred halo of its colour behind it (an image: stacked rings banded,
+-- tomas: "the glow ... needs to be on point"). A child drawn under its parent (Global ZIndex guis).
+-- Returns it; UI.glowTo(it, alpha) fades it (0 = off, 1 = full); opts.spread widens it (default 5).
+UI.GLOW = "rbxassetid://6150493168"
 function UI.glow(obj, color, opts)
 	opts = opts or {}
-	local holder = Instance.new("Frame")
-	holder.Name = "Glow"
-	holder.BackgroundTransparency = 1
-	holder.Size = UDim2.fromScale(1, 1)
-	holder.ZIndex = math.max(0, obj.ZIndex - 1)
-	local corner = obj:FindFirstChildOfClass("UICorner")
-	local r = corner and corner.CornerRadius.Offset or 12
-	local spread = opts.spread or 5
-	local layers = {}
-	for i = 1, opts.layers or 4 do
-		local g = Instance.new("Frame")
-		g.Name = "GlowRing"
-		g.BorderSizePixel = 0
-		g.BackgroundColor3 = color
-		g.AnchorPoint = Vector2.new(0.5, 0.5)
-		g.Position = UDim2.fromScale(0.5, 0.5)
-		g.Size = UDim2.new(1, i * spread * 2, 1, i * spread * 2)
-		g.ZIndex = holder.ZIndex
-		local c = Instance.new("UICorner")
-		c.CornerRadius = UDim.new(0, r + i * spread)
-		c.Parent = g
-		g.Parent = holder
-		layers[i] = { frame = g, base = 0.72 + i * 0.065 }
-	end
-	holder:SetAttribute("GlowAlpha", opts.alpha or 1)
+	local img = Instance.new("ImageLabel")
+	img.Name = "Glow"
+	img.BackgroundTransparency = 1
+	img.Image = UI.GLOW
+	img.ImageColor3 = color
+	img.ScaleType = Enum.ScaleType.Stretch
+	img.AnchorPoint = Vector2.new(0.5, 0.5)
+	img.Position = UDim2.fromScale(0.5, 0.5)
+	local pad = (opts.spread or 5) * 18
+	img.Size = UDim2.new(1, pad, 1, pad)
+	img.ZIndex = math.max(0, obj.ZIndex - 1)
+	img:SetAttribute("GlowAlpha", opts.alpha or 1)
 	local function apply(a)
-		for _, l in layers do l.frame.BackgroundTransparency = 1 - (1 - l.base) * a end
+		-- (the halo's bright middle sits under its frame: what shows is its rim, so at full it's fully on)
+		img.ImageTransparency = 1 - math.clamp(a or 0, 0, 1)
 	end
 	apply(opts.alpha or 1)
-	holder:GetAttributeChangedSignal("GlowAlpha"):Connect(function() apply(holder:GetAttribute("GlowAlpha")) end)
-	holder.Parent = obj
-	return holder
+	img:GetAttributeChangedSignal("GlowAlpha"):Connect(function() apply(img:GetAttribute("GlowAlpha")) end)
+	img.Parent = obj
+	return img
 end
 function UI.glowTo(holder, alpha, t)
 	if not holder then return end
@@ -187,11 +176,13 @@ function UI.shine(obj, opts)
 	local c = obj:FindFirstChildOfClass("UICorner")
 	if c then c:Clone().Parent = o end
 	local g = Instance.new("UIGradient")
-	g.Rotation = 25
-	local peak = opts.strength or 0.55
+	g.Rotation = 20
+	-- (a crisp line of light: a bright core, soft wings either side of it)
+	local peak = math.min(0.6, (opts.strength or 0.55) * 1.4)
 	g.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.42, 1),
-		NumberSequenceKeypoint.new(0.5, 1 - peak), NumberSequenceKeypoint.new(0.58, 1),
+		NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.36, 1),
+		NumberSequenceKeypoint.new(0.45, 1 - peak * 0.3), NumberSequenceKeypoint.new(0.5, 1 - peak),
+		NumberSequenceKeypoint.new(0.55, 1 - peak * 0.3), NumberSequenceKeypoint.new(0.64, 1),
 		NumberSequenceKeypoint.new(1, 1),
 	})
 	g.Offset = Vector2.new(-1.2, 0)
@@ -204,7 +195,7 @@ function UI.sweep(overlay, t)
 	local g = shiners[overlay]
 	if not g then return end
 	g.Offset = Vector2.new(-1.2, 0)
-	TweenService:Create(g, TweenInfo.new(t or 0.55, Enum.EasingStyle.Sine), { Offset = Vector2.new(1.2, 0) }):Play()
+	TweenService:Create(g, TweenInfo.new(t or 0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), { Offset = Vector2.new(1.2, 0) }):Play()
 end
 if game:GetService("RunService"):IsClient() then
 	task.spawn(function()
@@ -215,7 +206,7 @@ if game:GetService("RunService"):IsClient() then
 			for o in shiners do
 				if o.Parent and onScreen(o) then table.insert(live, o) end
 			end
-			if #live > 0 then UI.sweep(live[math.random(#live)], 0.8) end
+			if #live > 0 then UI.sweep(live[math.random(#live)], 0.65) end
 		end
 	end)
 end

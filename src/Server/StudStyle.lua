@@ -3,13 +3,14 @@
 -- walls, ground ... not models"; kept after a live trial): every big block of the town and the schools
 -- (walls, floors, roofs, the ground, roads, paths) is plastic with studs on its top and sides, like the
 -- stud texture on the UI. Engine surfaces: nothing added, nothing to load.
--- Left alone: anything small (props, furniture, trim), balls and cylinders, glass, neon and see-through
+-- Left alone: anything under 4 studs long or a stud across, balls and cylinders, glass, neon and see-through
 -- parts, signs (a SurfaceGui on them), and anything in a character (a Humanoid), a tree, a bush or a
 -- vehicle.
 -- Unfight.run smooths every surface first (the old stray studs and inlets) and then calls
 -- StudStyle.run on the same root, so a rebuilt school gets its studs back.
 --   StudStyle.qualifies(part)  should this part be studded?
 --   StudStyle.run(root)        stud everything under root that qualifies; returns how many
+--   StudStyle.watch(root)      and whatever is added under root later
 local StudStyle = {}
 
 local SKIP_MODELS = { "Tree", "Bush", "Car", "Bus", "Limo", "Leaves", "Hoverboard" }
@@ -39,25 +40,39 @@ function StudStyle.qualifies(p)
 	if p.Transparency >= 0.3 or SKIP_MATERIALS[p.Material] or p.Name:find("Leaves") then return false end
 	-- (a sign or a board with words on it stays smooth: the studs would show through its text)
 	if p:FindFirstChildOfClass("SurfaceGui") then return false end
-	-- (walls, floors, roofs, ground, pillars: long one way and at least 2 studs another; a lamp post or
-	-- a fence rail is thinner)
+	-- (anything at least 4 studs long and a stud across: walls, floors, roofs, the ground, trim, steps,
+	-- awnings, beams, posts; tomas, 2026-09-27: "there's still a lot of un-studded stuff")
 	local s = p.Size
 	local d = { s.X, s.Y, s.Z }
 	table.sort(d)
-	if d[3] < 8 or d[2] < 2 then return false end
+	if d[3] < 4 or d[2] < 1 then return false end
 	return not inSkippedModel(p)
+end
+
+local function stud(p)
+	p.Material = Enum.Material.Plastic
+	for _, f in SIDES do p[f] = Enum.SurfaceType.Studs end
 end
 
 function StudStyle.run(root)
 	local n = 0
 	for _, p in root:GetDescendants() do
 		if p:IsA("BasePart") and StudStyle.qualifies(p) then
-			p.Material = Enum.Material.Plastic
-			for _, f in SIDES do p[f] = Enum.SurfaceType.Studs end
+			stud(p)
 			n += 1
 		end
 	end
 	return n
+end
+
+-- and everything built later (houses, barriers, event decor...): a moment after it appears
+function StudStyle.watch(root)
+	root.DescendantAdded:Connect(function(d)
+		if not d:IsA("BasePart") then return end
+		task.defer(function()
+			if d.Parent and StudStyle.qualifies(d) then stud(d) end
+		end)
+	end)
 end
 
 return StudStyle

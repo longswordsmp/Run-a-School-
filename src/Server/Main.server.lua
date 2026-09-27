@@ -216,6 +216,8 @@ do
 		print(("[Unfight] %d parts nudged clear of a coplanar neighbour (%.1f s .. %.1f s)"):format(n, t - BOOT_T0, os.clock() - BOOT_T0))
 	end)
 	Unfight.watch(workspace:WaitForChild("Plots"))
+	-- (the stud style on whatever the world adds later: Unfight.run studs what's there at the start)
+	task.delay(8, function() require(Server.StudStyle).watch(workspace) end)
 end
 
 Players.PlayerRemoving:Connect(function(player)

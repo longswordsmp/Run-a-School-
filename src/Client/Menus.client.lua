@@ -1839,7 +1839,7 @@ local function tileButton(caption, color, order)
 	-- a glint that sweeps across now and then; hover grows it, lights a glow round it and glints it;
 	-- pressing dips it onto the lip
 	local glint = UI.shine(face, { zindex = 9, strength = 0.2 })
-	local glow = UI.glow(lip, UI.lighten(color, 0.3), { alpha = 0, spread = 4 })
+	local glow = UI.glow(lip, UI.lighten(color, 0.3), { alpha = 0, spread = 6 })
 	glow.ZIndex = 0
 	for _, r in glow:GetChildren() do r.ZIndex = 0 end
 	local sc = Instance.new("UIScale")
@@ -1886,7 +1886,7 @@ sideButton(6, "\u{2699}\u{FE0F}", "Settings", UI.C.navy, panels.Settings)
 local storeTile = sideButton(0, "\u{1F48E}", "Store", Color3.fromRGB(40, 190, 90), panels.Store)
 do
 	local t = storeTile
-	UI.pulse(t.glow, 0.35, 0.85, 1.8)
+	UI.pulse(t.glow, 0.5, 1, 1.8)
 	task.spawn(function()
 		while t.button.Parent do
 			task.wait(2.6)
