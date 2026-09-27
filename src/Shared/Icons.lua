@@ -145,16 +145,17 @@ function B.basket(m)
 		studs(p(m, V(W + 2 * P + 0.1, RIM_H, RIM_W), CF(0, RIM_Y, side * (D / 2 + P - RIM_W / 2 + 0.05)), RED_L))
 		studs(p(m, V(RIM_W, RIM_H, D + 2 * P - 2 * RIM_W + 0.1), CF(side * (W / 2 + P - RIM_W / 2 + 0.05), RIM_Y, 0), RED_L))
 	end
-	-- the handle: grey posts up out of the rim at either end, a bar over, a red grip in its middle
+	-- the handle, front to back like the reference's (tomas, 2026-09-27: "the cart bars are on the wrong
+	-- way"): grey posts up out of the middle of the front and back rims, a bar over, a red grip on it
 	local STEEL, STEEL_D = rgb(210, 214, 226), rgb(150, 156, 175)
-	local lean = CFrame.Angles(math.rad(-14), 0, 0)
+	local zr = D / 2 + P - RIM_W / 2 + 0.05
 	for _, side in { -1, 1 } do
-		p(m, V(0.34, 2.2, 0.34), CF(side * (W / 2 - 0.05), RIM_Y + 1.1, 0.15) * lean, STEEL)
-		p(m, V(0.5, 0.3, 0.5), CF(side * (W / 2 - 0.05), RIM_Y + 0.3, 0.15), STEEL_D)
+		p(m, V(0.34, 1.9, 0.34), CF(0, RIM_Y + 1.15, side * zr), STEEL)
+		p(m, V(0.5, 0.3, 0.5), CF(0, RIM_Y + 0.3, side * zr), STEEL_D)
 	end
-	local top = CF(0, RIM_Y + 2.1, 0.15) * lean * CF(0, 0.05, -0.25)
-	p(m, V(W + 0.24, 0.34, 0.34), top, STEEL)
-	studs(p(m, V(2.0, 0.58, 0.58), top, RED))
+	local top = CF(0, RIM_Y + 1.93, 0)
+	p(m, V(0.34, 0.34, 2 * zr + 0.34), top, STEEL)
+	studs(p(m, V(0.58, 0.58, 1.6), top, RED))
 end
 
 -- a crown (VIP), front on like the emoji: a band with a gold rim, five points with a pearl on each
@@ -864,7 +865,7 @@ Icons.FOR = {
 
 -- how an icon is looked at, if not the usual (turn = its yaw, tilt = how far the camera looks down)
 Icons.LOOK = {
-	basket = { turn = -30, tilt = 30 },
+	basket = { turn = -60, tilt = 30 },
 	cash = { turn = -38, tilt = 30 },
 	book = { turn = -28, tilt = 42 },
 	calendar = { turn = -24, tilt = 14 },
