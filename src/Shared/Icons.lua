@@ -1721,9 +1721,14 @@ function Icons.build(key)
 	return m
 end
 
--- the ones on screen sway and bob (~30 times a second): the camera swings round the model, so one
--- CFrame write moves the icon and its outline together
-local live = setmetatable({}, { __mode = "k" }) -- holder -> { cam, center, dist, pitch, phase, sway, bob }
+-- Built only when seen (tomas, 2026-09-27: "the game is so incredibly laggy"; measured: 288 viewports and
+-- 26,392 parts in the player's gui, every panel's icons built at the start whether it was ever opened, at
+-- 4.6 GB): an icon is an empty frame until it's on screen (its panel open, its row scrolled into view),
+-- builds then (a few a frame, so opening a big panel doesn't hitch), sways only while it's in view, and
+-- gives its model back after a while out of sight.
+-- (a plain table, cleaned when its thing is gone: a weak-keyed one loses a gui object whose script
+-- handle the engine lets go of while the object is still on screen, and it silently stops)
+local views = {} -- holder -> { key, opts, st?, built, hiddenAt }
 local function shown(g)
 	local a = g
 	while a and a:IsA("GuiObject") do
@@ -1733,25 +1738,26 @@ local function shown(g)
 	if a and a:IsA("LayerCollector") and not a.Enabled then return false end
 	return g.AbsoluteSize.X > 0
 end
+-- (inside every scrolling list and clipping frame it's in, and on the screen)
+local function inView(g)
+	local p, s = g.AbsolutePosition, g.AbsoluteSize
+	local a = g.Parent
+	while a and a:IsA("GuiObject") do
+		if a:IsA("ScrollingFrame") or a.ClipsDescendants then
+			local ap, as = a.AbsolutePosition, a.AbsoluteSize
+			if p.X > ap.X + as.X or p.Y > ap.Y + as.Y or p.X + s.X < ap.X or p.Y + s.Y < ap.Y then return false end
+		end
+		a = a.Parent
+	end
+	local cam = workspace.CurrentCamera
+	local vs = cam and cam.ViewportSize or Vector2.new(1e4, 1e4)
+	return p.X < vs.X and p.Y < vs.Y + 60 and p.X + s.X > 0 and p.Y + s.Y > -60
+end
 local function orbit(st, t)
 	local a = t and math.sin(t * 1.3 + st.phase) * math.rad(st.sway) or 0
 	local y = t and math.sin(t * 2 + st.phase) * st.bob or 0
 	return CFrame.new(st.center - Vector3.new(0, y, 0)) * CFrame.Angles(0, -a, 0) * CFrame.Angles(st.pitch, 0, 0) * CFrame.new(0, 0, -st.dist) * CFrame.Angles(0, math.pi, 0) * CFrame.Angles(0, 0, st.roll)
 end
-local acc = 0
-RunService.RenderStepped:Connect(function(dt)
-	acc += dt
-	if acc < 1 / 30 then return end
-	acc = 0
-	local t = os.clock()
-	for holder, st in live do
-		if not holder.Parent then
-			live[holder] = nil
-		elseif shown(holder) then
-			st.cam.CFrame = orbit(st, t)
-		end
-	end
-end)
 
 -- opts: size, position, anchor, zindex (the outline's; the icon draws one above), sway (degrees,
 -- default 18), bob (studs, default 0.12), turn (a fixed yaw in degrees, default -22), tilt (how far
@@ -1780,16 +1786,11 @@ local function fit(model, pitch, roll)
 	return rot:PointToWorldSpace(mid), r / math.tan(math.rad(15)) + (hi.Z - mid.Z)
 end
 local DIRS = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 }, { 0.71, 0.71 }, { -0.71, 0.71 }, { 0.71, -0.71 }, { -0.71, -0.71 } }
-function Icons.view(parent, key, opts)
-	opts = opts or {}
+
+-- the viewports and the model, into an icon's frame
+local function build(holder, v)
+	local key, opts = v.key, v.opts
 	local z = opts.zindex or 14
-	local holder = Instance.new("Frame")
-	holder.Name = "Icon"
-	holder.BackgroundTransparency = 1
-	holder.Size = opts.size or UDim2.fromScale(1, 1)
-	holder.Position = opts.position or UDim2.new()
-	holder.AnchorPoint = opts.anchor or Vector2.zero
-	holder.ZIndex = z
 	local model = Icons.build(key)
 	local look = Icons.LOOK[key] or {}
 	local base = CFrame.Angles(0, math.rad(opts.turn or look.turn or -22), 0)
@@ -1798,18 +1799,14 @@ function Icons.view(parent, key, opts)
 	local roll = math.rad(opts.roll or look.roll or 0)
 	local center, dist = fit(model, pitch, roll)
 	local st = {
-		center = center,
-		dist = dist,
-		pitch = pitch,
-		roll = roll,
-		phase = math.random() * 6,
-		sway = opts.sway or 18,
-		bob = opts.bob or 0.12,
+		center = center, dist = dist, pitch = pitch, roll = roll,
+		phase = v.phase, sway = opts.sway or 18, bob = opts.bob or 0.12,
 	}
 	local cam = Instance.new("Camera")
 	cam.FieldOfView = 30
 	cam.CFrame = orbit(st)
 	st.cam = cam
+	local layers = {}
 	local function layer(name, zi)
 		local vp = Instance.new("ViewportFrame")
 		vp.Name = name
@@ -1818,6 +1815,7 @@ function Icons.view(parent, key, opts)
 		vp.ZIndex = zi
 		vp.CurrentCamera = cam
 		vp.Parent = holder
+		table.insert(layers, vp)
 		return vp
 	end
 	-- the outline: eight copies, white under a white ambient and no light, the viewport tinting them
@@ -1829,15 +1827,16 @@ function Icons.view(parent, key, opts)
 		vp.Ambient = Color3.new(1, 1, 1)
 		vp.LightColor = Color3.new(0, 0, 0)
 		vp.ImageColor3 = OUTLINE
-		for i = 1, #DIRS do
-			local copy = model:Clone()
-			for _, d in copy:GetDescendants() do
-				if d:IsA("BasePart") then
-					d.Color = Color3.new(1, 1, 1)
-					d.Material = Enum.Material.SmoothPlastic
-					for _, f in { "TopSurface", "FrontSurface", "BackSurface", "LeftSurface", "RightSurface" } do d[f] = Enum.SurfaceType.Smooth end
-				end
+		local flat = model:Clone()
+		for _, d in flat:GetDescendants() do
+			if d:IsA("BasePart") then
+				d.Color = Color3.new(1, 1, 1)
+				d.Material = Enum.Material.SmoothPlastic
+				for _, f in { "TopSurface", "FrontSurface", "BackSurface", "LeftSurface", "RightSurface" } do d[f] = Enum.SurfaceType.Smooth end
 			end
+		end
+		for i = 1, #DIRS do
+			local copy = i == 1 and flat or flat:Clone()
 			copy.Parent = vp
 			copies[i] = copy
 		end
@@ -1865,10 +1864,60 @@ function Icons.view(parent, key, opts)
 			copy:PivotTo(CFrame.new(rest.RightVector * DIRS[i][1] * k + rest.UpVector * DIRS[i][2] * k) * base)
 		end
 	end
-	holder:GetPropertyChangedSignal("AbsoluteSize"):Connect(place)
-	holder.Parent = parent
+	v.conn = holder:GetPropertyChangedSignal("AbsoluteSize"):Connect(place)
 	place()
-	if not opts.still then live[holder] = st end
+	v.st, v.layers, v.built = st, layers, true
+end
+local function unbuild(v)
+	if v.conn then v.conn:Disconnect() end
+	for _, vp in v.layers or {} do vp:Destroy() end
+	v.st, v.layers, v.conn, v.built = nil, nil, nil, false
+end
+
+local FREE_AFTER = 20 -- (seconds out of sight before an icon gives its model back)
+local BUILDS_PER_TICK = 4
+local acc = 0
+RunService.RenderStepped:Connect(function(dt)
+	acc += dt
+	if acc < 1 / 30 then return end
+	acc = 0
+	local now = os.clock()
+	local budget = BUILDS_PER_TICK
+	for holder, v in views do
+		if not holder.Parent then
+			if v.built then unbuild(v) end
+			views[holder] = nil
+		elseif shown(holder) and inView(holder) then
+			v.hiddenAt = nil
+			if not v.built then
+				if budget > 0 then
+					budget -= 1
+					build(holder, v)
+				end
+			elseif not v.opts.still then
+				v.st.cam.CFrame = orbit(v.st, now)
+			end
+		elseif v.built then
+			v.hiddenAt = v.hiddenAt or now
+			if now - v.hiddenAt > FREE_AFTER then unbuild(v) end
+		end
+	end
+end)
+
+function Icons.view(parent, key, opts)
+	opts = opts or {}
+	local holder = Instance.new("Frame")
+	holder.Name = "Icon"
+	holder.BackgroundTransparency = 1
+	holder.Size = opts.size or UDim2.fromScale(1, 1)
+	holder.Position = opts.position or UDim2.new()
+	holder.AnchorPoint = opts.anchor or Vector2.zero
+	holder.ZIndex = opts.zindex or 14
+	holder.Parent = parent
+	local v = { key = key, opts = opts, phase = math.random() * 6, built = false }
+	views[holder] = v
+	-- (one somewhere visible already is built now, so it doesn't pop in a frame late)
+	if shown(holder) and inView(holder) then build(holder, v) end
 	return holder
 end
 

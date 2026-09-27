@@ -155,7 +155,9 @@ end
 -- a shine: a bright diagonal band that sweeps across a frame now and then (the glint on shiny
 -- plastic). An overlay the frame's shape carries a UIGradient; its Offset is what moves. Sweeps are
 -- dealt out by one scheduler to whichever shiny things are on screen, a few a second.
-local shiners = setmetatable({}, { __mode = "k" }) -- overlay -> gradient
+-- (a plain table, cleaned when its thing is gone: a weak-keyed one loses a gui object whose script
+-- handle the engine lets go of while the object is still on screen, and it silently stops)
+local shiners = {} -- overlay -> gradient
 local SWEEP_FROM = 0.72 -- (the streak is off the frame at offset ±0.72)
 local function onScreen(g)
 	local a = g
@@ -164,7 +166,18 @@ local function onScreen(g)
 		a = a.Parent
 	end
 	if a and a:IsA("LayerCollector") and not a.Enabled then return false end
-	return g.AbsoluteSize.X > 0
+	if g.AbsoluteSize.X <= 0 then return false end
+	-- (and not scrolled out of a list: its effects stop while it's out of view)
+	local p, s = g.AbsolutePosition, g.AbsoluteSize
+	a = g.Parent
+	while a and a:IsA("GuiObject") do
+		if a:IsA("ScrollingFrame") then
+			local ap, as = a.AbsolutePosition, a.AbsoluteSize
+			if p.X > ap.X + as.X or p.Y > ap.Y + as.Y or p.X + s.X < ap.X or p.Y + s.Y < ap.Y then return false end
+		end
+		a = a.Parent
+	end
+	return true
 end
 function UI.shine(obj, opts)
 	opts = opts or {}
@@ -210,7 +223,11 @@ if game:GetService("RunService"):IsClient() then
 			task.wait(2.2 + math.random() * 1.5)
 			local live = {}
 			for o in shiners do
-				if o.Parent and onScreen(o) then table.insert(live, o) end
+				if not o.Parent then
+					shiners[o] = nil
+				elseif onScreen(o) then
+					table.insert(live, o)
+				end
 			end
 			if #live > 0 then UI.sweep(live[math.random(#live)], 0.95) end
 		end
@@ -294,7 +311,7 @@ end
 -- behind things"): a glowing halo breathing in and out, and soft beams of light slowly turning round
 -- it. Made of the blurred halo image (UI.GLOW) stretched thin, so no hard edges (the old frame rays
 -- read as "terrible"). opts: size (px), position, zindex, color, speed (degrees a second)
-local halos = setmetatable({}, { __mode = "k" }) -- holder -> { beams, core, speed, phase }
+local halos = {} -- holder -> { beams, core, speed, phase } (a plain table: see shiners)
 function UI.halo(parent, opts)
 	opts = opts or {}
 	local size = opts.size or 150
@@ -368,7 +385,7 @@ end
 -- the actual money gamepass"): bills and coins falling inside a clipped layer at zindex, only while it's
 -- on screen. They flutter by turning over (squashed across), not spinning: a clipping frame doesn't
 -- clip rotated things. opts: zindex, every (s between pieces, default 0.28), speed (px/s)
-local rains = setmetatable({}, { __mode = "k" }) -- layer -> { pieces }
+local rains = {} -- layer -> { pieces } (a plain table: see shiners)
 local RAIN_GREEN, RAIN_GREEN_L, RAIN_GREEN_D = Color3.fromRGB(95, 195, 100), Color3.fromRGB(165, 235, 150), Color3.fromRGB(40, 120, 55)
 local RAIN_GOLD, RAIN_GOLD_L = Color3.fromRGB(255, 200, 50), Color3.fromRGB(255, 230, 120)
 local function rainPiece(z)
@@ -430,8 +447,11 @@ function UI.moneyRain(frame, opts)
 				for _, d in f:GetDescendants() do
 					if d:IsA("Frame") then d.BackgroundTransparency = st.alpha end
 				end
+				local piece = { obj = f, base = f.Size, x = math.random(), y = -20, vy = st.speed * (0.7 + math.random() * 0.6), sway = 6 + math.random() * 14, freq = 1 + math.random() * 1.5, flip = 1.5 + math.random() * 2.5, phase = math.random() * 6, t = 0 }
+				-- (where it starts, before it's shown: added first, it sat in the corner for a frame)
+				f.Position = UDim2.fromOffset(piece.x * layer.AbsoluteSize.X, piece.y)
 				f.Parent = layer
-				table.insert(st.pieces, { obj = f, base = f.Size, x = math.random(), y = -20, vy = st.speed * (0.7 + math.random() * 0.6), sway = 6 + math.random() * 14, freq = 1 + math.random() * 1.5, flip = 1.5 + math.random() * 2.5, phase = math.random() * 6, t = 0 })
+				table.insert(st.pieces, piece)
 			end
 		end
 	end)
