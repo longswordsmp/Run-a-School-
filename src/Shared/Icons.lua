@@ -278,16 +278,29 @@ local function houseAt(m, at, s, wall, roof)
 end
 function B.house(m) houseAt(m, CF(), 1, rgb(255, 242, 220), rgb(230, 65, 65)) end
 
+-- a sleepy crescent moon (Offline Tuition+): thick in the middle, tapering to its horns, its back to
+-- the left of the screen (+X here), eyes shut and smiling, a couple of stars in its hollow
 function B.moon(m)
-	local Y = rgb(255, 225, 90)
-	for k = -5, 5 do
-		local a = math.rad(k * 17)
-		local d = 1.7 - math.abs(k) * 0.12
-		ball(m, d, V(-math.cos(a) * 1.3 + 0.4, math.sin(a) * 1.8, 0), Y)
+	local Y = rgb(255, 215, 80)
+	local C, Rr = V(-0.4, 0, 0), 1.9
+	for deg = -100, 100, 8 do
+		local a = math.rad(deg)
+		local d = 0.5 + 1.8 * math.cos(a * 0.9)
+		-- (each disc touches the outer circle, so the back is one smooth curve)
+		local at = C + V(math.cos(a), math.sin(a), 0) * (Rr - d / 2)
+		disc(m, d, 1.0, CF(at), Y)
 	end
-	for _, st in { { 1.6, 1.4, 0.7 }, { 2.0, -0.6, 0.5 }, { 1.2, 0.3, 0.4 } } do
-		p(m, V(st[3], st[3], 0.2), CF(st[1], st[2], 0) * CFrame.Angles(0, 0, math.rad(45)), rgb(255, 250, 200), nil, Enum.Material.Neon)
+	-- the face on the fat middle: a shut eye (a little smile of a line), a smile and a pink cheek
+	local F = -0.52
+	for _, e in { { 0.95, 0.5, 0.35 }, { 0.75, 0.42, 0 }, { 0.55, 0.5, -0.35 } } do
+		p(m, V(0.26, 0.1, 0.06), CF(e[1], e[2], F) * CFrame.Angles(0, 0, e[3]), INK)
 	end
+	for _, e in { { 1.05, -0.3, -0.45 }, { 0.8, -0.42, 0 }, { 0.55, -0.3, 0.45 } } do
+		p(m, V(0.26, 0.1, 0.06), CF(e[1], e[2], F) * CFrame.Angles(0, 0, e[3]), INK)
+	end
+	disc(m, 0.4, 0.06, CF(0.2, -0.05, F), rgb(255, 160, 150))
+	star(m, CF(-1.45, 0.75, -0.2), 0.42, rgb(255, 250, 210))
+	star(m, CF(-1.0, -0.85, -0.2), 0.28, rgb(255, 250, 210))
 end
 
 local function cashStack(m, at, layers)
@@ -686,7 +699,7 @@ Icons.FOR = {
 Icons.PANEL = {
 	Shop = "apple", Upgrades = "upArrow", Board = "pillar", Prestige = "crown", Yearbook = "book",
 	NameSchool = "pencil", Settings = "gear", Daily = "calendar", Admin = "wrench", Welcome = "cash",
-	Coop = "people", QuestLogPanel = "scroll", Store = "basket",
+	Coop = "people", QuestLogPanel = "scroll", Store = "basket", LeaveDeal = "moon",
 }
 
 function Icons.build(key)

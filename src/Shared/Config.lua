@@ -1142,7 +1142,11 @@ Config.Passes = {
 	{ key = "AutoCollect", id = 0, name = "Auto Collect", robux = 79, icon = "\u{1F9F9}", desc = "The Janitor's Cart at max level from the start" },
 	{ key = "LongLock", id = 0, name = "Long Lock", robux = 39, icon = "\u{1F510}", desc = "+30s every time you lock your gate" },
 	{ key = "TeleportHome", id = 0, name = "Teleport Home", robux = 29, icon = "\u{1F3E0}", desc = "A button that takes you home (not while carrying)" },
-	{ key = "OfflinePlus", id = 0, name = "Offline Tuition+", robux = 49, icon = "\u{1F319}", desc = "Earn 50% for up to 12h while offline (was 25% for 2h)" },
+	{ key = "OfflinePlus", id = 0, name = "Offline Tuition+", robux = 199, icon = "\u{1F319}", desc = "Earn 50% for up to 12h while offline (was 25% for 2h)" },
+	-- the same pass for 49 R$, offered only by the WAIT! pop-up when someone opens the Roblox menu to
+	-- leave (Menus): a real second pass, so "199 -> 49" is true. same: the pass it counts as; hidden:
+	-- not in the Store
+	{ key = "OfflinePlusDeal", id = 0, name = "Offline Tuition+", robux = 49, icon = "\u{1F319}", desc = "Earn 50% for up to 12h while offline (was 25% for 2h)", same = "OfflinePlus", hidden = true },
 }
 Config.Products = {
 	-- the MONEY BOOST: one button; every purchase DOUBLES all your tuition, forever (x2, x4, x8 ...

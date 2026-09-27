@@ -1398,6 +1398,8 @@ do
 	sections[2] = heading("\u{1F451} GAMEPASSES", rgb(255, 170, 40))
 	local passGrid = grid()
 	for i, x in Config.Passes do
+		-- (a hidden pass is sold somewhere else: the WAIT! deal)
+		if x.hidden then continue end
 		card(passGrid, x.key, x, function() call("buy", "pass", x.key) end, i)
 	end
 	sections[3] = heading("\u{26A1} EXTRAS", rgb(70, 150, 255))
@@ -2018,5 +2020,52 @@ if openBus then
 		if not p then return end
 		p.open()
 		if tab and p.select then p.select(tab) end
+	end)
+end
+
+---------------------------------------------------------------------------
+-- WAIT! (tomas, 2026-09-27): opening the Roblox menu is the sign someone's about to leave. Once a
+-- session, after a couple of minutes' play, only for someone without Offline Tuition+: the same pass
+-- for 49 R$ instead of the Store's 199. It's a real second pass (Config OfflinePlusDeal), so the
+-- crossed-out price is the true one.
+---------------------------------------------------------------------------
+do
+	local deal, full
+	for _, x in Config.Passes do
+		if x.key == "OfflinePlusDeal" then deal = x end
+		if x.key == "OfflinePlus" then full = x end
+	end
+	local panel = UI.panel(gui, { name = "LeaveDeal", title = "WAIT! DON'T GO YET", color = Color3.fromRGB(110, 90, 220), size = UDim2.fromOffset(580, 390) })
+	panels.LeaveDeal = panel
+	local b = panel.body
+	Icons.view(b, "moon", { size = UDim2.fromOffset(150, 130), position = UDim2.fromOffset(0, 4), zindex = 13, sway = 10 })
+	UI.label(b, { Text = "Your school keeps earning while you're away!", Font = UI.BIG, TextColor3 = UI.C.navy, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -170, 0, 66), Position = UDim2.fromOffset(165, 4), ZIndex = 12, stroke = 0 })
+	UI.label(b, { Text = "Offline Tuition+: 50% of your tuition for up to 12 hours while you're gone (without it: 25% for 2 hours). Yours forever.", TextColor3 = UI.C.navy, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -170, 0, 66), Position = UDim2.fromOffset(165, 74), ZIndex = 12, stroke = 0 })
+	-- the Store's price, greyed and struck through with a red line, then the deal's
+	local was = UI.label(b, { Name = "Was", Text = ("%d R$"):format(full and full.robux or 0), Font = UI.BIG, TextColor3 = Color3.fromRGB(170, 170, 180), Size = UDim2.fromOffset(150, 40), Position = UDim2.fromOffset(20, 150), ZIndex = 12, stroke = 2 })
+	UI.new("Frame", { Name = "Strike", BackgroundColor3 = UI.C.red, BorderSizePixel = 0, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(0.9, 0, 0, 5), Rotation = -8, ZIndex = 13, Parent = was })
+	UI.label(b, { Name = "Now", Text = ("%d R$ just for you!"):format(deal and deal.robux or 0), Font = UI.BIG, TextColor3 = Color3.fromRGB(120, 255, 140), TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(1, -200, 0, 44), Position = UDim2.fromOffset(185, 148), ZIndex = 12, stroke = 3 })
+	local get = UI.button(b, { name = "Get", text = ("GET IT: %d R$"):format(deal and deal.robux or 0), color = UI.C.green, size = UDim2.fromOffset(270, 62), position = UDim2.new(0.5, -75, 1, -6), anchor = Vector2.new(0.5, 1), font = UI.BIG, onClick = function()
+		sfx("Click")
+		call("buy", "pass", "OfflinePlusDeal")
+		panel.close()
+	end })
+	lift(get.button, 13)
+	local glow = UI.glow(get.button, Color3.fromRGB(150, 255, 150), { spread = 5 })
+	UI.pulse(glow, 0.35, 1, 1.6)
+	local no = UI.button(b, { name = "NoThanks", text = "No thanks", color = UI.C.grey, size = UDim2.fromOffset(150, 48), position = UDim2.new(0.5, 160, 1, -13), anchor = Vector2.new(0.5, 1), onClick = function()
+		panel.close()
+	end })
+	lift(no.button, 13)
+	local joinedAt = os.clock()
+	local shown = false
+	game:GetService("GuiService").MenuOpened:Connect(function()
+		if shown or not deal or not full then return end
+		if os.clock() - joinedAt < 120 then return end
+		if player:GetAttribute("Pass_OfflinePlus") then return end
+		-- (until the deal pass exists, only in Studio)
+		if deal.id == 0 and not game:GetService("RunService"):IsStudio() then return end
+		shown = true
+		panel.open()
 	end)
 end

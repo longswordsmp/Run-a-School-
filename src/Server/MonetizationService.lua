@@ -41,14 +41,16 @@ function MonetizationService.has(player, key)
 	return player:GetAttribute("Pass_" .. key) == true
 end
 
-local function applyPass(player, key)
+local function applyPass(player, bought)
 	-- (a pass is the buyer's, kept in their own save even while they play for a friend's school)
 	local p = Data.own(player)
-	player:SetAttribute("Pass_" .. key, true)
 	if p then
 		p.passes = p.passes or {}
-		p.passes[key] = true
+		p.passes[bought] = true
 	end
+	-- (a deal pass counts as the pass it's a cheaper copy of: its effects are that one's)
+	local key = passByKey[bought] and passByKey[bought].same or bought
+	player:SetAttribute("Pass_" .. key, true)
 	if key == "OfflinePlus" and p then
 		p.offlineCapMult = 6 -- 12 h
 		p.offlineRateMult = 2 -- 50 %
@@ -255,7 +257,7 @@ Actions.register("buy", function(player, p, kind, key)
 	elseif kind == "pass" then
 		local pass = passByKey[key]
 		if not pass or not ready(pass) then return { ok = false, err = "Not on sale yet" } end
-		if MonetizationService.has(player, key) then return { ok = false, err = "You already own it" } end
+		if MonetizationService.has(player, pass.same or key) then return { ok = false, err = "You already own it" } end
 		if pass.id == 0 then
 			MonetizationService.grantPass(player, key)
 			Remotes.Notify:FireClient(player, "(Studio test purchase: free)", "info")
