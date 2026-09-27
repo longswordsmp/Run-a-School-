@@ -131,7 +131,9 @@ end
 player:GetAttributeChangedSignal("MoneyBoost"):Connect(refreshBoost)
 refreshBoost()
 
--- School IQ and Reputation chips above the cash panel
+-- School IQ, Reputation and Candy chips above the cash panel: hidden (tomas, 2026-09-27: they
+-- don't need to be on screen all the time), each popping up for a few seconds when it changes. IQ and
+-- Rep live on the School Board panel, Candy in the Shop's candy tab.
 local chips = Instance.new("Frame")
 chips.Name = "Chips"
 chips.AnchorPoint = Vector2.new(0.5, 1)
@@ -181,25 +183,36 @@ refreshTickets()
 local function refreshCandy()
 	candyText.Text = "\u{1F36C} " .. tostring(player:GetAttribute("Candy") or 0)
 end
-player:GetAttributeChangedSignal("Candy"):Connect(refreshCandy)
 refreshCandy()
 local function refreshChips()
 	iqText.Text = "\u{1F9E0} IQ " .. tostring(player:GetAttribute("IQ") or 100)
 	repText.Text = "\u{2B50} Rep " .. tostring(player:GetAttribute("Rep") or 0)
 end
-player:GetAttributeChangedSignal("IQ"):Connect(function()
-	refreshChips()
-	local sc = chips.IQ:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", chips.IQ)
-	sc.Scale = 1.25
-	TweenService:Create(sc, TweenInfo.new(0.35, Enum.EasingStyle.Back), { Scale = 1 }):Play()
-end)
-player:GetAttributeChangedSignal("Rep"):Connect(function()
-	refreshChips()
-	local sc = chips.Rep:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", chips.Rep)
-	sc.Scale = 1.25
-	TweenService:Create(sc, TweenInfo.new(0.35, Enum.EasingStyle.Back), { Scale = 1 }):Play()
-end)
 refreshChips()
+-- a chip shows for a moment when its number changes (not when the save first loads it)
+local flashes = {}
+local function flash(name)
+	local c = chips[name]
+	c.Visible = true
+	flashes[name] = (flashes[name] or 0) + 1
+	local mine = flashes[name]
+	local sc = c:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", c)
+	sc.Scale = 1.25
+	TweenService:Create(sc, TweenInfo.new(0.35, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	task.delay(3, function()
+		if flashes[name] == mine then c.Visible = false end
+	end)
+end
+for _, name in { "IQ", "Rep", "Candy" } do
+	chips[name].Visible = false
+	local last = player:GetAttribute(name)
+	player:GetAttributeChangedSignal(name):Connect(function()
+		local now = player:GetAttribute(name)
+		if name == "Candy" then refreshCandy() else refreshChips() end
+		if last ~= nil and now ~= last then flash(name) end
+		last = now
+	end)
+end
 
 -- toasts, top centre
 local toastHolder = Instance.new("Frame")

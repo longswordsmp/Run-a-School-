@@ -601,7 +601,7 @@ do
 	local function refresh()
 		info = call("boardInfo")
 		if not info or info.ok == false then return end
-		now.Text = ("Now: %s  (tuition x%s)"):format(info.current, tostring(math.floor(info.currentMult * 100 + 0.5) / 100))
+		now.Text = ("Now: %s  (tuition x%s)   \u{1F9E0} IQ %d   \u{2B50} Rep %d"):format(info.current, tostring(math.floor(info.currentMult * 100 + 0.5) / 100), player:GetAttribute("IQ") or 100, player:GetAttribute("Rep") or 0)
 		nextName.Text = "\u{2192} " .. info.name:upper()
 		cashReq.check.Text = info.hasCash and "\u{2705}" or "\u{1F4B0}"
 		cashReq.text.Text = ("Bring %s  (you have %s)"):format(Config.formatCash(info.cash), Config.formatCash(cash()))
@@ -1205,6 +1205,10 @@ do
 		Cash10m = { "Tuition Pack", "10 min of tuition", rgb(70, 200, 90) },
 		Cash1h = { "Tuition Bag", "1 hour of tuition", rgb(50, 170, 90) },
 		Cash4h = { "Tuition Vault", "4 hours of tuition", rgb(40, 180, 170) },
+		Cash8h = { "Tuition Briefcase", "8 hours of tuition", rgb(60, 160, 120) },
+		Cash16h = { "Tuition Chest", "16 hours of tuition", rgb(210, 130, 60) },
+		Cash24h = { "Tuition Truck", "24 hours of tuition", rgb(50, 150, 220) },
+		Cash1w = { "Tuition Mountain", "A WEEK of tuition!", rgb(240, 160, 30) },
 		LuckyBus = { "Lucky Bus", "Legendary or better!", rgb(255, 190, 40) },
 		ServerLuck = { "Server Luck", "x2 luck for 15 min", rgb(160, 90, 240) },
 		ExpressRare = { "Rare Letter", "Ready right now", rgb(70, 150, 255) },
@@ -1807,25 +1811,25 @@ local function tileButton(caption, color, order)
 	b.BackgroundTransparency = 1
 	b.LayoutOrder = order
 	b.ZIndex = 1
-	local lip = UI.new("Frame", { Name = "Lip", BackgroundColor3 = UI.darken(color, 0.45), Size = UDim2.new(1, 0, 1, -LIP), Position = UDim2.fromOffset(0, LIP), ZIndex = 1, Parent = b })
+	-- one outline round the whole tile (tomas: two read as a double edge): the lip is the full tile,
+	-- darker, outlined; the body sits on it leaving the lip's bottom showing as the tile's thickness
+	local lip = UI.new("Frame", { Name = "Lip", BackgroundColor3 = UI.darken(color, 0.4), Size = UDim2.fromScale(1, 1), ZIndex = 1, Parent = b })
 	UI.corner(lip, 16)
 	UI.stroke(lip, 3)
-	local body = UI.new("Frame", { Name = "Body", BackgroundColor3 = UI.darken(color, 0.22), Size = UDim2.new(1, 0, 1, -LIP), ZIndex = 2, Parent = b })
-	UI.corner(body, 16)
-	UI.stroke(body, 3.5)
-	-- the face: the colour, lit from the top, the studs over it and a gloss fading down its top half
-	local face = UI.new("Frame", { Name = "Face", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.new(1, -8, 1, -8), Position = UDim2.fromOffset(4, 4), ZIndex = 2, Parent = body })
-	UI.corner(face, 12)
-	UI.gradient(face, UI.lighten(color, 0.3), color)
-	UI.studs(face, { zindex = 3, transparency = 0.55, tile = 40 })
-	local gloss = UI.new("Frame", { Name = "Gloss", BorderSizePixel = 0, BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 0.55), ZIndex = 3, Parent = face })
-	UI.corner(gloss, 12)
-	UI.new("UIGradient", { Rotation = 90, Transparency = NumberSequence.new(0.7, 1), Parent = gloss })
-	-- (the icon's outline draws at 4, the icon at 5)
-	Icons.view(face, SIDE_ICON[caption] or "gift", { size = UDim2.new(1, 16, 0.8, 0), position = UDim2.new(0.5, 0, 0, -10), anchor = Vector2.new(0.5, 0), zindex = 4, sway = 12, bob = 0.08 })
+	local body = UI.new("Frame", { Name = "Body", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -LIP), ZIndex = 2, Parent = b })
+	-- the face: the colour, lit from the top, the studs faintly over it and a soft gloss on its top half
+	local face = UI.new("Frame", { Name = "Face", BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 1), ZIndex = 2, Parent = body })
+	UI.corner(face, 16)
+	UI.gradient(face, UI.lighten(color, 0.25), color)
+	UI.studs(face, { zindex = 3, transparency = 0.74, tile = 40 })
+	local gloss = UI.new("Frame", { Name = "Gloss", BorderSizePixel = 0, BackgroundColor3 = Color3.new(1, 1, 1), Size = UDim2.fromScale(1, 0.5), ZIndex = 3, Parent = face })
+	UI.corner(gloss, 16)
+	UI.new("UIGradient", { Rotation = 90, Transparency = NumberSequence.new(0.8, 1), Parent = gloss })
+	-- (the icon's outline draws at 4, the icon at 5; it sits inside the tile and barely sways)
+	Icons.view(face, SIDE_ICON[caption] or "gift", { size = UDim2.new(1, -4, 0.7, 0), position = UDim2.new(0.5, 0, 0, 3), anchor = Vector2.new(0.5, 0), zindex = 4, sway = 7, bob = 0.05 })
 	-- the caption and its shadow
-	UI.label(face, { Name = "CaptionShadow", Text = caption, Font = UI.BIG, TextColor3 = UI.C.ink, Size = UDim2.new(1, -4, 0.3, 0), Position = UDim2.new(0.5, 2, 1, -1), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 6, stroke = 2 })
-	UI.label(face, { Name = "Caption", Text = caption, Font = UI.BIG, Size = UDim2.new(1, -4, 0.3, 0), Position = UDim2.new(0.5, 0, 1, -3), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 7, stroke = 2.5 })
+	UI.label(face, { Name = "CaptionShadow", Text = caption, Font = UI.BIG, TextColor3 = UI.C.ink, Size = UDim2.new(1, -10, 0.25, 0), Position = UDim2.new(0.5, 1.5, 1, -3), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 6, stroke = 1.5 })
+	UI.label(face, { Name = "Caption", Text = caption, Font = UI.BIG, Size = UDim2.new(1, -10, 0.25, 0), Position = UDim2.new(0.5, 0, 1, -5), AnchorPoint = Vector2.new(0.5, 1), ZIndex = 7, stroke = 2 })
 	-- a glint that sweeps across now and then; hover grows it, lights a glow round it and glints it;
 	-- pressing dips it onto the lip
 	local glint = UI.shine(face, { zindex = 9, strength = 0.2 })

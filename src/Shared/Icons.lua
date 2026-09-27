@@ -422,6 +422,90 @@ function B.skull(m)
 	for k = -1, 1 do p(m, V(0.15, 0.6, 0.2), CF(k * 0.45, -1.4, -1.12), INK) end
 end
 
+-- the bigger tuition packs: a briefcase with bills sticking out, a treasure chest, a cash truck and a
+-- mountain of cash
+local BILL, BILL_L = rgb(95, 195, 100), rgb(165, 235, 150)
+local function bill(m, cf)
+	p(m, V(1.7, 1.2, 0.06), cf, BILL)
+	p(m, V(1.2, 0.75, 0.07), cf, BILL_L)
+	disc(m, 0.42, 0.08, cf, BILL)
+end
+function B.briefcase(m)
+	local LEATHER, LD, GOLDL = rgb(130, 76, 42), rgb(92, 52, 28), rgb(255, 205, 70)
+	for k = -1, 1 do bill(m, CF(k * 0.95, 1.45 + (k == 0 and 0.2 or 0), 0.15 + k * 0.05) * CFrame.Angles(0, 0, math.rad(-k * 14))) end
+	p(m, V(4.4, 2.8, 1.4), CF(0, 0, 0), LEATHER)
+	p(m, V(4.5, 0.32, 1.5), CF(0, 0.72, 0), LD)
+	for _, x in { -1, 1 } do
+		for _, y in { -1, 1 } do p(m, V(0.42, 0.42, 1.5), CF(x * 2.05, y * 1.22, 0), GOLDL) end
+		p(m, V(0.55, 0.5, 0.16), CF(x * 1.15, 0.72, -0.78), GOLDL)
+		p(m, V(0.2, 0.18, 0.05), CF(x * 1.15, 0.7, -0.87), LD)
+		p(m, V(0.26, 0.45, 0.32), CF(x * 0.8, 1.6, 0), LD)
+	end
+	cyl(m, 0.34, 1.9, V(0, 1.88, 0), LD, "x")
+end
+function B.chest(m)
+	local WOOD, WD, GOLDL = rgb(170, 104, 52), rgb(120, 70, 35), rgb(255, 200, 60)
+	p(m, V(4.2, 2.2, 2.6), CF(0, -0.9, 0), WOOD)
+	for _, y in { -1.45, -0.75 } do p(m, V(4.22, 0.08, 2.62), CF(0, y, 0), WD) end
+	for _, x in { -1.45, 1.45 } do p(m, V(0.34, 2.25, 2.65), CF(x, -0.9, 0), GOLDL) end
+	p(m, V(4.26, 0.3, 2.66), CF(0, 0.12, 0), GOLDL)
+	p(m, V(0.75, 0.85, 0.14), CF(0, -0.3, -1.36), GOLDL)
+	p(m, V(0.18, 0.34, 0.05), CF(0, -0.38, -1.44), WD)
+	-- the lid, swung open back past upright on its hinge along the back
+	local lid = CF(0, 0.25, 1.3) * CFrame.Angles(math.rad(105), 0, 0)
+	p(m, V(4.2, 0.8, 2.6), lid * CF(0, 0.4, -1.3), WOOD)
+	for _, x in { -1.45, 1.45 } do p(m, V(0.34, 0.84, 2.65), lid * CF(x, 0.4, -1.3), GOLDL) end
+	-- heaped full: gold coins, two bricks of cash, a sparkle
+	local COIN = rgb(255, 205, 60)
+	for _, c in { { -1.4, 0.35, -0.6 }, { -0.7, 0.55, -0.3 }, { 0.1, 0.5, -0.7 }, { 0.9, 0.45, -0.4 }, { 1.5, 0.3, -0.8 }, { -1.1, 0.4, 0.5 }, { 0.5, 0.6, 0.4 }, { 1.3, 0.4, 0.5 }, { -0.2, 0.75, 0.1 } } do
+		ball(m, 0.75, V(c[1], c[2], c[3]), COIN)
+	end
+	for _, c in { { -0.9, 0.95, -0.55, 20 }, { 1.0, 0.85, -0.6, -25 } } do
+		disc(m, 0.85, 0.16, CF(c[1], c[2], c[3]) * CFrame.Angles(0, 0, math.rad(c[4])), rgb(255, 225, 100))
+	end
+	p(m, V(1.6, 0.45, 0.9), CF(0.3, 0.95, 0.3) * CFrame.Angles(0, 0.3, 0.12), BILL)
+	p(m, V(0.35, 0.47, 0.92), CF(0.3, 0.95, 0.3) * CFrame.Angles(0, 0.3, 0.12), COIN)
+	star(m, CF(-1.6, 1.4, -1.2), 0.4, rgb(255, 255, 255))
+end
+function B.truck(m)
+	-- an armoured cash truck, nose to the left of the screen (+X), a gold coin on its side
+	local BODY, BODY_D, GLASS, STEEL = rgb(60, 150, 100), rgb(40, 110, 72), rgb(150, 215, 255), rgb(200, 205, 215)
+	p(m, V(3.8, 2.6, 2.3), CF(-0.35, 0.2, 0), BODY)
+	p(m, V(3.84, 0.3, 2.34), CF(-0.35, -0.55, 0), rgb(255, 200, 50))
+	p(m, V(1.5, 1.9, 2.2), CF(2.3, -0.15, 0), BODY)
+	p(m, V(1.5, 0.3, 2.24), CF(2.3, -0.75, 0), BODY_D)
+	p(m, V(0.1, 0.8, 1.8), CF(3.06, 0.3, 0), GLASS)
+	p(m, V(0.8, 0.7, 0.1), CF(2.35, 0.3, -1.12), GLASS)
+	p(m, V(0.3, 0.45, 2.4), CF(3.1, -1.0, 0), STEEL)
+	ball(m, 0.4, V(3.08, -0.45, -0.75), rgb(255, 250, 220), Enum.Material.Neon)
+	-- the coin on its side
+	disc(m, 1.5, 0.12, CF(-0.4, 0.45, -1.2), rgb(255, 200, 50))
+	disc(m, 1.05, 0.14, CF(-0.4, 0.45, -1.21), rgb(255, 225, 110))
+	p(m, V(0.18, 0.9, 0.16), CF(-0.4, 0.45, -1.28), rgb(210, 150, 20))
+	-- the back doors' seam and the wheels
+	p(m, V(0.08, 2.2, 0.08), CF(-2.26, 0.2, -0.6), BODY_D)
+	for _, x in { -1.4, 2.2 } do
+		disc(m, 1.2, 0.45, CF(x, -1.2, -1.0), INK)
+		disc(m, 0.55, 0.47, CF(x, -1.2, -1.02), STEEL)
+	end
+end
+function B.moneyMountain(m)
+	-- a whole week: a pile of cash bricks, a giant gold coin standing on top, coins spilt round it
+	cashStack(m, CF(-1.85, -1.6, 0), 2)
+	cashStack(m, CF(1.85, -1.6, 0), 2)
+	cashStack(m, CF(-0.95, -0.5, 0) * CFrame.Angles(0, math.rad(90), 0), 2)
+	cashStack(m, CF(0.95, -0.5, 0) * CFrame.Angles(0, math.rad(90), 0), 2)
+	cashStack(m, CF(0, 0.6, 0) * CFrame.Angles(0, math.rad(15), 0), 2)
+	disc(m, 2.3, 0.4, CF(0, 2.75, 0), rgb(255, 195, 45))
+	disc(m, 1.75, 0.44, CF(0, 2.75, 0), rgb(255, 225, 110))
+	star5(m, CF(0, 2.75, -0.25), 0.5, rgb(255, 190, 40), 0.1)
+	for _, c in { { -3.3, -1.75, -0.8 }, { 3.2, -1.8, -0.7 }, { -2.6, -1.85, -1.2 }, { 2.5, -1.85, -1.3 } } do
+		cylc(m, 0.8, 0.18, CF(c[1], c[2], c[3]), rgb(255, 205, 60))
+	end
+	star(m, CF(2.2, 2.6, -0.6), 0.45, rgb(255, 255, 255))
+	star(m, CF(-2.3, 1.2, -0.6), 0.35, rgb(255, 255, 255))
+end
+
 -- the panels' own icons (hanging off their title bars)
 function B.apple(m)
 	ball(m, 3, V(0, -0.2, 0), rgb(235, 50, 60))
@@ -594,6 +678,7 @@ Icons.FOR = {
 	StarterPack = "gift", VIP = "crown", SuperSpeed = "sneaker", GoldenBoard = "goldboard", DiamondBoard = "gem",
 	Luck = "clover", AutoCollect = "broom", LongLock = "padlock", TeleportHome = "house", OfflinePlus = "moon",
 	MoneyBoost = "cash", Cash10m = "cash", Cash1h = "moneybag", Cash4h = "vault", LuckyBus = "bus",
+	Cash8h = "briefcase", Cash16h = "chest", Cash24h = "truck", Cash1w = "moneyMountain",
 	ServerLuck = "sparkle", ExpressRare = "letter", ExpressEpic = "letterEpic", LockRefresh = "refresh",
 	UnlockDowntown = "shop", UnlockLab = "flask", UnlockMapleHeights = "maple", UnlockPinePark = "pine",
 	UnlockVexPrep = "vexprep", UnlockIndustrial = "factory", UnlockLair = "skull",

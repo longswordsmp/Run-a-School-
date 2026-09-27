@@ -128,6 +128,10 @@ end
 GRANTS.Cash10m = function(player) Data.addCash(player, cashFor(player, 600)) end
 GRANTS.Cash1h = function(player) Data.addCash(player, cashFor(player, 3600)) end
 GRANTS.Cash4h = function(player) Data.addCash(player, cashFor(player, 14400)) end
+GRANTS.Cash8h = function(player) Data.addCash(player, cashFor(player, 28800)) end
+GRANTS.Cash16h = function(player) Data.addCash(player, cashFor(player, 57600)) end
+GRANTS.Cash24h = function(player) Data.addCash(player, cashFor(player, 86400)) end
+GRANTS.Cash1w = function(player) Data.addCash(player, cashFor(player, 604800)) end
 GRANTS.LuckyBus = function(player)
 	task.spawn(HallService.specialBus, "Lucky", player.DisplayName)
 end
