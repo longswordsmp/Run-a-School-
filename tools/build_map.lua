@@ -44,7 +44,7 @@ local function signGui(p, face, text, textColor, bg, font)
 	local g = Instance.new("SurfaceGui")
 	g.Face = face
 	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	g.PixelsPerStud = 40
+	g.PixelsPerStud = 16
 	g.LightInfluence = 0
 	g.Parent = p
 	local t = Instance.new("TextLabel")

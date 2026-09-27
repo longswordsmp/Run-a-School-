@@ -158,7 +158,7 @@ local function buildVan()
 		g.Face = face
 		g.LightInfluence = 0.2
 		g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-		g.PixelsPerStud = 40
+		g.PixelsPerStud = 16
 		g.Parent = part
 		local t = Instance.new("TextLabel")
 		t.Size = UDim2.fromScale(1, 1)

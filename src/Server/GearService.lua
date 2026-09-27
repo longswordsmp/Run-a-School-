@@ -828,7 +828,7 @@ local function buildStall()
 	local g = Instance.new("SurfaceGui")
 	g.Face = Enum.NormalId.Front
 	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	g.PixelsPerStud = 40
+	g.PixelsPerStud = 20
 	g.Parent = sign
 	local t = Instance.new("TextLabel")
 	t.Size = UDim2.fromScale(1, 1)

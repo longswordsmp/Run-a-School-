@@ -94,7 +94,7 @@ local function surfaceText(p, face, text, color, bg, font)
 	local g = Instance.new("SurfaceGui")
 	g.Face = face
 	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	g.PixelsPerStud = 40
+	g.PixelsPerStud = 20
 	g.LightInfluence = 0.2
 	g.Parent = p
 	local t = Instance.new("TextLabel")

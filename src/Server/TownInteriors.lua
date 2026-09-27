@@ -94,7 +94,7 @@ function Interiors.build(town, Kit)
 			local g = Instance.new("SurfaceGui")
 			g.Face = Enum.NormalId.Back
 			g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-			g.PixelsPerStud = 30
+			g.PixelsPerStud = 16
 			g.LightInfluence = 0
 			g.Parent = pane
 			local sky = Instance.new("Frame")

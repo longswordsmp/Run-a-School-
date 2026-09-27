@@ -331,7 +331,7 @@ local function buildInside(c)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Right
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 45
+	gui.PixelsPerStud = 20
 	gui.LightInfluence = 0.3
 	gui.Parent = board
 	local notes = {

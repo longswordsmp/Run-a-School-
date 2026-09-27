@@ -38,7 +38,7 @@ local function board(parent, name, cf, title, color)
 	local g = Instance.new("SurfaceGui")
 	g.Face = Enum.NormalId.Front
 	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	g.PixelsPerStud = 30
+	g.PixelsPerStud = 20
 	g.LightInfluence = 0
 	g.Parent = p
 	local head = Instance.new("TextLabel")

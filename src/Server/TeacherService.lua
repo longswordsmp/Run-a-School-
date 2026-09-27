@@ -51,7 +51,7 @@ local function nameplate(plot, floor, tdef)
 		g.Name = "Nameplate"
 		g.Face = Enum.NormalId.Back
 		g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-		g.PixelsPerStud = 40
+		g.PixelsPerStud = 24
 		g.LightInfluence = 0.3
 		g.Parent = desk
 		local list = Instance.new("UIListLayout")
@@ -221,7 +221,7 @@ local function seatBoard()
 			local g = Instance.new("SurfaceGui")
 			g.Face = Enum.NormalId.Back
 			g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-			g.PixelsPerStud = 50
+			g.PixelsPerStud = 24
 			g.Parent = plate
 			local t = Instance.new("TextLabel")
 			t.Size = UDim2.fromScale(1, 1)

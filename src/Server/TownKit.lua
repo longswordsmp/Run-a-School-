@@ -84,7 +84,7 @@ function Kit.sign(p, face, text, color, bg, font, stroke)
 	local g = Instance.new("SurfaceGui")
 	g.Face = face
 	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	g.PixelsPerStud = 40
+	g.PixelsPerStud = 16 -- (the town has ~650 signs: at 40 they came to 43 Mpx of sign textures, over the budget, and signs went blank)
 	g.LightInfluence = 0.15
 	g.Parent = p
 	local t = Instance.new("TextLabel")

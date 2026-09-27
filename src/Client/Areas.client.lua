@@ -67,7 +67,7 @@ local function makeBarrier(area)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Front
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 40
+	gui.PixelsPerStud = 16
 	gui.LightInfluence = 0
 	gui.Parent = board
 	local list = Instance.new("UIListLayout")

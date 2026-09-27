@@ -147,7 +147,7 @@ local function buildGate(r)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Front
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 50
+	gui.PixelsPerStud = 20
 	gui.LightInfluence = 0.2
 	gui.Parent = notice
 	local head = Instance.new("TextLabel")

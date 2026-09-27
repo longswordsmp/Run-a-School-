@@ -58,7 +58,7 @@ function HQ.build(town, Kit)
 		local g = Instance.new("SurfaceGui")
 		g.Face = Enum.NormalId.Front
 		g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-		g.PixelsPerStud = 20
+		g.PixelsPerStud = 10
 		g.LightInfluence = 0
 		g.Parent = pane
 		local sky = Instance.new("Frame")

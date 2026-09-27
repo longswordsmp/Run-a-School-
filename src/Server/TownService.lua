@@ -128,6 +128,10 @@ function TownService.start()
 		end
 	end
 	town.Parent = workspace
+	-- (the shop rows fill Downtown's empty frontage: they look for clear lots, so the town has to be
+	-- in the world first)
+	local ok, err = pcall(function() require(script.Parent.TownInfill).build(town, Kit) end)
+	if not ok then warn("[Town] TownInfill", err) end
 	TownService.root = town
 	TownService.wireElevator(town)
 end

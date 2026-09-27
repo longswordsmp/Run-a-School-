@@ -78,6 +78,9 @@ local function buildFolder(parent, f)
 	local stamp = part(m, "Stamp", Vector3.new(0.7, 0.12, 0.7), base * CFrame.new(0.35, 0.01, -0.5), rgb(105, 45, 150))
 	local g2 = Instance.new("SurfaceGui")
 	g2.Face = Enum.NormalId.Top
+	-- (a 0.7-stud stamp: on the default 800 x 600 canvas the 16 of them cost 7.7 Mpx of texture)
+	g2.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	g2.PixelsPerStud = 60
 	g2.Parent = stamp
 	local t2 = Instance.new("TextLabel")
 	t2.Size = UDim2.fromScale(1, 1)

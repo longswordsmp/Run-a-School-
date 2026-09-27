@@ -78,7 +78,7 @@ local function sign(p, face, text, color, font, stroke)
 	g.Face = face
 	g.LightInfluence = 0
 	g.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	g.PixelsPerStud = 30
+	g.PixelsPerStud = 16
 	g.Parent = p
 	local t = Instance.new("TextLabel")
 	t.Name = "Label"
