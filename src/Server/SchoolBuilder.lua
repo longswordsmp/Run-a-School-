@@ -327,7 +327,7 @@ local function buildFloor(school, L, f, floors, look, isRoof)
 		{ a = -27, b = -21, bottom = ft, top = ft + 9, kind = "door" },
 		{ a = 21, b = 27, bottom = ft, top = ft + 9, kind = "door" },
 	} or windowsAt({ -24, 24 }, 7, sill, top)
-	wallX(walls, L, ZB, -BX, BX, y0, y1, back, wall, trim)
+	wallX(walls, L, ZB, -BX - WT / 2, BX + WT / 2, y0, y1, back, wall, trim)
 	wallZ(walls, L, -BX, ZB + WT / 2, ZF - WT / 2, y0, y1, windowsAt({ -55, -41, -27, 8 }, 8, sill, top), wall, trim)
 	wallZ(walls, L, BX, ZB + WT / 2, ZF - WT / 2, y0, y1, windowsAt({ -55, -41, -27, 8 }, 8, sill, top), wall, trim)
 	-- inside skin: pale plaster above a wainscot band, cut around the same openings
@@ -1829,10 +1829,11 @@ function SchoolBuilder.build(plot, opts)
 	wingG.gym, wingG.library = nil, nil
 	buildWings(school, L, look, wingG, storeys, opts.name)
 	local Annex = require(script.Parent.SchoolAnnex)
-	Annex.build(school, L, look, opts.tier or 1, g, {
+	local okAnnex, annexErr = pcall(Annex.build, school, L, look, opts.tier or 1, g, {
 		part = part, cyl = cyl, ball = ball, wedge = wedge, text = surfaceText, light = light,
 		wallX = wallX, wallZ = wallZ, windowsAt = windowsAt, dome = dome,
 	}, roofY)
+	if not okAnnex then warn("[SchoolBuilder] annex", annexErr) end
 	-- anyone standing in a room that's shut now (a rebuild at a lower tier: prestige, a released
 	-- plot) is put back in the classroom instead of being sealed in
 	for _, pl in game:GetService("Players"):GetPlayers() do

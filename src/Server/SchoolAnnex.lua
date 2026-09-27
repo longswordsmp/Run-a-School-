@@ -122,9 +122,9 @@ function Annex.build(school, L, look, tier, g, H, roofY)
 	-- a closed door with the sign saying when the room opens. at: CFrame of the doorway's middle at
 	-- the floor, facing the side the sign is read from; w: its width
 	local function shut(at, w, r)
-		part(m, "ShutDoor", Vector3.new(w, 10, 0.5), at * CFrame.new(0, 5, 0), look.door or rgb(90, 90, 100))
+		part(m, "ShutDoor", Vector3.new(w, 9, 0.5), at * CFrame.new(0, 4.5, 0), look.door or rgb(90, 90, 100))
 		part(m, "ShutDoorBar", Vector3.new(w * 0.8, 0.4, 0.7), at * CFrame.new(0, 4.6, -0.1), rgb(200, 200, 206), Enum.Material.Metal)
-		local s = part(m, "OpensSign", Vector3.new(w + 1.6, 2.6, 0.2), at * CFrame.new(0, 7.3, -0.35), rgb(255, 250, 235))
+		local s = part(m, "OpensSign", Vector3.new(w - 0.4, 2.6, 0.2), at * CFrame.new(0, 6.4, -0.35), rgb(255, 250, 235))
 		text(s, Enum.NormalId.Front, ("\u{1F512} %s\nOPENS AT %s"):format(r.name, tierName(r.tier)), rgb(40, 40, 50), rgb(255, 250, 235), Enum.Font.GothamBlack)
 	end
 	local roomById = {}
@@ -359,7 +359,7 @@ function Annex.build(school, L, look, tier, g, H, roofY)
 		local quiet = part(r, "QuietSign", Vector3.new(0.2, 1.6, 4.4), L(54.9, F + 4.4, -72), rgb(255, 250, 235))
 		text(quiet, Enum.NormalId.Left, "\u{1F92B} QUIET PLEASE", rgb(40, 40, 50), rgb(255, 250, 235), Enum.Font.FredokaOne)
 		part(r, "BookStack", Vector3.new(1, 1.2, 1.4), L(56.5, F + 4, -69.5), rgb(220, 60, 60))
-		if g and g.dome then H.dome(m, L, cx, TOP + 1, midZ, 22, look) end
+		if g and g.dome then H.dome(shell, L, cx, TOP + 1, midZ, 22, look) end
 	end
 	return m
 end
