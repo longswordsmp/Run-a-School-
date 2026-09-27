@@ -1253,6 +1253,8 @@ do
 	-- one card: the colour with the studs, the 3D icon, the name on top,
 	-- the price tilted into the corner, what it does and a buy button along the bottom
 	local cards = {}
+	-- (the ones that sparkle: the big passes)
+	local SPECIAL = { VIP = true, StarterPack = true, DiamondBoard = true, GoldenBoard = true, Cash1w = true }
 	local function card(parent, key, def, onBuy, i)
 		local look = CARD[key] or { def.name, "", UI.C.blue }
 		local color = look[3]
@@ -1267,6 +1269,13 @@ do
 		UI.label(c, { Name = "Caption", Text = look[2], Size = UDim2.new(1, -20, 0, 22), Position = UDim2.new(0, 10, 1, -88), ZIndex = 15, stroke = 2.5 })
 		local buy = UI.button(c, { text = "", color = UI.C.green, size = UDim2.new(1, -28, 0, 42), position = UDim2.new(0.5, 0, 1, -12), anchor = Vector2.new(0.5, 1), font = UI.BIG })
 		lift(buy.button, 16)
+		-- (a glint of its own every few seconds, staggered; the special ones sparkle and shine too)
+		UI.shineEvery(buy.glint, 4.5 + (i % 5) * 0.7)
+		if SPECIAL[key] then
+			local cardShine = UI.shine(c, { zindex = 17, strength = 0.3 })
+			UI.shineEvery(cardShine, 3 + (i % 3) * 0.5)
+			UI.twinkle(c, { zindex = 18, every = 0.8 })
+		end
 		local owned = false
 		local glow = UI.glow(c, UI.lighten(color, 0.35), { alpha = 0, spread = 5 })
 		local sc = Instance.new("UIScale")
@@ -1336,6 +1345,8 @@ do
 	lift(boostBtn.button, 16)
 	local boostGlow = UI.glow(boostBtn.button, rgb(150, 255, 150), { spread = 5 })
 	UI.pulse(boostGlow, 0.35, 1, 1.6)
+	UI.shineEvery(boostBtn.glint, 2.2)
+	UI.twinkle(boost, { zindex = 19, every = 0.45, max = 30 })
 	local boostPrice = UI.label(boost, { Name = "Price", Text = "25 R$", Font = UI.BIG, Size = UDim2.fromOffset(120, 40), Position = UDim2.new(1, -262, 0.5, -62), Rotation = -12, ZIndex = 19, stroke = 4 })
 	-- the next doublings and what each costs: the one you'd buy now lit up
 	local price = {}
@@ -1839,6 +1850,8 @@ local function tileButton(caption, color, order)
 	-- a glint that sweeps across now and then; hover grows it, lights a glow round it and glints it;
 	-- pressing dips it onto the lip
 	local glint = UI.shine(face, { zindex = 9, strength = 0.2 })
+	-- (every tile glints on its own clock, staggered: the same life on all of them, none singled out)
+	UI.shineEvery(glint, 5.5 + (order % 7) * 0.8)
 	local glow = UI.glow(lip, UI.lighten(color, 0.3), { alpha = 0, spread = 6 })
 	glow.ZIndex = 0
 	for _, r in glow:GetChildren() do r.ZIndex = 0 end
@@ -1880,19 +1893,13 @@ sideButton(2, "\u{2B06}\u{FE0F}", "Upgrades", UI.C.orange, panels.Upgrades)
 -- (the Board, the Yearbook, the school's name, the Files and Co-op are places in the world now:
 -- PlacesService; the Daily rewards pop up by themselves and the Quest Log opens from the quest card)
 sideButton(6, "\u{2699}\u{FE0F}", "Settings", UI.C.navy, panels.Settings)
--- the Store tile stays green, with a glow breathing round it and a glint every few seconds; its
+-- the Store tile is like the others (tomas: "green always has a glow unlike the others"); its
 -- window's title bar is the rainbow (tomas, 2026-09-27: "the button green but when you click it the
 -- gui is rainbow ... the part where it says Store, behind that")
 local storeTile = sideButton(0, "\u{1F48E}", "Store", Color3.fromRGB(40, 190, 90), panels.Store)
 do
 	local t = storeTile
-	UI.pulse(t.glow, 0.5, 1, 1.8)
-	task.spawn(function()
-		while t.button.Parent do
-			task.wait(2.6)
-			if t.button.Visible then UI.sweep(t.glint, 0.7) end
-		end
-	end)
+	_ = t
 	local p = panels.Store
 	local acc = 0
 	RunService.RenderStepped:Connect(function(dt)
@@ -2096,6 +2103,8 @@ do
 	lift(buy.button, 32)
 	local no = UI.button(card, { name = "NotNow", text = "Not now", color = UI.C.grey, size = UDim2.fromOffset(98, 36), position = UDim2.new(1, -10, 1, -13), anchor = Vector2.new(1, 1) })
 	lift(no.button, 32)
+	UI.shineEvery(buy.glint, 1.8)
+	UI.twinkle(card, { zindex = 35, every = 0.7 })
 	local current, token = nil, 0
 	local function hide()
 		token += 1

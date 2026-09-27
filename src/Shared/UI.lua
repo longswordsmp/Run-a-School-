@@ -211,6 +211,79 @@ if game:GetService("RunService"):IsClient() then
 	end)
 end
 
+-- a shine that glints on its own clock (for the few things that should always catch the eye: the
+-- shared scheduler above deals one glint every few seconds among everything on screen, so in a full
+-- panel any one thing glints about once a minute)
+function UI.shineEvery(overlay, period)
+	if not overlay then return end
+	task.spawn(function()
+		task.wait(math.random() * period)
+		while overlay.Parent do
+			if onScreen(overlay) then UI.sweep(overlay, 0.6) end
+			task.wait(period * (0.85 + math.random() * 0.3))
+		end
+	end)
+end
+
+-- sparkles on something special (tomas: "shines that are actually animated"): little four-point stars
+-- popping in at random spots over it, turning as they grow and shrink away. opts: every (s, default
+-- 0.6), color, zindex, min/max (px)
+function UI.twinkle(frame, opts)
+	opts = opts or {}
+	local every = opts.every or 0.6
+	task.spawn(function()
+		while frame.Parent do
+			task.wait(every * (0.6 + math.random() * 0.8))
+			if frame.Parent and onScreen(frame) then
+				local px = math.random(opts.min or 14, opts.max or 26)
+				local s = Instance.new("Frame")
+				s.Name = "Twinkle"
+				s.BackgroundTransparency = 1
+				s.AnchorPoint = Vector2.new(0.5, 0.5)
+				s.Size = UDim2.fromOffset(px, px)
+				s.Position = UDim2.fromScale(0.08 + math.random() * 0.84, 0.08 + math.random() * 0.84)
+				s.Rotation = math.random(0, 30)
+				s.ZIndex = opts.zindex or (frame.ZIndex + 5)
+				-- (a four-point star: two long thin diamonds crossed, and a bright dot in the middle)
+				for _, r in { 0, 90 } do
+					local arm = Instance.new("Frame")
+					arm.BorderSizePixel = 0
+					arm.BackgroundColor3 = opts.color or Color3.new(1, 1, 1)
+					arm.AnchorPoint = Vector2.new(0.5, 0.5)
+					arm.Position = UDim2.fromScale(0.5, 0.5)
+					arm.Size = UDim2.fromScale(1, 0.22)
+					arm.Rotation = r
+					arm.ZIndex = s.ZIndex
+					local g = Instance.new("UIGradient")
+					g.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.5, 0), NumberSequenceKeypoint.new(1, 1) })
+					g.Parent = arm
+					Instance.new("UICorner", arm).CornerRadius = UDim.new(1, 0)
+					arm.Parent = s
+				end
+				local dot = Instance.new("Frame")
+				dot.BorderSizePixel = 0
+				dot.BackgroundColor3 = Color3.new(1, 1, 1)
+				dot.AnchorPoint = Vector2.new(0.5, 0.5)
+				dot.Position = UDim2.fromScale(0.5, 0.5)
+				dot.Size = UDim2.fromScale(0.3, 0.3)
+				dot.ZIndex = s.ZIndex
+				Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+				dot.Parent = s
+				local sc = Instance.new("UIScale")
+				sc.Scale = 0
+				sc.Parent = s
+				s.Parent = frame
+				TweenService:Create(sc, TweenInfo.new(0.28, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+				TweenService:Create(s, TweenInfo.new(0.75, Enum.EasingStyle.Linear), { Rotation = s.Rotation + 90 }):Play()
+				task.delay(0.4, function()
+					if s.Parent then TweenService:Create(sc, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Scale = 0 }):Play() end
+				end)
+				task.delay(0.8, function() s:Destroy() end)
+			end
+		end
+	end)
+end
+
 -- a sunburst: bars of light turning slowly behind something (a prize, a 3D icon). size in px
 local bursts = setmetatable({}, { __mode = "k" })
 function UI.burst(parent, color, size, opts)
@@ -495,7 +568,7 @@ function UI.button(parent, opts)
 	b.Parent = parent
 	dress()
 
-	local api = { button = b, label = lbl }
+	local api = { button = b, label = lbl, glint = shineOverlay }
 	function api.setColor(c)
 		grad.Color = ColorSequence.new(lighten(c, 0.35), c)
 		if lip then lip.BackgroundColor3 = darken(c, 0.45) end

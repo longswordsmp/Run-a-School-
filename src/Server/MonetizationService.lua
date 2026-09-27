@@ -175,6 +175,8 @@ function MonetizationService.grantProduct(player, key)
 	if p then p.stats.robux = (p.stats.robux or 0) + product.robux end
 	Remotes.Notify:FireClient(player, "Thank you! " .. product.name .. " delivered.", "good")
 	Remotes.Sfx:FireClient(player, "Buy")
+	-- (money bought: it rains money, on their screen and round them: Celebrate.client)
+	if product.boost or product.seconds then Remotes.Push:FireClient(player, "celebrate", { kind = "money", big = product.boost == true }) end
 	Signals.fire("product", player, key)
 	return true
 end
