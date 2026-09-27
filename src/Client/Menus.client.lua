@@ -1220,7 +1220,6 @@ do
 		Luck = { "2x Luck", "x2 luck on buses", rgb(70, 200, 90) },
 		AutoCollect = { "Auto Collect", "Max janitor cart", rgb(160, 90, 240) },
 		LongLock = { "Long Lock", "+30s gate lock", rgb(40, 190, 180) },
-		TeleportHome = { "Home Button", "Teleport home", rgb(255, 120, 90) },
 		OfflinePlus = { "Offline+", "50% for 12 hours", rgb(110, 90, 220) },
 		Cash10m = { "Tuition Pack", "10 min of tuition", rgb(70, 200, 90) },
 		Cash1h = { "Tuition Bag", "1 hour of tuition", rgb(50, 170, 90) },

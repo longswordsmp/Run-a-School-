@@ -26,12 +26,41 @@ local function isPlayerChar(model)
 	return Players:GetPlayerFromCharacter(model) ~= nil
 end
 
+-- the name tags ride on the body, not the head (tomas, 2026-09-27: "students names are like
+-- stuttering while walking"; measured: a walking kid's head moves unevenly frame to frame, its speed
+-- swinging between about half and double its root's, as the walk bobs it, and every tag hangs off the
+-- head). The tag stays the head's child (a dozen scripts look for it there) but is drawn at the root,
+-- raised by how far the head sits above it, so it glides with the body.
+local function steadyTag(bb, head, root)
+	if not bb:IsA("BillboardGui") or bb.Adornee then return end
+	local lift = head.Position.Y - root.Position.Y
+	if lift <= 0 or lift > 8 then return end
+	local base = bb.StudsOffsetWorldSpace
+	bb.Adornee = root
+	bb.StudsOffsetWorldSpace = base + Vector3.new(0, lift, 0)
+	-- (the server setting a new offset: lift it again)
+	local mine = bb.StudsOffsetWorldSpace
+	bb:GetPropertyChangedSignal("StudsOffsetWorldSpace"):Connect(function()
+		if bb.StudsOffsetWorldSpace ~= mine then
+			mine = bb.StudsOffsetWorldSpace + Vector3.new(0, lift, 0)
+			bb.StudsOffsetWorldSpace = mine
+		end
+	end)
+end
+local function steadyTags(model, root)
+	local head = model:FindFirstChild("Head")
+	if not head or not head:IsA("BasePart") then return end
+	for _, c in head:GetChildren() do steadyTag(c, head, root) end
+	head.ChildAdded:Connect(function(c) task.defer(steadyTag, c, head, root) end)
+end
+
 local function track(model)
 	local root = model.PrimaryPart
 	-- (Ambient: moved on this client, never by the server: kids who ride on what they sit on (Decor),
 	-- the cutscenes' actors)
 	if not root or tracked[root] or isPlayerChar(model) or model:GetAttribute("Ambient") then return end
 	tracked[root] = { snaps = {}, wrote = nil }
+	steadyTags(model, root)
 	root.AncestryChanged:Connect(function()
 		if not root:IsDescendantOf(workspace) then tracked[root] = nil end
 	end)
