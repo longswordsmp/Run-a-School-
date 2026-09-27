@@ -226,7 +226,7 @@ local function dropBoard(job, at)
 		board:Destroy()
 		GearService.give(who, "Hoverboard")
 		Remotes.Announce:FireClient(who, "\u{1F6F9} HOVERBOARD!", Color3.fromRGB(150, 110, 255))
-		Remotes.Notify:FireClient(who, "It's yours to keep: equip it to ride 75% faster. Now find that student!", "good")
+		Remotes.Notify:FireClient(who, "It's yours to keep: equip it to ride more than twice as fast. Now find that student!", "good")
 		phase(who, "Sneak into the Great Hall: Desk 5, on the left. Monitors who see you give chase!")
 		job.hasBoard = true
 	end)

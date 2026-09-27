@@ -39,16 +39,21 @@ local function energized(player)
 	return (player:GetAttribute("EnergyUntil") or 0) > workspace:GetServerTimeNow()
 end
 
-MoveService.HOVER = 1.75 -- (the hoverboard beats sprinting: 38.5, and it never runs out)
+MoveService.HOVER = 2.2 -- (the hoverboard: 48 studs/s, well past a sprint's 35, and it never runs out)
+MoveService.GOLDEN = 1.3 -- (the Golden Hoverboard pass: 63 studs/s)
+MoveService.SUPER = 1.25 -- (the Super Sneakers pass: every speed on foot)
 function MoveService.mult(player)
 	-- (on the hoverboard: one steady speed, no sprinting or sneaking on top)
-	if player:GetAttribute("Hover") then return MoveService.HOVER end
-	local sneak = SNEAK * (player:GetAttribute("SilentSneakers") and 1.35 or 1)
+	if player:GetAttribute("Hover") then
+		return MoveService.HOVER * (player:GetAttribute("Pass_GoldenBoard") and MoveService.GOLDEN or 1)
+	end
+	local super = player:GetAttribute("Pass_SuperSpeed") and MoveService.SUPER or 1
+	local sneak = SNEAK * (player:GetAttribute("SilentSneakers") and 1.35 or 1) * super
 	-- (a kid in a cardboard box shuffles)
 	if player:GetAttribute("Boxed") then return sneak end
 	local s = state[player]
-	if not s or not s.mode then return 1 end
-	if s.mode == "sprint" then return SPRINT * (energized(player) and 1.1 or 1) end
+	if not s or not s.mode then return super end
+	if s.mode == "sprint" then return SPRINT * (energized(player) and 1.1 or 1) * super end
 	return sneak
 end
 

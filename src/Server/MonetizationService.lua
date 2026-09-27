@@ -5,9 +5,14 @@
 --   Products: MarketplaceService.ProcessReceipt grants them once per receipt (receipt ids are kept in
 --     the saved profile so a retried receipt is never granted twice).
 -- Nothing here ever opens a purchase prompt by itself; the client's Store panel asks via "buy".
+-- The MONEY BOOST (Config.MoneyBoost): one button; every purchase adds +1x to all your tuition, x2 up to
+-- x100, forever (kept in the buyer's own save, attribute MoneyBoost). Each price band is a product.
+-- In Studio, anything without an id yet is a free test purchase; live, it stays out of the store.
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local STUDIO = RunService:IsStudio()
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Data = require(script.Parent.DataService)
@@ -49,6 +54,38 @@ local function applyPass(player, key)
 		p.offlineRateMult = 2 -- 50 %
 	end
 	if key == "VIP" or key == "LongLock" then PlotService.updateIncome(player) end
+	-- the Starter Pack pays out once per save
+	if key == "StarterPack" and p and not p.starterPackGiven then
+		p.starterPackGiven = true
+		Data.addCash(player, 25000)
+		local pool = {}
+		for _, s in Config.Students do
+			if s.rarity == "Rare" then table.insert(pool, s) end
+		end
+		local host = Data.hostOf(player)
+		local LetterService = require(script.Parent.LetterService)
+		if not LetterService.deliver(host, pool[math.random(#pool)], true) then
+			local hp = Data.get(player)
+			if hp then
+				hp.pendingBench = hp.pendingBench or {}
+				table.insert(hp.pendingBench, pool[math.random(#pool)].id)
+			end
+		end
+		local GearService = require(script.Parent.GearService)
+		for _, g in Config.Gear do
+			if g.kind == "use" then GearService.give(player, g.id, 3) end
+		end
+	end
+	-- the Golden Hoverboard comes with a hoverboard, whether or not you've won Grindle's yet
+	if key == "GoldenBoard" then
+		task.defer(function()
+			local GearService = require(script.Parent.GearService)
+			if GearService.has and not GearService.has(player, "Hoverboard") then GearService.give(player, "Hoverboard") end
+		end)
+	end
+	if key == "SuperSpeed" or key == "GoldenBoard" then
+		task.defer(function() require(script.Parent.StealService).setSpeed(player) end)
+	end
 	Signals.fire("pass", player, key)
 end
 
@@ -108,6 +145,19 @@ GRANTS.LockRefresh = function(player)
 	local plot = PlotService.getPlot(player)
 	if plot then plot:SetAttribute("CooldownUntil", 0) end
 end
+-- the MONEY BOOST: +1x, up to the max, in the buyer's own save
+local function boostUp(player)
+	local own = Data.own(player)
+	if not own then return end
+	own.moneyBoost = math.min(Config.MoneyBoost.max, (own.moneyBoost or 1) + 1)
+	player:SetAttribute("MoneyBoost", own.moneyBoost)
+	PlotService.updateIncome(Data.hostOf(player))
+	Remotes.Announce:FireClient(player, ("\u{1F4B0} MONEY BOOST x%d!"):format(own.moneyBoost), Color3.fromRGB(255, 205, 60))
+	Remotes.Sfx:FireClient(player, "StingParty")
+end
+for _, b in Config.MoneyBoost.bands do
+	GRANTS[b.key] = boostUp
+end
 -- open a part of town early (AreaService; kept in the buyer's own save)
 for _, product in Config.Products do
 	if product.area then
@@ -166,34 +216,63 @@ MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, id, p
 	if ok and owns then MonetizationService.grantPass(player, pass.key) end
 end)
 
+-- (an item is on sale once it has an id; in Studio everything is, as a free test purchase)
+local function ready(x) return x.id ~= 0 or STUDIO end
+
 -- the client's Store panel: what's for sale and what you own
 Actions.register("store", function(player)
 	local passes, products = {}, {}
 	for _, x in Config.Passes do
-		table.insert(passes, { key = x.key, owned = MonetizationService.has(player, x.key), ready = x.id ~= 0 })
+		table.insert(passes, { key = x.key, owned = MonetizationService.has(player, x.key), ready = ready(x) })
 	end
 	for _, x in Config.Products do
-		table.insert(products, { key = x.key, ready = x.id ~= 0 })
+		table.insert(products, { key = x.key, ready = ready(x) })
 	end
-	return { ok = true, passes = passes, products = products }
+	local own = Data.own(player)
+	local level = own and own.moneyBoost or 1
+	local nextProduct, nextLevel = Config.boostProductFor(level)
+	return { ok = true, passes = passes, products = products,
+		boost = { level = level, max = Config.MoneyBoost.max, nextLevel = nextLevel, robux = nextProduct and nextProduct.robux, ready = nextProduct ~= nil and ready(nextProduct) } }
 end)
 
 -- the client asks to buy; the prompt only ever opens because the player pressed a button
 Actions.register("buy", function(player, p, kind, key)
-	if kind == "pass" then
+	if kind == "boost" then
+		local own = Data.own(player)
+		local product = Config.boostProductFor(own and own.moneyBoost or 1)
+		if not product then return { ok = false, err = "You're at the max: x" .. Config.MoneyBoost.max .. "!" } end
+		if product.id == 0 then
+			if not STUDIO then return { ok = false, err = "Not on sale yet" } end
+			MonetizationService.grantProduct(player, product.key)
+			Remotes.Notify:FireClient(player, "(Studio test purchase: free)", "info")
+			return { ok = true }
+		end
+		MarketplaceService:PromptProductPurchase(player, product.id)
+		return { ok = true }
+	elseif kind == "pass" then
 		local pass = passByKey[key]
-		if not pass or pass.id == 0 then return { ok = false, err = "Coming soon!" } end
+		if not pass or not ready(pass) then return { ok = false, err = "Not on sale yet" } end
 		if MonetizationService.has(player, key) then return { ok = false, err = "You already own it" } end
+		if pass.id == 0 then
+			MonetizationService.grantPass(player, key)
+			Remotes.Notify:FireClient(player, "(Studio test purchase: free)", "info")
+			return { ok = true }
+		end
 		MarketplaceService:PromptGamePassPurchase(player, pass.id)
 		return { ok = true }
 	elseif kind == "product" then
 		local product = productByKey[key]
-		if not product or product.id == 0 then return { ok = false, err = "Coming soon!" } end
+		if not product or not ready(product) then return { ok = false, err = "Not on sale yet" } end
 		if key == "LockRefresh" then
 			local plot = PlotService.getPlot(player)
 			if not plot or (plot:GetAttribute("CooldownUntil") or 0) <= workspace:GetServerTimeNow() then
 				return { ok = false, err = "Your gate can already lock!" }
 			end
+		end
+		if product.id == 0 then
+			MonetizationService.grantProduct(player, key)
+			Remotes.Notify:FireClient(player, "(Studio test purchase: free)", "info")
+			return { ok = true }
 		end
 		MarketplaceService:PromptProductPurchase(player, product.id)
 		return { ok = true }
@@ -226,19 +305,32 @@ function MonetizationService.start()
 		end
 		return 1
 	end)
+	-- the MONEY BOOST: the best one in the crew counts for the whole school (like VIP)
+	table.insert(PlotService.multHooks, function(player)
+		local best = 1
+		for _, pl in Data.schoolPlayers(player) do
+			best = math.max(best, pl:GetAttribute("MoneyBoost") or 1)
+		end
+		return best
+	end)
 	-- 2x Luck while standing near the buses
 	table.insert(HallService.playerLuckHooks, function(player)
 		return player:GetAttribute("Pass_Luck") and 2 or 1
 	end)
-	Players.PlayerAdded:Connect(function(player)
+	local function joined(player)
 		-- profiles load asynchronously; wait for this player's
 		for _ = 1, 60 do
 			if Data.get(player) then break end
 			task.wait(0.5)
 		end
-		if player.Parent then checkPasses(player) end
-	end)
-	for _, player in Players:GetPlayers() do task.spawn(checkPasses, player) end
+		if not player.Parent then return end
+		local own = Data.own(player)
+		player:SetAttribute("MoneyBoost", own and own.moneyBoost or 1)
+		PlotService.updateIncome(Data.hostOf(player))
+		checkPasses(player)
+	end
+	Players.PlayerAdded:Connect(joined)
+	for _, player in Players:GetPlayers() do task.spawn(joined, player) end
 end
 
 return MonetizationService

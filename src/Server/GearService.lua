@@ -396,16 +396,21 @@ local function useGear(player, def, tool)
 end
 
 ---------------------------------------------------------------------------
--- the Hoverboard: equipped, you stand on a glowing board a little off the ground and ride 75% faster
+-- the Hoverboard: equipped, you stand on a glowing board a little off the ground and ride 2.2x as fast
 -- (MoveService reads the Hover attribute); unequipped, you step off. Off inside the secured places.
 -- The board points the way you're going (its -Z is your front). HoverRide.client gives every rider a
 -- surf stance and makes the board bob and bank into turns (through the weld HoverWeld's C0, locally).
 ---------------------------------------------------------------------------
 local BOARD = rgb(120, 60, 200)
 local GLOW = rgb(120, 230, 255)
-local function buildBoard()
+-- golden: the Golden Hoverboard pass (gold deck and tips, white-gold glow, a sparkle trail)
+local GOLD_DECK, GOLD_GLOW = rgb(245, 190, 40), rgb(255, 240, 170)
+local function buildBoard(golden)
+	local BOARD = golden and GOLD_DECK or BOARD
+	local GLOW = golden and GOLD_GLOW or GLOW
 	local m = Instance.new("Model")
 	m.Name = "HoverboardRide"
+	if golden then m:SetAttribute("Golden", true) end
 	local function bp(name, size, cf, color, material, shape)
 		local b = Instance.new("Part")
 		b.Name = name
@@ -421,16 +426,20 @@ local function buildBoard()
 	end
 	-- the deck, and its rounded tips turned up a little at both ends (a flat disc each: a cylinder with
 	-- its axis stood upright; X is its thickness)
-	local deck = bp("Deck", Vector3.new(1.6, 0.24, 3.9), CFrame.new(), BOARD)
+	local deck = bp("Deck", Vector3.new(1.6, 0.24, 3.9), CFrame.new(), BOARD, golden and Enum.Material.Metal or nil)
+	if golden then deck.Reflectance = 0.2 end
 	m.PrimaryPart = deck
 	for _, s in { -1, 1 } do
 		bp("Tip", Vector3.new(0.24, 1.6, 1.6), CFrame.new(0, 0.1, s * 2.05) * CFrame.Angles(math.rad(s * 13), 0, 0) * CFrame.Angles(0, 0, math.rad(90)), BOARD, nil, Enum.PartType.Cylinder)
 	end
-	-- grip tape with a yellow centre line, and chrome rails down both edges
-	bp("Grip", Vector3.new(1.36, 0.04, 3.7), CFrame.new(0, 0.14, 0), rgb(30, 30, 36))
-	bp("Stripe", Vector3.new(0.22, 0.045, 3.4), CFrame.new(0, 0.15, 0), rgb(255, 200, 60))
+	-- grip tape with a yellow centre line, and chrome rails down both edges (the golden board: gold
+	-- tread plate, a white line, gold rails; it's what the rider sees, so it has to read as gold)
+	local grip = bp("Grip", Vector3.new(1.36, 0.04, 3.7), CFrame.new(0, 0.14, 0), golden and rgb(200, 145, 30) or rgb(30, 30, 36), golden and Enum.Material.DiamondPlate or nil)
+	if golden then grip.Reflectance = 0.15 end
+	bp("Stripe", Vector3.new(0.22, 0.045, 3.4), CFrame.new(0, 0.15, 0), golden and rgb(255, 250, 225) or rgb(255, 200, 60), golden and Enum.Material.Neon or nil)
 	for _, s in { -1, 1 } do
-		bp("Rail", Vector3.new(0.1, 0.28, 3.9), CFrame.new(s * 0.82, 0, 0), rgb(205, 208, 220), Enum.Material.Metal)
+		local rail = bp("Rail", Vector3.new(0.1, 0.28, 3.9), CFrame.new(s * 0.82, 0, 0), golden and rgb(255, 215, 90) or rgb(205, 208, 220), Enum.Material.Metal)
+		if golden then rail.Reflectance = 0.3 end
 	end
 	-- underneath: a glow strip and two thruster pods, a ring of light at the bottom of each
 	local glow = bp("Glow", Vector3.new(1.1, 0.06, 2.4), CFrame.new(0, -0.15, 0), GLOW, Enum.Material.Neon)
@@ -440,7 +449,7 @@ local function buildBoard()
 	light.Brightness = 1.6
 	light.Parent = glow
 	for _, s in { -1, 1 } do
-		bp("Thruster", Vector3.new(0.4, 0.95, 0.95), CFrame.new(0, -0.32, s * 1.35) * CFrame.Angles(0, 0, math.rad(90)), rgb(60, 60, 72), Enum.Material.Metal, Enum.PartType.Cylinder)
+		bp("Thruster", Vector3.new(0.4, 0.95, 0.95), CFrame.new(0, -0.32, s * 1.35) * CFrame.Angles(0, 0, math.rad(90)), golden and rgb(150, 105, 25) or rgb(60, 60, 72), Enum.Material.Metal, Enum.PartType.Cylinder)
 		bp("ThrusterRing", Vector3.new(0.08, 0.78, 0.78), CFrame.new(0, -0.53, s * 1.35) * CFrame.Angles(0, 0, math.rad(90)), GLOW, Enum.Material.Neon, Enum.PartType.Cylinder)
 		local a = Instance.new("Attachment")
 		a.Name = "Exhaust"
@@ -457,9 +466,26 @@ local function buildBoard()
 	return m
 end
 
--- ridden only: a ribbon of light off the tail and a shimmer under the thrusters
+-- ridden only: a ribbon of light off the tail and a shimmer under the thrusters (and on a golden
+-- board, sparkles streaming off it)
 local function rideEffects(board)
+	local golden = board:GetAttribute("Golden") == true
+	local BOARD = golden and GOLD_DECK or BOARD
+	local GLOW = golden and GOLD_GLOW or GLOW
 	local deck = board.PrimaryPart
+	if golden then
+		local sp = Instance.new("ParticleEmitter")
+		sp.Name = "GoldSparkles"
+		sp.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		sp.Color = ColorSequence.new(rgb(255, 230, 120), rgb(255, 255, 230))
+		sp.LightEmission = 1
+		sp.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0) })
+		sp.Lifetime = NumberRange.new(0.5, 0.9)
+		sp.Rate = 30
+		sp.Speed = NumberRange.new(0.5, 1.5)
+		sp.SpreadAngle = Vector2.new(180, 180)
+		sp.Parent = deck
+	end
 	local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
 	a0.Name, a1.Name = "TrailL", "TrailR"
 	a0.Position, a1.Position = Vector3.new(-0.7, -0.2, 2), Vector3.new(0.7, -0.2, 2)
@@ -504,7 +530,7 @@ local function ride(player, on)
 	if old then old:Destroy() end
 	if on and not player:GetAttribute("Hover") then
 		hum.HipHeight += LIFT
-		local board = buildBoard()
+		local board = buildBoard(player:GetAttribute("Pass_GoldenBoard") == true)
 		rideEffects(board)
 		-- (under the feet, which are now LIFT off the ground, pointing the way you face)
 		local feet = root.Size.Y / 2 + hum.HipHeight
@@ -601,6 +627,12 @@ Actions.register("gearShop", function(player, p)
 	end
 	return { ok = true, items = items, max = Config.GearUse.max }
 end)
+
+function GearService.has(player, id)
+	local p = Data.get(player)
+	local gear = p and gearOf(p)
+	return gear ~= nil and (gear.owned[id] == true or (gear.uses[id] or 0) > 0)
+end
 
 function GearService.give(player, id, n)
 	local p = Data.get(player)

@@ -18,6 +18,7 @@ local LEAD, TRAIL = 70, 38 -- the leading arm up and out, the trailing one low
 local BOB = 0.07 -- the board rides up and down on its thrusters this much
 local BANK = 0.16 -- lean per radian a second of turning
 local MAX_BANK = rad(20)
+local TRICK = 0.6 -- seconds a jump's spin takes
 
 local riders = {} -- [character] = { motors, weld, base, yaw, roll, t }
 
@@ -78,14 +79,29 @@ RunService.Stepped:Connect(function(_, dt)
 		r.pitch += (pitch - r.pitch) * k
 		local bob = sin(r.t * 2.6) * BOB
 
+		-- a jump is a trick: the board and the rider spin a full turn together while in the air, with a
+		-- tuck of the knees (a rising root is a jump: nothing else lifts a rider that fast)
+		if not r.trick and v.Y > 9 and (not r.trickEnd or r.t - r.trickEnd > 0.4) then r.trick = 0 end
+		local spin, tuck = 0, 0
+		if r.trick then
+			r.trick += dt
+			local a = math.min(1, r.trick / TRICK)
+			spin = (a * a * (3 - 2 * a)) * math.pi * 2
+			tuck = sin(a * math.pi)
+			if a >= 1 then
+				r.trick = nil
+				r.trickEnd = r.t
+			end
+		end
+
 		-- the board: bob, bank, nose up (its -Z is the front, so rolling is about Z)
 		-- (+ about Z tips the top towards -X, the left: a left turn banks left)
-		weld.C0 = r.base * CFrame.new(0, bob, 0) * CFrame.Angles(r.pitch, 0, r.roll)
+		weld.C0 = r.base * CFrame.new(0, bob, 0) * CFrame.Angles(0, spin, 0) * CFrame.Angles(r.pitch, 0, r.roll)
 
 		-- the rider: sunk into bent knees, turned side-on, banked with the board
 		local m = r.motors
-		local flex = FLEX + sin(r.t * 2.6) * 4 -- (the knees soak up the bob)
-		pose(m, "Root", CFrame.new(0, -DROP + bob, 0) * CFrame.Angles(0, 0, r.roll) * CFrame.Angles(0, STANCE, 0))
+		local flex = FLEX + sin(r.t * 2.6) * 4 + tuck * 30 -- (the knees soak up the bob, and tuck in a trick)
+		pose(m, "Root", CFrame.new(0, -DROP + bob - tuck * 0.3, 0) * CFrame.Angles(0, spin, 0) * CFrame.Angles(0, 0, r.roll) * CFrame.Angles(0, STANCE, 0))
 		pose(m, "Waist", CFrame.Angles(rad(8), rad(-14), 0))
 		pose(m, "Neck", CFrame.Angles(rad(-6), rad(-52), 0))
 		-- legs apart along the board (which runs across the body now), knees bent, feet flat
@@ -105,4 +121,28 @@ end)
 
 Players.PlayerRemoving:Connect(function(player)
 	if player.Character then riders[player.Character] = nil end
+end)
+
+-- the rush: while you ride fast, the camera's view widens a little (and settles back when you stop or
+-- step off). Only for your own board, and never while a cutscene has the camera.
+local me = Players.LocalPlayer
+local baseFov
+RunService.RenderStepped:Connect(function(dt)
+	local cam = workspace.CurrentCamera
+	if not cam or cam.CameraType ~= Enum.CameraType.Custom then return end
+	local char = me.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	local riding = root and char:FindFirstChild("HoverboardRide") ~= nil
+	if riding and not baseFov then baseFov = cam.FieldOfView end
+	if not baseFov then return end
+	local target = baseFov
+	if riding then
+		local v = root.AssemblyLinearVelocity
+		target = baseFov + clamp((Vector3.new(v.X, 0, v.Z).Magnitude - 20) / 40, 0, 1) * 12
+	end
+	cam.FieldOfView += (target - cam.FieldOfView) * math.min(1, dt * 4)
+	if not riding and math.abs(cam.FieldOfView - baseFov) < 0.05 then
+		cam.FieldOfView = baseFov
+		baseFov = nil
+	end
 end)

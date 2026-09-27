@@ -94,6 +94,39 @@ player:GetAttributeChangedSignal("FriendsBonus"):Connect(refreshIncome)
 refreshCash()
 refreshIncome()
 
+-- the Money Boost badge on the cash panel's corner (only once you have one)
+local boostBadge = Instance.new("TextLabel")
+boostBadge.Name = "Boost"
+-- (out to the right of the panel, level with it: the chips above cover its top corner)
+boostBadge.AnchorPoint = Vector2.new(0, 0.5)
+boostBadge.Position = UDim2.new(1, 10, 0.5, 0)
+boostBadge.Size = UDim2.fromOffset(82, 40)
+boostBadge.BackgroundColor3 = Color3.fromRGB(255, 200, 50)
+boostBadge.Font = Enum.Font.LuckiestGuy
+boostBadge.TextScaled = true
+boostBadge.TextColor3 = Color3.new(1, 1, 1)
+boostBadge.Rotation = 8
+boostBadge.Visible = false
+boostBadge.ZIndex = 5
+boostBadge.Parent = cashPanel
+corner(boostBadge, 10)
+stroke(boostBadge, 3)
+local badgeText = Instance.new("UIPadding")
+badgeText.PaddingLeft, badgeText.PaddingRight = UDim.new(0, 6), UDim.new(0, 6)
+badgeText.Parent = boostBadge
+local function refreshBoost()
+	local n = player:GetAttribute("MoneyBoost") or 1
+	boostBadge.Visible = n > 1
+	boostBadge.Text = "x" .. n
+	if n > 1 then
+		local sc = boostBadge:FindFirstChildOfClass("UIScale") or Instance.new("UIScale", boostBadge)
+		sc.Scale = 1.4
+		TweenService:Create(sc, TweenInfo.new(0.35, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	end
+end
+player:GetAttributeChangedSignal("MoneyBoost"):Connect(refreshBoost)
+refreshBoost()
+
 -- School IQ and Reputation chips above the cash panel
 local chips = Instance.new("Frame")
 chips.Name = "Chips"

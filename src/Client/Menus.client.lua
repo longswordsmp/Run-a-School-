@@ -1102,11 +1102,93 @@ do
 	local panel = UI.panel(gui, { name = "Store", title = "STORE", color = Color3.fromRGB(40, 190, 90), size = UDim2.fromOffset(820, 560) })
 	panels.Store = panel
 	local pages = {}
-	for i = 1, 2 do
+	for i = 1, 3 do
 		pages[i] = UI.new("Frame", { Name = "Page" .. i, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -56), Position = UDim2.fromOffset(0, 54), Visible = false, ZIndex = 11, Parent = panel.body })
 	end
 	local rows = { pass = {}, product = {} }
-	local passList = scrollList(pages[1])
+
+	-- page 1: the MONEY BOOST card. One button: every purchase adds +1x to all your tuition, forever,
+	-- x2 up to x100 (MonetizationService; the price climbs as you go).
+	local GOLD = Color3.fromRGB(255, 200, 50)
+	local card = UI.new("Frame", { Name = "BoostCard", BackgroundColor3 = Color3.fromRGB(255, 244, 205), Size = UDim2.new(1, -8, 1, -10), Position = UDim2.fromOffset(4, 4), ZIndex = 12, Parent = pages[1] })
+	UI.corner(card, 20)
+	UI.stroke(card, 4)
+	UI.gradient(card, Color3.fromRGB(255, 250, 225), Color3.fromRGB(255, 225, 150))
+	UI.label(card, { Text = "\u{1F4B0} MONEY BOOST", Font = UI.BIG, TextColor3 = Color3.fromRGB(255, 190, 40), Size = UDim2.new(1, 0, 0, 48), Position = UDim2.fromOffset(0, 8), ZIndex = 13, stroke = 4 })
+	UI.label(card, { Text = "Every purchase adds +1x to ALL your tuition. Forever. Up to x100!", TextColor3 = UI.C.navy, Size = UDim2.new(1, -40, 0, 24), Position = UDim2.fromOffset(20, 56), ZIndex = 13, stroke = 0 })
+	-- now -> next, big
+	local nowL = UI.label(card, { Text = "x1", Font = UI.BIG, TextColor3 = UI.C.white, Size = UDim2.fromOffset(200, 96), Position = UDim2.new(0.5, -250, 0, 84), ZIndex = 13, stroke = 5 })
+	UI.label(card, { Text = "\u{27A1}", Font = UI.BIG, TextColor3 = UI.C.navy, Size = UDim2.fromOffset(100, 70), Position = UDim2.new(0.5, -50, 0, 97), ZIndex = 13, stroke = 0 })
+	local nextL = UI.label(card, { Text = "x2", Font = UI.BIG, TextColor3 = GOLD, Size = UDim2.fromOffset(200, 96), Position = UDim2.new(0.5, 50, 0, 84), ZIndex = 13, stroke = 5 })
+	UI.label(card, { Text = "NOW", Font = UI.BIG, TextColor3 = UI.C.navy, Size = UDim2.fromOffset(200, 22), Position = UDim2.new(0.5, -250, 0, 180), ZIndex = 13, stroke = 0 })
+	UI.label(card, { Text = "NEXT", Font = UI.BIG, TextColor3 = UI.C.navy, Size = UDim2.fromOffset(200, 22), Position = UDim2.new(0.5, 50, 0, 180), ZIndex = 13, stroke = 0 })
+	-- the ladder to x100
+	local barBack = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(230, 215, 180), Size = UDim2.new(1, -120, 0, 24), Position = UDim2.new(0, 60, 0, 212), ZIndex = 13, Parent = card })
+	UI.corner(barBack, 13)
+	UI.stroke(barBack, 3)
+	local barFill = UI.new("Frame", { BackgroundColor3 = GOLD, Size = UDim2.fromScale(0, 1), ZIndex = 14, Parent = barBack })
+	UI.corner(barFill, 13)
+	UI.gradient(barFill, Color3.fromRGB(255, 235, 120), Color3.fromRGB(255, 170, 30))
+	local barText = UI.label(barBack, { Text = "x1 / x100", Font = UI.BIG, Size = UDim2.fromScale(1, 1), ZIndex = 15, stroke = 2 })
+	local boostBtn = UI.button(card, { text = "", color = Color3.fromRGB(40, 190, 90), size = UDim2.fromOffset(300, 66), position = UDim2.new(0.5, 0, 0, 250), anchor = Vector2.new(0.5, 0) })
+	lift(boostBtn.button, 14)
+	local boostNote = UI.label(card, { Text = "", TextColor3 = Color3.fromRGB(110, 90, 70), Size = UDim2.new(1, -40, 0, 22), Position = UDim2.fromOffset(20, 322), ZIndex = 13, stroke = 0 })
+	-- the whole price ladder, up front: one chip per band, the band you're in lit up
+	local bandChips = {}
+	do
+		local price = {}
+		for _, x in Config.Products do price[x.key] = x.robux end
+		local strip = UI.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -60, 0, 40), Position = UDim2.fromOffset(30, 356), ZIndex = 13, Parent = card })
+		UI.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 8), Parent = strip })
+		local from = 2
+		for i, band in Config.MoneyBoost.bands do
+			local chip = UI.new("Frame", { BackgroundColor3 = Color3.fromRGB(255, 255, 255), BackgroundTransparency = 0.35, Size = UDim2.new(0.2, -7, 1, 0), LayoutOrder = i, ZIndex = 13, Parent = strip })
+			UI.corner(chip, 10)
+			local st = UI.stroke(chip, 2)
+			UI.label(chip, { Text = ("x%d-%d  R$%d"):format(from, band.to, price[band.key] or 0), TextColor3 = UI.C.navy, Size = UDim2.new(1, -8, 1, 0), Position = UDim2.fromOffset(4, 0), ZIndex = 14, stroke = 0 })
+			bandChips[i] = { chip = chip, from = from, to = band.to, stroke = st }
+			from = band.to + 1
+		end
+	end
+	boostBtn.button.Activated:Connect(function()
+		if not boostBtn.button.Active then return end
+		call("buy", "boost")
+		task.delay(0.6, function() if panel.frame.Visible then panel.refresh() end end)
+	end)
+	local function showBoost(b)
+		if not b then return end
+		nowL.Text = "x" .. b.level
+		barFill.Size = UDim2.fromScale(math.clamp((b.level - 1) / (b.max - 1), 0, 1), 1)
+		barText.Text = ("x%d / x%d"):format(b.level, b.max)
+		local nxt = b.nextLevel or b.max
+		for _, c in bandChips do
+			local here = nxt >= c.from and nxt <= c.to
+			c.chip.BackgroundColor3 = here and GOLD or Color3.fromRGB(255, 255, 255)
+			c.chip.BackgroundTransparency = here and 0 or (nxt > c.to and 0.7 or 0.35)
+		end
+		if not b.nextLevel then
+			nextL.Text = "MAX"
+			boostBtn.setText("\u{2714} MAXED OUT")
+			boostBtn.setEnabled(false)
+			boostNote.Text = "You've got the biggest boost there is. Legend."
+		elseif not b.ready then
+			nextL.Text = "x" .. b.nextLevel
+			boostBtn.setText("R$ " .. b.robux)
+			boostBtn.setEnabled(false)
+			boostNote.Text = ""
+		else
+			nextL.Text = "x" .. b.nextLevel
+			boostBtn.setText(("BOOST!  R$ %d"):format(b.robux))
+			boostBtn.setEnabled(true)
+			boostBtn.setColor(Color3.fromRGB(40, 190, 90))
+			boostNote.Text = ("Your school earns x%d instead of x%d. Stacks with VIP."):format(b.nextLevel, b.level)
+		end
+	end
+	player:GetAttributeChangedSignal("MoneyBoost"):Connect(function()
+		if panel.frame.Visible then panel.refresh() end
+	end)
+
+	local passList = scrollList(pages[2])
 	for i, x in Config.Passes do
 		local row = shopRow(passList, i, { name = x.key, icon = x.icon, title = x.name, desc = x.desc, sub = "Game pass \u{2022} yours forever", iconBg = Color3.fromRGB(230, 255, 230) })
 		rows.pass[x.key] = row
@@ -1115,8 +1197,10 @@ do
 			call("buy", "pass", x.key)
 		end)
 	end
-	local productList = scrollList(pages[2])
+	local productList = scrollList(pages[3])
 	for i, x in Config.Products do
+		-- (the Money Boost bands are the card on page 1, not rows here)
+		if x.boost then continue end
 		local row = shopRow(productList, i, { name = x.key, icon = x.icon, title = x.name, desc = x.desc, sub = "One-time purchase", iconBg = Color3.fromRGB(230, 245, 255), height = 96 })
 		row.desc.TextWrapped = true
 		row.desc.Size = UDim2.new(1, -280, 0, 34)
@@ -1134,15 +1218,15 @@ do
 	function panel.refresh()
 		local res = call("store")
 		if not res or res.ok == false then return end
+		showBoost(res.boost)
+		-- (anything not on sale yet stays out of the store: no "SOON" buttons)
 		for _, s in res.passes do
 			local row = rows.pass[s.key]
 			local def
 			for _, x in Config.Passes do if x.key == s.key then def = x end end
+			row.frame.Visible = s.ready or s.owned
 			if s.owned then
 				row.buy.setText("\u{2714} OWNED")
-				row.buy.setEnabled(false)
-			elseif not s.ready then
-				row.buy.setText("SOON")
 				row.buy.setEnabled(false)
 			else
 				row.buy.setText(robuxText(def.robux))
@@ -1154,8 +1238,9 @@ do
 			local row = rows.product[s.key]
 			local def
 			for _, x in Config.Products do if x.key == s.key then def = x end end
+			if not row then continue end
+			row.frame.Visible = s.ready
 			if not s.ready then
-				row.buy.setText("SOON")
 				row.buy.setEnabled(false)
 			else
 				row.buy.setText(robuxText(def.robux))
@@ -1165,8 +1250,9 @@ do
 		end
 	end
 	local selectTab = tabs(panel.body, {
+		{ "\u{1F4B0} Money Boost", Color3.fromRGB(255, 180, 40), 240 },
 		{ "\u{1F451} Passes", Color3.fromRGB(40, 190, 90), 220 },
-		{ "\u{1F4B0} Boosts", UI.C.blue, 220 },
+		{ "\u{26A1} Extras", UI.C.blue, 220 },
 	}, function(i)
 		current = i
 		for j, pg in pages do pg.Visible = j == i end

@@ -414,6 +414,8 @@ end
 --   part     which header the card shows ("morning": FIRST MORNING n/7, "ch1": CHAPTER 1 n/13)
 --   short    the card's words (four or fewer); text: the hint underneath
 --   secs/min the reward: max(min, tuition per second x secs); reward: a flat amount instead
+--            (Chapter 1's last steps pay big, $150K up to $2.5M for the Vex Prep Job, so the Board's
+--            $5M comes quickly once the story's done: tomas, 2026-09-26)
 --   guide    what the arrow and the trail point at (Quests.client)
 --   mission  a Config.Missions id the step plays (MissionService hands it out through its giver)
 -- Every step completes from state (QuestService.Done): doing a thing early still counts.
@@ -440,12 +442,12 @@ Config.Tutorial = {
 	{ id = "k06_thief", part = "ch1", icon = "\u{1F451}", short = "Stop, thief!", text = "Mr. Wobblesworth at the fountain needs you", count = 1, secs = 90, min = 5000, guide = "npc:Wobblesworth", mission = "k_tiara" },
 	{ id = "k07_row4", part = "ch1", icon = "\u{1FA91}", short = "Fill 16 desks", text = "Build the last row of desks in your classroom", count = 1, secs = 120, min = 10000, guide = "ghostrow" },
 	-- (the game's real loop: a full school grows by swapping weak kids for better ones)
-	{ id = "k07_swap", part = "ch1", icon = "\u{1F504}", short = "Swap up!", text = "Hold F on your weakest kid to sell them, then enroll a better one from the street", count = 1, secs = 90, min = 8000, guide = "weakest" },
-	{ id = "k08_crew", part = "ch1", icon = "\u{1F690}", short = "Crumpet's Crew", text = "Mr. Wobblesworth has news about Vex's goons", count = 1, secs = 120, min = 10000, guide = "npc:Wobblesworth", mission = "k_crew" },
-	{ id = "k09_map", part = "ch1", icon = "\u{1F5FA}\u{FE0F}", short = "Steal the map", text = "Janitor Stan by the Confiscation Closet has a job", count = 1, secs = 120, min = 10000, guide = "npc:JanitorStan", mission = "k_map" },
-	{ id = "k10_peek", part = "ch1", icon = "\u{1F440}", short = "Scout Vex Prep", text = "Walk up to the Vex Prep gate at the east end of the street", count = 1, secs = 60, min = 10000, guide = "place:VexPrepLookout" },
-	{ id = "k11_pothole", part = "ch1", icon = "\u{1F573}\u{FE0F}", short = "Down the pothole", text = "Climb down the pothole by Vex Prep and find the ladder under the Headmaster's office", count = 1, secs = 120, min = 15000, guide = "sewer" },
-	{ id = "k12_heist", part = "ch1", icon = "\u{1F3EB}", short = "The Vex Prep Job", text = "Mr. Wobblesworth has the plan. Tonight's the night", count = 1, secs = 180, min = 25000, guide = "npc:Wobblesworth", mission = "k_heist" },
+	{ id = "k07_swap", part = "ch1", icon = "\u{1F504}", short = "Swap up!", text = "Hold F on your weakest kid to sell them, then enroll a better one from the street", count = 1, secs = 120, min = 25000, guide = "weakest" },
+	{ id = "k08_crew", part = "ch1", icon = "\u{1F690}", short = "Crumpet's Crew", text = "Mr. Wobblesworth has news about Vex's goons", count = 1, secs = 240, min = 150000, guide = "npc:Wobblesworth", mission = "k_crew" },
+	{ id = "k09_map", part = "ch1", icon = "\u{1F5FA}\u{FE0F}", short = "Steal the map", text = "Janitor Stan by the Confiscation Closet has a job", count = 1, secs = 240, min = 300000, guide = "npc:JanitorStan", mission = "k_map" },
+	{ id = "k10_peek", part = "ch1", icon = "\u{1F440}", short = "Scout Vex Prep", text = "Walk up to the Vex Prep gate at the east end of the street", count = 1, secs = 180, min = 100000, guide = "place:VexPrepLookout" },
+	{ id = "k11_pothole", part = "ch1", icon = "\u{1F573}\u{FE0F}", short = "Down the pothole", text = "Climb down the pothole by Vex Prep and find the ladder under the Headmaster's office", count = 1, secs = 240, min = 400000, guide = "sewer" },
+	{ id = "k12_heist", part = "ch1", icon = "\u{1F3EB}", short = "The Vex Prep Job", text = "Mr. Wobblesworth has the plan. Tonight's the night", count = 1, secs = 900, min = 2500000, guide = "npc:Wobblesworth", mission = "k_heist" },
 	{ id = "board", part = "ch1", icon = "\u{2B50}", short = "Face the Board", text = "Become an Elementary School", count = 1, reward = 0, guide = "panel:Board" },
 }
 -- a short call when a step starts, so every new person and place has been introduced before you meet
@@ -857,7 +859,7 @@ Config.Raids = {
 -- kid rolled from the band for your tier when you get them out.
 ---------------------------------------------------------------------------
 Config.Heist = {
-	guards = 3,
+	guards = 4,
 	patrolSpeed = 7,
 	chaseSpeed = 15,
 	chaseSpeedCarry = 13.5,
@@ -931,7 +933,7 @@ Config.Gear = {
 		desc = "Grab kids out of pens and desks twice as fast" },
 	-- (won, never sold: Headmaster Grindle drops it in Chapter 1's finale)
 	{ id = "Hoverboard", name = "Hoverboard", icon = "\u{1F6F9}", kind = "ride", secs = 0, floor = 0, notSold = true,
-		desc = "Equip it to ride: 75% faster, and silent. (Not inside the Factory, the Lab or Vex Prep.)" },
+		desc = "Equip it to ride more than twice as fast, and silent. Jump for a trick. (Not inside the Factory, the Lab or Vex Prep.)" },
 }
 Config.GearById = {}
 for i, g in Config.Gear do
@@ -1115,35 +1117,74 @@ Config.SecureZones = {
 
 ---------------------------------------------------------------------------
 -- Robux store (docs/DESIGN-v2.md section 13). Create each pass/product on the Creator Dashboard and
--- paste its id here; id = 0 shows as "SOON" in the store and can't be bought.
+-- paste its id here (docs/ROBUX.md lists them all). id = 0: in Studio the button works as a free test
+-- purchase; in a live game the item stays out of the store until it has an id (never a "SOON" button).
 -- Fairness: nothing is ever prompted automatically; paid random items show their odds.
 ---------------------------------------------------------------------------
 Config.Passes = {
-	{ key = "VIP", id = 0, name = "VIP Principal", robux = 499, icon = "\u{1F451}", desc = "x2 tuition forever, VIP tag" },
-	{ key = "Luck", id = 0, name = "2x Luck", robux = 349, icon = "\u{1F340}", desc = "x2 luck on the buses you stand near" },
-	{ key = "AutoCollect", id = 0, name = "Auto Collect", robux = 249, icon = "\u{1F9F9}", desc = "The Janitor's Cart at max level from the start" },
-	{ key = "LongLock", id = 0, name = "Long Lock", robux = 149, icon = "\u{1F510}", desc = "+30s every time you lock your gate" },
-	{ key = "TeleportHome", id = 0, name = "Teleport Home", robux = 99, icon = "\u{1F3E0}", desc = "A button that takes you home (not while carrying)" },
-	{ key = "OfflinePlus", id = 0, name = "Offline Tuition+", robux = 149, icon = "\u{1F319}", desc = "Earn 50% for up to 12h while offline (was 25% for 2h)" },
+	{ key = "StarterPack", id = 0, name = "Starter Pack", robux = 29, icon = "\u{1F381}", desc = "$25K, a Rare kid on your bench and 3 of every gadget, once" },
+	{ key = "VIP", id = 0, name = "VIP Principal", robux = 149, icon = "\u{1F451}", desc = "x2 tuition forever, VIP tag" },
+	{ key = "SuperSpeed", id = 0, name = "Super Sneakers", robux = 49, icon = "\u{1F45F}", desc = "Run 25% faster, forever" },
+	{ key = "GoldenBoard", id = 0, name = "Golden Hoverboard", robux = 79, icon = "\u{1F6F9}", desc = "Ride a golden board: 30% faster, with a sparkle trail (and get one right away)" },
+	{ key = "Luck", id = 0, name = "2x Luck", robux = 99, icon = "\u{1F340}", desc = "x2 luck on the buses you stand near" },
+	{ key = "AutoCollect", id = 0, name = "Auto Collect", robux = 79, icon = "\u{1F9F9}", desc = "The Janitor's Cart at max level from the start" },
+	{ key = "LongLock", id = 0, name = "Long Lock", robux = 39, icon = "\u{1F510}", desc = "+30s every time you lock your gate" },
+	{ key = "TeleportHome", id = 0, name = "Teleport Home", robux = 29, icon = "\u{1F3E0}", desc = "A button that takes you home (not while carrying)" },
+	{ key = "OfflinePlus", id = 0, name = "Offline Tuition+", robux = 49, icon = "\u{1F319}", desc = "Earn 50% for up to 12h while offline (was 25% for 2h)" },
 }
 Config.Products = {
-	{ key = "Cash10m", id = 0, name = "Tuition Pack", robux = 49, icon = "\u{1F4B5}", desc = "10 minutes of your tuition", seconds = 600 },
-	{ key = "Cash1h", id = 0, name = "Tuition Bag", robux = 149, icon = "\u{1F4B0}", desc = "1 hour of your tuition", seconds = 3600 },
-	{ key = "Cash4h", id = 0, name = "Tuition Vault", robux = 399, icon = "\u{1F3E6}", desc = "4 hours of your tuition", seconds = 14400 },
-	{ key = "LuckyBus", id = 0, name = "Lucky Bus", robux = 199, icon = "\u{1F68C}", desc = "A bus for the whole server with YOUR name on it. Legendary 70% / Mythic 24% / Prodigy 5% / Secret 1%" },
-	{ key = "ServerLuck", id = 0, name = "Server Luck x2", robux = 99, icon = "\u{2728}", desc = "x2 luck for everyone for 15 minutes" },
-	{ key = "ExpressRare", id = 0, name = "Express Rare Letter", robux = 25, icon = "\u{2709}\u{FE0F}", desc = "Your Rare letter, ready now (you still pay the kid's price)" },
-	{ key = "ExpressEpic", id = 0, name = "Express Epic Letter", robux = 79, icon = "\u{1F48C}", desc = "Your Epic letter, ready now (you still pay the kid's price)" },
-	{ key = "LockRefresh", id = 0, name = "Instant Lock Refresh", robux = 25, icon = "\u{1F504}", desc = "Your gate can lock again right now" },
+	-- the MONEY BOOST: one button, x2 on the first purchase and +1x every purchase after, up to x100,
+	-- forever (Config.MoneyBoost). Each price band is its own product; the store picks the one for
+	-- your next level.
+	{ key = "MoneyBoostA", id = 0, name = "Money Boost", robux = 9, icon = "\u{1F4B0}", desc = "x2 to x5 tuition", boost = true },
+	{ key = "MoneyBoostB", id = 0, name = "Money Boost", robux = 19, icon = "\u{1F4B0}", desc = "x6 to x10 tuition", boost = true },
+	{ key = "MoneyBoostC", id = 0, name = "Money Boost", robux = 39, icon = "\u{1F4B0}", desc = "x11 to x25 tuition", boost = true },
+	{ key = "MoneyBoostD", id = 0, name = "Money Boost", robux = 79, icon = "\u{1F4B0}", desc = "x26 to x50 tuition", boost = true },
+	{ key = "MoneyBoostE", id = 0, name = "Money Boost", robux = 149, icon = "\u{1F4B0}", desc = "x51 to x100 tuition", boost = true },
+	{ key = "Cash10m", id = 0, name = "Tuition Pack", robux = 15, icon = "\u{1F4B5}", desc = "10 minutes of your tuition", seconds = 600 },
+	{ key = "Cash1h", id = 0, name = "Tuition Bag", robux = 39, icon = "\u{1F4B0}", desc = "1 hour of your tuition", seconds = 3600 },
+	{ key = "Cash4h", id = 0, name = "Tuition Vault", robux = 99, icon = "\u{1F3E6}", desc = "4 hours of your tuition", seconds = 14400 },
+	{ key = "LuckyBus", id = 0, name = "Lucky Bus", robux = 59, icon = "\u{1F68C}", desc = "A bus for the whole server with YOUR name on it. Legendary 70% / Mythic 24% / Prodigy 5% / Secret 1%" },
+	{ key = "ServerLuck", id = 0, name = "Server Luck x2", robux = 29, icon = "\u{2728}", desc = "x2 luck for everyone for 15 minutes" },
+	{ key = "ExpressRare", id = 0, name = "Express Rare Letter", robux = 9, icon = "\u{2709}\u{FE0F}", desc = "Your Rare letter, ready now (you still pay the kid's price)" },
+	{ key = "ExpressEpic", id = 0, name = "Express Epic Letter", robux = 19, icon = "\u{1F48C}", desc = "Your Epic letter, ready now (you still pay the kid's price)" },
+	{ key = "LockRefresh", id = 0, name = "Instant Lock Refresh", robux = 9, icon = "\u{1F504}", desc = "Your gate can lock again right now" },
 	-- open a part of town early (AreaService)
-	{ key = "UnlockDowntown", id = 0, name = "Open Downtown Now", robux = 29, icon = "\u{1F3EA}", desc = "Explore Downtown right away", area = "Downtown" },
-	{ key = "UnlockLab", id = 0, name = "Open the Mutation Lab Now", robux = 79, icon = "\u{1F9EA}", desc = "Steal mutant kids right away", area = "Lab" },
-	{ key = "UnlockMapleHeights", id = 0, name = "Open Maple Heights Now", robux = 49, icon = "\u{1F3E1}", desc = "Meet the neighbours right away", area = "MapleHeights" },
-	{ key = "UnlockPinePark", id = 0, name = "Open Pine Park Now", robux = 59, icon = "\u{1F332}", desc = "Explore the park right away", area = "PinePark" },
-	{ key = "UnlockVexPrep", id = 0, name = "Open Vex Prep Now", robux = 99, icon = "\u{1F3EB}", desc = "Raid the rival school right away", area = "VexPrep" },
-	{ key = "UnlockIndustrial", id = 0, name = "Open VexCorp Industrial Now", robux = 129, icon = "\u{1F3ED}", desc = "Sneak into VexCorp right away", area = "Industrial" },
-	{ key = "UnlockLair", id = 0, name = "Open the Lair Now", robux = 199, icon = "\u{1F480}", desc = "Face Dr. Vex right away", area = "Lair" },
+	{ key = "UnlockDowntown", id = 0, name = "Open Downtown Now", robux = 9, icon = "\u{1F3EA}", desc = "Explore Downtown right away", area = "Downtown" },
+	{ key = "UnlockLab", id = 0, name = "Open the Mutation Lab Now", robux = 25, icon = "\u{1F9EA}", desc = "Steal mutant kids right away", area = "Lab" },
+	{ key = "UnlockMapleHeights", id = 0, name = "Open Maple Heights Now", robux = 15, icon = "\u{1F3E1}", desc = "Meet the neighbours right away", area = "MapleHeights" },
+	{ key = "UnlockPinePark", id = 0, name = "Open Pine Park Now", robux = 19, icon = "\u{1F332}", desc = "Explore the park right away", area = "PinePark" },
+	{ key = "UnlockVexPrep", id = 0, name = "Open Vex Prep Now", robux = 29, icon = "\u{1F3EB}", desc = "Raid the rival school right away", area = "VexPrep" },
+	{ key = "UnlockIndustrial", id = 0, name = "Open VexCorp Industrial Now", robux = 39, icon = "\u{1F3ED}", desc = "Sneak into VexCorp right away", area = "Industrial" },
+	{ key = "UnlockLair", id = 0, name = "Open the Lair Now", robux = 49, icon = "\u{1F480}", desc = "Face Dr. Vex right away", area = "Lair" },
 }
+
+-- the MONEY BOOST ladder: your tuition multiplier after n purchases is x(n + 1), up to x100. The level
+-- you'd buy next decides the band, so the price climbs as you go (49 R$ each up to x5, then 99, 199,
+-- 399, 799 R$).
+Config.MoneyBoost = {
+	max = 100,
+	bands = {
+		{ to = 5, key = "MoneyBoostA" },
+		{ to = 10, key = "MoneyBoostB" },
+		{ to = 25, key = "MoneyBoostC" },
+		{ to = 50, key = "MoneyBoostD" },
+		{ to = 100, key = "MoneyBoostE" },
+	},
+}
+-- the product for the level after `level` (nil at the max)
+function Config.boostProductFor(level)
+	local nextLevel = (level or 1) + 1
+	if nextLevel > Config.MoneyBoost.max then return nil end
+	for _, b in Config.MoneyBoost.bands do
+		if nextLevel <= b.to then
+			for _, x in Config.Products do
+				if x.key == b.key then return x, nextLevel end
+			end
+		end
+	end
+	return nil
+end
 
 -- special buses
 Config.LateBus ={ every = 300, offset = 0, count = 6, minRarity = 3 } -- Rare+, :00 :05 :10 ...

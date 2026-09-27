@@ -54,7 +54,7 @@ BEAM_CHANCE, BEAM_CAP = (float(_bc.group(1)), int(_bc.group(2))) if _bc else (0.
 USE_EVENTS = "--no-events" not in sys.argv
 
 TIERS = []
-for m in re.finditer(r'\{ name = "([^"]+)", cash = ([\d.e]+), needs = (nil|"\w+"), mult = ([\d.]+), floors = (\d+)', CFG):
+for m in re.finditer(r'\{ name = "([^"]+)", cash = ([\d.e]+), needs = (nil|"\w+"),(?: story = "\w+",)? mult = ([\d.]+), floors = (\d+)', CFG):
     TIERS.append({"name": m.group(1), "cash": float(m.group(2)), "needs": None if m.group(3) == "nil" else m.group(3).strip('"'),
                   "mult": float(m.group(4)), "floors": int(m.group(5))})
 
