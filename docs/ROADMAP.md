@@ -65,17 +65,17 @@ green Store button; no bursts behind store icons; Money Boost doubles x2..x1024,
 
 | # | Piece | State |
 |---|---|---|
-| A | Side bar down to 5 (Home, Store, Shop, Upgrades, Settings; Admin for admins). Board -> the District Office (a prompt there); Yearbook -> a yearbook shelf at your school; Name -> your school's gate sign; Files -> a filing cabinet at your school (NOT VexCorp HQ: that's late game); Coop -> a noticeboard at your school; Daily -> pops up when a reward is ready; Quests -> click the quest card. Unlock toasts, the tutorial guide (panel:Board, panel:NameSchool), the Board lines in SewerHeist and Config (Wobblesworth) point at the places. | next |
-| B | The Co-op window redesigned (tomas: "doesn't look good") | |
-| C | Smart Robux deals: offers that pop up when the player needs them (short of cash for the next desk -> a tuition pack; gate on cooldown -> Lock Refresh; a letter waiting -> Express), never a fake price | |
-| D | Bigger school plots; the gym, library, cafeteria, auditorium are NOT part of the school: an Architect (a mission) builds each room for cash, so the story makes sense | |
+| A | DONE c20752d. Side bar down to 5 (Home, Store, Shop, Upgrades, Settings; Admin for admins). Board -> the District Office (a prompt there); Yearbook -> a yearbook shelf at your school; Name -> your school's gate sign; Files -> a filing cabinet at your school (NOT VexCorp HQ: that's late game); Coop -> a noticeboard at your school; Daily -> pops up when a reward is ready; Quests -> click the quest card. Unlock toasts, the tutorial guide (panel:Board, panel:NameSchool), the Board lines in SewerHeist and Config (Wobblesworth) point at the places. | next |
+| B | The Co-op window redesigned (tomas: "doesn't look good") | done 11d23d7 |
+| C | Smart Robux deals: offers that pop up when the player needs them (short of cash for the next desk -> a tuition pack; gate on cooldown -> Lock Refresh; a letter waiting -> Express), never a fake price | done 987ae0a (card on screen still to be seen past the First Morning) |
+| D | (tomas 09-27: 4 players a server -> 4 plots, each ~4x today's 120x175; the town is re-laid around them, with E) Bigger school plots; the gym, library, cafeteria, auditorium are NOT part of the school: an Architect (a mission) builds each room for cash, so the story makes sense | |
 | E | The full map, building and model redo ("look like a whole different game"), in the stud style | |
 
 ## Owed to tomas (things only he can do in Studio)
 
 - File > Save after sessions that change the place: the bus, Detention, ServerStorage.TownAssets
   (the nature models), the swapped trees.
-- Game Settings: Max Players 8. Create the passes and products and paste their ids into Config.
+- Game Settings: Max Players 4 (one school each; was 8). Create the passes and products and paste their ids into Config.
   New on 09-27: the four tuition packs (Cash8h 179, Cash16h 329, Cash24h 449, Cash1w 1999), the ten
   Money Boost doublings (MoneyBoost1..10: 25, 50 ... 12,800), Offline Tuition+ at 199 and the
   OfflinePlusDeal pass at 49.
