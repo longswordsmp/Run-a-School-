@@ -559,7 +559,7 @@ RunService.RenderStepped:Connect(function(dt)
 	local cam = workspace.CurrentCamera
 	-- (an NPC who already has the bouncing "!" over his head doesn't get the arrow on top of it)
 	local markerNpc = state and state.npc and player:GetAttribute("MissionReady") and player:GetAttribute("MissionGiver") == state.npc
-	-- (the map, TownMap.client, marks the same spot: shared on the local player)
+	-- (shared on the local player, for anything else that wants to mark the same spot)
 	do
 		local at = nil
 		if typeof(target) == "Vector3" then at = target

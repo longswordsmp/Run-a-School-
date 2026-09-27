@@ -105,13 +105,22 @@ local body = bp("Body", Vector3.new(30, 9.8, 12), CFrame.new(-8, 7.1, 0), YEL)
 body.PivotOffset = CFrame.new(2, 0.4, 0) -- (the pivot where the first bus had it: parked buses line up)
 bus.PrimaryPart = body
 bp("Chassis", Vector3.new(41, 0.8, 11.2), CFrame.new(-3, 1.8, 0), BLACK)
-bp("Body", Vector3.new(4, 4.8, 12), CFrame.new(9, 4.6, 0), YEL) -- cab floor (Otis sits on it)
+bp("Body", Vector3.new(4, 4.8, 9.4), CFrame.new(9, 4.6, 1.3), YEL) -- cab floor (Otis sits on it), short of the stairwell
 bp("Body", Vector3.new(0.4, 1.5, 12), CFrame.new(10.9, 7.75, 0), YEL) -- under the windshield
 for _, s in { -1, 1 } do
-	bp("Body", Vector3.new(4, 1.8, 0.3), CFrame.new(9, 7.9, s * 5.85), YEL) -- cab sides, under the side windows
 	bp("Body", Vector3.new(0.5, 5, 0.5), CFrame.new(10.9, 10.3, s * 5.75), YEL) -- windshield pillars
-	bp("CabWindow", Vector3.new(3.4, 2.8, 0.1), CFrame.new(9, 10.3, s * 5.9), GLASS, Enum.Material.Glass, { Transparency = 0.45 })
 end
+-- (the driver's side has a panel and a window; the door side is the doorway)
+bp("Body", Vector3.new(4, 1.8, 0.3), CFrame.new(9, 7.9, 5.85), YEL) -- cab side, under the side window
+bp("CabWindow", Vector3.new(3.4, 2.8, 0.1), CFrame.new(9, 10.3, 5.9), GLASS, Enum.Material.Glass, { Transparency = 0.45 })
+-- the stairwell inside the door: three steps up to the floor, yellow safety edges, a grab pole
+local TREAD = rgb(62, 64, 72)
+for i, st in { { 3.8, -6.0 }, { 5.4, -5.1 }, { 7.0, -4.2 } } do
+	local top, outer = st[1], st[2]
+	bp("Stair", Vector3.new(3.7, top - 2.2, -3.4 - outer), CFrame.new(8.85, (top + 2.2) / 2, (outer - 3.4) / 2), TREAD)
+	bp("StairEdge", Vector3.new(3.7, 0.12, 0.3), CFrame.new(8.85, top + 0.06, outer + 0.15), YEL)
+end
+cylX("GrabPole", 0.25, 6.2, Vector3.new(7.35, 7.6, -5.5), CHROME, Enum.Material.Metal).CFrame = BUS * CFrame.new(7.35, 7.6, -5.5) * CFrame.Angles(0, 0, math.rad(90))
 bp("Windshield", Vector3.new(0.2, 3.8, 11), CFrame.new(11.05, 10.4, 0), rgb(175, 215, 240), Enum.Material.Glass, { Transparency = 0.6 })
 bp("Roof", Vector3.new(34.6, 0.7, 10.8), CFrame.new(-6, 12.35, 0), rgb(248, 248, 244))
 for _, s in { -1, 1 } do

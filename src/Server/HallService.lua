@@ -279,6 +279,18 @@ end
 ---------------------------------------------------------------------------
 local regularBus = map.SchoolBus
 local busTemplate = regularBus
+-- the doors' shut positions, taken now while they're shut. (Every event bus is a copy of the regular
+-- bus; each copy used to take its own from wherever the doors were at that moment, and a copy made while
+-- the regular bus stood at the stop with its door open had "shut" meaning open: it opened further still,
+-- round over the windows.)
+do
+	local pivot = regularBus:GetPivot()
+	for _, p in regularBus:GetChildren() do
+		if p:IsA("BasePart") and (p.Name == "Door" or p.Name == "DoorGlass") then
+			p:SetAttribute("ClosedRel", pivot:ToObjectSpace(p.CFrame))
+		end
+	end
+end
 local STOP = regularBus:GetPivot() -- (the map's parked bus: this is the stop)
 local OFFSTAGE = STOP - Vector3.new(190, 0, 0) -- down the street to the west, where buses come from
 local HIDDEN = STOP - Vector3.new(0, 400, 0)
@@ -320,7 +332,9 @@ local function makeBus(label, color, textColor)
 		for _, p in bus:GetDescendants() do
 			if p:IsA("BasePart") and p ~= body then
 				if p.Name == "Door" or p.Name == "DoorGlass" then
-					p:SetAttribute("ClosedRel", pivot:ToObjectSpace(p.CFrame))
+					-- (shut, whatever the regular bus's door is doing right now)
+					local rel = p:GetAttribute("ClosedRel")
+					if rel then p.CFrame = pivot * rel else p:SetAttribute("ClosedRel", pivot:ToObjectSpace(p.CFrame)) end
 				else
 					local w = Instance.new("WeldConstraint")
 					w.Part0, w.Part1 = body, p
@@ -373,18 +387,27 @@ end
 
 -- the front door slides open (towards the back of the bus) while it unloads, and shuts to leave
 local TweenService = game:GetService("TweenService")
-local DOOR_SLIDE = Vector3.new(-3.3, 0, -0.35)
+-- the door swings in on its front hinge, into the stairwell, the way a school bus door folds (it used to
+-- slide back along the side of the bus and sit over the windows)
+local DOOR_SWING = math.rad(82)
 local function setDoor(bus, open)
 	local pivot = bus:GetPivot()
+	local door = bus:FindFirstChild("Door")
 	for _, p in bus:GetChildren() do
-		if p:IsA("BasePart") and (p.Name == "Door" or p.Name == "DoorGlass") then
-			local rel = p:GetAttribute("ClosedRel")
-			if not rel then
-				rel = pivot:ToObjectSpace(p.CFrame)
-				p:SetAttribute("ClosedRel", rel)
-			end
-			local shut = pivot * rel
-			TweenService:Create(p, TweenInfo.new(0.35, Enum.EasingStyle.Quad), { CFrame = open and (shut + DOOR_SLIDE) or shut }):Play()
+		if p:IsA("BasePart") and (p.Name == "Door" or p.Name == "DoorGlass") and not p:GetAttribute("ClosedRel") then
+			p:SetAttribute("ClosedRel", pivot:ToObjectSpace(p.CFrame))
+		end
+	end
+	local doorRel = door and door:GetAttribute("ClosedRel")
+	if not doorRel then return end
+	-- (the hinge: the door's front edge, in the bus's own space; the bus's front is +X, its inside +Z)
+	local hinge = CFrame.new(doorRel.X + door.Size.X / 2, 0, doorRel.Z)
+	local swing = hinge * CFrame.Angles(0, DOOR_SWING, 0) * hinge:Inverse()
+	for _, p in bus:GetChildren() do
+		local rel = p:IsA("BasePart") and (p.Name == "Door" or p.Name == "DoorGlass") and p:GetAttribute("ClosedRel")
+		if rel then
+			local target = pivot * (open and swing * rel or rel)
+			TweenService:Create(p, TweenInfo.new(0.35, Enum.EasingStyle.Quad), { CFrame = target }):Play()
 		end
 	end
 	task.wait(0.4)

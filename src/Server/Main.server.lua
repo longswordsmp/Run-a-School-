@@ -126,7 +126,6 @@ timed("HQService.start", HQService.start, TownService.root)
 timed("TownNPCService.start", TownNPCService.start)
 timed("TownQuestService.start_service", TownQuestService.start_service)
 timed("Server.SewerHeist", require(Server.SewerHeist).start_service) -- (Chapter 1: the pothole, the sewer, the Vex Prep Job)
-timed("Server.MapPlan", require(Server.MapPlan).start) -- (the town map's top-down copy of the town)
 TownQuestService.targets.hqFloor = function(player, s) return HQService.target(player, s.arg) end
 require(Server.QuestGoons).start(TownQuestService)
 
